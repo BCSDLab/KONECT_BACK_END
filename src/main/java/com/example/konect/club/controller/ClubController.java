@@ -21,9 +21,10 @@ public class ClubController implements ClubApi {
     @GetMapping
     public ResponseEntity<ClubsResponse> getClubs(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit
+        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
+        @RequestParam(name = "query", defaultValue = "", required = false) String query
     ) {
-        ClubsResponse response = clubService.getClubs(page, limit);
+        ClubsResponse response = clubService.getClubs(page, limit, query);
         return ResponseEntity.ok(response);
     }
 }

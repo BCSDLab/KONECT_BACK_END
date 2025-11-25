@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.example.konect.club.dto.ClubsResponse;
 import com.example.konect.club.model.Club;
@@ -26,9 +27,10 @@ public class ClubService {
     private final ClubRepository clubRepository;
     private final ClubTagMapRepository clubTagMapRepository;
 
-    public ClubsResponse getClubs(Integer page, Integer limit) {
+    public ClubsResponse getClubs(Integer page, Integer limit, String query) {
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<Club> clubPage = clubRepository.findAll(pageable);
+        Page<Club> clubPage = StringUtils.hasText(query) ?
+            clubRepository.findAllByQuery(query.trim(), pageable) : clubRepository.findAll(pageable);
 
         List<Integer> clubIds = clubPage.getContent().stream()
             .map(Club::getId)

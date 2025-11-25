@@ -18,6 +18,7 @@ public interface ClubApi {
     @GetMapping
     ResponseEntity<ClubsResponse> getClubs(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit
+        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
+        @RequestParam(name = "query", defaultValue = "", required = false) String query
     );
 }
