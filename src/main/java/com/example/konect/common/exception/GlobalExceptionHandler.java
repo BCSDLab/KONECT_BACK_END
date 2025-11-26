@@ -46,9 +46,9 @@ public class GlobalExceptionHandler {
             """
                 🚨 서버에서 에러가 발생했습니다! 🚨
                 URI: `%s %s`
-                Location: `%s`
-                Exception: `%s`
-                Message: `%s`
+                Location: `*%s*`
+                Exception: `*%s*`
+                ```%s```
             """,
             request.getMethod(),
             request.getRequestURI(),
