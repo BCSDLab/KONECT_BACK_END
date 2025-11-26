@@ -140,7 +140,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatusCode status,
         WebRequest request
     ) {
-        HttpServletRequest req = ((ServletWebRequest) request).getRequest();
+        HttpServletRequest req = ((ServletWebRequest)request).getRequest();
         return buildErrorResponse(req, ApiResponseCode.MISSING_REQUIRED_PARAMETER, ex.getMessage());
     }
 
@@ -151,7 +151,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatusCode status,
         WebRequest request
     ) {
-        HttpServletRequest req = ((ServletWebRequest) request).getRequest();
+        HttpServletRequest req = ((ServletWebRequest)request).getRequest();
         return buildErrorResponse(
             req,
             ApiResponseCode.INVALID_JSON_FORMAT,
@@ -180,12 +180,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         String message = String.format(
             """
-                🚨 서버에서 에러가 발생했습니다! 🚨
-                URI: `%s %s`
-                Location: `*%s*`
-                Exception: `*%s*`
-                ```%s```
-            """,
+                    🚨 서버에서 에러가 발생했습니다! 🚨
+                    URI: `%s %s`
+                    Location: `*%s*`
+                    Exception: `*%s*`
+                    ```%s```
+                """,
             request.getMethod(),
             request.getRequestURI(),
             errorLocation,
