@@ -2,8 +2,6 @@ package com.example.konect.config;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.time.Duration;
-
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

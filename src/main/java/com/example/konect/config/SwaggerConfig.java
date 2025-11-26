@@ -1,6 +1,6 @@
 package com.example.konect.config;
 
-import static io.swagger.v3.oas.models.security.SecurityScheme.Type.*;
+import static io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP;
 
 import java.time.LocalDate;
 
@@ -13,7 +13,6 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.security.SecurityScheme.Type;
 import io.swagger.v3.oas.models.servers.Server;
 
 @Configuration
