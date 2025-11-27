@@ -186,13 +186,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             origin.getLineNumber()
         );
 
+        String titleMessage = "🚨 서버에서 에러가 발생했습니다! 🚨";
         String message = String.format(
             """
-                🚨 서버에서 에러가 발생했습니다! 🚨
-                > URI: *`%s %s`*
-                > Location: *`%s`*
-                > Exception: *`%s`*
-                > ```%s```
+                URI: *`%s %s`*
+                Location: *`%s`*
+                Exception: *`%s`*
+                ```%s```
                 """,
             request.getMethod(),
             request.getRequestURI(),
@@ -202,6 +202,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         SlackNotification slackNotification = SlackNotification.builder()
+            .title(titleMessage)
             .text(message)
             .build();
 

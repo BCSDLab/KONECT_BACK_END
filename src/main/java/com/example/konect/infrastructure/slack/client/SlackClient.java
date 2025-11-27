@@ -2,6 +2,7 @@ package com.example.konect.infrastructure.slack.client;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,12 +39,19 @@ public class SlackClient {
 
         Map<String, Object> slackMessage = new HashMap<>();
 
-        slackMessage.put("text", slackNotification.getContent());
-        slackMessage.put("attachments", List.of(
-            Map.of("color", SlackNotification.COLOR_GOOD)
-        ));
+        slackMessage.put("text", slackNotification.getTitle());
+
+        List<Map<String, Object>> attachments = new ArrayList<>();
+        Map<String, Object> attachment = new HashMap<>();
+
+        attachment.put("color", SlackNotification.COLOR_DANGER);
+        attachment.put("text", slackNotification.getContent());
+        attachments.add(attachment);
+
+        slackMessage.put("attachments", attachments);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(slackMessage, headers);
+
         restTemplate.postForObject(
             slackUrl,
             request,
