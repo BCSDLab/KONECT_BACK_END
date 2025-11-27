@@ -8,7 +8,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
