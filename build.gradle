@@ -38,7 +38,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 
     // swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 
     // retry
     implementation "org.springframework.retry:spring-retry"
