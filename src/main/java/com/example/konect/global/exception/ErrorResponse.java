@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "표준 에러 응답 포맷 (하위호환성 이슈로 CamelCase)")
+@Schema(description = "표준 에러 응답 포맷")
 public record ErrorResponse(
     @JsonIgnore
     @Schema(description = "HTTP 상태 코드", hidden = true)
