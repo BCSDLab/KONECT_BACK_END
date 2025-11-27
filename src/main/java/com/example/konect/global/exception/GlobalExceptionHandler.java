@@ -39,9 +39,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final SlackClient slackClient;
 
-    @Value("${slack.webhook.url}")
-    private String slackUrl;
-
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(
         HttpServletRequest request,
@@ -206,7 +203,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         SlackNotification slackNotification = SlackNotification.builder()
-            .slackUrl(slackUrl)
             .text(message)
             .build();
 

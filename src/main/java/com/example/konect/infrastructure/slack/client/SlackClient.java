@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.retry.annotation.Recover;
@@ -23,20 +24,26 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SlackClient {
 
+    @Value("${slack.webhook.url}")
+    private String slackUrl;
+
     private final RestTemplate restTemplate;
 
     @Retryable
     public void sendMessage(SlackNotification slackNotification) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(APPLICATION_JSON);
+
         Map<String, Object> slackMessage = new HashMap<>();
+
         slackMessage.put("text", slackNotification.getContent());
         slackMessage.put("attachments", List.of(
             Map.of("color", SlackNotification.COLOR_GOOD)
         ));
+
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(slackMessage, headers);
         restTemplate.postForObject(
-            slackNotification.getSlackUrl(),
+            slackUrl,
             request,
             String.class
         );
