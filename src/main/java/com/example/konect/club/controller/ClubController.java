@@ -2,6 +2,7 @@ package com.example.konect.club.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,5 +27,10 @@ public class ClubController implements ClubApi {
     ) {
         ClubsResponse response = clubService.getClubs(page, limit, query);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/test")
+    public ResponseEntity<Object> test() throws Exception {
+        throw new Exception("테스트 중");
     }
 }
