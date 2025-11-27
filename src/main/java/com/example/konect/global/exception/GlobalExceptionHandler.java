@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -87,6 +88,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         MethodArgumentTypeMismatchException e
     ) {
         return buildErrorResponse(request, ApiResponseCode.INVALID_TYPE_VALUE, e.getMessage());
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(
+        HttpRequestMethodNotSupportedException ex,
+        HttpHeaders headers,
+        HttpStatusCode status,
+        WebRequest request
+    ) {
+        HttpServletRequest req = ((ServletWebRequest)request).getRequest();
+        return buildErrorResponse(req, ApiResponseCode.METHOD_NOT_ALLOWED, ex.getMessage());
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
