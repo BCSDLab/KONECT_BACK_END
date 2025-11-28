@@ -43,6 +43,10 @@ dependencies {
     // retry
     implementation "org.springframework.retry:spring-retry"
 
+    // notification
+    implementation 'com.github.maricn:logback-slack-appender:1.4.0'
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
