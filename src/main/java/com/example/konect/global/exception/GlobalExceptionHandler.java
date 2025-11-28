@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -24,17 +25,13 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.example.konect.global.code.ApiResponseCode;
-import com.example.konect.infrastructure.slack.client.SlackClient;
-import com.example.konect.infrastructure.slack.model.SlackNotification;
 
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-
-    private final SlackClient slackClient;
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(
@@ -157,51 +154,33 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         WebRequest request
     ) {
         HttpServletRequest req = ((ServletWebRequest)request).getRequest();
-        return buildErrorResponse(
-            req,
-            ApiResponseCode.INVALID_JSON_FORMAT,
-            ex.getMessage()
-        );
+        return buildErrorResponse(req, ApiResponseCode.INVALID_JSON_FORMAT, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleException(HttpServletRequest request, Exception e) {
-        sendSlackNotification(request, e);
-
-        return buildErrorResponse(request, ApiResponseCode.UNEXPECTED_SERVER_ERROR, e.getMessage());
-    }
-
-    private void sendSlackNotification(HttpServletRequest request, Exception e) {
         StackTraceElement origin = e.getStackTrace()[0];
 
-        String errorLocation = String.format(
+        String uri = String.format("%s %s", request.getMethod(), request.getRequestURI());
+        String location = String.format(
             "%s:%d",
             origin.getFileName(),
             origin.getLineNumber()
         );
+        String exception = e.getClass().getSimpleName();
+        String message = e.getMessage();
 
-        String titleMessage = "🚨 서버에서 에러가 발생했습니다! 🚨";
-        String message = String.format(
-            """
-                URI: *`%s %s`*
-                Location: *`%s`*
-                Exception: *`%s`*
-                ```%s```
-                """,
-            request.getMethod(),
-            request.getRequestURI(),
-            errorLocation,
-            e.getClass().getSimpleName(),
-            e.getMessage()
-        );
+        MDC.put("uri", uri);
+        MDC.put("location", location);
+        MDC.put("exception", exception);
+        MDC.put("message", message);
 
-        SlackNotification slackNotification = SlackNotification.builder()
-            .title(titleMessage)
-            .text(message)
-            .build();
+        log.error("URI: {} | Location: {} | Exception: {} | Message: {}", uri, location, exception, message);
 
-        slackClient.sendMessage(slackNotification);
+        return buildErrorResponse(request, ApiResponseCode.UNEXPECTED_SERVER_ERROR, e.getMessage());
     }
+
+
 
     private ResponseEntity<Object> buildErrorResponse(
         HttpServletRequest request,
