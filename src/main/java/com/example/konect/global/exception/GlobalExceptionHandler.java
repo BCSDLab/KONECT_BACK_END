@@ -1,9 +1,7 @@
 package com.example.konect.global.exception;
 
 import java.time.DateTimeException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -167,13 +165,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleException(HttpServletRequest request, Exception e) {
+    public ResponseEntity<Object> handleException(HttpServletRequest request, Exception e) {
         sendSlackNotification(request, e);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "error");
-        response.put("message", "An internal server error occurred.");
-        return ResponseEntity.internalServerError().body(response);
+        return buildErrorResponse(request, ApiResponseCode.UNEXPECTED_SERVER_ERROR, e.getMessage());
     }
 
     private void sendSlackNotification(HttpServletRequest request, Exception e) {
