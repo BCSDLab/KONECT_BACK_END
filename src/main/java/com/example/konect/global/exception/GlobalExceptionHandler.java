@@ -120,7 +120,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String firstErrorMessage = getFirstFieldErrorMessage(fieldErrors, errorCode.getMessage());
 
         ErrorResponse body = new ErrorResponse(
-            errorCode.getHttpStatus().value(),
             errorCode.getCode(),
             firstErrorMessage,
             errorTraceId,
@@ -217,12 +216,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorTraceId = UUID.randomUUID().toString();
 
         ErrorResponse response = new ErrorResponse(
-            errorCode.getHttpStatus().value(),
             errorCode.getCode(),
             errorCode.getMessage(),
             errorTraceId
         );
-        return ResponseEntity.status(response.status()).body(response);
+        return ResponseEntity.status(errorCode.getHttpStatus().value()).body(response);
     }
 
     private String getFirstFieldErrorMessage(List<ErrorResponse.FieldError> fields, String defaultMessage) {
