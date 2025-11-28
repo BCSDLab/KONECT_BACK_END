@@ -18,7 +18,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -34,51 +33,38 @@ import lombok.extern.slf4j.Slf4j;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Object> handleIllegalArgumentException(
-        HttpServletRequest request,
-        IllegalArgumentException e
-    ) {
-        return buildErrorResponse(request, ApiResponseCode.ILLEGAL_ARGUMENT, e.getMessage());
+    public ResponseEntity<Object> handleIllegalArgumentException() {
+        return buildErrorResponse(ApiResponseCode.ILLEGAL_ARGUMENT);
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Object> handleIllegalStateException(
-        HttpServletRequest request,
-        IllegalStateException e
-    ) {
-        return buildErrorResponse(request, ApiResponseCode.ILLEGAL_STATE, e.getMessage());
+    public ResponseEntity<Object> handleIllegalStateException() {
+        return buildErrorResponse(ApiResponseCode.ILLEGAL_STATE);
     }
 
     @ExceptionHandler(DateTimeException.class)
-    public ResponseEntity<Object> DateTimeException(
-        HttpServletRequest request,
-        DateTimeException e
-    ) {
-        return buildErrorResponse(request, ApiResponseCode.INVALID_DATE_TIME, e.getMessage());
+    public ResponseEntity<Object> DateTimeException() {
+        return buildErrorResponse(ApiResponseCode.INVALID_DATE_TIME);
     }
 
     @ExceptionHandler(UnsupportedOperationException.class)
-    public ResponseEntity<Object> handleUnsupportedOperationException(
-        HttpServletRequest request,
-        UnsupportedOperationException e
-    ) {
-        return buildErrorResponse(request, ApiResponseCode.UNSUPPORTED_OPERATION, e.getMessage());
+    public ResponseEntity<Object> handleUnsupportedOperationException() {
+        return buildErrorResponse(ApiResponseCode.UNSUPPORTED_OPERATION);
     }
 
     @ExceptionHandler(ClientAbortException.class)
-    public ResponseEntity<Object> handleClientAbortException(
-        HttpServletRequest request,
-        ClientAbortException e
-    ) {
-        return buildErrorResponse(request, ApiResponseCode.CLIENT_ABORTED, e.getMessage());
+    public ResponseEntity<Object> handleClientAbortException() {
+        return buildErrorResponse(ApiResponseCode.CLIENT_ABORTED);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<Object> handleMethodArgumentTypeMismatchException(
-        HttpServletRequest request,
-        MethodArgumentTypeMismatchException e
-    ) {
-        return buildErrorResponse(request, ApiResponseCode.INVALID_TYPE_VALUE, e.getMessage());
+    public ResponseEntity<Object> handleMethodArgumentTypeMismatchException() {
+        return buildErrorResponse(ApiResponseCode.INVALID_TYPE_VALUE);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Object> handleObjectOptimisticLockingFailureException() {
+        return buildErrorResponse(ApiResponseCode.OPTIMISTIC_LOCKING_FAILURE);
     }
 
     @Override
@@ -88,16 +74,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatusCode status,
         WebRequest request
     ) {
-        HttpServletRequest req = ((ServletWebRequest)request).getRequest();
-        return buildErrorResponse(req, ApiResponseCode.METHOD_NOT_ALLOWED, ex.getMessage());
-    }
-
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<Object> handleObjectOptimisticLockingFailureException(
-        HttpServletRequest request,
-        ObjectOptimisticLockingFailureException e
-    ) {
-        return buildErrorResponse(request, ApiResponseCode.OPTIMISTIC_LOCKING_FAILURE, e.getMessage());
+        return buildErrorResponse(ApiResponseCode.METHOD_NOT_ALLOWED);
     }
 
     @Override
@@ -107,7 +84,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatusCode statusCode,
         WebRequest webRequest
     ) {
-        HttpServletRequest request = ((ServletWebRequest)webRequest).getRequest();
         ApiResponseCode errorCode = ApiResponseCode.INVALID_REQUEST_BODY;
         String errorTraceId = UUID.randomUUID().toString();
 
@@ -131,8 +107,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatusCode status,
         WebRequest webRequest
     ) {
-        HttpServletRequest request = ((ServletWebRequest)webRequest).getRequest();
-        return buildErrorResponse(request, ApiResponseCode.NO_HANDLER_FOUND, e.getMessage());
+        return buildErrorResponse(ApiResponseCode.NO_HANDLER_FOUND);
     }
 
     @Override
@@ -142,8 +117,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatusCode status,
         WebRequest request
     ) {
-        HttpServletRequest req = ((ServletWebRequest)request).getRequest();
-        return buildErrorResponse(req, ApiResponseCode.MISSING_REQUIRED_PARAMETER, ex.getMessage());
+        return buildErrorResponse(ApiResponseCode.MISSING_REQUIRED_PARAMETER);
     }
 
     @Override
@@ -153,8 +127,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatusCode status,
         WebRequest request
     ) {
-        HttpServletRequest req = ((ServletWebRequest)request).getRequest();
-        return buildErrorResponse(req, ApiResponseCode.INVALID_JSON_FORMAT, ex.getMessage());
+        return buildErrorResponse(ApiResponseCode.INVALID_JSON_FORMAT);
     }
 
     @ExceptionHandler(Exception.class)
@@ -177,16 +150,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         log.error("URI: {} | Location: {} | Exception: {} | Message: {}", uri, location, exception, message);
 
-        return buildErrorResponse(request, ApiResponseCode.UNEXPECTED_SERVER_ERROR, e.getMessage());
+        return buildErrorResponse(ApiResponseCode.UNEXPECTED_SERVER_ERROR);
     }
 
-
-
-    private ResponseEntity<Object> buildErrorResponse(
-        HttpServletRequest request,
-        ApiResponseCode errorCode,
-        String errorMessage
-    ) {
+    private ResponseEntity<Object> buildErrorResponse(ApiResponseCode errorCode) {
         String errorTraceId = UUID.randomUUID().toString();
 
         ErrorResponse response = new ErrorResponse(
@@ -194,6 +161,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             errorCode.getMessage(),
             errorTraceId
         );
+
         return ResponseEntity.status(errorCode.getHttpStatus().value()).body(response);
     }
 
@@ -201,6 +169,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (fields.isEmpty()) {
             return defaultMessage;
         }
+
         return fields.get(0).message();
     }
 
