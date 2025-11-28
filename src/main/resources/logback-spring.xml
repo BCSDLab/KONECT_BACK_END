@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+    <springProperty scope="context" name="SLACK_WEBHOOK_ERROR" source="slack.webhooks.error"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <appender name="SLACK" class="com.github.maricn.logback.SlackAppender">
+        <webhookUri>${SLACK_WEBHOOK_ERROR}</webhookUri>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern><![CDATA[
+:rotating_light: *서버에서 에러가 발생했습니다!* :rotating_light:%n
+URI: `%mdc{uri}`%n
+Location: `%mdc{location}`%n
+Exception: `%mdc{exception}`%n
+```%mdc{message}```
+]]></pattern>
+        </layout>
+        <colorCoding>true</colorCoding>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="ASYNC_SLACK" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="SLACK"/>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ASYNC_SLACK"/>
+    </root>
+</configuration>
