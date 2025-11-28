@@ -25,10 +25,6 @@ public record ErrorResponse(
 
     private static final PropertyNamingStrategies.SnakeCaseStrategy SNAKE = new PropertyNamingStrategies.SnakeCaseStrategy();
 
-    public ErrorResponse(String message, String errorTraceId) {
-        this("", message, errorTraceId, List.of());
-    }
-
     public ErrorResponse(String code, String message, String errorTraceId) {
         this(code, message, errorTraceId, List.of());
     }
