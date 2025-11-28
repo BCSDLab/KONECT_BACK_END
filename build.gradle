@@ -40,9 +40,6 @@ dependencies {
     // swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 
-    // retry
-    implementation "org.springframework.retry:spring-retry"
-
     // notification
     implementation 'com.github.maricn:logback-slack-appender:1.4.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
