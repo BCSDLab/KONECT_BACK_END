@@ -3,7 +3,6 @@ package com.example.konect.global.exception;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -23,8 +22,6 @@ public record ErrorResponse(
     List<FieldError> fieldErrors
 ) {
 
-    private static final PropertyNamingStrategies.SnakeCaseStrategy SNAKE = new PropertyNamingStrategies.SnakeCaseStrategy();
-
     public ErrorResponse(String code, String message, String errorTraceId) {
         this(code, message, errorTraceId, List.of());
     }
@@ -41,7 +38,7 @@ public record ErrorResponse(
         String constraint
     ) {
         public FieldError(String field, String message, String constraint) {
-            this.field = SNAKE.translate(field);
+            this.field = field;
             this.message = message;
             this.constraint = constraint;
         }
