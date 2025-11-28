@@ -2,10 +2,13 @@
 <configuration debug="true">
     <springProperty scope="context" name="SLACK_WEBHOOK_ERROR" source="slack.webhooks.error"/>
 
+    <conversionRule conversionWord="clr"
+                    converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>
-                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+                [%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %clr(%-5level) %clr(${PID:-}){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr(%-40.40logger{36}){cyan} %clr(:){faint} : %msg%n
             </pattern>
         </encoder>
     </appender>
