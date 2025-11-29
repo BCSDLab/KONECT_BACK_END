@@ -134,3 +134,9 @@ INSERT INTO club_tag_map (club_id, tag_id) VALUES (11, 23); -- 예술
 -- 한소리 (club_id = 12)
 INSERT INTO club_tag_map (club_id, tag_id) VALUES (12, 24); -- 풍물
 INSERT INTO club_tag_map (club_id, tag_id) VALUES (12, 25); -- 전통
+
+INSERT INTO club_recruitment (club_id, start_date, end_date)
+VALUES (1, '2025-11-30', '2025-12-31'),
+       (2, '2025-11-29', '2025-12-31'),
+       (3, '2025-11-28', '2025-12-31'),
+       (4, '2025-11-27', '2025-12-31');
