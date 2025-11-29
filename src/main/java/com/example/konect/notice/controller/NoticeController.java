@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/notice")
+@RequestMapping("/notices")
 public class NoticeController implements NoticeApi {
 
     private final NoticeService noticeService;
