@@ -33,19 +33,19 @@ public record NoticesResponse(
         @Schema(description = "공지사항 제목", example = "동아리 박람회 참가 신청 마감 안내", requiredMode = REQUIRED)
         String title
     ) {
-        public static InnerNoticeResponse of(Notice notice) {
+        public static InnerNoticeResponse from(Notice notice) {
             return new InnerNoticeResponse(notice.getId(), notice.getTitle());
         }
     }
 
-    public static NoticesResponse of(Page<Notice> page) {
+    public static NoticesResponse from(Page<Notice> page) {
         return new NoticesResponse(
             page.getTotalElements(),
             page.getNumberOfElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
             page.stream()
-                .map(NoticesResponse.InnerNoticeResponse::of)
+                .map(NoticesResponse.InnerNoticeResponse::from)
                 .toList()
         );
     }
