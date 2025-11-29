@@ -2,11 +2,13 @@ package com.example.konect.notice.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 
 import com.example.konect.notice.model.Notice;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -31,10 +33,15 @@ public record NoticesResponse(
         Integer id,
 
         @Schema(description = "공지사항 제목", example = "동아리 박람회 참가 신청 마감 안내", requiredMode = REQUIRED)
-        String title
+        String title,
+
+        @Schema(description = "공지사항 생성 일자", example = "2025.11.30", requiredMode = REQUIRED)
+        @JsonFormat(pattern = "yyyy.MM.dd")
+        LocalDate createdAt
+
     ) {
         public static InnerNoticeResponse from(Notice notice) {
-            return new InnerNoticeResponse(notice.getId(), notice.getTitle());
+            return new InnerNoticeResponse(notice.getId(), notice.getTitle(), notice.getCreatedAt().toLocalDate());
         }
     }
 
