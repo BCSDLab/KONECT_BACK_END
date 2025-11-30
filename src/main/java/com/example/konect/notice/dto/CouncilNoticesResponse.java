@@ -13,10 +13,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record CouncilNoticesResponse(
-    @Schema(description = "조건에 해당하는 공지사항 수", example = "10", requiredMode = REQUIRED)
+    @Schema(description = "조건에 해당하는 총동아리연합회 수", example = "10", requiredMode = REQUIRED)
     Long totalCount,
 
-    @Schema(description = "현재 페이지에서 조회된 공지사항 수", example = "5", requiredMode = REQUIRED)
+    @Schema(description = "현재 페이지에서 조회된 총동아리연합회 수", example = "5", requiredMode = REQUIRED)
     Integer currentCount,
 
     @Schema(description = "최대 페이지", example = "2", requiredMode = REQUIRED)
@@ -25,17 +25,17 @@ public record CouncilNoticesResponse(
     @Schema(description = "현재 페이지", example = "1", requiredMode = REQUIRED)
     Integer currentPage,
 
-    @Schema(description = "총학생회 공지사항 리스트", requiredMode = REQUIRED)
+    @Schema(description = "총동아리연합회 공지사항 리스트", requiredMode = REQUIRED)
     List<InnerCouncilNoticeResponse> notices
 ) {
     public record InnerCouncilNoticeResponse(
-        @Schema(description = "공지사항 고유 id", example = "1", requiredMode = REQUIRED)
+        @Schema(description = "총동아리연합회 공지사항 고유 id", example = "1", requiredMode = REQUIRED)
         Integer id,
 
-        @Schema(description = "공지사항 제목", example = "동아리 박람회 참가 신청 마감 안내", requiredMode = REQUIRED)
+        @Schema(description = "총동아리연합회 공지사항 제목", example = "동아리 박람회 참가 신청 마감 안내", requiredMode = REQUIRED)
         String title,
 
-        @Schema(description = "공지사항 생성 일자", example = "2025.11.30", requiredMode = REQUIRED)
+        @Schema(description = "총동아리연합회 공지사항 생성 일자", example = "2025.11.30", requiredMode = REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd")
         LocalDate createdAt
 
