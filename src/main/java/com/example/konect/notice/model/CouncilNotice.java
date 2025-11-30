@@ -17,9 +17,9 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "notice")
+@Table(name = "council_notice")
 @NoArgsConstructor(access = PROTECTED)
-public class Notice extends BaseEntity {
+public class CouncilNotice extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -31,7 +31,7 @@ public class Notice extends BaseEntity {
     private String title;
 
     @Builder
-    private Notice(Integer id, String title) {
+    private CouncilNotice(Integer id, String title) {
         this.id = id;
         this.title = title;
     }

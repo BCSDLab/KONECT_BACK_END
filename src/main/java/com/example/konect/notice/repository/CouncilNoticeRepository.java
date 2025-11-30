@@ -4,9 +4,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.Repository;
 
-import com.example.konect.notice.model.Notice;
+import com.example.konect.notice.model.CouncilNotice;
 
-public interface NoticeRepository extends Repository<Notice, Integer> {
+public interface CouncilNoticeRepository extends Repository<CouncilNotice, Integer> {
 
-    Page<Notice> findAll(Pageable pageable);
+    Page<CouncilNotice> findAll(Pageable pageable);
 }

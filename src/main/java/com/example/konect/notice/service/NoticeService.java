@@ -6,9 +6,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.konect.notice.dto.NoticesResponse;
-import com.example.konect.notice.model.Notice;
-import com.example.konect.notice.repository.NoticeRepository;
+import com.example.konect.notice.dto.CouncilNoticesResponse;
+import com.example.konect.notice.model.CouncilNotice;
+import com.example.konect.notice.repository.CouncilNoticeRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,11 +17,11 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class NoticeService {
 
-    private final NoticeRepository noticeRepository;
+    private final CouncilNoticeRepository councilNoticeRepository;
 
-    public NoticesResponse getNotices(Integer page, Integer limit) {
+    public CouncilNoticesResponse getNotices(Integer page, Integer limit) {
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Notice> noticePage = noticeRepository.findAll(pageable);
-        return NoticesResponse.from(noticePage);
+        Page<CouncilNotice> noticePage = councilNoticeRepository.findAll(pageable);
+        return CouncilNoticesResponse.from(noticePage);
     }
 }

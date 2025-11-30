@@ -7,12 +7,12 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 
-import com.example.konect.notice.model.Notice;
+import com.example.konect.notice.model.CouncilNotice;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record NoticesResponse(
+public record CouncilNoticesResponse(
     @Schema(description = "조건에 해당하는 공지사항 수", example = "10", requiredMode = REQUIRED)
     Long totalCount,
 
@@ -25,10 +25,10 @@ public record NoticesResponse(
     @Schema(description = "현재 페이지", example = "1", requiredMode = REQUIRED)
     Integer currentPage,
 
-    @Schema(description = "공지사항 리스트", requiredMode = REQUIRED)
-    List<InnerNoticeResponse> notices
+    @Schema(description = "총학생회 공지사항 리스트", requiredMode = REQUIRED)
+    List<InnerCouncilNoticeResponse> notices
 ) {
-    public record InnerNoticeResponse(
+    public record InnerCouncilNoticeResponse(
         @Schema(description = "공지사항 고유 id", example = "1", requiredMode = REQUIRED)
         Integer id,
 
@@ -40,19 +40,20 @@ public record NoticesResponse(
         LocalDate createdAt
 
     ) {
-        public static InnerNoticeResponse from(Notice notice) {
-            return new InnerNoticeResponse(notice.getId(), notice.getTitle(), notice.getCreatedAt().toLocalDate());
+        public static InnerCouncilNoticeResponse from(CouncilNotice councilNotice) {
+            return new InnerCouncilNoticeResponse(
+                councilNotice.getId(), councilNotice.getTitle(), councilNotice.getCreatedAt().toLocalDate());
         }
     }
 
-    public static NoticesResponse from(Page<Notice> page) {
-        return new NoticesResponse(
+    public static CouncilNoticesResponse from(Page<CouncilNotice> page) {
+        return new CouncilNoticesResponse(
             page.getTotalElements(),
             page.getNumberOfElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
             page.stream()
-                .map(NoticesResponse.InnerNoticeResponse::from)
+                .map(InnerCouncilNoticeResponse::from)
                 .toList()
         );
     }
