@@ -37,18 +37,14 @@ public class ClubExecutive extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "name", length = 50, nullable = false)
-    private String name;
-
     @Column(name = "is_representative", nullable = false)
     private Boolean isRepresentative;
 
     @Builder
-    private ClubExecutive(Integer id, Club club, User user, String name, Boolean isRepresentative) {
+    private ClubExecutive(Integer id, Club club, User user, Boolean isRepresentative) {
         this.id = id;
         this.club = club;
         this.user = user;
-        this.name = name;
         this.isRepresentative = isRepresentative;
     }
 }

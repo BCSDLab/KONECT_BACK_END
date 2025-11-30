@@ -83,7 +83,6 @@ CREATE TABLE club_executive
     id                INT AUTO_INCREMENT PRIMARY KEY,
     club_id           INT                                 NOT NULL,
     user_id           INT                                 NOT NULL,
-    name              VARCHAR(50)                         NOT NULL,
     is_representative BOOLEAN DEFAULT FALSE               NOT NULL,
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
