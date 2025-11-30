@@ -21,7 +21,7 @@ public class NoticeService {
 
     public CouncilNoticesResponse getNotices(Integer page, Integer limit) {
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<CouncilNotice> noticePage = councilNoticeRepository.findAll(pageable);
-        return CouncilNoticesResponse.from(noticePage);
+        Page<CouncilNotice> councilNoticePage = councilNoticeRepository.findAll(pageable);
+        return CouncilNoticesResponse.from(councilNoticePage);
     }
 }
