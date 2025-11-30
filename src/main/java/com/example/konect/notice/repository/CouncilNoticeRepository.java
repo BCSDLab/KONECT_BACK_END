@@ -1,0 +1,12 @@
+package com.example.konect.notice.repository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.Repository;
+
+import com.example.konect.notice.model.CouncilNotice;
+
+public interface CouncilNoticeRepository extends Repository<CouncilNotice, Integer> {
+
+    Page<CouncilNotice> findAll(Pageable pageable);
+}

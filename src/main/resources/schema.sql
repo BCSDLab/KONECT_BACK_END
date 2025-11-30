@@ -53,4 +53,13 @@ CREATE TABLE club_recruitment
     UNIQUE (club_id),
 
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE
-)
+);
+
+CREATE TABLE council_notice
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    title      VARCHAR(255)                        NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+);
