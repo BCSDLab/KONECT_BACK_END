@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.data.domain.Page;
 
 import com.example.konect.club.model.Club;
+import com.example.konect.club.model.ClubSummaryInfo;
 import com.example.konect.club.model.ClubTag;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -47,31 +48,27 @@ public record ClubsResponse(
         @Schema(description = "동아리 태그 리스트", example = "[\"IT\", \"프로그래밍\"]", requiredMode = REQUIRED)
         List<String> tags
     ) {
-        public static InnerClubResponse from(Club club, List<ClubTag> clubTags) {
+        public static InnerClubResponse from(ClubSummaryInfo clubSummaryInfo) {
             return new InnerClubResponse(
-                club.getId(),
-                club.getName(),
-                club.getImageUrl(),
-                club.getClubCategory()
-                    .getName(),
-                club.getDescription(),
-                clubTags.stream()
-                    .map(ClubTag::getName)
-                    .toList());
+                clubSummaryInfo.id(),
+                clubSummaryInfo.name(),
+                clubSummaryInfo.imageUrl(),
+                clubSummaryInfo.categoryName(),
+                clubSummaryInfo.description(),
+                clubSummaryInfo.tags()
+            );
         }
     }
 
-    public static ClubsResponse of(Page<Club> clubPage, Map<Integer, List<ClubTag>> clubTagsMap) {
-        List<InnerClubResponse> clubs = clubPage.getContent().stream()
-            .map(club -> InnerClubResponse.from(club, clubTagsMap.getOrDefault(club.getId(), List.of())))
-            .toList();
-
+    public static ClubsResponse of(Page<ClubSummaryInfo> page) {
         return new ClubsResponse(
-            clubPage.getTotalElements(),
-            clubPage.getNumberOfElements(),
-            clubPage.getTotalPages(),
-            clubPage.getNumber() + 1,
-            clubs
+            page.getTotalElements(),
+            page.getNumberOfElements(),
+            page.getTotalPages(),
+            page.getNumber() + 1,
+            page.stream()
+                .map(InnerClubResponse::from)
+                .toList()
         );
     }
 }

@@ -19,6 +19,7 @@ public interface ClubApi {
     ResponseEntity<ClubsResponse> getClubs(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
-        @RequestParam(name = "query", defaultValue = "", required = false) String query
+        @RequestParam(name = "query", defaultValue = "", required = false) String query,
+        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting
     );
 }

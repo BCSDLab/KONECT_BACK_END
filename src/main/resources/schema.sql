@@ -39,3 +39,18 @@ CREATE TABLE club_tag_map
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES club_tag (id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE club_recruitment
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    club_id    INT                                 NOT NULL,
+    start_date DATE                                NOT NULL,
+    end_date   DATE                                NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    UNIQUE (club_id),
+
+    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE
+)
