@@ -26,7 +26,7 @@ public record CouncilNoticesResponse(
     Integer currentPage,
 
     @Schema(description = "총동아리연합회 공지사항 리스트", requiredMode = REQUIRED)
-    List<InnerCouncilNoticeResponse> notices
+    List<InnerCouncilNoticeResponse> councilNotices
 ) {
     public record InnerCouncilNoticeResponse(
         @Schema(description = "총동아리연합회 공지사항 고유 id", example = "1", requiredMode = REQUIRED)
