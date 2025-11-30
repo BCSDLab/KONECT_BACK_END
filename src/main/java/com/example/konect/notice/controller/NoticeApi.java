@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "(Normal) Notice: 공지사항", description = "공지사항 API")
 public interface NoticeApi {
 
-    @Operation(summary = "페이지 네이션으로 공지사항을 조회한다.")
+    @Operation(summary = "페이지네이션으로 공지사항을 조회한다.")
     @GetMapping("/councils/notices")
     ResponseEntity<CouncilNoticesResponse> getNotices(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
