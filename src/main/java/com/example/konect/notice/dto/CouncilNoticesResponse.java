@@ -42,7 +42,10 @@ public record CouncilNoticesResponse(
     ) {
         public static InnerCouncilNoticeResponse from(CouncilNotice councilNotice) {
             return new InnerCouncilNoticeResponse(
-                councilNotice.getId(), councilNotice.getTitle(), councilNotice.getCreatedAt().toLocalDate());
+                councilNotice.getId(),
+                councilNotice.getTitle(),
+                councilNotice.getCreatedAt().toLocalDate()
+            );
         }
     }
 
