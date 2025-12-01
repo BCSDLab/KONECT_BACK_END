@@ -32,7 +32,9 @@ public interface ClubApi {
         @PathVariable(name = "clubId") Integer clubId
     );
 
-    @Operation(summary = "가입한 동아리 리스트를 조회한다.")
+    @Operation(summary = "가입한 동아리 리스트를 조회한다.", description = """
+        - positionGroup의 값은 PRESIDENT(회장), MANAGER(운영진), MEMBER(일반회원)으로 내려옵니다.
+        """)
     @GetMapping("/joined")
     ResponseEntity<JoinedClubsResponse> getJoinedClubs();
 }
