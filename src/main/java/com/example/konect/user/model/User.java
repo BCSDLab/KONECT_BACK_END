@@ -37,16 +37,16 @@ public class User extends BaseEntity {
     @Column(name = "phone_number", length = 20, nullable = false, unique = true)
     private String phoneNumber;
 
-    @Column(name = "student_id", length = 20, nullable = false, unique = true)
-    private String studentId;
+    @Column(name = "student_number", length = 20, nullable = false, unique = true)
+    private String studentNumber;
 
     @Builder
-    private User(Integer id, String email, String password, String name, String phoneNumber, String studentId) {
+    private User(Integer id, String email, String password, String name, String phoneNumber, String studentNumber) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.name = name;
         this.phoneNumber = phoneNumber;
-        this.studentId = studentId;
+        this.studentNumber = studentNumber;
     }
 }

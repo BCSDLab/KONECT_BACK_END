@@ -5,7 +5,7 @@ CREATE TABLE users
     password            VARCHAR(255)                        NOT NULL,
     name                VARCHAR(50)                         NOT NULL,
     phone_number        VARCHAR(20)                         NOT NULL UNIQUE,
-    student_id          VARCHAR(20)                         NOT NULL UNIQUE,
+    student_number      VARCHAR(20)                         NOT NULL UNIQUE,
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );
