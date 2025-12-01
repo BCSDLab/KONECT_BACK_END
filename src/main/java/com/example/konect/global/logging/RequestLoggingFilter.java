@@ -11,6 +11,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.PathMatcher;
 import org.springframework.util.StopWatch;
 import org.springframework.web.cors.CorsUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
@@ -27,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RequestLoggingFilter implements Filter {
+public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final String REQUEST_ID = "requestId";
     private static final String REQUEST_ID_HEADER = "X-Request-ID";
@@ -35,17 +36,18 @@ public class RequestLoggingFilter implements Filter {
     private final ObjectProvider<PathMatcher> pathMatcherProvider;
     private final LoggingProperties properties;
 
+
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-        throws ServletException, IOException {
-        HttpServletRequest httpRequest = (HttpServletRequest)request;
+    public void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+        FilterChain chain) throws ServletException, IOException {
+        HttpServletRequest httpRequest = request;
         if (isIgnoredLoggingRequest(httpRequest)) {
             chain.doFilter(request, response);
             return;
         }
 
-        var cachedRequest = new ContentCachingRequestWrapper((HttpServletRequest)request);
-        var cachedResponse = new ContentCachingResponseWrapper((HttpServletResponse)response);
+        var cachedRequest = new ContentCachingRequestWrapper(request);
+        var cachedResponse = new ContentCachingResponseWrapper(response);
         StopWatch stopWatch = new StopWatch();
         String requestId = getRequestId(httpRequest);
         String method = httpRequest.getMethod();
