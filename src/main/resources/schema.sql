@@ -1,4 +1,4 @@
-CREATE TABLE user
+CREATE TABLE users
 (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     email               VARCHAR(100)                        NOT NULL UNIQUE,
@@ -75,7 +75,7 @@ CREATE TABLE club_member
     PRIMARY KEY (club_id, user_id),
 
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE club_executive
@@ -88,7 +88,7 @@ CREATE TABLE club_executive
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE council_notice
