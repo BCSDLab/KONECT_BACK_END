@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.konect.club.dto.ClubDetailResponse;
 import com.example.konect.club.dto.ClubsResponse;
+import com.example.konect.club.dto.JoinedClubsResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,4 +31,8 @@ public interface ClubApi {
     ResponseEntity<ClubDetailResponse> getClubDetail(
         @PathVariable(name = "clubId") Integer clubId
     );
+
+    @Operation(summary = "가입한 동아리 리스트를 조회한다.")
+    @GetMapping("/joined")
+    ResponseEntity<JoinedClubsResponse> getJoinedClubs();
 }
