@@ -40,7 +40,7 @@ public class ClubService {
         Club club = clubRepository.getById(clubId);
         Long memberCount = clubMemberRepository.countByClubId(clubId);
         ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
-        ClubExecutive representative = clubExecutiveRepository.getByClubId(clubId);
+        ClubExecutive representative = clubExecutiveRepository.getByClubIdAndIsRepresentative(clubId, true);
 
         return ClubDetailResponse.from(club, memberCount, recruitment, representative);
     }
