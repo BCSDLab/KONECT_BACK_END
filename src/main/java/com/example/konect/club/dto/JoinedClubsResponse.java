@@ -4,6 +4,8 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
 
+import com.example.konect.club.enums.PositionGroup;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record JoinedClubsResponse(
@@ -26,8 +28,8 @@ public record JoinedClubsResponse(
         @Schema(description = "직책", example = "회장", requiredMode = REQUIRED)
         String position,
 
-        @Schema(description = "운영진 여부", example = "true", requiredMode = REQUIRED)
-        Boolean isAdmin,
+        @Schema(description = "직책 그룹", example = "true", requiredMode = REQUIRED)
+        PositionGroup positionGroup,
 
         @Schema(description = "미납 회비 여부", example = "true", requiredMode = REQUIRED)
         Boolean isUnpaidFee

@@ -1,0 +1,17 @@
+package com.example.konect.club.enums;
+
+import lombok.Getter;
+
+@Getter
+public enum PositionGroup {
+    RESIDENT("회장"),
+    MANAGER("운영진"),
+    MEMBER("일반회원"),
+    ;
+
+    private final String description;
+
+    PositionGroup(String description) {
+        this.description = description;
+    }
+}
