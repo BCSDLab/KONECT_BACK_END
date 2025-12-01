@@ -71,6 +71,8 @@ CREATE TABLE club_member
 (
     club_id    INT                                 NOT NULL,
     user_id    INT                                 NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     PRIMARY KEY (club_id, user_id),
 
@@ -80,13 +82,13 @@ CREATE TABLE club_member
 
 CREATE TABLE club_executive
 (
-    id                INT AUTO_INCREMENT PRIMARY KEY,
     club_id           INT                                 NOT NULL,
     user_id           INT                                 NOT NULL,
     is_representative BOOLEAN DEFAULT FALSE               NOT NULL,
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
+    PRIMARY KEY (club_id, user_id),
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -95,7 +97,6 @@ CREATE TABLE council_notice
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     title      VARCHAR(255)                        NOT NULL,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );
