@@ -187,6 +187,7 @@ VALUES (1, 1),
 -- 동아리 임원진
 INSERT INTO club_executive (club_id, user_id, is_representative)
 VALUES (1, 1, TRUE),
+       (1, 2, TRUE),
        (1, 3, FALSE),
        (2, 2, TRUE),
        (2, 4, FALSE),
