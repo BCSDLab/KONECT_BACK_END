@@ -1,7 +1,10 @@
 package com.example.konect.global.exception;
 
 import java.time.DateTimeException;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -22,6 +25,8 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.WebUtils;
 
 import com.example.konect.global.code.ApiResponseCode;
 
@@ -31,6 +36,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<Object> handleCustomException(
+        HttpServletRequest request,
+        CustomException e
+    ) {
+        return buildErrorResponse(request, e.getErrorCode(), e.getFullMessage());
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException() {
@@ -163,6 +176,73 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         return ResponseEntity.status(errorCode.getHttpStatus().value()).body(response);
+    }
+
+    private ResponseEntity<Object> buildErrorResponse(
+        HttpServletRequest request,
+        ApiResponseCode errorCode,
+        String errorMessage
+    ) {
+        String errorTraceId = UUID.randomUUID().toString();
+        requestLogging(request, errorCode.getHttpStatus().value(), errorMessage, errorTraceId);
+
+        ErrorResponse response = new ErrorResponse(
+            errorCode.getCode(),
+            errorCode.getMessage(),
+            errorTraceId
+        );
+
+        return ResponseEntity.status(errorCode.getHttpStatus().value()).body(response);
+    }
+
+    private void requestLogging(
+        HttpServletRequest request,
+        int httpStatus,
+        String errorMessage,
+        String errorTraceId
+    ) {
+        log.warn("[{}] {} | errorTraceId={}", httpStatus, errorMessage, errorTraceId);
+        log.debug("Request: {} {}", request.getMethod(), request.getRequestURI());
+        log.debug("Headers: {}", getHeaders(request));
+        log.debug("Query String: {}", getQueryString(request));
+        log.debug("Body: {}", getRequestBody(request));
+    }
+
+    private Map<String, Object> getHeaders(HttpServletRequest request) {
+        Map<String, Object> headerMap = new HashMap<>();
+        Enumeration<String> headerArray = request.getHeaderNames();
+        while (headerArray.hasMoreElements()) {
+            String headerName = headerArray.nextElement();
+            headerMap.put(headerName, request.getHeader(headerName));
+        }
+        return headerMap;
+    }
+
+    private String getQueryString(HttpServletRequest httpRequest) {
+        String queryString = httpRequest.getQueryString();
+        if (queryString == null) {
+            return " - ";
+        }
+        return queryString;
+    }
+
+    private String getRequestBody(HttpServletRequest request) {
+        var wrapper = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
+        if (wrapper == null) {
+            return " - ";
+        }
+        try {
+            // body 가 읽히지 않고 예외처리 되는 경우에 캐시하기 위함
+            wrapper.getInputStream().readAllBytes();
+            byte[] buf = wrapper.getContentAsByteArray();
+            if (buf.length == 0) {
+                return " - ";
+            }
+            return new String(buf, wrapper.getCharacterEncoding());
+        } catch (Exception e
+        ) {
+            return " - ";
+        }
     }
 
     private String getFirstFieldErrorMessage(List<ErrorResponse.FieldError> fields, String defaultMessage) {
