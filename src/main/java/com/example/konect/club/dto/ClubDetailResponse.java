@@ -73,6 +73,10 @@ public record ClubDetailResponse(
     ) {
 
         public static InnerRecruitment from(ClubRecruitment clubRecruitment) {
+            if (clubRecruitment == null) {
+                return null;
+            }
+
             return new InnerRecruitment(clubRecruitment.getStartDate(), clubRecruitment.getEndDate());
         }
     }
