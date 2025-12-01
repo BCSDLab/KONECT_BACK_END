@@ -42,6 +42,6 @@ public class ClubService {
         ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
         ClubExecutive representative = clubExecutiveRepository.getByClubIdAndIsRepresentative(clubId, true);
 
-        return ClubDetailResponse.from(club, memberCount, recruitment, representative);
+        return ClubDetailResponse.of(club, memberCount, recruitment, representative);
     }
 }

@@ -50,20 +50,6 @@ public record ClubDetailResponse(
     InnerRepresentative representative
 ) {
 
-    public static ClubDetailResponse from(Club club, Long memberCount, ClubRecruitment clubRecruitment, ClubExecutive clubExecutive) {
-        return new ClubDetailResponse(
-            club.getId(),
-            club.getName(),
-            club.getDescription(),
-            club.getIntroduce(),
-            club.getImageUrl(),
-            club.getClubCategory().getName(),
-            memberCount,
-            InnerRecruitment.from(clubRecruitment),
-            InnerRepresentative.from(clubExecutive)
-        );
-    }
-
     public record InnerRecruitment(
         @Schema(description = "동아리 모집 시작일", example = "2025-11-30", requiredMode = REQUIRED)
         LocalDate startDate,
@@ -97,5 +83,19 @@ public record ClubDetailResponse(
 
             return new InnerRepresentative(user.getName(), user.getPhoneNumber(), user.getEmail());
         }
+    }
+
+    public static ClubDetailResponse of(Club club, Long memberCount, ClubRecruitment clubRecruitment, ClubExecutive clubExecutive) {
+        return new ClubDetailResponse(
+            club.getId(),
+            club.getName(),
+            club.getDescription(),
+            club.getIntroduce(),
+            club.getImageUrl(),
+            club.getClubCategory().getName(),
+            memberCount,
+            InnerRecruitment.from(clubRecruitment),
+            InnerRepresentative.from(clubExecutive)
+        );
     }
 }
