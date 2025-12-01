@@ -22,6 +22,7 @@ public enum ApiResponseCode {
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),
+    NOT_FOUND_CLUB(HttpStatus.NOT_FOUND, "동아리를 찾을 수 업습니다."),
 
     // 409 CONFLICT (중복 혹은 충돌)
     OPTIMISTIC_LOCKING_FAILURE(HttpStatus.CONFLICT, "이미 처리된 요청입니다."),

@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.springframework.data.repository.Repository;
 
 import com.example.konect.club.model.Club;
+import com.example.konect.global.code.ApiResponseCode;
+import com.example.konect.global.exception.CustomException;
 
 public interface ClubRepository extends Repository<Club, Integer> {
 
@@ -12,6 +14,6 @@ public interface ClubRepository extends Repository<Club, Integer> {
 
     default Club getById(Integer id) {
         return findById(id).orElseThrow(() ->
-            new RuntimeException("동아리를 찾을 수 없습니다."));
+            CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
     }
 }
