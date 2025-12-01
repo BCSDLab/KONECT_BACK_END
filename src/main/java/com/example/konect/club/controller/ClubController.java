@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.konect.club.dto.ClubDetailResponse;
 import com.example.konect.club.dto.ClubsResponse;
+import com.example.konect.club.dto.JoinedClubsResponse;
 import com.example.konect.club.service.ClubService;
 
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,12 @@ public class ClubController implements ClubApi {
         @PathVariable(name = "clubId") Integer clubId
     ) {
         ClubDetailResponse response = clubService.getClubDetail(clubId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/joined")
+    public ResponseEntity<JoinedClubsResponse> getJoinedClubs() {
+        JoinedClubsResponse response = clubService.getJoinedClubs();
         return ResponseEntity.ok(response);
     }
 }
