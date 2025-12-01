@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum PositionGroup {
-    RESIDENT("회장"),
+    PRESIDENT("회장"),
     MANAGER("운영진"),
     MEMBER("일반회원"),
     ;

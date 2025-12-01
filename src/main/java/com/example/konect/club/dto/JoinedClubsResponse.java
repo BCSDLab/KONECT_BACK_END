@@ -28,7 +28,7 @@ public record JoinedClubsResponse(
         @Schema(description = "직책", example = "회장", requiredMode = REQUIRED)
         String position,
 
-        @Schema(description = "직책 그룹", example = "true", requiredMode = REQUIRED)
+        @Schema(description = "직책 그룹", example = "PRESIDENT", requiredMode = REQUIRED)
         PositionGroup positionGroup,
 
         @Schema(description = "미납 회비 여부", example = "true", requiredMode = REQUIRED)
