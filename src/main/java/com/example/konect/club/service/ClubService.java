@@ -1,5 +1,7 @@
 package com.example.konect.club.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -40,8 +42,8 @@ public class ClubService {
         Club club = clubRepository.getById(clubId);
         Long memberCount = clubMemberRepository.countByClubId(clubId);
         ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
-        ClubExecutive representative = clubExecutiveRepository.getByClubIdAndIsRepresentative(clubId, true);
+        List<ClubExecutive> representatives = clubExecutiveRepository.findByClubIdAndIsRepresentative(clubId, true);
 
-        return ClubDetailResponse.of(club, memberCount, recruitment, representative);
+        return ClubDetailResponse.of(club, memberCount, recruitment, representatives);
     }
 }

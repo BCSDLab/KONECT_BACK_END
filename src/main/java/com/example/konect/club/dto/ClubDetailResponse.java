@@ -4,6 +4,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIR
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.example.konect.club.enums.RecruitmentStatus;
 import com.example.konect.club.model.Club;
@@ -49,7 +50,7 @@ public record ClubDetailResponse(
     InnerRecruitment recruitment,
 
     @Schema(description = "동아리 대표 임원진", requiredMode = REQUIRED)
-    InnerRepresentative representative
+    List<InnerRepresentative> representatives
 ) {
 
     public record InnerRecruitment(
@@ -91,7 +92,7 @@ public record ClubDetailResponse(
         }
     }
 
-    public static ClubDetailResponse of(Club club, Long memberCount, ClubRecruitment clubRecruitment, ClubExecutive clubExecutive) {
+    public static ClubDetailResponse of(Club club, Long memberCount, ClubRecruitment clubRecruitment, List<ClubExecutive> clubExecutives) {
         return new ClubDetailResponse(
             club.getId(),
             club.getName(),
@@ -101,7 +102,9 @@ public record ClubDetailResponse(
             club.getClubCategory().getName(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
-            InnerRepresentative.from(clubExecutive)
+            clubExecutives.stream()
+                .map(InnerRepresentative::from)
+                .toList()
         );
     }
 }
