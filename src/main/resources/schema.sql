@@ -104,6 +104,22 @@ CREATE TABLE club_position_group
     UNIQUE (name)
 );
 
+CREATE TABLE club_position
+(
+    id                     INT AUTO_INCREMENT,
+    club_id                INT                                 NOT NULL,
+    club_position_group_id INT                                 NOT NULL,
+    name                   VARCHAR(255)                        NOT NULL,
+
+    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (id),
+
+    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
+    FOREIGN KEY (club_position_group_id) REFERENCES club_position_group (id)
+);
+
 CREATE TABLE council_notice
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
