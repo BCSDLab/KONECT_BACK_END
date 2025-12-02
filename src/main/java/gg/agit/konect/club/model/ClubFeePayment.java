@@ -57,4 +57,8 @@ public class ClubFeePayment extends BaseEntity {
         this.status = status;
         this.clubMember = clubMember;
     }
+
+    public boolean isUnPaid() {
+        return status == FeePaymentStatus.UNPAID;
+    }
 }

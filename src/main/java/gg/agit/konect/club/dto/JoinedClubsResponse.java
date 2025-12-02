@@ -3,6 +3,7 @@ package gg.agit.konect.club.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
+import java.util.Map;
 
 import gg.agit.konect.club.enums.PositionGroup;
 import gg.agit.konect.club.model.ClubMember;
@@ -34,7 +35,7 @@ public record JoinedClubsResponse(
         @Schema(description = "미납 회비 여부", example = "true", requiredMode = REQUIRED)
         Boolean isUnpaidFee
     ) {
-        public static InnerJoinedClubResponse from(ClubMember clubMember) {
+        public static InnerJoinedClubResponse of(ClubMember clubMember, Boolean isUnpaidFee) {
             return new InnerJoinedClubResponse(
                 clubMember.getClub().getId(),
                 clubMember.getClub().getName(),
@@ -42,14 +43,16 @@ public record JoinedClubsResponse(
                 clubMember.getClub().getClubCategory().getName(),
                 clubMember.getClubPosition().getName(),
                 clubMember.getClubPosition().getClubPositionGroup().getName(),
-                true
+                isUnpaidFee
             );
         }
     }
 
-    public static JoinedClubsResponse from(List<ClubMember> clubMembers) {
+    public static JoinedClubsResponse of(List<ClubMember> clubMembers, Map<Integer, Boolean> clubFeePaymentMap) {
         return new JoinedClubsResponse(clubMembers.stream()
-            .map(InnerJoinedClubResponse::from)
+            .map(clubMember -> InnerJoinedClubResponse.of(clubMember,
+                clubFeePaymentMap.get(clubMember.getClub().getId())
+            ))
             .toList());
     }
 }
