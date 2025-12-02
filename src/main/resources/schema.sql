@@ -93,6 +93,17 @@ CREATE TABLE club_representative
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+CREATE TABLE club_position_group
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(255)                        NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (id),
+    UNIQUE (name)
+);
+
 CREATE TABLE council_notice
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
