@@ -40,6 +40,7 @@ public class ClubController implements ClubApi {
         return ResponseEntity.ok(response);
     }
 
+    // TODO. 인증 개발이 진행되면 파라미터 수정해야 함
     @GetMapping("/joined")
     public ResponseEntity<JoinedClubsResponse> getJoinedClubs() {
         JoinedClubsResponse response = clubService.getJoinedClubs();
