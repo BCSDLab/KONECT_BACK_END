@@ -71,6 +71,7 @@ CREATE TABLE club_member
 (
     club_id    INT                                 NOT NULL,
     user_id    INT                                 NOT NULL,
+    is_admin   BOOLEAN   DEFAULT FALSE             NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
@@ -80,11 +81,10 @@ CREATE TABLE club_member
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE club_executive
+CREATE TABLE club_representative
 (
     club_id           INT                                 NOT NULL,
     user_id           INT                                 NOT NULL,
-    is_representative BOOLEAN DEFAULT FALSE               NOT NULL,
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
