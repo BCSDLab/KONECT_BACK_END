@@ -211,3 +211,8 @@ INSERT INTO council_notice (title)
 VALUES ('2025학년도 2학기 동아리 지원금 신청 안내'),
        ('동아리 박람회 참가 신청 마감 안내'),
        ('개화 신입국원 추가 모집 안내');
+
+INSERT INTO club_position_group (name)
+VALUES ('회장'),
+       ('운영진'),
+       ('일반회원');
