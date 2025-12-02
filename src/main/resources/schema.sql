@@ -115,7 +115,7 @@ CREATE TABLE club_position
     updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     PRIMARY KEY (id),
-    UNIQUE(club_id, club_position_group_id, name)
+    UNIQUE (club_id, club_position_group_id, name),
 
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
     FOREIGN KEY (club_position_group_id) REFERENCES club_position_group (id)
