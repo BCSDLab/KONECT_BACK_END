@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.club.dto.ClubDetailResponse;
 import gg.agit.konect.club.dto.ClubsResponse;
+import gg.agit.konect.club.dto.JoinedClubsResponse;
 import gg.agit.konect.club.model.Club;
 import gg.agit.konect.club.model.ClubMember;
 import gg.agit.konect.club.model.ClubRecruitment;
@@ -65,4 +66,8 @@ public class ClubService {
             .toList();
     }
 
+    public JoinedClubsResponse getJoinedClubs() {
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(1);
+        return JoinedClubsResponse.from(clubMembers);
+    }
 }

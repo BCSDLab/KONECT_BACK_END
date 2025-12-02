@@ -1,7 +1,9 @@
 package gg.agit.konect.club.repository;
 
+import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 import gg.agit.konect.club.model.ClubMember;
@@ -19,4 +21,14 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     }
 
     long countByClubId(Integer clubId);
+
+    @Query("""
+    SELECT cm FROM ClubMember cm
+    JOIN FETCH cm.club c
+    JOIN FETCH c.clubCategory
+    JOIN FETCH cm.clubPosition cp
+    JOIN FETCH cp.clubPositionGroup
+    WHERE cm.id.userId = :userId
+    """)
+    List<ClubMember> findAllByUserId(Integer userId);
 }

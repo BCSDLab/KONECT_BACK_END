@@ -5,6 +5,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import java.util.List;
 
 import gg.agit.konect.club.enums.PositionGroup;
+import gg.agit.konect.club.model.ClubMember;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record JoinedClubsResponse(
@@ -33,6 +34,22 @@ public record JoinedClubsResponse(
         @Schema(description = "미납 회비 여부", example = "true", requiredMode = REQUIRED)
         Boolean isUnpaidFee
     ) {
+        public static InnerJoinedClubResponse from(ClubMember clubMember) {
+            return new InnerJoinedClubResponse(
+                clubMember.getClub().getId(),
+                clubMember.getClub().getName(),
+                clubMember.getClub().getImageUrl(),
+                clubMember.getClub().getClubCategory().getName(),
+                clubMember.getClubPosition().getName(),
+                clubMember.getClubPosition().getClubPositionGroup().getName(),
+                true
+            );
+        }
+    }
 
+    public static JoinedClubsResponse from(List<ClubMember> clubMembers) {
+        return new JoinedClubsResponse(clubMembers.stream()
+            .map(InnerJoinedClubResponse::from)
+            .toList());
     }
 }
