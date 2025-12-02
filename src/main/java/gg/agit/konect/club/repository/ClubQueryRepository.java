@@ -1,10 +1,10 @@
 package gg.agit.konect.club.repository;
 
-import static com.example.konect.club.model.QClub.club;
-import static com.example.konect.club.model.QClubCategory.clubCategory;
-import static com.example.konect.club.model.QClubRecruitment.clubRecruitment;
-import static com.example.konect.club.model.QClubTag.clubTag;
-import static com.example.konect.club.model.QClubTagMap.clubTagMap;
+import static gg.agit.konect.club.model.QClub.club;
+import static gg.agit.konect.club.model.QClubCategory.clubCategory;
+import static gg.agit.konect.club.model.QClubRecruitment.clubRecruitment;
+import static gg.agit.konect.club.model.QClubTag.clubTag;
+import static gg.agit.konect.club.model.QClubTagMap.clubTagMap;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,12 +16,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import gg.agit.konect.club.model.Club;
-import gg.agit.konect.club.model.ClubSummaryInfo;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
+import gg.agit.konect.club.model.Club;
+import gg.agit.konect.club.model.ClubSummaryInfo;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 
