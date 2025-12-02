@@ -142,9 +142,9 @@ VALUES (1, 1),
 
 -- 동아리 직책 그룹
 INSERT INTO club_position_group (name)
-VALUES ('회장'),
-       ('운영진'),
-       ('일반회원');
+VALUES ('PRESIDENT'),
+       ('MANAGER'),
+       ('MEMBER');
 
 -- 동아리 직책
 INSERT INTO club_position (club_id, club_position_group_id, name)
