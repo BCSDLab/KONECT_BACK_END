@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import gg.agit.konect.club.dto.ClubDetailResponse;
 import gg.agit.konect.club.dto.ClubsResponse;
 
+import gg.agit.konect.club.dto.JoinedClubsResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -33,4 +34,10 @@ public interface ClubApi {
     ResponseEntity<ClubDetailResponse> getClubDetail(
         @PathVariable(name = "clubId") Integer clubId
     );
+
+    @Operation(summary = "가입한 동아리 리스트를 조회한다.", description = """
+        - positionGroup의 값은 PRESIDENT(회장), MANAGER(운영진), MEMBER(일반회원)으로 내려옵니다.
+        """)
+    @GetMapping("/joined")
+    ResponseEntity<JoinedClubsResponse> getJoinedClubs();
 }
