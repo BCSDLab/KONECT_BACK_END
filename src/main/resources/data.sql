@@ -267,9 +267,9 @@ INSERT INTO club_fee_payment (club_id, user_id, date, status)
 VALUES (1, 1, '2025-10-01', 'PAID'),
        (1, 1, '2025-11-01', 'EXEMPT'),
        (1, 1, '2025-12-01', 'PAID'),
-       (1, 3, '2025-10-01', 'PAID'),
-       (1, 3, '2025-11-01', 'EXEMPT'),
-       (1, 3, '2025-12-01', 'UNPAID');
+       (3, 1, '2025-10-01', 'PAID'),
+       (3, 1, '2025-11-01', 'EXEMPT'),
+       (3, 1, '2025-12-01', 'UNPAID');
 
 INSERT INTO council_notice (title)
 VALUES ('2025학년도 2학기 동아리 지원금 신청 안내'),
