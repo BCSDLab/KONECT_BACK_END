@@ -6,7 +6,6 @@ import static lombok.AccessLevel.PROTECTED;
 import com.example.konect.common.model.BaseEntity;
 import com.example.konect.user.model.User;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -19,9 +18,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "club_executive")
+@Table(name = "club_representative")
 @NoArgsConstructor(access = PROTECTED)
-public class ClubExecutive extends BaseEntity {
+public class ClubRepresentative extends BaseEntity {
 
     @EmbeddedId
     private ClubMemberId id;
@@ -36,14 +35,10 @@ public class ClubExecutive extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "is_representative", nullable = false)
-    private Boolean isRepresentative;
-
     @Builder
-    private ClubExecutive(Integer clubId, Integer userId, Club club, User user, Boolean isRepresentative) {
+    private ClubRepresentative(Integer clubId, Integer userId, Club club, User user) {
         this.id = new ClubMemberId(clubId, userId);
         this.club = club;
         this.user = user;
-        this.isRepresentative = isRepresentative;
     }
 }

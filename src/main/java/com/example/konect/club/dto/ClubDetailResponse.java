@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.example.konect.club.enums.RecruitmentStatus;
 import com.example.konect.club.model.Club;
-import com.example.konect.club.model.ClubExecutive;
+import com.example.konect.club.model.ClubRepresentative;
 import com.example.konect.club.model.ClubRecruitment;
 import com.example.konect.user.model.User;
 
@@ -85,14 +85,14 @@ public record ClubDetailResponse(
         String email
     ) {
 
-        public static InnerRepresentative from(ClubExecutive clubExecutive) {
-            User user = clubExecutive.getUser();
+        public static InnerRepresentative from(ClubRepresentative clubRepresentative) {
+            User user = clubRepresentative.getUser();
 
             return new InnerRepresentative(user.getName(), user.getPhoneNumber(), user.getEmail());
         }
     }
 
-    public static ClubDetailResponse of(Club club, Long memberCount, ClubRecruitment clubRecruitment, List<ClubExecutive> clubExecutives) {
+    public static ClubDetailResponse of(Club club, Long memberCount, ClubRecruitment clubRecruitment, List<ClubRepresentative> clubRepresentatives) {
         return new ClubDetailResponse(
             club.getId(),
             club.getName(),
@@ -102,7 +102,7 @@ public record ClubDetailResponse(
             club.getClubCategory().getName(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
-            clubExecutives.stream()
+            clubRepresentatives.stream()
                 .map(InnerRepresentative::from)
                 .toList()
         );
