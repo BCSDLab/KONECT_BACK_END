@@ -123,6 +123,21 @@ CREATE TABLE club_representative
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+CREATE TABLE club_fee_payment
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    club_id    INT                                 NOT NULL,
+    user_id    INT                                 NOT NULL,
+    date       DATE                                NOT NULL,
+    status     VARCHAR(255)                        NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    UNIQUE (club_id, user_id, date),
+
+    FOREIGN KEY (club_id, user_id) REFERENCES club_member (club_id, user_id) ON DELETE CASCADE
+);
+
 CREATE TABLE council_notice
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
