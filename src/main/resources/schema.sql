@@ -69,16 +69,18 @@ CREATE TABLE club_recruitment
 
 CREATE TABLE club_member
 (
-    club_id    INT                                 NOT NULL,
-    user_id    INT                                 NOT NULL,
-    is_admin   BOOLEAN   DEFAULT FALSE             NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    club_id          INT                                 NOT NULL,
+    user_id          INT                                 NOT NULL,
+    club_position_id INT                                 NOT NULL,
+    is_admin         BOOLEAN   DEFAULT FALSE             NOT NULL,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     PRIMARY KEY (club_id, user_id),
 
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (club_position_id) REFERENCES club_position (id)
 );
 
 CREATE TABLE club_representative

@@ -1,12 +1,11 @@
 package gg.agit.konect.club.model;
 
 import static jakarta.persistence.FetchType.LAZY;
-import static java.lang.Boolean.*;
+import static java.lang.Boolean.FALSE;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
 import gg.agit.konect.user.model.User;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -40,11 +39,16 @@ public class ClubMember extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User user;
 
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "club_position_id", nullable = false)
+    private ClubPosition clubPosition;
+
     @Builder
-    private ClubMember(Boolean isAdmin, Club club, User user) {
+    private ClubMember(Boolean isAdmin, Club club, User user, ClubPosition clubPosition) {
         this.id = new ClubMemberId(club.getId(), user.getId());
         this.isAdmin = isAdmin;
         this.club = club;
         this.user = user;
+        this.clubPosition = clubPosition;
     }
 }
