@@ -53,6 +53,34 @@ CREATE TABLE club_tag_map
     FOREIGN KEY (tag_id) REFERENCES club_tag (id) ON DELETE CASCADE
 );
 
+CREATE TABLE club_position_group
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(255)                        NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (id),
+    UNIQUE (name)
+);
+
+CREATE TABLE club_position
+(
+    id                     INT AUTO_INCREMENT,
+    club_id                INT                                 NOT NULL,
+    club_position_group_id INT                                 NOT NULL,
+    name                   VARCHAR(255)                        NOT NULL,
+
+    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (id),
+    UNIQUE (club_id, club_position_group_id, name),
+
+    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
+    FOREIGN KEY (club_position_group_id) REFERENCES club_position_group (id)
+);
+
 CREATE TABLE club_recruitment
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -93,34 +121,6 @@ CREATE TABLE club_representative
     PRIMARY KEY (club_id, user_id),
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
-CREATE TABLE club_position_group
-(
-    id         INT AUTO_INCREMENT PRIMARY KEY,
-    name       VARCHAR(255)                        NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
-    PRIMARY KEY (id),
-    UNIQUE (name)
-);
-
-CREATE TABLE club_position
-(
-    id                     INT AUTO_INCREMENT,
-    club_id                INT                                 NOT NULL,
-    club_position_group_id INT                                 NOT NULL,
-    name                   VARCHAR(255)                        NOT NULL,
-
-    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
-    PRIMARY KEY (id),
-    UNIQUE (club_id, club_position_group_id, name),
-
-    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
-    FOREIGN KEY (club_position_group_id) REFERENCES club_position_group (id)
 );
 
 CREATE TABLE council_notice
