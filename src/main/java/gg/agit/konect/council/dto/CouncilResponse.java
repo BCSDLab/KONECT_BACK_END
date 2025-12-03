@@ -3,6 +3,7 @@ package gg.agit.konect.council.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public record CouncilResponse(
 ) {
     public record InnerOperatingHour(
         @Schema(description = "요일", example = "MONDAY", requiredMode = REQUIRED)
-        String dayOfWeek,
+        DayOfWeek dayOfWeek,
 
         @Schema(description = "시작 시간", example = "09:00", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "HH:mm")
@@ -55,7 +56,7 @@ public record CouncilResponse(
     ) {
         public static InnerOperatingHour from(CouncilOperatingHour operatingHour) {
             return new InnerOperatingHour(
-                operatingHour.getDayOfWeek(),
+                DayOfWeek.valueOf(operatingHour.getDayOfWeek()),
                 operatingHour.getOpenTime(),
                 operatingHour.getCloseTime(),
                 operatingHour.getIsClosed()
