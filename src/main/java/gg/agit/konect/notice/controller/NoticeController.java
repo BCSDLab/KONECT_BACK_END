@@ -1,6 +1,7 @@
 package gg.agit.konect.notice.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,5 +57,13 @@ public class NoticeController implements NoticeApi {
     ) {
         NoticeResponse response = noticeService.updateNotice(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/councils/notices/{id}")
+    public ResponseEntity<Void> deleteNotice(
+        @PathVariable Integer id
+    ) {
+        noticeService.deleteNotice(id);
+        return ResponseEntity.noContent().build();
     }
 }

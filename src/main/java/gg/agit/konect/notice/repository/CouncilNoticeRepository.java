@@ -23,4 +23,6 @@ public interface CouncilNoticeRepository extends Repository<CouncilNotice, Integ
     }
 
     void save(CouncilNotice councilNotice);
+
+    void deleteById(Integer id);
 }

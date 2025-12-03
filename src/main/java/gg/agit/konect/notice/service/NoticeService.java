@@ -52,4 +52,10 @@ public class NoticeService {
         
         return NoticeResponse.from(councilNotice);
     }
+
+    @Transactional
+    public void deleteNotice(Integer id) {
+        CouncilNotice councilNotice = councilNoticeRepository.getById(id);
+        councilNoticeRepository.deleteById(councilNotice.getId());
+    }
 }

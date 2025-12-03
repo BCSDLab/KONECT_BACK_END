@@ -1,6 +1,7 @@
 package gg.agit.konect.notice.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -67,5 +68,18 @@ public interface NoticeApi {
     ResponseEntity<NoticeResponse> updateNotice(
         @PathVariable Integer id,
         @Valid @RequestBody NoticeUpdateRequest request
+    );
+
+    @Operation(
+        summary = "총동아리연합회 공지사항을 삭제한다.",
+        description = """
+            총동아리연합회 공지사항을 삭제합니다.
+            
+            - `NOT_FOUND_COUNCIL_NOTICE` (404): 총동아리연합회 공지사항을 찾을 수 없습니다.
+            """
+    )
+    @DeleteMapping("/councils/notices/{id}")
+    ResponseEntity<Void> deleteNotice(
+        @PathVariable Integer id
     );
 }
