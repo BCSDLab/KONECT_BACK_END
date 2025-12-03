@@ -2,6 +2,7 @@ package gg.agit.konect.notice.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,6 +28,14 @@ public class NoticeController implements NoticeApi {
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit
     ) {
         CouncilNoticesResponse response = noticeService.getNotices(page, limit);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/councils/notices/{id}")
+    public ResponseEntity<NoticeResponse> getNotice(
+        @PathVariable Integer id
+    ) {
+        NoticeResponse response = noticeService.getNotice(id);
         return ResponseEntity.ok(response);
     }
 

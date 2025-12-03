@@ -30,6 +30,11 @@ public class NoticeService {
         return CouncilNoticesResponse.from(councilNoticePage);
     }
 
+    public NoticeResponse getNotice(Integer id) {
+        CouncilNotice councilNotice = councilNoticeRepository.getById(id);
+        return NoticeResponse.from(councilNotice);
+    }
+
     @Transactional
     public NoticeResponse createNotice(NoticeCreateRequest request) {
         Council council = councilRepository.getById(1);
