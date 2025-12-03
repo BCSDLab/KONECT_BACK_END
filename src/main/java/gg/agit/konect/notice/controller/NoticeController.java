@@ -2,12 +2,17 @@ package gg.agit.konect.notice.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.notice.dto.CouncilNoticesResponse;
+import gg.agit.konect.notice.dto.NoticeCreateRequest;
+import gg.agit.konect.notice.dto.NoticeResponse;
 import gg.agit.konect.notice.service.NoticeService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -22,6 +27,14 @@ public class NoticeController implements NoticeApi {
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit
     ) {
         CouncilNoticesResponse response = noticeService.getNotices(page, limit);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/councils/notices")
+    public ResponseEntity<NoticeResponse> createNotice(
+        @Valid @RequestBody NoticeCreateRequest request
+    ) {
+        NoticeResponse response = noticeService.createNotice(request);
         return ResponseEntity.ok(response);
     }
 }
