@@ -26,7 +26,7 @@ public record CouncilCreateRequest(
     String name,
 
     @NotEmpty(message = "총동아리연합회 설명은 필수 입력입니다.")
-    @Schema(description = "총동아리연합회 설명", example = "홍총아리연합회는 ...", requiredMode = REQUIRED)
+    @Schema(description = "총동아리연합회 설명", example = "총동아리연합회는 ...", requiredMode = REQUIRED)
     String introduce,
 
     @NotEmpty(message = "총동아리연합회 위치는 필수 입력입니다.")
