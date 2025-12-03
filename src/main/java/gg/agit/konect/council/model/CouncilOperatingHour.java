@@ -1,6 +1,8 @@
 package gg.agit.konect.council.model;
 
-import static gg.agit.konect.global.code.ApiResponseCode.*;
+import static gg.agit.konect.global.code.ApiResponseCode.INVALID_OPERATING_HOURS_CLOSED;
+import static gg.agit.konect.global.code.ApiResponseCode.INVALID_OPERATING_HOURS_TIME;
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
@@ -12,6 +14,7 @@ import gg.agit.konect.common.model.BaseEntity;
 import gg.agit.konect.global.exception.CustomException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -38,6 +41,7 @@ public class CouncilOperatingHour extends BaseEntity {
     private Council council;
 
     @NotNull
+    @Enumerated(STRING)
     @Column(name = "day_of_week", length = 20, nullable = false)
     private DayOfWeek dayOfWeek;
 
