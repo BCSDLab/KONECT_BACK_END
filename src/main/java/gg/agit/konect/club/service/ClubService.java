@@ -1,6 +1,5 @@
 package gg.agit.konect.club.service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,12 +12,11 @@ import gg.agit.konect.club.dto.ClubDetailResponse;
 import gg.agit.konect.club.dto.ClubsResponse;
 import gg.agit.konect.club.dto.JoinedClubsResponse;
 import gg.agit.konect.club.model.Club;
-import gg.agit.konect.club.model.ClubFeePayment;
 import gg.agit.konect.club.model.ClubMember;
 import gg.agit.konect.club.model.ClubRecruitment;
 import gg.agit.konect.club.model.ClubRepresentative;
 import gg.agit.konect.club.model.ClubSummaryInfo;
-import gg.agit.konect.club.repository.ClubFeePaymentRepository;
+import gg.agit.konect.club.repository.ClubFeePaymentQueryRepository;
 import gg.agit.konect.club.repository.ClubMemberRepository;
 import gg.agit.konect.club.repository.ClubQueryRepository;
 import gg.agit.konect.club.repository.ClubRecruitmentRepository;
@@ -37,7 +35,7 @@ public class ClubService {
     private final ClubMemberRepository clubMemberRepository;
     private final ClubRecruitmentRepository clubRecruitmentRepository;
     private final ClubRepresentativeRepository clubRepresentativeRepository;
-    private final ClubFeePaymentRepository clubFeePaymentRepository;
+    private final ClubFeePaymentQueryRepository clubFeePaymentQueryRepository;
 
     public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting) {
         PageRequest pageable = PageRequest.of(page - 1, limit);
@@ -73,25 +71,15 @@ public class ClubService {
 
     public JoinedClubsResponse getJoinedClubs() {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(1);
-        List<ClubFeePayment> clubFeePayments = clubFeePaymentRepository.findAllByClubMemberIn(clubMembers);
-        Map<Integer, Boolean> clubFeePaymentMap = getUnpaidStatusMapByClubId(clubFeePayments);
-        fillMissingClubFeeStatuses(clubMembers, clubFeePaymentMap);
-        return JoinedClubsResponse.of(clubMembers, clubFeePaymentMap);
+        Map<Integer, Integer> unpaidFeeAmountMap = clubFeePaymentQueryRepository.findUnpaidFeeAmountByUserId(1);
+        fillMissingClubFeeAmounts(clubMembers, unpaidFeeAmountMap);
+        return JoinedClubsResponse.of(clubMembers, unpaidFeeAmountMap);
     }
 
-    private Map<Integer, Boolean> getUnpaidStatusMapByClubId(List<ClubFeePayment> clubFeePayments) {
-        Map<Integer, Boolean> clubFeePaymentMap = new HashMap<>();
-        for (ClubFeePayment clubFeePayment : clubFeePayments) {
-            Integer clubId = clubFeePayment.getClubMember().getId().getClubId();
-            clubFeePaymentMap.put(clubId, clubFeePayment.isUnPaid());
-        }
-        return clubFeePaymentMap;
-    }
-
-    private void fillMissingClubFeeStatuses(List<ClubMember> clubMembers, Map<Integer, Boolean> clubFeePaymentMap) {
+    private void fillMissingClubFeeAmounts(List<ClubMember> clubMembers, Map<Integer, Integer> unpaidFeeAmountMap) {
         for (ClubMember clubMember : clubMembers) {
             Integer clubId = clubMember.getClub().getId();
-            clubFeePaymentMap.putIfAbsent(clubId, false);
+            unpaidFeeAmountMap.putIfAbsent(clubId, 0);
         }
     }
 }

@@ -32,10 +32,10 @@ public record JoinedClubsResponse(
         @Schema(description = "직책 그룹", example = "PRESIDENT", requiredMode = REQUIRED)
         PositionGroup positionGroup,
 
-        @Schema(description = "미납 회비 여부", example = "true", requiredMode = REQUIRED)
-        Boolean isUnpaidFee
+        @Schema(description = "미납 회비 금액", example = "10000", requiredMode = REQUIRED)
+        Integer unpaidFeeAmount
     ) {
-        public static InnerJoinedClubResponse of(ClubMember clubMember, Boolean isUnpaidFee) {
+        public static InnerJoinedClubResponse of(ClubMember clubMember, Integer unpaidFeeAmount) {
             return new InnerJoinedClubResponse(
                 clubMember.getClub().getId(),
                 clubMember.getClub().getName(),
@@ -43,15 +43,15 @@ public record JoinedClubsResponse(
                 clubMember.getClub().getClubCategory().getName(),
                 clubMember.getClubPosition().getName(),
                 clubMember.getClubPosition().getClubPositionGroup().getName(),
-                isUnpaidFee
+                unpaidFeeAmount
             );
         }
     }
 
-    public static JoinedClubsResponse of(List<ClubMember> clubMembers, Map<Integer, Boolean> clubFeePaymentMap) {
+    public static JoinedClubsResponse of(List<ClubMember> clubMembers, Map<Integer, Integer> unpaidFeeAmountMap) {
         return new JoinedClubsResponse(clubMembers.stream()
             .map(clubMember -> InnerJoinedClubResponse.of(clubMember,
-                clubFeePaymentMap.get(clubMember.getClub().getId())
+                unpaidFeeAmountMap.get(clubMember.getClub().getId())
             ))
             .toList());
     }
