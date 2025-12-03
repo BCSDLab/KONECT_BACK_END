@@ -51,7 +51,7 @@ public interface NoticeApi {
             """
     )
     @PostMapping("/councils/notices")
-    ResponseEntity<NoticeResponse> createNotice(
+    ResponseEntity<Void> createNotice(
         @Valid @RequestBody NoticeCreateRequest request
     );
 
@@ -65,7 +65,7 @@ public interface NoticeApi {
             """
     )
     @PutMapping("/councils/notices/{id}")
-    ResponseEntity<NoticeResponse> updateNotice(
+    ResponseEntity<Void> updateNotice(
         @PathVariable Integer id,
         @Valid @RequestBody NoticeUpdateRequest request
     );

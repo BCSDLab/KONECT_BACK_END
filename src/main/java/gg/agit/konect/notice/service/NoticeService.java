@@ -37,20 +37,17 @@ public class NoticeService {
     }
 
     @Transactional
-    public NoticeResponse createNotice(NoticeCreateRequest request) {
+    public void createNotice(NoticeCreateRequest request) {
         Council council = councilRepository.getById(1);
         CouncilNotice councilNotice = request.toEntity(council);
 
         councilNoticeRepository.save(councilNotice);
-        return NoticeResponse.from(councilNotice);
     }
 
     @Transactional
-    public NoticeResponse updateNotice(Integer id, NoticeUpdateRequest request) {
+    public void updateNotice(Integer id, NoticeUpdateRequest request) {
         CouncilNotice councilNotice = councilNoticeRepository.getById(id);
         councilNotice.update(request.title(), request.content());
-        
-        return NoticeResponse.from(councilNotice);
     }
 
     @Transactional

@@ -43,20 +43,20 @@ public class NoticeController implements NoticeApi {
     }
 
     @PostMapping("/councils/notices")
-    public ResponseEntity<NoticeResponse> createNotice(
+    public ResponseEntity<Void> createNotice(
         @Valid @RequestBody NoticeCreateRequest request
     ) {
-        NoticeResponse response = noticeService.createNotice(request);
-        return ResponseEntity.ok(response);
+        noticeService.createNotice(request);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/councils/notices/{id}")
-    public ResponseEntity<NoticeResponse> updateNotice(
+    public ResponseEntity<Void> updateNotice(
         @PathVariable Integer id,
         @Valid @RequestBody NoticeUpdateRequest request
     ) {
-        NoticeResponse response = noticeService.updateNotice(id, request);
-        return ResponseEntity.ok(response);
+        noticeService.updateNotice(id, request);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/councils/notices/{id}")
