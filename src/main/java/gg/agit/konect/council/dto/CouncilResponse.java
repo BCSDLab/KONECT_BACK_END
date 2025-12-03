@@ -56,7 +56,7 @@ public record CouncilResponse(
     ) {
         public static InnerOperatingHour from(CouncilOperatingHour operatingHour) {
             return new InnerOperatingHour(
-                DayOfWeek.valueOf(operatingHour.getDayOfWeek()),
+                operatingHour.getDayOfWeek(),
                 operatingHour.getOpenTime(),
                 operatingHour.getCloseTime(),
                 operatingHour.getIsClosed()
