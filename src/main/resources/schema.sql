@@ -100,6 +100,7 @@ CREATE TABLE council
     introduce    TEXT                                NOT NULL,
     location     VARCHAR(255)                        NOT NULL,
     phone_number VARCHAR(255)                        NOT NULL,
+    email        VARCHAR(255)                        NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );
