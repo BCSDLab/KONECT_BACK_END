@@ -71,6 +71,17 @@ public class CouncilService {
         return CouncilResponse.of(council, operatingHours, socialMedias);
     }
 
+    @Transactional
+    public void deleteCouncil() {
+        Council council = councilRepository.getById(1);
+
+        councilOperatingHourRepository.deleteByCouncilId(council.getId());
+        councilSocialMediaRepository.deleteByCouncilId(council.getId());
+        entityManager.flush();
+
+        councilRepository.deleteById(council.getId());
+    }
+
     private void validateOperatingHours(List<CouncilUpdateRequest.InnerOperatingHour> operatingHours) {
         validateAllDaysPresent(operatingHours);
         operatingHours.forEach(this::validateOperatingHourTimes);

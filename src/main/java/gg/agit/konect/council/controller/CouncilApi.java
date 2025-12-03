@@ -1,6 +1,7 @@
 package gg.agit.konect.council.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,4 +37,15 @@ public interface CouncilApi {
     ResponseEntity<CouncilResponse> updateCouncil(
         @Valid @RequestBody CouncilUpdateRequest request
     );
+
+    @Operation(
+        summary = "총동아리연합회 정보를 삭제한다.",
+        description = """
+            총동아리연합회의 기본 정보와 운영 시간, 소셜 미디어 정보를 모두 삭제합니다.
+
+            - `NOT_FOUND_COUNCIL` (404): 총동아리연합회를 찾을 수 없습니다.
+            """
+    )
+    @DeleteMapping
+    ResponseEntity<Void> deleteCouncil();
 }

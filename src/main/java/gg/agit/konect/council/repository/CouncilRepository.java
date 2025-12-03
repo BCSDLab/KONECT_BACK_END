@@ -17,4 +17,6 @@ public interface CouncilRepository extends Repository<Council, Integer> {
         return findById(id).orElseThrow(() ->
             CustomException.of(NOT_FOUND_COUNCIL));
     }
+
+    void deleteById(Integer id);
 }

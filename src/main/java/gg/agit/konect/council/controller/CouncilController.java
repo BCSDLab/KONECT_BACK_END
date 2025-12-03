@@ -1,6 +1,7 @@
 package gg.agit.konect.council.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,5 +31,11 @@ public class CouncilController implements CouncilApi {
     public ResponseEntity<CouncilResponse> updateCouncil(@Valid @RequestBody CouncilUpdateRequest request) {
         CouncilResponse response = councilService.updateCouncil(request);
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Void> deleteCouncil() {
+        councilService.deleteCouncil();
+        return ResponseEntity.noContent().build();
     }
 }
