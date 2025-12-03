@@ -1,11 +1,10 @@
-package gg.agit.konect.notice.model;
+package gg.agit.konect.council.model;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
-import gg.agit.konect.council.model.Council;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -18,39 +17,34 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Entity
 @Getter
-@Table(name = "council_notice")
+@Entity
+@Table(name = "council_social_media")
 @NoArgsConstructor(access = PROTECTED)
-public class CouncilNotice extends BaseEntity {
+public class CouncilSocialMedia extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
-    @NotNull
-    @Column(name = "title", nullable = false)
-    private String title;
-
-    @NotNull
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
-    private String content;
-
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "council_id", nullable = false)
     private Council council;
 
-    @Builder
-    private CouncilNotice(Integer id, String title, String content, Council council) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-        this.council = council;
-    }
+    @NotNull
+    @Column(name = "platform_name", length = 50, nullable = false)
+    private String platformName;
 
-    public void update(String title, String content) {
-        this.title = title;
-        this.content = content;
+    @NotNull
+    @Column(name = "url", nullable = false)
+    private String url;
+
+    @Builder
+    private CouncilSocialMedia(Integer id, Council council, String platformName, String url) {
+        this.id = id;
+        this.council = council;
+        this.platformName = platformName;
+        this.url = url;
     }
 }
