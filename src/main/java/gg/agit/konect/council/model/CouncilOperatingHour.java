@@ -1,5 +1,6 @@
 package gg.agit.konect.council.model;
 
+import static gg.agit.konect.global.code.ApiResponseCode.*;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
@@ -8,6 +9,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 import gg.agit.konect.common.model.BaseEntity;
+import gg.agit.konect.global.exception.CustomException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -63,5 +65,28 @@ public class CouncilOperatingHour extends BaseEntity {
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.isClosed = isClosed;
+    }
+
+    public void validate() {
+        if (isClosed) {
+            validateClosedDay();
+        } else {
+            validateOpenDay();
+        }
+    }
+
+    private void validateClosedDay() {
+        if (openTime != null || closeTime != null) {
+            throw CustomException.of(INVALID_OPERATING_HOURS_CLOSED);
+        }
+    }
+
+    private void validateOpenDay() {
+        if (openTime == null || closeTime == null) {
+            throw CustomException.of(INVALID_OPERATING_HOURS_TIME);
+        }
+        if (!openTime.isBefore(closeTime)) {
+            throw CustomException.of(INVALID_OPERATING_HOURS_TIME);
+        }
     }
 }
