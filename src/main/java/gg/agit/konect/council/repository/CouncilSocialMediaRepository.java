@@ -9,4 +9,8 @@ import gg.agit.konect.council.model.CouncilSocialMedia;
 public interface CouncilSocialMediaRepository extends Repository<CouncilSocialMedia, Integer> {
 
     List<CouncilSocialMedia> findByCouncilId(Integer councilId);
+
+    void deleteByCouncilId(Integer councilId);
+
+    void save(CouncilSocialMedia councilSocialMedia);
 }

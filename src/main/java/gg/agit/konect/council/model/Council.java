@@ -55,4 +55,12 @@ public class Council extends BaseEntity {
         this.phoneNumber = phoneNumber;
         this.email = email;
     }
+
+    public void update(String name, String introduce, String location, String phoneNumber, String email) {
+        this.name = name;
+        this.introduce = introduce;
+        this.location = location;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+    }
 }
