@@ -73,7 +73,7 @@ public record CouncilUpdateRequest(
         public CouncilOperatingHour toEntity(Council council) {
             return CouncilOperatingHour.builder()
                 .council(council)
-                .dayOfWeek(dayOfWeek.name())
+                .dayOfWeek(dayOfWeek)
                 .openTime(openTime)
                 .closeTime(closeTime)
                 .isClosed(isClosed)
