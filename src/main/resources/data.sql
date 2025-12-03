@@ -265,13 +265,13 @@ VALUES (1, '2025-11-30', '2025-12-31'),
        (3, '2025-11-28', '2025-12-31'),
        (4, '2025-11-27', '2025-12-31');
 
-INSERT INTO club_fee_payment (club_id, user_id, date, status)
-VALUES (1, 1, '2025-10-01', 'PAID'),
-       (1, 1, '2025-11-01', 'EXEMPT'),
-       (1, 1, '2025-12-01', 'PAID'),
-       (3, 1, '2025-10-01', 'PAID'),
-       (3, 1, '2025-11-01', 'EXEMPT'),
-       (3, 1, '2025-12-01', 'UNPAID');
+INSERT INTO club_fee_payment (club_id, user_id, date, status, exempt_reason)
+VALUES (1, 1, '2025-10-01', 'PAID', null),
+       (1, 1, '2025-11-01', 'EXEMPT', '면제 사유'),
+       (1, 1, '2025-12-01', 'PAID', null),
+       (3, 1, '2025-10-01', 'PAID', null),
+       (3, 1, '2025-11-01', 'EXEMPT', '면제 사유'),
+       (3, 1, '2025-12-01', 'UNPAID', null);
 
 INSERT INTO council (name, introduce, location, phone_number, email)
 VALUES ('총동아리연합회',

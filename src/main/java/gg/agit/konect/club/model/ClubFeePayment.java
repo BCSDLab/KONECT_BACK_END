@@ -43,6 +43,9 @@ public class ClubFeePayment extends BaseEntity {
     @Column(name = "status", nullable = false)
     private FeePaymentStatus status;
 
+    @Column(name = "exempt_reason")
+    private String exemptReason;
+
     @ManyToOne(fetch = LAZY)
     @JoinColumns({
         @JoinColumn(name = "club_id", nullable = false),
@@ -51,10 +54,12 @@ public class ClubFeePayment extends BaseEntity {
     private ClubMember clubMember;
 
     @Builder
-    private ClubFeePayment(Integer id, LocalDate date, FeePaymentStatus status, ClubMember clubMember) {
+    private ClubFeePayment(Integer id, LocalDate date, FeePaymentStatus status, String exemptReason,
+        ClubMember clubMember) {
         this.id = id;
         this.date = date;
         this.status = status;
+        this.exemptReason = exemptReason;
         this.clubMember = clubMember;
     }
 
