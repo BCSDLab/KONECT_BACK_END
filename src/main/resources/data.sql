@@ -223,7 +223,7 @@ VALUES (1, 1, 1, TRUE),
        (5, 15, 20, FALSE),
        (6, 5, 21, TRUE),
        (6, 8, 24, FALSE),
-       (6, 13, 24, FALSE),
+       (6, 1, 24, FALSE),
        (7, 9, 25, TRUE),
        (7, 10, 28, FALSE),
        (7, 16, 28, FALSE),
@@ -271,7 +271,11 @@ VALUES (1, 1, '2025-10-01', 'PAID', null),
        (1, 1, '2025-12-01', 'PAID', null),
        (3, 1, '2025-10-01', 'PAID', null),
        (3, 1, '2025-11-01', 'EXEMPT', '면제 사유'),
-       (3, 1, '2025-12-01', 'UNPAID', null);
+       (3, 1, '2025-12-01', 'PAID', null),
+       (6, 1, '2025-12-01', 'UNPAID', null);
+
+INSERT INTO club_position_fee (club_position_id, fee)
+VALUES (1, 0), (9, 0), (24, 5000);
 
 INSERT INTO council (name, introduce, location, phone_number, email)
 VALUES ('총동아리연합회',
