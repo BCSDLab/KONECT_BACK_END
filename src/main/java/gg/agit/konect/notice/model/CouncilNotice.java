@@ -48,4 +48,9 @@ public class CouncilNotice extends BaseEntity {
         this.content = content;
         this.council = council;
     }
+
+    public void update(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
 }
