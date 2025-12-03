@@ -1,14 +1,17 @@
 package gg.agit.konect.notice.model;
 
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
-
+import gg.agit.konect.council.model.Council;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -30,9 +33,19 @@ public class CouncilNotice extends BaseEntity {
     @Column(name = "title", nullable = false)
     private String title;
 
+    @NotNull
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "council_id", nullable = false)
+    private Council council;
+
     @Builder
-    private CouncilNotice(Integer id, String title) {
+    private CouncilNotice(Integer id, String title, String content, Council council) {
         this.id = id;
         this.title = title;
+        this.content = content;
+        this.council = council;
     }
 }
