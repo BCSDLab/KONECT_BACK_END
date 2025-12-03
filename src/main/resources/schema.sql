@@ -139,6 +139,17 @@ CREATE TABLE club_fee_payment
     FOREIGN KEY (club_id, user_id) REFERENCES club_member (club_id, user_id) ON DELETE CASCADE
 );
 
+CREATE TABLE club_position_fee
+(
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    club_position_id INT                                 NOT NULL,
+    fee              INT                                 NOT NULL,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (club_position_id) REFERENCES club_position_fee (id)
+);
+
 CREATE TABLE council
 (
     id           INT AUTO_INCREMENT PRIMARY KEY,
