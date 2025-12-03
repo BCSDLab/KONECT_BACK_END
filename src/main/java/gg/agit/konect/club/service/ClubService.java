@@ -72,14 +72,6 @@ public class ClubService {
     public JoinedClubsResponse getJoinedClubs() {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(1);
         Map<Integer, Integer> unpaidFeeAmountMap = clubFeePaymentQueryRepository.findUnpaidFeeAmountByUserId(1);
-        fillMissingClubFeeAmounts(clubMembers, unpaidFeeAmountMap);
         return JoinedClubsResponse.of(clubMembers, unpaidFeeAmountMap);
-    }
-
-    private void fillMissingClubFeeAmounts(List<ClubMember> clubMembers, Map<Integer, Integer> unpaidFeeAmountMap) {
-        for (ClubMember clubMember : clubMembers) {
-            Integer clubId = clubMember.getClub().getId();
-            unpaidFeeAmountMap.putIfAbsent(clubId, 0);
-        }
     }
 }

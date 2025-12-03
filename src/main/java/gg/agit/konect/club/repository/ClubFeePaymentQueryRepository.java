@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import lombok.RequiredArgsConstructor;
@@ -26,16 +27,18 @@ public class ClubFeePaymentQueryRepository {
         List<Tuple> results = jpaQueryFactory
             .select(
                 clubMember.club.id,
-                clubPositionFee.fee.sum().coalesce(0)
+                new CaseBuilder()
+                    .when(clubFeePayment.status.eq(UNPAID))
+                    .then(clubPositionFee.fee)
+                    .otherwise(0)
+                    .sum()
             )
-            .from(clubFeePayment)
-            .join(clubFeePayment.clubMember, clubMember)
+            .from(clubMember)
+            .leftJoin(clubFeePayment)
+            .on(clubFeePayment.clubMember.eq(clubMember))
             .leftJoin(clubPositionFee)
-            .on(clubPositionFee.clubPosition.id.eq(clubMember.clubPosition.id))
-            .where(
-                clubMember.id.userId.eq(userId),
-                clubFeePayment.status.eq(UNPAID)
-            )
+            .on(clubPositionFee.clubPosition.eq(clubMember.clubPosition))
+            .where(clubMember.id.userId.eq(userId))
             .groupBy(clubMember.club.id)
             .fetch();
 
