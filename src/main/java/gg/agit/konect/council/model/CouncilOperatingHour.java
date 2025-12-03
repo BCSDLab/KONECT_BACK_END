@@ -4,6 +4,7 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 import gg.agit.konect.common.model.BaseEntity;
@@ -36,7 +37,7 @@ public class CouncilOperatingHour extends BaseEntity {
 
     @NotNull
     @Column(name = "day_of_week", length = 20, nullable = false)
-    private String dayOfWeek;
+    private DayOfWeek dayOfWeek;
 
     @Column(name = "open_time")
     private LocalTime openTime;
@@ -51,7 +52,7 @@ public class CouncilOperatingHour extends BaseEntity {
     private CouncilOperatingHour(
         Integer id,
         Council council,
-        String dayOfWeek,
+        DayOfWeek dayOfWeek,
         LocalTime openTime,
         LocalTime closeTime,
         Boolean isClosed
