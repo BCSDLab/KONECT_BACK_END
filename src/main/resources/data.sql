@@ -207,6 +207,24 @@ VALUES (1, '2025-11-30', '2025-12-31'),
        (3, '2025-11-28', '2025-12-31'),
        (4, '2025-11-27', '2025-12-31');
 
+INSERT INTO council (name, introduce, location, phone_number, email)
+VALUES ('총동아리연합회',
+        '총동아리연합회는 한국기술교육대학교 내 모든 동아리의 활동을 지원하고 관리하는 학생 자치 기구입니다.\n\n동아리 간의 원활한 소통을 증진하고, 동아리 문화 발전을 위해 다양한 행사와 지원 프로그램을 운영하고 있습니다.\n\n동아리 운영에 필요한 각종 행정 지원, 예산 지원, 시설 관리 등을 담당하며, 동아리 박람회, 축제 등 대형 행사를 주관합니다.',
+        '학생회관 2층 202호', '041-560-1234', 'council@koreatech.ac.kr');
+
+INSERT INTO council_operating_hour (council_id, day_of_week, open_time, close_time, is_closed)
+VALUES (1, 'MONDAY', '09:00', '18:00', false),
+       (1, 'TUESDAY', '09:00', '18:00', false),
+       (1, 'WEDNESDAY', '09:00', '18:00', false),
+       (1, 'THURSDAY', '09:00', '18:00', false),
+       (1, 'FRIDAY', '09:00', '18:00', false),
+       (1, 'SATURDAY', '09:00', '18:00', false),
+       (1, 'SUNDAY', '09:00', '18:00', false);
+
+INSERT INTO council_social_media (council_id, platform_name, url)
+VALUES (1, '인스타', 'https://www.instagram.com/koreatech_council'),
+       (1, '구글 폼', 'https://docs.google.com/forms/example');
+
 INSERT INTO council_notice (title)
 VALUES ('2025학년도 2학기 동아리 지원금 신청 안내'),
        ('동아리 박람회 참가 신청 마감 안내'),
