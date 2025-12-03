@@ -52,6 +52,16 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 소셜미디어", requiredMode = REQUIRED)
     List<InnerSocialMedia> socialMedias
 ) {
+    public Council toEntity() {
+        return Council.builder()
+            .name(name)
+            .introduce(introduce)
+            .location(location)
+            .phoneNumber(phoneNumber)
+            .email(email)
+            .build();
+    }
+
     public record InnerOperatingHour(
         @NotNull(message = "운영 요일은 필수 입력값입니다.")
         @Schema(description = "요일", example = "MONDAY", requiredMode = REQUIRED)

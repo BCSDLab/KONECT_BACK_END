@@ -30,20 +30,12 @@ public class CouncilService {
 
     @Transactional
     public CouncilResponse createCouncil(CouncilCreateRequest request) {
-        Council council = Council.builder()
-            .name(request.name())
-            .introduce(request.introduce())
-            .location(request.location())
-            .phoneNumber(request.phoneNumber())
-            .email(request.email())
-            .build();
-
+        Council council = request.toEntity();
         CouncilOperatingHours councilOperatingHours = new CouncilOperatingHours(
             request.operatingHours().stream()
                 .map(operatingHour -> operatingHour.toEntity(council))
                 .toList()
         );
-
         List<CouncilSocialMedia> socialMedias = request.socialMedias().stream()
             .map(socialMedia -> socialMedia.toEntity(council))
             .toList();
