@@ -21,6 +21,9 @@ public record ClubDetailResponse(
     @Schema(description = "동아리 이름", example = "BCSD", requiredMode = REQUIRED)
     String name,
 
+    @Schema(description = "동아리 방 위치", example = "학생회관 101호", requiredMode = REQUIRED)
+    String location,
+
     @Schema(description = "동아리 설명", example = "즐겁게 일하고 열심히 노는 IT 특성화 동아리", requiredMode = REQUIRED)
     String description,
 
@@ -92,10 +95,16 @@ public record ClubDetailResponse(
         }
     }
 
-    public static ClubDetailResponse of(Club club, Long memberCount, ClubRecruitment clubRecruitment, List<ClubRepresentative> clubRepresentatives) {
+    public static ClubDetailResponse of(
+        Club club,
+        Long memberCount,
+        ClubRecruitment clubRecruitment,
+        List<ClubRepresentative> clubRepresentatives
+    ) {
         return new ClubDetailResponse(
             club.getId(),
             club.getName(),
+            club.getLocation(),
             club.getDescription(),
             club.getIntroduce(),
             club.getImageUrl(),

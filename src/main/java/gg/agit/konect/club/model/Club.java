@@ -44,14 +44,25 @@ public class Club extends BaseEntity {
     @Column(name = "image_url", length = 255, nullable = false)
     private String imageUrl;
 
+    @Column(name = "location", length = 255, nullable = false)
+    private String location;
+
     @Builder
-    private Club(Integer id, ClubCategory clubCategory, String name, String description, String introduce,
-        String imageUrl) {
+    private Club(
+        Integer id,
+        ClubCategory clubCategory,
+        String name,
+        String description,
+        String introduce,
+        String imageUrl,
+        String location
+    ) {
         this.id = id;
         this.clubCategory = clubCategory;
         this.name = name;
         this.description = description;
         this.introduce = introduce;
         this.imageUrl = imageUrl;
+        this.location = location;
     }
 }
