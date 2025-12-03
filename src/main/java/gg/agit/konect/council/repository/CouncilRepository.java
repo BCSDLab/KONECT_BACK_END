@@ -19,4 +19,6 @@ public interface CouncilRepository extends Repository<Council, Integer> {
     }
 
     void deleteById(Integer id);
+
+    void save(Council council);
 }

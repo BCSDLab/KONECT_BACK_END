@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.council.dto.CouncilCreateRequest;
 import gg.agit.konect.council.dto.CouncilResponse;
 import gg.agit.konect.council.dto.CouncilUpdateRequest;
 import gg.agit.konect.council.model.Council;
@@ -26,6 +27,33 @@ public class CouncilService {
     private final CouncilOperatingHourRepository councilOperatingHourRepository;
     private final CouncilSocialMediaRepository councilSocialMediaRepository;
     private final EntityManager entityManager;
+
+    @Transactional
+    public CouncilResponse createCouncil(CouncilCreateRequest request) {
+        Council council = Council.builder()
+            .name(request.name())
+            .introduce(request.introduce())
+            .location(request.location())
+            .phoneNumber(request.phoneNumber())
+            .email(request.email())
+            .build();
+
+        CouncilOperatingHours councilOperatingHours = new CouncilOperatingHours(
+            request.operatingHours().stream()
+                .map(operatingHour -> operatingHour.toEntity(council))
+                .toList()
+        );
+
+        List<CouncilSocialMedia> socialMedias = request.socialMedias().stream()
+            .map(socialMedia -> socialMedia.toEntity(council))
+            .toList();
+
+        councilRepository.save(council);
+        councilOperatingHours.operatingHours().forEach(councilOperatingHourRepository::save);
+        socialMedias.forEach(councilSocialMediaRepository::save);
+
+        return CouncilResponse.of(council, councilOperatingHours.operatingHours(), socialMedias);
+    }
 
     public CouncilResponse getCouncil() {
         Council council = councilRepository.getById(1);
