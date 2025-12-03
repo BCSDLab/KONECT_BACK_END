@@ -147,7 +147,7 @@ CREATE TABLE club_position_fee
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    FOREIGN KEY (club_position_id) REFERENCES club_position_fee (id)
+    FOREIGN KEY (club_position_id) REFERENCES club_position (id)
 );
 
 CREATE TABLE council
