@@ -29,7 +29,7 @@ public class CouncilService {
     private final EntityManager entityManager;
 
     @Transactional
-    public CouncilResponse createCouncil(CouncilCreateRequest request) {
+    public void createCouncil(CouncilCreateRequest request) {
         Council council = request.toEntity();
         CouncilOperatingHours councilOperatingHours = new CouncilOperatingHours(
             request.operatingHours().stream()
@@ -43,8 +43,6 @@ public class CouncilService {
         councilRepository.save(council);
         councilOperatingHours.operatingHours().forEach(councilOperatingHourRepository::save);
         socialMedias.forEach(councilSocialMediaRepository::save);
-
-        return CouncilResponse.of(council, councilOperatingHours.operatingHours(), socialMedias);
     }
 
     public CouncilResponse getCouncil() {
@@ -56,7 +54,7 @@ public class CouncilService {
     }
 
     @Transactional
-    public CouncilResponse updateCouncil(CouncilUpdateRequest request) {
+    public void updateCouncil(CouncilUpdateRequest request) {
         Council council = councilRepository.getById(1);
         CouncilOperatingHours councilOperatingHours = new CouncilOperatingHours(
             request.operatingHours().stream()
@@ -81,8 +79,6 @@ public class CouncilService {
 
         councilOperatingHours.operatingHours().forEach(councilOperatingHourRepository::save);
         socialMedias.forEach(councilSocialMediaRepository::save);
-
-        return CouncilResponse.of(council, councilOperatingHours.operatingHours(), socialMedias);
     }
 
     @Transactional
@@ -91,8 +87,6 @@ public class CouncilService {
 
         councilOperatingHourRepository.deleteByCouncilId(council.getId());
         councilSocialMediaRepository.deleteByCouncilId(council.getId());
-        entityManager.flush();
-
         councilRepository.deleteById(council.getId());
     }
 }

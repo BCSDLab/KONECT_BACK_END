@@ -35,7 +35,7 @@ public interface CouncilApi {
             """
     )
     @PostMapping
-    ResponseEntity<CouncilResponse> createCouncil(
+    ResponseEntity<Void> createCouncil(
         @Valid @RequestBody CouncilCreateRequest request
     );
 
@@ -52,7 +52,7 @@ public interface CouncilApi {
             """
     )
     @PutMapping
-    ResponseEntity<CouncilResponse> updateCouncil(
+    ResponseEntity<Void> updateCouncil(
         @Valid @RequestBody CouncilUpdateRequest request
     );
 
