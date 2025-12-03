@@ -30,13 +30,17 @@ public class CouncilController implements CouncilApi {
     }
 
     @PostMapping
-    public ResponseEntity<CouncilResponse> createCouncil(@Valid @RequestBody CouncilCreateRequest request) {
+    public ResponseEntity<CouncilResponse> createCouncil(
+        @Valid @RequestBody CouncilCreateRequest request
+    ) {
         CouncilResponse response = councilService.createCouncil(request);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping
-    public ResponseEntity<CouncilResponse> updateCouncil(@Valid @RequestBody CouncilUpdateRequest request) {
+    public ResponseEntity<CouncilResponse> updateCouncil(
+        @Valid @RequestBody CouncilUpdateRequest request
+    ) {
         CouncilResponse response = councilService.updateCouncil(request);
         return ResponseEntity.ok(response);
     }
