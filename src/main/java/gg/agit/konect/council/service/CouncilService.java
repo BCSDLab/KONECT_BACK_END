@@ -87,8 +87,6 @@ public class CouncilService {
 
         councilOperatingHourRepository.deleteByCouncilId(council.getId());
         councilSocialMediaRepository.deleteByCouncilId(council.getId());
-        entityManager.flush();
-
         councilRepository.deleteById(council.getId());
     }
 }
