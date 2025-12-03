@@ -136,7 +136,11 @@ CREATE TABLE council_social_media
 CREATE TABLE council_notice
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
+    council_id INT                                 NOT NULL,
     title      VARCHAR(255)                        NOT NULL,
+    content    TEXT                                NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (council_id) REFERENCES council (id) on DELETE CASCADE
 );
