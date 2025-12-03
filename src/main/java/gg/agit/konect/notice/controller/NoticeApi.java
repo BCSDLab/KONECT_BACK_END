@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.notice.dto.CouncilNoticesResponse;
-import gg.agit.konect.notice.dto.NoticeCreateRequest;
-import gg.agit.konect.notice.dto.NoticeResponse;
-import gg.agit.konect.notice.dto.NoticeUpdateRequest;
+import gg.agit.konect.notice.dto.CouncilNoticeCreateRequest;
+import gg.agit.konect.notice.dto.CouncilNoticeResponse;
+import gg.agit.konect.notice.dto.CouncilNoticeUpdateRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,7 +37,7 @@ public interface NoticeApi {
             """
     )
     @GetMapping("/councils/notices/{id}")
-    ResponseEntity<NoticeResponse> getNotice(
+    ResponseEntity<CouncilNoticeResponse> getNotice(
         @PathVariable Integer id
     );
 
@@ -52,7 +52,7 @@ public interface NoticeApi {
     )
     @PostMapping("/councils/notices")
     ResponseEntity<Void> createNotice(
-        @Valid @RequestBody NoticeCreateRequest request
+        @Valid @RequestBody CouncilNoticeCreateRequest request
     );
 
     @Operation(
@@ -67,7 +67,7 @@ public interface NoticeApi {
     @PutMapping("/councils/notices/{id}")
     ResponseEntity<Void> updateNotice(
         @PathVariable Integer id,
-        @Valid @RequestBody NoticeUpdateRequest request
+        @Valid @RequestBody CouncilNoticeUpdateRequest request
     );
 
     @Operation(

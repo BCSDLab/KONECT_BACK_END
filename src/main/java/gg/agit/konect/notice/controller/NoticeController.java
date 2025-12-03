@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.notice.dto.CouncilNoticesResponse;
-import gg.agit.konect.notice.dto.NoticeCreateRequest;
-import gg.agit.konect.notice.dto.NoticeResponse;
-import gg.agit.konect.notice.dto.NoticeUpdateRequest;
+import gg.agit.konect.notice.dto.CouncilNoticeCreateRequest;
+import gg.agit.konect.notice.dto.CouncilNoticeResponse;
+import gg.agit.konect.notice.dto.CouncilNoticeUpdateRequest;
 import gg.agit.konect.notice.service.NoticeService;
 
 import jakarta.validation.Valid;
@@ -35,16 +35,16 @@ public class NoticeController implements NoticeApi {
     }
 
     @GetMapping("/councils/notices/{id}")
-    public ResponseEntity<NoticeResponse> getNotice(
+    public ResponseEntity<CouncilNoticeResponse> getNotice(
         @PathVariable Integer id
     ) {
-        NoticeResponse response = noticeService.getNotice(id);
+        CouncilNoticeResponse response = noticeService.getNotice(id);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/councils/notices")
     public ResponseEntity<Void> createNotice(
-        @Valid @RequestBody NoticeCreateRequest request
+        @Valid @RequestBody CouncilNoticeCreateRequest request
     ) {
         noticeService.createNotice(request);
         return ResponseEntity.ok().build();
@@ -53,7 +53,7 @@ public class NoticeController implements NoticeApi {
     @PutMapping("/councils/notices/{id}")
     public ResponseEntity<Void> updateNotice(
         @PathVariable Integer id,
-        @Valid @RequestBody NoticeUpdateRequest request
+        @Valid @RequestBody CouncilNoticeUpdateRequest request
     ) {
         noticeService.updateNotice(id, request);
         return ResponseEntity.ok().build();

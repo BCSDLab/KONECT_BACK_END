@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import gg.agit.konect.notice.model.CouncilNotice;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record NoticeResponse(
+public record CouncilNoticeResponse(
     @Schema(description = "공지사항 고유 id", example = "1", requiredMode = REQUIRED)
     Integer id,
 
@@ -27,8 +27,8 @@ public record NoticeResponse(
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm:ss")
     LocalDateTime updatedAt
 ) {
-    public static NoticeResponse from(CouncilNotice councilNotice) {
-        return new NoticeResponse(
+    public static CouncilNoticeResponse from(CouncilNotice councilNotice) {
+        return new CouncilNoticeResponse(
             councilNotice.getId(),
             councilNotice.getTitle(),
             councilNotice.getContent(),
