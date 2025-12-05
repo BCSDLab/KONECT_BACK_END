@@ -4,9 +4,11 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
-
+import gg.agit.konect.security.enums.Provider;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -28,9 +30,6 @@ public class User extends BaseEntity {
     @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", length = 255, nullable = false)
-    private String password;
-
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
@@ -40,13 +39,24 @@ public class User extends BaseEntity {
     @Column(name = "student_number", length = 20, nullable = false, unique = true)
     private String studentNumber;
 
+    @Column(name = "provider", length = 20)
+    @Enumerated(EnumType.STRING)
+    private Provider provider;
+
     @Builder
-    private User(Integer id, String email, String password, String name, String phoneNumber, String studentNumber) {
+    private User(
+        Integer id,
+        String email,
+        String name,
+        String phoneNumber,
+        String studentNumber,
+        Provider provider
+    ) {
         this.id = id;
         this.email = email;
-        this.password = password;
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.studentNumber = studentNumber;
+        this.provider = provider;
     }
 }

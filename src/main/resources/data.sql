@@ -1,25 +1,27 @@
 -- 유저
-INSERT INTO users (email, password, name, phone_number, student_number)
-VALUES ('user01@example.com', 'encrypted_pw_01', '홍길동', '010-1000-0001', '20250001'),
-       ('user02@example.com', 'encrypted_pw_02', '김철수', '010-1000-0002', '20250002'),
-       ('user03@example.com', 'encrypted_pw_03', '이영희', '010-1000-0003', '20250003'),
-       ('user04@example.com', 'encrypted_pw_04', '박민수', '010-1000-0004', '20250004'),
-       ('user05@example.com', 'encrypted_pw_05', '최서연', '010-1000-0005', '20250005'),
-       ('user06@example.com', 'encrypted_pw_06', '정우진', '010-1000-0006', '20250006'),
-       ('user07@example.com', 'encrypted_pw_07', '오하늘', '010-1000-0007', '20250007'),
-       ('user08@example.com', 'encrypted_pw_08', '윤예진', '010-1000-0008', '20250008'),
-       ('user09@example.com', 'encrypted_pw_09', '강도현', '010-1000-0009', '20250009'),
-       ('user10@example.com', 'encrypted_pw_10', '신가윤', '010-1000-0010', '20250010'),
-       ('user11@example.com', 'encrypted_pw_11', '서하준', '010-1000-0011', '20250011'),
-       ('user12@example.com', 'encrypted_pw_12', '문정우', '010-1000-0012', '20250012'),
-       ('user13@example.com', 'encrypted_pw_13', '김다은', '010-1000-0013', '20250013'),
-       ('user14@example.com', 'encrypted_pw_14', '이주원', '010-1000-0014', '20250014'),
-       ('user15@example.com', 'encrypted_pw_15', '박소현', '010-1000-0015', '20250015'),
-       ('user16@example.com', 'encrypted_pw_16', '양도균', '010-1000-0016', '20250016'),
-       ('user17@example.com', 'encrypted_pw_17', '조하림', '010-1000-0017', '20250017'),
-       ('user18@example.com', 'encrypted_pw_18', '한예준', '010-1000-0018', '20250018'),
-       ('user19@example.com', 'encrypted_pw_19', '권민재', '010-1000-0019', '20250019'),
-       ('user20@example.com', 'encrypted_pw_20', '임소연', '010-1000-0020', '20250020');
+INSERT INTO users (email, name, phone_number, student_number, provider)
+VALUES
+    ('user01@example.com', '홍길동', '010-1000-0001', '20250001', 'GOOGLE'),
+    ('user02@example.com', '김철수', '010-1000-0002', '20250002', 'GOOGLE'),
+    ('user03@example.com', '이영희', '010-1000-0003', '20250003', 'GOOGLE'),
+    ('user04@example.com', '박민수', '010-1000-0004', '20250004', 'GOOGLE'),
+    ('user05@example.com', '최서연', '010-1000-0005', '20250005', 'GOOGLE'),
+    ('user06@example.com', '정우진', '010-1000-0006', '20250006', 'GOOGLE'),
+    ('user07@example.com', '오하늘', '010-1000-0007', '20250007', 'GOOGLE'),
+    ('user08@example.com', '윤예진', '010-1000-0008', '20250008', 'GOOGLE'),
+    ('user09@example.com', '강도현', '010-1000-0009', '20250009', 'GOOGLE'),
+    ('user10@example.com', '신가윤', '010-1000-0010', '20250010', 'GOOGLE'),
+    ('user11@example.com', '서하준', '010-1000-0011', '20250011', 'GOOGLE'),
+    ('user12@example.com', '문정우', '010-1000-0012', '20250012', 'GOOGLE'),
+    ('user13@example.com', '김다은', '010-1000-0013', '20250013', 'GOOGLE'),
+    ('user14@example.com', '이주원', '010-1000-0014', '20250014', 'GOOGLE'),
+    ('user15@example.com', '박소현', '010-1000-0015', '20250015', 'GOOGLE'),
+    ('user16@example.com', '양도균', '010-1000-0016', '20250016', 'GOOGLE'),
+    ('user17@example.com', '조하림', '010-1000-0017', '20250017', 'GOOGLE'),
+    ('user18@example.com', '한예준', '010-1000-0018', '20250018', 'GOOGLE'),
+    ('user19@example.com', '권민재', '010-1000-0019', '20250019', 'GOOGLE'),
+    ('user20@example.com', '임소연', '010-1000-0020', '20250020', 'GOOGLE');
+
 
 -- 카테고리
 INSERT INTO club_category (name)
