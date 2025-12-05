@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gg.agit.konect.global.auth.JwtProvider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +33,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     ) throws IOException {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = (String) oauthUser.getAttributes().get("email");
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = userRepository.getByEmail(email);
 
-        if (user == null) {
+        if (!user.getIsRegistered()) {
             sendAdditionalInfoRequiredResponse(response, email);
             return;
         }
