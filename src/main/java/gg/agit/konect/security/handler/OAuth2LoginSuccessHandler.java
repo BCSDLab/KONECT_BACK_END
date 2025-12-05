@@ -59,7 +59,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
 
-        String accessToken = "ACCESS_TOKEN_EXAMPLE";
+        String accessToken = jwtProvider.createToken(user);
 
         Map<String, Object> body = Map.of(
             "accessToken", accessToken
