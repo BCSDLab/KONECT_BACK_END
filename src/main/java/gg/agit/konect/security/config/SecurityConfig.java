@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
+import gg.agit.konect.security.handler.OAuth2LoginSuccessHandler;
 import gg.agit.konect.security.oauth.service.SocialOAuthService;
 
 @Configuration
@@ -19,6 +20,9 @@ public class SecurityConfig {
 
     @Autowired
     private Map<String, SocialOAuthService> oAuthServices;
+
+    @Autowired
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -43,7 +47,7 @@ public class SecurityConfig {
                         String registrationId = userRequest.getClientRegistration().getRegistrationId();
                         return oAuthServices.get(registrationId).loadUser(userRequest);
                     })
-                )
+                ).successHandler(oAuth2LoginSuccessHandler)
             );
 
         return http.build();
