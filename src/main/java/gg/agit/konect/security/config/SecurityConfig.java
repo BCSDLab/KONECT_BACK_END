@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
-import gg.agit.konect.security.oauth.service.GoogleOAuthServiceImpl;
 import gg.agit.konect.security.oauth.service.SocialOAuthService;
 
 @Configuration
@@ -22,7 +21,7 @@ public class SecurityConfig {
     private Map<String, SocialOAuthService> oAuthServices;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, GoogleOAuthServiceImpl googleOAuthServiceImpl) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
