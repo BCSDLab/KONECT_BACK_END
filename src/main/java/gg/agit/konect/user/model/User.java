@@ -39,6 +39,9 @@ public class User extends BaseEntity {
     @Column(name = "student_number", length = 20, nullable = false, unique = true)
     private String studentNumber;
 
+    @Column(name = "is_registered", nullable = false)
+    private Boolean isRegistered = Boolean.FALSE;
+
     @Column(name = "provider", length = 20)
     @Enumerated(EnumType.STRING)
     private Provider provider;
