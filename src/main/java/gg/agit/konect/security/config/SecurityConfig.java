@@ -27,10 +27,11 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login")
-                .permitAll()
-                .anyRequest()
-                .authenticated()
+                .requestMatchers(
+                    "/login/oauth2/code/**",
+                    "/error"
+                ).permitAll()
+                .anyRequest().authenticated()
             ).oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(userRequest -> {
