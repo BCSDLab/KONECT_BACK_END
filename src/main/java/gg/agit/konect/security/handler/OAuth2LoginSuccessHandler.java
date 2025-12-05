@@ -31,8 +31,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletResponse response,
         Authentication authentication
     ) throws IOException {
-        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oauthUser.getAttributes().get("email");
+        OAuth2User oauthUser = (OAuth2User)authentication.getPrincipal();
+        String email = (String)oauthUser.getAttributes().get("email");
         User user = userRepository.getByEmail(email);
 
         if (!user.getIsRegistered()) {
