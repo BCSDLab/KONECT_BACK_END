@@ -32,6 +32,10 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
+            ).exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.sendError(401);
+                })
             ).oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(userRequest -> {
