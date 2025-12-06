@@ -2,10 +2,11 @@ CREATE TABLE users
 (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     email               VARCHAR(100)                        NOT NULL UNIQUE,
-    name                VARCHAR(50)                         NOT NULL,
-    phone_number        VARCHAR(20)                         NOT NULL UNIQUE,
-    student_number      VARCHAR(20)                         NOT NULL UNIQUE,
+    name                VARCHAR(50),
+    phone_number        VARCHAR(20)                         UNIQUE,
+    student_number      VARCHAR(20)                         UNIQUE,
     provider            ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    is_registered       BOOLEAN   DEFAULT FALSE,
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );

@@ -29,9 +29,6 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
             .orElseGet(() -> {
                 User newUser = User.builder()
                     .email(email)
-                    .name("OAuthUser")
-                    .phoneNumber("000-0000-0000")
-                    .studentNumber("000000")
                     .provider(Provider.GOOGLE)
                     .build();
 
