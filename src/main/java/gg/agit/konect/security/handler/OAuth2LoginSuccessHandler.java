@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import gg.agit.konect.global.auth.JwtProvider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
-    private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -40,7 +39,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
-        sendLoginSuccessResponse(response, user);
+        sendLoginSuccessResponse(request, response, user);
     }
 
     private void sendAdditionalInfoRequiredResponse(HttpServletResponse response, String email) throws IOException {
@@ -55,14 +54,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 
-    private void sendLoginSuccessResponse(HttpServletResponse response, User user) throws IOException {
+    private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user) throws IOException {
+        HttpSession session = request.getSession(true);
+        session.setAttribute("userId", user.getId());
+        session.setAttribute("email", user.getEmail());
+
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
 
-        String accessToken = jwtProvider.createToken(user);
-
         Map<String, Object> body = Map.of(
-            "accessToken", accessToken
+            "status", "SUCCESS",
+            "userId", user.getId(),
+            "email", user.getEmail()
         );
 
         response.getWriter().write(objectMapper.writeValueAsString(body));
