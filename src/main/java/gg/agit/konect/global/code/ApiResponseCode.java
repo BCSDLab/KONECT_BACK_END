@@ -23,9 +23,6 @@ public enum ApiResponseCode {
     INVALID_OPERATING_HOURS_TIME(HttpStatus.BAD_REQUEST, "운영일에는 시작 시간과 마감 시간이 필수이며, 시작 시간이 마감 시간보다 빨라야 합니다."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 HTTP 메소드 입니다."),
 
-    // 401 Unauthorized
-    INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
-
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),
     NOT_FOUND_CLUB(HttpStatus.NOT_FOUND, "동아리를 찾을 수 업습니다."),
