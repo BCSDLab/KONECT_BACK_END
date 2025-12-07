@@ -1,22 +1,26 @@
 CREATE TABLE users
 (
     id             INT AUTO_INCREMENT PRIMARY KEY,
-    email          VARCHAR(100)                        NOT NULL UNIQUE,
-    name           VARCHAR(50),
-    phone_number   VARCHAR(20) UNIQUE,
-    student_number VARCHAR(20) UNIQUE,
+    email          VARCHAR(100)                        NOT NULL,
+    name           VARCHAR(50)                         NOT NULL,
+    phone_number   VARCHAR(20) UNIQUE                  NOT NULL,
+    student_number VARCHAR(20) UNIQUE                  NOT NULL,
     provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+
+    CONSTRAINT uq_email_provider UNIQUE (email, provider)
 );
 
 CREATE TABLE unregistered_user
 (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    email          VARCHAR(100)                        NOT NULL UNIQUE,
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email          VARCHAR(255)                        NOT NULL,
     provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+
+    CONSTRAINT uq_email_provider UNIQUE (email, oauth_provider)
 );
 
 CREATE TABLE club_category
