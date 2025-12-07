@@ -22,11 +22,11 @@ import lombok.NoArgsConstructor;
     name = "users",
     uniqueConstraints = {
         @jakarta.persistence.UniqueConstraint(
-            name = "uq_unregistered_email_provider",
+            name = "uq_reg_email_provider",
             columnNames = {"email", "provider"}
         )
     }
-    )
+)
 @NoArgsConstructor(access = PROTECTED)
 public class User extends BaseEntity {
 
