@@ -5,6 +5,10 @@ CREATE TABLE university
     english_name VARCHAR(255)                        NOT NULL,
     email_domain VARCHAR(255)                        NOT NULL,
 
+    UNIQUE (korean_name),
+    UNIQUE (english_name),
+    UNIQUE (email_domain),
+
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );
