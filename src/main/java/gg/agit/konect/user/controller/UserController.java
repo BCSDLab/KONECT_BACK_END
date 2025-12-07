@@ -27,15 +27,11 @@ public class UserController implements UserApi {
         @RequestBody @Valid SignupRequest request
     ) {
         String email = (String) session.getAttribute("email");
-        Provider provider = Provider.valueOf(((String)session.getAttribute("provider")).toUpperCase());
+        Provider provider = (Provider) session.getAttribute("provider");
         Boolean isRegistered = (Boolean) session.getAttribute("isRegistered");
 
-        if (email == null || isRegistered == null) {
+        if (email == null || provider == null || isRegistered == null) {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
-        }
-
-        if (isRegistered) {
-            throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
         }
 
         userService.signup(email, provider, request);
