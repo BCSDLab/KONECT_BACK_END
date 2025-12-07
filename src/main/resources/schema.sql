@@ -1,14 +1,22 @@
 CREATE TABLE users
 (
-    id                  INT AUTO_INCREMENT PRIMARY KEY,
-    email               VARCHAR(100)                        NOT NULL UNIQUE,
-    name                VARCHAR(50),
-    phone_number        VARCHAR(20)                         UNIQUE,
-    student_number      VARCHAR(20)                         UNIQUE,
-    provider            ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
-    is_registered       BOOLEAN   DEFAULT FALSE,
-    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    email          VARCHAR(100)                        NOT NULL UNIQUE,
+    name           VARCHAR(50),
+    phone_number   VARCHAR(20) UNIQUE,
+    student_number VARCHAR(20) UNIQUE,
+    provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE unregistered_user
+(
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    email          VARCHAR(100)                        NOT NULL UNIQUE,
+    provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE club_category
@@ -29,15 +37,15 @@ CREATE TABLE club_tag
 
 CREATE TABLE club
 (
-    id                 INT AUTO_INCREMENT PRIMARY KEY,
-    club_category_id   INT                                 NOT NULL,
-    name               VARCHAR(50)                         NOT NULL,
-    description        VARCHAR(100)                        NOT NULL,
-    introduce          TEXT                                NOT NULL,
-    image_url          VARCHAR(255)                        NOT NULL,
-    location           VARCHAR(255)                        NOT NULL,
-    created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    club_category_id INT                                 NOT NULL,
+    name             VARCHAR(50)                         NOT NULL,
+    description      VARCHAR(100)                        NOT NULL,
+    introduce        TEXT                                NOT NULL,
+    image_url        VARCHAR(255)                        NOT NULL,
+    location         VARCHAR(255)                        NOT NULL,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (club_category_id) REFERENCES club_category (id)
 );
@@ -115,10 +123,10 @@ CREATE TABLE club_member
 
 CREATE TABLE club_representative
 (
-    club_id           INT                                 NOT NULL,
-    user_id           INT                                 NOT NULL,
-    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    club_id    INT                                 NOT NULL,
+    user_id    INT                                 NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     PRIMARY KEY (club_id, user_id),
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
