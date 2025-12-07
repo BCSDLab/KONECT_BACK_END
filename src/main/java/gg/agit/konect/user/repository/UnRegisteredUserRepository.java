@@ -12,4 +12,6 @@ public interface UnRegisteredUserRepository extends Repository<UnRegisteredUser,
     Optional<UnRegisteredUser> findByEmailAndProvider(String email, Provider provider);
 
     void save(UnRegisteredUser user);
+
+    void delete(UnRegisteredUser user);
 }
