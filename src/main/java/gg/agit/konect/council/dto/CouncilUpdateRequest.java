@@ -35,6 +35,11 @@ public record CouncilUpdateRequest(
     @Schema(description = "총동아리연합회 위치", example = "학생회관 2층 202호", requiredMode = REQUIRED)
     String location,
 
+    @NotEmpty(message = "총동아리연합회 퍼스널 컬러는 필수 입력깁니다.")
+    @Size(max = 255, message = "총동아리연합회 퍼스널 컬러는 최대 255자 입니다.")
+    @Schema(description = "총동아리연합회 퍼스널 컬러", example = "#FF5733", requiredMode = REQUIRED)
+    String personalColor,
+
     @NotEmpty(message = "총동아리연합회 전화번호는 필수 입력입니다.")
     @Size(max = 255, message = "총동아리연합회 전화번호는 최대 255자 입니다.")
     @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.")

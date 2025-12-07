@@ -42,6 +42,10 @@ public class Council extends BaseEntity {
     private String location;
 
     @NotNull
+    @Column(name = "personal_color", nullable = false)
+    private String personalColor;
+
+    @NotNull
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
@@ -59,6 +63,7 @@ public class Council extends BaseEntity {
         String name,
         String introduce,
         String location,
+        String personalColor,
         String phoneNumber,
         String email,
         University university
@@ -67,15 +72,24 @@ public class Council extends BaseEntity {
         this.name = name;
         this.introduce = introduce;
         this.location = location;
+        this.personalColor = personalColor;
         this.phoneNumber = phoneNumber;
         this.email = email;
         this.university = university;
     }
 
-    public void update(String name, String introduce, String location, String phoneNumber, String email) {
+    public void update(
+        String name,
+        String introduce,
+        String location,
+        String personalColor,
+        String phoneNumber,
+        String email
+    ) {
         this.name = name;
         this.introduce = introduce;
         this.location = location;
+        this.personalColor = personalColor;
         this.phoneNumber = phoneNumber;
         this.email = email;
     }

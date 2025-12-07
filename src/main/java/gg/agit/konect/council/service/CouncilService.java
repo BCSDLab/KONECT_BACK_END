@@ -69,6 +69,7 @@ public class CouncilService {
             request.name(),
             request.introduce(),
             request.location(),
+            request.personalColor(),
             request.phoneNumber(),
             request.email()
         );
