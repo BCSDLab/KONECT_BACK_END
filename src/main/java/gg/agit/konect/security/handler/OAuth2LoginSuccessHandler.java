@@ -43,14 +43,20 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
 
         if (user.isEmpty()) {
-            sendAdditionalInfoRequiredResponse(response, email, provider);
+            sendAdditionalInfoRequiredResponse(request, response, email, provider);
             return;
         }
 
         sendLoginSuccessResponse(request, response, user.get(), provider);
     }
 
-    private void sendAdditionalInfoRequiredResponse(HttpServletResponse response, String email, Provider provider) throws IOException {
+    private void sendAdditionalInfoRequiredResponse(HttpServletRequest request, HttpServletResponse response, String email, Provider provider) throws IOException {
+        HttpSession session = request.getSession(true);
+        session.setAttribute("email", email);
+        session.setAttribute("provider", provider);
+        session.setAttribute("isRegistered", false);
+        session.setMaxInactiveInterval(600);
+
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
 
@@ -63,6 +69,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
         session.setAttribute("email", user.getEmail());
+        session.setAttribute("provider", provider);
+        session.setAttribute("isRegistered", true);
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
