@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
+    private final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
+
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
@@ -55,7 +57,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute("email", email);
         session.setAttribute("provider", provider);
         session.setAttribute("isRegistered", false);
-        session.setMaxInactiveInterval(600);
+        session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
