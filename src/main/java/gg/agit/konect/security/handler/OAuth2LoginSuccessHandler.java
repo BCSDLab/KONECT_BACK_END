@@ -70,9 +70,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user, Provider provider) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
-        session.setAttribute("email", user.getEmail());
-        session.setAttribute("provider", provider);
-        session.setAttribute("isRegistered", true);
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
