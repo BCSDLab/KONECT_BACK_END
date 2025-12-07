@@ -166,15 +166,15 @@ CREATE TABLE club_position_fee
 
 CREATE TABLE council
 (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    university_id INT NOT NULL,
-    name         VARCHAR(255)                        NOT NULL,
-    introduce    TEXT                                NOT NULL,
-    location     VARCHAR(255)                        NOT NULL,
-    phone_number VARCHAR(255)                        NOT NULL,
-    email        VARCHAR(255)                        NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    university_id INT                                 NOT NULL,
+    name          VARCHAR(255)                        NOT NULL,
+    introduce     TEXT                                NOT NULL,
+    location      VARCHAR(255)                        NOT NULL,
+    phone_number  VARCHAR(255)                        NOT NULL,
+    email         VARCHAR(255)                        NOT NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (university_id) REFERENCES university (id)
 );
