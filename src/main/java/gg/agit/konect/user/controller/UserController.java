@@ -26,8 +26,8 @@ public class UserController implements UserApi {
         HttpSession session,
         @RequestBody @Valid SignupRequest request
     ) {
-        String email = (String) session.getAttribute("email");
-        Provider provider = (Provider) session.getAttribute("provider");
+        String email = (String)session.getAttribute("email");
+        Provider provider = (Provider)session.getAttribute("provider");
 
         if (email == null || provider == null) {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);

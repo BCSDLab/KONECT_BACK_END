@@ -36,7 +36,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletResponse response,
         Authentication authentication
     ) throws IOException {
-        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken)authentication;
         Provider provider = Provider.valueOf(oauthToken.getAuthorizedClientRegistrationId().toUpperCase());
 
         OAuth2User oauthUser = (OAuth2User)authentication.getPrincipal();
@@ -52,7 +52,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         sendLoginSuccessResponse(request, response, user.get(), provider);
     }
 
-    private void sendAdditionalInfoRequiredResponse(HttpServletRequest request, HttpServletResponse response, String email, Provider provider) throws IOException {
+    private void sendAdditionalInfoRequiredResponse(HttpServletRequest request, HttpServletResponse response,
+        String email, Provider provider) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("email", email);
         session.setAttribute("provider", provider);
@@ -66,7 +67,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 
-    private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user, Provider provider) throws IOException {
+    private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user,
+        Provider provider) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
