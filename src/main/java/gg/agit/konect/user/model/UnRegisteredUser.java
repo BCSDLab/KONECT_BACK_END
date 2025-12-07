@@ -19,16 +19,16 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(
-    name = "users",
+    name = "unregistered_user",
     uniqueConstraints = {
         @jakarta.persistence.UniqueConstraint(
             name = "uq_unregistered_email_provider",
             columnNames = {"email", "provider"}
         )
     }
-    )
+)
 @NoArgsConstructor(access = PROTECTED)
-public class User extends BaseEntity {
+public class UnRegisteredUser extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -38,33 +38,14 @@ public class User extends BaseEntity {
     @Column(name = "email", length = 100, nullable = false)
     private String email;
 
-    @Column(name = "name", length = 50, nullable = false)
-    private String name;
-
-    @Column(name = "phone_number", length = 20, nullable = false, unique = true)
-    private String phoneNumber;
-
-    @Column(name = "student_number", length = 20, nullable = false, unique = true)
-    private String studentNumber;
-
     @Column(name = "provider", length = 20)
     @Enumerated(EnumType.STRING)
     private Provider provider;
 
     @Builder
-    private User(
-        Integer id,
-        String email,
-        String name,
-        String phoneNumber,
-        String studentNumber,
-        Provider provider
-    ) {
+    private UnRegisteredUser(Integer id, String email, Provider provider) {
         this.id = id;
         this.email = email;
-        this.name = name;
-        this.phoneNumber = phoneNumber;
-        this.studentNumber = studentNumber;
         this.provider = provider;
     }
 }
