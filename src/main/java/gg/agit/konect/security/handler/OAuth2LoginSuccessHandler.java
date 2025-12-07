@@ -56,7 +56,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("email", email);
         session.setAttribute("provider", provider);
-        session.setAttribute("isRegistered", false);
         session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
 
         response.setStatus(HttpServletResponse.SC_OK);

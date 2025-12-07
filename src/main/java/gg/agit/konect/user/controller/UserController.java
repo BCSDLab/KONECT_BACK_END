@@ -28,9 +28,8 @@ public class UserController implements UserApi {
     ) {
         String email = (String) session.getAttribute("email");
         Provider provider = (Provider) session.getAttribute("provider");
-        Boolean isRegistered = (Boolean) session.getAttribute("isRegistered");
 
-        if (email == null || provider == null || isRegistered == null) {
+        if (email == null || provider == null) {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
         }
 
