@@ -18,7 +18,15 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "users")
+@Table(
+    name = "users",
+    uniqueConstraints = {
+        @jakarta.persistence.UniqueConstraint(
+            name = "uq_unregistered_email_provider",
+            columnNames = {"email", "provider"}
+        )
+    }
+    )
 @NoArgsConstructor(access = PROTECTED)
 public class User extends BaseEntity {
 
@@ -27,7 +35,7 @@ public class User extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
-    @Column(name = "email", length = 100, nullable = false, unique = true)
+    @Column(name = "email", length = 100, nullable = false)
     private String email;
 
     @Column(name = "name", length = 50, nullable = false)
