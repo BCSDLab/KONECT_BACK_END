@@ -1,14 +1,17 @@
 package gg.agit.konect.council.model;
 
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
-
+import gg.agit.konect.university.model.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -27,7 +30,7 @@ public class Council extends BaseEntity {
     private Integer id;
 
     @NotNull
-    @Column(name = "name",nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
     @NotNull
@@ -46,14 +49,27 @@ public class Council extends BaseEntity {
     @Column(name = "email", nullable = false)
     private String email;
 
+    @OneToOne(fetch = LAZY)
+    @JoinColumn(name = "university_id", nullable = false)
+    private University university;
+
     @Builder
-    private Council(Integer id, String name, String introduce, String location, String phoneNumber, String email) {
+    private Council(
+        Integer id,
+        String name,
+        String introduce,
+        String location,
+        String phoneNumber,
+        String email,
+        University university
+    ) {
         this.id = id;
         this.name = name;
         this.introduce = introduce;
         this.location = location;
         this.phoneNumber = phoneNumber;
         this.email = email;
+        this.university = university;
     }
 
     public void update(String name, String introduce, String location, String phoneNumber, String email) {

@@ -1,3 +1,18 @@
+CREATE TABLE university
+(
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    korean_name  VARCHAR(255)                        NOT NULL,
+    english_name VARCHAR(255)                        NOT NULL,
+    email_domain VARCHAR(255)                        NOT NULL,
+
+    UNIQUE (korean_name),
+    UNIQUE (english_name),
+    UNIQUE (email_domain),
+
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+);
+
 CREATE TABLE users
 (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -28,17 +43,19 @@ CREATE TABLE club_tag
 
 CREATE TABLE club
 (
-    id                 INT AUTO_INCREMENT PRIMARY KEY,
-    club_category_id   INT                                 NOT NULL,
-    name               VARCHAR(50)                         NOT NULL,
-    description        VARCHAR(100)                        NOT NULL,
-    introduce          TEXT                                NOT NULL,
-    image_url          VARCHAR(255)                        NOT NULL,
-    location           VARCHAR(255)                        NOT NULL,
-    created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    club_category_id INT                                 NOT NULL,
+    university_id    INT                                 NOT NULL,
+    name             VARCHAR(50)                         NOT NULL,
+    description      VARCHAR(100)                        NOT NULL,
+    introduce        TEXT                                NOT NULL,
+    image_url        VARCHAR(255)                        NOT NULL,
+    location         VARCHAR(255)                        NOT NULL,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    FOREIGN KEY (club_category_id) REFERENCES club_category (id)
+    FOREIGN KEY (club_category_id) REFERENCES club_category (id),
+    FOREIGN KEY (university_id) REFERENCES university (id)
 );
 
 CREATE TABLE club_tag_map
@@ -154,13 +171,16 @@ CREATE TABLE club_position_fee
 CREATE TABLE council
 (
     id           INT AUTO_INCREMENT PRIMARY KEY,
+    university_id INT NOT NULL,
     name         VARCHAR(255)                        NOT NULL,
     introduce    TEXT                                NOT NULL,
     location     VARCHAR(255)                        NOT NULL,
     phone_number VARCHAR(255)                        NOT NULL,
     email        VARCHAR(255)                        NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (university_id) REFERENCES university (id)
 );
 
 CREATE TABLE council_operating_hour
