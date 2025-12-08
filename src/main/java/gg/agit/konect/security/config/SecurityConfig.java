@@ -26,18 +26,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // TODO 테스트 이후 접근 가능 경로 막아두기
         http
             .csrf(AbstractHttpConfigurer::disable)
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/",
-                    "/index.html",
-                    "/login/oauth2/code/**",
-                    "/error"
-                ).permitAll()
-                .anyRequest().authenticated()
-            ).exceptionHandling(ex -> ex
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.sendError(401);
                 })
