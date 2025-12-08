@@ -27,6 +27,9 @@ public record CouncilResponse(
     @Schema(description = "총동아리연합회 위치", example = "학생회관 2층 202호", requiredMode = REQUIRED)
     String location,
 
+    @Schema(description = "총동아리연합회 퍼스널 컬러", example = "#FF5733", requiredMode = REQUIRED)
+    String personalColor,
+
     @Schema(description = "총동아리연합회 운영 시간 리스트", requiredMode = REQUIRED)
     List<InnerOperatingHour> operatingHours,
 
@@ -89,6 +92,7 @@ public record CouncilResponse(
             council.getName(),
             council.getIntroduce(),
             council.getLocation(),
+            council.getPersonalColor(),
             operatingHours.stream()
                 .map(InnerOperatingHour::from)
                 .toList(),

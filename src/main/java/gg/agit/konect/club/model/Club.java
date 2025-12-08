@@ -5,7 +5,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
-
+import gg.agit.konect.university.model.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -32,6 +32,10 @@ public class Club extends BaseEntity {
     @JoinColumn(name = "club_category_id", nullable = false)
     private ClubCategory clubCategory;
 
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "university_id", nullable = false)
+    private University university;
+
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
@@ -51,6 +55,7 @@ public class Club extends BaseEntity {
     private Club(
         Integer id,
         ClubCategory clubCategory,
+        University university,
         String name,
         String description,
         String introduce,
@@ -59,6 +64,7 @@ public class Club extends BaseEntity {
     ) {
         this.id = id;
         this.clubCategory = clubCategory;
+        this.university = university;
         this.name = name;
         this.description = description;
         this.introduce = introduce;
