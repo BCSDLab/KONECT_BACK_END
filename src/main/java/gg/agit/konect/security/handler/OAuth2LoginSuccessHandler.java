@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
+    private final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
+
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
@@ -34,7 +36,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletResponse response,
         Authentication authentication
     ) throws IOException {
-        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken)authentication;
         Provider provider = Provider.valueOf(oauthToken.getAuthorizedClientRegistrationId().toUpperCase());
 
         OAuth2User oauthUser = (OAuth2User)authentication.getPrincipal();
@@ -43,14 +45,20 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
 
         if (user.isEmpty()) {
-            sendAdditionalInfoRequiredResponse(response, email, provider);
+            sendAdditionalInfoRequiredResponse(request, response, email, provider);
             return;
         }
 
         sendLoginSuccessResponse(request, response, user.get(), provider);
     }
 
-    private void sendAdditionalInfoRequiredResponse(HttpServletResponse response, String email, Provider provider) throws IOException {
+    private void sendAdditionalInfoRequiredResponse(HttpServletRequest request, HttpServletResponse response,
+        String email, Provider provider) throws IOException {
+        HttpSession session = request.getSession(true);
+        session.setAttribute("email", email);
+        session.setAttribute("provider", provider);
+        session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
+
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
 
@@ -59,10 +67,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 
-    private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user, Provider provider) throws IOException {
+    private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user,
+        Provider provider) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
-        session.setAttribute("email", user.getEmail());
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
