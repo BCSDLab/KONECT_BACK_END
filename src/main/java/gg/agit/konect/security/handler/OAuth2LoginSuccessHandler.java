@@ -1,6 +1,7 @@
 package gg.agit.konect.security.handler;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.security.core.Authentication;
@@ -40,7 +41,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Provider provider = Provider.valueOf(oauthToken.getAuthorizedClientRegistrationId().toUpperCase());
 
         OAuth2User oauthUser = (OAuth2User)authentication.getPrincipal();
-        String email = (String)oauthUser.getAttributes().get("email");
+        String email = extractEmail(oauthUser, provider);
 
         Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
 
@@ -78,5 +79,14 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         LoginSuccessResponse body = LoginSuccessResponse.of(user.getId(), user.getEmail(), provider);
 
         response.getWriter().write(objectMapper.writeValueAsString(body));
+    }
+
+    private String extractEmail(OAuth2User oauthUser, Provider provider) {
+        if (provider == Provider.NAVER) {
+            Map<String, Object> responseMap = (Map<String, Object>)oauthUser.getAttributes().get("response");
+            return (String) responseMap.get("email");
+        }
+
+        return (String) oauthUser.getAttributes().get("email");
     }
 }
