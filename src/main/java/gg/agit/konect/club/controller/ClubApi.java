@@ -17,7 +17,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/clubs")
 public interface ClubApi {
 
-    @Operation(summary = "페이지 네이션으로 동아리 리스트를 조회한다.")
+    @Operation(summary = "페이지 네이션으로 동아리 리스트를 조회한다.", description = """
+        - isRecruiting가 true일 경우, 모집일이 빠른 순으로 정렬됩니다.
+        """)
     @GetMapping
     ResponseEntity<ClubsResponse> getClubs(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
