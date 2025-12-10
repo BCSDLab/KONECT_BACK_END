@@ -69,8 +69,7 @@ public record CouncilResponse(
 
     public static CouncilResponse of(
         Council council,
-        List<CouncilOperatingHour> operatingHours,
-        List<CouncilSocialMedia> socialMedias
+        List<CouncilOperatingHour> operatingHours
     ) {
         return new CouncilResponse(
             council.getId(),
