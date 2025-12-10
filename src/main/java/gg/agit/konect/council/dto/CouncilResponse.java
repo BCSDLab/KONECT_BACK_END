@@ -39,6 +39,9 @@ public record CouncilResponse(
     @Schema(description = "총동아리연합회 이메일", example = "council@koreatech.ac.kr", requiredMode = REQUIRED)
     String email,
 
+    @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
+    String instagramUrl,
+
     @Schema(description = "총동아리연합회 소셜미디어", requiredMode = REQUIRED)
     List<InnerSocialMedia> socialMedias
 ) {
@@ -98,6 +101,7 @@ public record CouncilResponse(
                 .toList(),
             council.getPhoneNumber(),
             council.getEmail(),
+            council.getInstagramUrl(),
             socialMedias.stream()
                 .map(InnerSocialMedia::from)
                 .toList()
