@@ -18,6 +18,7 @@ import org.springframework.stereotype.Repository;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.club.model.Club;
@@ -33,8 +34,9 @@ public class ClubQueryRepository {
 
     public Page<ClubSummaryInfo> findAllByFilter(PageRequest pageable, String query, Boolean isRecruiting) {
         BooleanBuilder filter = clubSearchFilter(query, isRecruiting);
+        OrderSpecifier<?> sort = clubSort(isRecruiting);
 
-        List<Club> clubs = fetchClubs(pageable, filter);
+        List<Club> clubs = fetchClubs(pageable, filter, sort);
         Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
         List<ClubSummaryInfo> content = convertToSummaryInfo(clubs, clubTagsMap);
         Long total = countClubs(filter);
@@ -42,13 +44,13 @@ public class ClubQueryRepository {
         return new PageImpl<>(content, pageable, total);
     }
 
-    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder filter) {
+    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
         return jpaQueryFactory
             .selectFrom(club)
             .join(club.clubCategory, clubCategory).fetchJoin()
             .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
-            .distinct()
             .where(filter)
+            .orderBy(sort)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();
@@ -126,5 +128,12 @@ public class ClubQueryRepository {
         }
 
         return builder;
+    }
+
+    private OrderSpecifier<?> clubSort(Boolean isRecruiting) {
+        if (isRecruiting) {
+            return clubRecruitment.endDate.asc();
+        }
+        return null;
     }
 }
