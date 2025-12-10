@@ -47,9 +47,7 @@ public class CouncilService {
 
     public CouncilResponse getCouncil() {
         Council council = councilRepository.getById(1);
-        List<CouncilOperatingHour> operatingHours = councilOperatingHourRepository.findByCouncilId(council.getId());
-
-        return CouncilResponse.of(council, operatingHours);
+        return CouncilResponse.of(council);
     }
 
     @Transactional
