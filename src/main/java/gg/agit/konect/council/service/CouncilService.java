@@ -9,7 +9,6 @@ import gg.agit.konect.council.dto.CouncilCreateRequest;
 import gg.agit.konect.council.dto.CouncilResponse;
 import gg.agit.konect.council.dto.CouncilUpdateRequest;
 import gg.agit.konect.council.model.Council;
-import gg.agit.konect.council.model.CouncilOperatingHour;
 import gg.agit.konect.council.model.CouncilOperatingHours;
 import gg.agit.konect.council.model.CouncilSocialMedia;
 import gg.agit.konect.council.repository.CouncilOperatingHourRepository;
@@ -47,7 +46,7 @@ public class CouncilService {
 
     public CouncilResponse getCouncil() {
         Council council = councilRepository.getById(1);
-        return CouncilResponse.of(council);
+        return CouncilResponse.from(council);
     }
 
     @Transactional

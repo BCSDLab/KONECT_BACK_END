@@ -33,7 +33,7 @@ public record CouncilResponse(
     @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
     String instagramUrl
 ) {
-    public static CouncilResponse of(Council council) {
+    public static CouncilResponse from(Council council) {
         return new CouncilResponse(
             council.getId(),
             council.getName(),
