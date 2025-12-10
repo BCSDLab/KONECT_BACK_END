@@ -191,7 +191,8 @@ CREATE TABLE council
     location       VARCHAR(255)                        NOT NULL,
     phone_number   VARCHAR(255)                        NOT NULL,
     email          VARCHAR(255)                        NOT NULL,
-    instagram_url   VARCHAR(255)                        NOT NULL,
+    instagram_url  VARCHAR(255)                        NOT NULL,
+    operating_hour VARCHAR(255)                        NOT NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
