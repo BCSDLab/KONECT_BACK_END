@@ -40,10 +40,7 @@ public record CouncilResponse(
     String email,
 
     @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
-    String instagramUrl,
-
-    @Schema(description = "총동아리연합회 소셜미디어", requiredMode = REQUIRED)
-    List<InnerSocialMedia> socialMedias
+    String instagramUrl
 ) {
     public record InnerOperatingHour(
         @Schema(description = "요일", example = "MONDAY", requiredMode = REQUIRED)
@@ -70,21 +67,6 @@ public record CouncilResponse(
         }
     }
 
-    public record InnerSocialMedia(
-        @Schema(description = "플랫폼 이름", example = "인스타그램", requiredMode = REQUIRED)
-        String name,
-
-        @Schema(description = "플랫폼 url", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
-        String url
-    ) {
-        public static InnerSocialMedia from(CouncilSocialMedia socialMedia) {
-            return new InnerSocialMedia(
-                socialMedia.getPlatformName(),
-                socialMedia.getUrl()
-            );
-        }
-    }
-
     public static CouncilResponse of(
         Council council,
         List<CouncilOperatingHour> operatingHours,
@@ -101,10 +83,7 @@ public record CouncilResponse(
                 .toList(),
             council.getPhoneNumber(),
             council.getEmail(),
-            council.getInstagramUrl(),
-            socialMedias.stream()
-                .map(InnerSocialMedia::from)
-                .toList()
+            council.getInstagramUrl()
         );
     }
 }
