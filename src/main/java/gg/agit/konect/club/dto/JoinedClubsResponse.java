@@ -29,9 +29,6 @@ public record JoinedClubsResponse(
         @Schema(description = "직책", example = "회장", requiredMode = REQUIRED)
         String position,
 
-        @Schema(description = "직책 그룹", example = "PRESIDENT", requiredMode = REQUIRED)
-        PositionGroup positionGroup,
-
         @Schema(description = "미납 회비 금액", example = "10000", requiredMode = REQUIRED)
         Integer unpaidFeeAmount
     ) {
@@ -42,7 +39,6 @@ public record JoinedClubsResponse(
                 clubMember.getClub().getImageUrl(),
                 clubMember.getClub().getClubCategory().getName(),
                 clubMember.getClubPosition().getName(),
-                clubMember.getClubPosition().getClubPositionGroup().getName(),
                 unpaidFeeAmount
             );
         }
