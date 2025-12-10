@@ -24,12 +24,6 @@ public record CouncilResponse(
     @Schema(description = "총동아리연합회 운영 시간", example = "평일 09:00 ~ 18:00", requiredMode = REQUIRED)
     String operatingHour,
 
-    @Schema(description = "총동아리연합회 전화번호", example = "041-560-1234", requiredMode = REQUIRED)
-    String phoneNumber,
-
-    @Schema(description = "총동아리연합회 이메일", example = "council@koreatech.ac.kr", requiredMode = REQUIRED)
-    String email,
-
     @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
     String instagramUrl
 ) {
@@ -41,8 +35,6 @@ public record CouncilResponse(
             council.getLocation(),
             council.getPersonalColor(),
             council.getOperatingHour(),
-            council.getPhoneNumber(),
-            council.getEmail(),
             council.getInstagramUrl()
         );
     }
