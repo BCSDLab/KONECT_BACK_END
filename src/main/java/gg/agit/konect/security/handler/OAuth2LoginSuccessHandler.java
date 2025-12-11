@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -23,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
+
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
 
     private final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
 
@@ -58,7 +62,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute("provider", provider);
         session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
 
-        response.sendRedirect("https://konect.kro.kr/signup");
+        response.sendRedirect(frontendBaseUrl + "/signup");
     }
 
     private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user,
@@ -66,7 +70,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
-        response.sendRedirect("https://konect.kro.kr");
+        response.sendRedirect(frontendBaseUrl);
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
