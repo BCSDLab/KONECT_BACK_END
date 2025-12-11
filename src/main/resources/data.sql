@@ -299,19 +299,6 @@ VALUES ('총동아리연합회', 1,
         '총동아리연합회는 한국기술교육대학교 내 모든 동아리의 활동을 지원하고 관리하는 학생 자치 기구입니다.\n\n동아리 간의 원활한 소통을 증진하고, 동아리 문화 발전을 위해 다양한 행사와 지원 프로그램을 운영하고 있습니다.\n\n동아리 운영에 필요한 각종 행정 지원, 예산 지원, 시설 관리 등을 담당하며, 동아리 박람회, 축제 등 대형 행사를 주관합니다.',
         '#C9DEF3', '학생회관 2층 202호', '041-560-1234', 'council@koreatech.ac.kr', 'https://www.instagram.com/koreatech_council', '평일 09:00 ~ 18:00');
 
-INSERT INTO council_operating_hour (council_id, day_of_week, open_time, close_time, is_closed)
-VALUES (1, 'MONDAY', '09:00', '18:00', false),
-       (1, 'TUESDAY', '09:00', '18:00', false),
-       (1, 'WEDNESDAY', '09:00', '18:00', false),
-       (1, 'THURSDAY', '09:00', '18:00', false),
-       (1, 'FRIDAY', '09:00', '18:00', false),
-       (1, 'SATURDAY', '09:00', '18:00', false),
-       (1, 'SUNDAY', '09:00', '18:00', false);
-
-INSERT INTO council_social_media (council_id, platform_name, url)
-VALUES (1, '인스타', 'https://www.instagram.com/koreatech_council'),
-       (1, '구글 폼', 'https://docs.google.com/forms/example');
-
 INSERT INTO council_notice (council_id, title, content)
 VALUES (1, '2025학년도 2학기 동아리 지원금 신청 안내',
         '안녕하세요, 총동아리연합회입니다.\n\n2025학년도 2학기 동아리 지원금 신청을 다음과 같이 안내드립니다.\n\n■ 신청 기간\n- 2025년 12월 10일(화) ~ 12월 20일(금) 18:00까지\n\n■ 지원 대상\n- 정동아리 및 준동아리로 등록된 모든 동아리\n- 2학기 활동 계획서를 제출한 동아리\n\n■ 지원 금액\n- 정동아리: 최대 500,000원\n- 준동아리: 최대 300,000원\n\n■ 신청 방법\n1. 총동아리연합회 홈페이지 접속\n2. 지원금 신청서 다운로드\n3. 활동 계획서 및 예산 계획서 작성\n4. 이메일(council@koreatech.ac.kr)로 제출\n\n■ 제출 서류\n- 동아리 지원금 신청서\n- 2학기 활동 계획서\n- 예산 사용 계획서\n- 동아리 등록증 사본\n\n■ 심사 기준\n- 활동 계획의 구체성 및 실현 가능성\n- 예산 계획의 적정성\n- 지난 학기 활동 실적\n\n■ 결과 발표\n- 2025년 12월 27일(금) 개별 공지\n\n기타 문의사항은 총동아리연합회실(학생회관 2층 202호) 또는 이메일로 연락 주시기 바랍니다.\n\n감사합니다.'),

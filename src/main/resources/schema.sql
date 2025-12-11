@@ -199,34 +199,6 @@ CREATE TABLE council
     FOREIGN KEY (university_id) REFERENCES university (id)
 );
 
-CREATE TABLE council_operating_hour
-(
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    council_id  INT                                 NOT NULL,
-    day_of_week VARCHAR(20)                         NOT NULL,
-    open_time   TIME,
-    close_time  TIME,
-    is_closed   BOOLEAN   DEFAULT FALSE,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
-    UNIQUE (council_id, day_of_week),
-    FOREIGN KEY (council_id) REFERENCES council (id) ON DELETE CASCADE
-);
-
-CREATE TABLE council_social_media
-(
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    council_id    INT                                 NOT NULL,
-    platform_name VARCHAR(50)                         NOT NULL,
-    url           VARCHAR(500)                        NOT NULL,
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
-    UNIQUE (council_id, platform_name),
-    FOREIGN KEY (council_id) REFERENCES council (id) ON DELETE CASCADE
-);
-
 CREATE TABLE council_notice
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
