@@ -95,14 +95,14 @@ public class Council extends BaseEntity {
         String introduce,
         String location,
         String personalColor,
-        String phoneNumber,
-        String email
+        String instagramUrl,
+        String operatingHour
     ) {
         this.name = name;
         this.introduce = introduce;
         this.location = location;
         this.personalColor = personalColor;
-        this.phoneNumber = phoneNumber;
-        this.email = email;
+        this.instagramUrl = instagramUrl;
+        this.operatingHour = operatingHour;
     }
 }
