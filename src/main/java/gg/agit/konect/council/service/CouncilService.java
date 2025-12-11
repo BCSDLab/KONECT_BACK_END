@@ -7,9 +7,7 @@ import gg.agit.konect.council.dto.CouncilCreateRequest;
 import gg.agit.konect.council.dto.CouncilResponse;
 import gg.agit.konect.council.dto.CouncilUpdateRequest;
 import gg.agit.konect.council.model.Council;
-import gg.agit.konect.council.repository.CouncilOperatingHourRepository;
 import gg.agit.konect.council.repository.CouncilRepository;
-import gg.agit.konect.council.repository.CouncilSocialMediaRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -18,8 +16,6 @@ import lombok.RequiredArgsConstructor;
 public class CouncilService {
 
     private final CouncilRepository councilRepository;
-    private final CouncilOperatingHourRepository councilOperatingHourRepository;
-    private final CouncilSocialMediaRepository councilSocialMediaRepository;
 
     @Transactional
     public void createCouncil(CouncilCreateRequest request) {
@@ -48,9 +44,6 @@ public class CouncilService {
     @Transactional
     public void deleteCouncil() {
         Council council = councilRepository.getById(1);
-
-        councilOperatingHourRepository.deleteByCouncilId(council.getId());
-        councilSocialMediaRepository.deleteByCouncilId(council.getId());
         councilRepository.deleteById(council.getId());
     }
 }
