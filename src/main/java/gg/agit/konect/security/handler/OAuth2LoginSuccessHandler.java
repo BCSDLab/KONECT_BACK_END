@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import gg.agit.konect.security.dto.AdditionalInfoRequiredResponse;
-import gg.agit.konect.security.dto.LoginSuccessResponse;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
@@ -60,12 +58,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute("provider", provider);
         session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json;charset=UTF-8");
-
-        AdditionalInfoRequiredResponse body = AdditionalInfoRequiredResponse.of(email, provider);
-
-        response.getWriter().write(objectMapper.writeValueAsString(body));
+        response.sendRedirect("https://konect.kro.kr/signup");
     }
 
     private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user,
@@ -73,12 +66,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json;charset=UTF-8");
-
-        LoginSuccessResponse body = LoginSuccessResponse.of(user.getId(), user.getEmail(), provider);
-
-        response.getWriter().write(objectMapper.writeValueAsString(body));
+        response.sendRedirect("https://konect.kro.kr");
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
