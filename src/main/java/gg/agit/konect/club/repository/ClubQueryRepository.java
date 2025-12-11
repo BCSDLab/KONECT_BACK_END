@@ -134,6 +134,7 @@ public class ClubQueryRepository {
         if (isRecruiting) {
             return clubRecruitment.endDate.asc();
         }
-        return null;
+
+        return club.id.asc();
     }
 }
