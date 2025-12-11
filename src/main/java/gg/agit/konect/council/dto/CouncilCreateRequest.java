@@ -2,8 +2,6 @@ package gg.agit.konect.council.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.util.List;
-
 import gg.agit.konect.council.model.Council;
 import gg.agit.konect.council.model.CouncilSocialMedia;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -36,8 +34,8 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 운영 시간", example = "평일 09:00 ~ 18:00", requiredMode = REQUIRED)
     String operatingHour,
 
-    @Schema(description = "총동아리연합회 소셜미디어", requiredMode = REQUIRED)
-    List<InnerSocialMedia> socialMedias
+    @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
+    String instagramUrl
 ) {
     public record InnerSocialMedia(
         @NotBlank(message = "플랫폼 이름은 필수 입력값입니다.")
