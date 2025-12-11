@@ -45,8 +45,10 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 전화번호", example = "041-560-1234", requiredMode = REQUIRED)
     String phoneNumber,
 
-    @Schema(description = "총동아리연합회 운영 시간 리스트", requiredMode = REQUIRED)
-    List<InnerOperatingHour> operatingHours,
+    @NotEmpty(message = "총동아리연합회 운영 시간을 필수 입력입니다.")
+    @Size(max = 255, message = "총동아리연합회 운영 시간은 최대 255자 입니다.")
+    @Schema(description = "총동아리연합회 운영 시간", example = "평일 09:00 ~ 18:00", requiredMode = REQUIRED)
+    String operatingHour,
 
     @NotEmpty(message = "총동아리연합회 이메일은 필수 입력입니다.")
     @Size(max = 255, message = "총동아리연합회 이메일은 최대 255자 입니다.")
