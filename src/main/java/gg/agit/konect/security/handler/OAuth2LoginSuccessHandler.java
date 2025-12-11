@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -12,8 +13,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import gg.agit.konect.security.dto.AdditionalInfoRequiredResponse;
-import gg.agit.konect.security.dto.LoginSuccessResponse;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
@@ -25,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
+
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
 
     private final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
 
@@ -60,12 +62,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute("provider", provider);
         session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json;charset=UTF-8");
-
-        AdditionalInfoRequiredResponse body = AdditionalInfoRequiredResponse.of(email, provider);
-
-        response.getWriter().write(objectMapper.writeValueAsString(body));
+        response.sendRedirect(frontendBaseUrl + "/signup");
     }
 
     private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user,
@@ -73,12 +70,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json;charset=UTF-8");
-
-        LoginSuccessResponse body = LoginSuccessResponse.of(user.getId(), user.getEmail(), provider);
-
-        response.getWriter().write(objectMapper.writeValueAsString(body));
+        response.sendRedirect(frontendBaseUrl);
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
