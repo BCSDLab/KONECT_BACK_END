@@ -30,17 +30,11 @@ public class CouncilService {
     @Transactional
     public void createCouncil(CouncilCreateRequest request) {
         Council council = request.toEntity();
-        CouncilOperatingHours councilOperatingHours = new CouncilOperatingHours(
-            request.operatingHours().stream()
-                .map(operatingHour -> operatingHour.toEntity(council))
-                .toList()
-        );
         List<CouncilSocialMedia> socialMedias = request.socialMedias().stream()
             .map(socialMedia -> socialMedia.toEntity(council))
             .toList();
 
         councilRepository.save(council);
-        councilOperatingHours.operatingHours().forEach(councilOperatingHourRepository::save);
         socialMedias.forEach(councilSocialMediaRepository::save);
     }
 
