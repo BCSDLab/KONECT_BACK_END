@@ -30,12 +30,7 @@ public class CouncilService {
     @Transactional
     public void createCouncil(CouncilCreateRequest request) {
         Council council = request.toEntity();
-        List<CouncilSocialMedia> socialMedias = request.socialMedias().stream()
-            .map(socialMedia -> socialMedia.toEntity(council))
-            .toList();
-
         councilRepository.save(council);
-        socialMedias.forEach(councilSocialMediaRepository::save);
     }
 
     public CouncilResponse getCouncil() {
