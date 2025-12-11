@@ -39,13 +39,14 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
     String instagramUrl
 ) {
-
     public Council toEntity() {
         return Council.builder()
             .name(name)
             .introduce(introduce)
             .location(location)
             .personalColor(personalColor)
+            .instagramUrl(instagramUrl)
+            .operatingHour(operatingHour)
             .build();
     }
 }
