@@ -59,12 +59,10 @@ VALUES ('ACADEMIC', 1, 'BCSD', '즐겁게 일하고 열심히 노는 IT 특성�
         'SED-TUA는 종교 활동과 봉사로 함께 성장하는 동아리입니다.',
         'https://static.koreatech.in/upload/CLUB/2025/8/6/34c9902e-fbc7-4e5e-96f2-8e53bfe601b4/1000003833.jpg',
         '학생회관 108호'),
-
        ('PERFORMANCE', 1, '비상', '낭만과 행복이 가득한 어쿠스틱 기타 공연 동아리',
         '비상은 기타 공연과 음악 활동을 즐기는 동아리입니다.',
         'https://static.koreatech.in/upload/CLUB/2025/8/8/84a933e3-4473-45e3-9057-cc573acdb982/1000034369.png',
         '학생회관 109호'),
-
        ('HOBBY', 1, '셔터', '안녕하세요! 한국기술대학교 사진 동아리 ''셔터''입니다!',
         '셔터는 사진 촬영과 편집을 즐기는 학생들의 모임입니다.',
         'https://static.koreatech.in/upload/CLUB/2025/8/16/429d1be5-da62-4f53-b033-f6e01a55feeb/5763.png',
