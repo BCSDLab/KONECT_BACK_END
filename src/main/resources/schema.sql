@@ -124,6 +124,7 @@ CREATE TABLE council
     id             INT AUTO_INCREMENT PRIMARY KEY,
     university_id  INT                                 NOT NULL,
     name           VARCHAR(255)                        NOT NULL,
+    image_url      VARCHAR(255)                        NOT NULL,
     introduce      TEXT                                NOT NULL,
     personal_color VARCHAR(255)                        NOT NULL,
     location       VARCHAR(255)                        NOT NULL,

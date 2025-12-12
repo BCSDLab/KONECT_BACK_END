@@ -239,8 +239,8 @@ VALUES (1, '2025-11-30', '2025-12-31'),
        (3, '2025-11-28', '2025-12-31'),
        (4, '2025-11-27', '2025-12-31');
 
-INSERT INTO council (name, university_id, introduce, personal_color, location, phone_number, email, instagram_url, operating_hour)
-VALUES ('총동아리연합회', 1,
+INSERT INTO council (name, image_url, university_id, introduce, personal_color, location, phone_number, email, instagram_url, operating_hour)
+VALUES ('개화', 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png', 1,
         '총동아리연합회는 한국기술교육대학교 내 모든 동아리의 활동을 지원하고 관리하는 학생 자치 기구입니다.\n\n동아리 간의 원활한 소통을 증진하고, 동아리 문화 발전을 위해 다양한 행사와 지원 프로그램을 운영하고 있습니다.\n\n동아리 운영에 필요한 각종 행정 지원, 예산 지원, 시설 관리 등을 담당하며, 동아리 박람회, 축제 등 대형 행사를 주관합니다.',
         '#C9DEF3', '학생회관 2층 202호', '041-560-1234', 'council@koreatech.ac.kr', 'https://www.instagram.com/koreatech_council', '평일 09:00 ~ 18:00');
 
