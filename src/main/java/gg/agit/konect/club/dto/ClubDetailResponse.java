@@ -8,10 +8,9 @@ import java.util.List;
 
 import gg.agit.konect.club.enums.RecruitmentStatus;
 import gg.agit.konect.club.model.Club;
-import gg.agit.konect.club.model.ClubRepresentative;
+import gg.agit.konect.club.model.ClubMember;
 import gg.agit.konect.club.model.ClubRecruitment;
 import gg.agit.konect.user.model.User;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubDetailResponse(
@@ -30,12 +29,12 @@ public record ClubDetailResponse(
     @Schema(
         description = "동아리 상세 소개",
         example = """
-              BCSD에서 얻을 수 있는 경험
-              1. IT 실무 경험 및 포트폴리오
-              2. 다양한 직군과의 협업 경험
-              3. 현업 개발자 및 선배와의 네트워킹
-              4. 분야별 취업 멘토링
-              """,
+            BCSD에서 얻을 수 있는 경험
+            1. IT 실무 경험 및 포트폴리오
+            2. 다양한 직군과의 협업 경험
+            3. 현업 개발자 및 선배와의 네트워킹
+            4. 분야별 취업 멘토링
+            """,
         requiredMode = REQUIRED
     )
     String introduce,
@@ -47,7 +46,7 @@ public record ClubDetailResponse(
     String categoryName,
 
     @Schema(description = "동아리 인원 수", example = "30", requiredMode = REQUIRED)
-    Long memberCount,
+    Integer memberCount,
 
     @Schema(description = "동아리 모집 정보", requiredMode = REQUIRED)
     InnerRecruitment recruitment,
@@ -55,7 +54,6 @@ public record ClubDetailResponse(
     @Schema(description = "동아리 대표 임원진", requiredMode = REQUIRED)
     List<InnerRepresentative> representatives
 ) {
-
     public record InnerRecruitment(
         @Schema(description = "동아리 모집 상태", example = "ONGOING", requiredMode = REQUIRED)
         RecruitmentStatus status,
@@ -66,7 +64,6 @@ public record ClubDetailResponse(
         @Schema(description = "동아리 모집 마감일", example = "2025-12-31", requiredMode = NOT_REQUIRED)
         LocalDate endDate
     ) {
-
         public static InnerRecruitment from(ClubRecruitment clubRecruitment) {
             RecruitmentStatus status = RecruitmentStatus.of(clubRecruitment);
 
@@ -87,19 +84,17 @@ public record ClubDetailResponse(
         @Schema(description = "동아리 대표 임원진 이메일", example = "example@koreatech.ac.kr", requiredMode = REQUIRED)
         String email
     ) {
-
-        public static InnerRepresentative from(ClubRepresentative clubRepresentative) {
-            User user = clubRepresentative.getUser();
-
+        public static InnerRepresentative from(ClubMember clubMember) {
+            User user = clubMember.getUser();
             return new InnerRepresentative(user.getName(), user.getPhoneNumber(), user.getEmail());
         }
     }
 
     public static ClubDetailResponse of(
         Club club,
-        Long memberCount,
+        Integer memberCount,
         ClubRecruitment clubRecruitment,
-        List<ClubRepresentative> clubRepresentatives
+        List<ClubMember> clubPresidents
     ) {
         return new ClubDetailResponse(
             club.getId(),
@@ -111,7 +106,7 @@ public record ClubDetailResponse(
             club.getClubCategory().getName(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
-            clubRepresentatives.stream()
+            clubPresidents.stream()
                 .map(InnerRepresentative::from)
                 .toList()
         );
