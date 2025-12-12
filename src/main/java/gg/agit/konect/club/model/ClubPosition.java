@@ -37,7 +37,7 @@ public class ClubPosition extends BaseEntity {
 
     @NotNull
     @Enumerated(value = STRING)
-    @Column(name = "club_position_group", nullable = false, unique = true)
+    @Column(name = "club_position_group", nullable = false)
     private ClubPositionGroup clubPositionGroup;
 
     @ManyToOne(fetch = LAZY)
