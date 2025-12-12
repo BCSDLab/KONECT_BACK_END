@@ -1,13 +1,12 @@
 CREATE TABLE university
 (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    korean_name  VARCHAR(255)                        NOT NULL,
-    english_name VARCHAR(255)                        NOT NULL,
-    email_domain VARCHAR(255)                        NOT NULL,
+    campus       VARCHAR(255) NOT NULL,
+    korean_name  VARCHAR(255) NOT NULL,
+    english_name VARCHAR(255) NOT NULL,
+    email_domain VARCHAR(255) NOT NULL,
 
-    UNIQUE (korean_name),
-    UNIQUE (english_name),
-    UNIQUE (email_domain),
+    UNIQUE (campus, korean_name, english_name, email_domain),
 
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
