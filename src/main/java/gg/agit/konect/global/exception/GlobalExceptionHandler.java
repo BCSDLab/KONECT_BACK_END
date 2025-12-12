@@ -101,11 +101,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorTraceId = UUID.randomUUID().toString();
 
         List<ErrorResponse.FieldError> fieldErrors = getFieldErrors(ex);
-        String firstErrorMessage = getFirstFieldErrorMessage(fieldErrors, errorCode.getMessage());
 
         ErrorResponse body = new ErrorResponse(
             errorCode.getCode(),
-            firstErrorMessage,
+            errorCode.getMessage(),
             errorTraceId,
             fieldErrors
         );
