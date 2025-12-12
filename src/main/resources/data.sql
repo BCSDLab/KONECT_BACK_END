@@ -2,28 +2,28 @@ INSERT INTO university (korean_name, english_name, email_domain)
 VALUES ('한국기술교육대학교', 'koreatech', 'koreatech.ac.kr');
 
 -- 유저
-INSERT INTO users (email, name, phone_number, student_number, provider)
+INSERT INTO users (email, name, phone_number, student_number, provider, marketing_agreement)
 VALUES
-    ('user01@example.com', '홍길동', '010-1000-0001', '20250001', 'GOOGLE'),
-    ('user02@example.com', '김철수', '010-1000-0002', '20250002', 'GOOGLE'),
-    ('user03@example.com', '이영희', '010-1000-0003', '20250003', 'GOOGLE'),
-    ('user04@example.com', '박민수', '010-1000-0004', '20250004', 'GOOGLE'),
-    ('user05@example.com', '최서연', '010-1000-0005', '20250005', 'GOOGLE'),
-    ('user06@example.com', '정우진', '010-1000-0006', '20250006', 'GOOGLE'),
-    ('user07@example.com', '오하늘', '010-1000-0007', '20250007', 'GOOGLE'),
-    ('user08@example.com', '윤예진', '010-1000-0008', '20250008', 'GOOGLE'),
-    ('user09@example.com', '강도현', '010-1000-0009', '20250009', 'GOOGLE'),
-    ('user10@example.com', '신가윤', '010-1000-0010', '20250010', 'GOOGLE'),
-    ('user11@example.com', '서하준', '010-1000-0011', '20250011', 'GOOGLE'),
-    ('user12@example.com', '문정우', '010-1000-0012', '20250012', 'GOOGLE'),
-    ('user13@example.com', '김다은', '010-1000-0013', '20250013', 'GOOGLE'),
-    ('user14@example.com', '이주원', '010-1000-0014', '20250014', 'GOOGLE'),
-    ('user15@example.com', '박소현', '010-1000-0015', '20250015', 'GOOGLE'),
-    ('user16@example.com', '양도균', '010-1000-0016', '20250016', 'GOOGLE'),
-    ('user17@example.com', '조하림', '010-1000-0017', '20250017', 'GOOGLE'),
-    ('user18@example.com', '한예준', '010-1000-0018', '20250018', 'GOOGLE'),
-    ('user19@example.com', '권민재', '010-1000-0019', '20250019', 'GOOGLE'),
-    ('user20@example.com', '임소연', '010-1000-0020', '20250020', 'GOOGLE');
+    ('user01@example.com', '홍길동', '010-1000-0001', '20250001', 'GOOGLE', TRUE),
+    ('user02@example.com', '김철수', '010-1000-0002', '20250002', 'GOOGLE', TRUE),
+    ('user03@example.com', '이영희', '010-1000-0003', '20250003', 'GOOGLE', TRUE),
+    ('user04@example.com', '박민수', '010-1000-0004', '20250004', 'GOOGLE', FALSE),
+    ('user05@example.com', '최서연', '010-1000-0005', '20250005', 'GOOGLE', TRUE),
+    ('user06@example.com', '정우진', '010-1000-0006', '20250006', 'GOOGLE', FALSE),
+    ('user07@example.com', '오하늘', '010-1000-0007', '20250007', 'GOOGLE', TRUE),
+    ('user08@example.com', '윤예진', '010-1000-0008', '20250008', 'GOOGLE', FALSE),
+    ('user09@example.com', '강도현', '010-1000-0009', '20250009', 'GOOGLE', FALSE),
+    ('user10@example.com', '신가윤', '010-1000-0010', '20250010', 'GOOGLE', FALSE),
+    ('user11@example.com', '서하준', '010-1000-0011', '20250011', 'GOOGLE', FALSE),
+    ('user12@example.com', '문정우', '010-1000-0012', '20250012', 'GOOGLE', TRUE),
+    ('user13@example.com', '김다은', '010-1000-0013', '20250013', 'GOOGLE', FALSE),
+    ('user14@example.com', '이주원', '010-1000-0014', '20250014', 'GOOGLE', TRUE),
+    ('user15@example.com', '박소현', '010-1000-0015', '20250015', 'GOOGLE', TRUE),
+    ('user16@example.com', '양도균', '010-1000-0016', '20250016', 'GOOGLE', FALSE),
+    ('user17@example.com', '조하림', '010-1000-0017', '20250017', 'GOOGLE', TRUE),
+    ('user18@example.com', '한예준', '010-1000-0018', '20250018', 'GOOGLE', FALSE),
+    ('user19@example.com', '권민재', '010-1000-0019', '20250019', 'GOOGLE', TRUE),
+    ('user20@example.com', '임소연', '010-1000-0020', '20250020', 'GOOGLE', TRUE);
 
 
 -- 카테고리
