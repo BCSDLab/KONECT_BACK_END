@@ -11,6 +11,7 @@ public enum Campus {
     BRANCH("분교"),
     SECOND("제2캠퍼스"),
     THIRD("제3캠퍼스"),
+    FOURTH("제4캠퍼스"),
     ;
 
     private final String displayName;
