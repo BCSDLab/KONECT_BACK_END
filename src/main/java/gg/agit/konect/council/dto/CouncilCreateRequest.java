@@ -14,6 +14,11 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 이름", example = "개화", requiredMode = REQUIRED)
     String name,
 
+    @NotEmpty(message = "총동아리연합회 이미지 링크는 필수 입력입니다.")
+    @Size(max = 255, message = "총동아리연합회 이미지 링크는 최대 255자 입니다.")
+    @Schema(description = "총동아리연합회 이미지 링크", example = "https://konect.kro.kr/image.jpg", requiredMode = REQUIRED)
+    String imageUrl,
+
     @NotEmpty(message = "총동아리연합회 설명은 필수 입력입니다.")
     @Schema(description = "총동아리연합회 설명", example = "총동아리연합회는 ...", requiredMode = REQUIRED)
     String introduce,
@@ -42,6 +47,7 @@ public record CouncilCreateRequest(
     public Council toEntity() {
         return Council.builder()
             .name(name)
+            .imageUrl(imageUrl)
             .introduce(introduce)
             .location(location)
             .personalColor(personalColor)

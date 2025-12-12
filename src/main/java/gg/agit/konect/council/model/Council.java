@@ -98,6 +98,7 @@ public class Council extends BaseEntity {
 
     public void update(
         String name,
+        String imageUrl,
         String introduce,
         String location,
         String personalColor,
@@ -105,6 +106,7 @@ public class Council extends BaseEntity {
         String operatingHour
     ) {
         this.name = name;
+        this.imageUrl = imageUrl;
         this.introduce = introduce;
         this.location = location;
         this.personalColor = personalColor;
