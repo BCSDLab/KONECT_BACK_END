@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum Campus {
+
     MAIN("본교"),
+    BRANCH("분교"),
     SECOND("제2캠퍼스"),
     THIRD("제3캠퍼스"),
     ;
