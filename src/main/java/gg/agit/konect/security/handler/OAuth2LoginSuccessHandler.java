@@ -75,7 +75,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
         if (provider == Provider.NAVER) {
-            Map<String, Object> responseMap = (Map<String, Object>)oauthUser.getAttributes().get("response");
+            Map<String, Object> responseMap = oauthUser.getAttribute("response");
             return (String) responseMap.get("email");
         }
 
