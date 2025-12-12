@@ -79,6 +79,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return (String) responseMap.get("email");
         }
 
+        else if (provider == Provider.KAKAO) {
+            Map<String, Object> kakaoAccount = oauthUser.getAttribute("kakao_account");
+            return (String) kakaoAccount.get("email");
+        }
+
         return (String) oauthUser.getAttributes().get("email");
     }
 }
