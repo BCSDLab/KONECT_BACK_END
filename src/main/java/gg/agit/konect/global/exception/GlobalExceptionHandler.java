@@ -244,14 +244,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         }
     }
 
-    private String getFirstFieldErrorMessage(List<ErrorResponse.FieldError> fields, String defaultMessage) {
-        if (fields.isEmpty()) {
-            return defaultMessage;
-        }
-
-        return fields.get(0).message();
-    }
-
     private List<ErrorResponse.FieldError> getFieldErrors(MethodArgumentNotValidException ex) {
         return ex.getBindingResult()
             .getFieldErrors()
