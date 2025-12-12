@@ -34,11 +34,11 @@ CREATE TABLE users
 
 CREATE TABLE unregistered_user
 (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    email          VARCHAR(255)                        NOT NULL,
-    provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
-    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    email      VARCHAR(255)                        NOT NULL,
+    provider   ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     CONSTRAINT uq_unreg_email_provider UNIQUE (email, provider)
 );
