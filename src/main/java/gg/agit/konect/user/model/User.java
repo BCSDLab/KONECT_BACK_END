@@ -59,6 +59,9 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Provider provider;
 
+    @Column(name = "marketing_agreement", nullable = false)
+    private Boolean marketingAgreement;
+
     @Builder
     private User(
         Integer id,
@@ -67,7 +70,8 @@ public class User extends BaseEntity {
         String name,
         String phoneNumber,
         String studentNumber,
-        Provider provider
+        Provider provider,
+        Boolean marketingAgreement
     ) {
         this.id = id;
         this.university = university;
@@ -76,5 +80,6 @@ public class User extends BaseEntity {
         this.phoneNumber = phoneNumber;
         this.studentNumber = studentNumber;
         this.provider = provider;
+        this.marketingAgreement = marketingAgreement;
     }
 }

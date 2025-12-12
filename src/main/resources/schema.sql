@@ -15,15 +15,16 @@ CREATE TABLE university
 
 CREATE TABLE users
 (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    university_id  INT                                 NOT NULL,
-    email          VARCHAR(100)                        NOT NULL,
-    name           VARCHAR(50)                         NOT NULL,
-    phone_number   VARCHAR(20) UNIQUE                  NOT NULL,
-    student_number VARCHAR(20) UNIQUE                  NOT NULL,
-    provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
-    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    university_id       INT                                 NOT NULL,
+    email               VARCHAR(100)                        NOT NULL,
+    name                VARCHAR(50)                         NOT NULL,
+    phone_number        VARCHAR(20) UNIQUE                  NOT NULL,
+    student_number      VARCHAR(20) UNIQUE                  NOT NULL,
+    provider            ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    marketing_agreement BOOLEAN                             NOT NULL,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (university_id) REFERENCES university (id),
 
