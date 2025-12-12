@@ -19,8 +19,8 @@ CREATE TABLE users
     university_id       INT                                 NOT NULL,
     email               VARCHAR(100)                        NOT NULL,
     name                VARCHAR(50)                         NOT NULL,
-    phone_number        VARCHAR(20) UNIQUE                  NOT NULL,
-    student_number      VARCHAR(20) UNIQUE                  NOT NULL,
+    phone_number        VARCHAR(20) UNIQUE,
+    student_number      VARCHAR(20)                         NOT NULL,
     provider            ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
     marketing_agreement BOOLEAN                             NOT NULL,
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -28,7 +28,8 @@ CREATE TABLE users
 
     FOREIGN KEY (university_id) REFERENCES university (id),
 
-    CONSTRAINT uq_reg_email_provider UNIQUE (email, provider)
+    CONSTRAINT uq_reg_email_provider UNIQUE (email, provider),
+    CONSTRAINT uq_user_university_student_number UNIQUE (university_id, student_number)
 );
 
 CREATE TABLE unregistered_user

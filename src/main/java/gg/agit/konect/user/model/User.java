@@ -28,6 +28,10 @@ import lombok.NoArgsConstructor;
         @jakarta.persistence.UniqueConstraint(
             name = "uq_reg_email_provider",
             columnNames = {"email", "provider"}
+        ),
+        @jakarta.persistence.UniqueConstraint(
+            name = "uq_user_university_student_number",
+            columnNames = {"university_id", "student_number"}
         )
     }
 )
@@ -49,7 +53,7 @@ public class User extends BaseEntity {
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
-    @Column(name = "phone_number", length = 20, nullable = false, unique = true)
+    @Column(name = "phone_number", length = 20, unique = true)
     private String phoneNumber;
 
     @Column(name = "student_number", length = 20, nullable = false, unique = true)
