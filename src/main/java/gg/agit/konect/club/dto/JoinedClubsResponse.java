@@ -35,7 +35,7 @@ public record JoinedClubsResponse(
                 clubMember.getClub().getId(),
                 clubMember.getClub().getName(),
                 clubMember.getClub().getImageUrl(),
-                clubMember.getClub().getClubCategory().getName(),
+                clubMember.getClub().getClubCategory().getDescription(),
                 clubMember.getClubPosition().getName(),
                 clubMember.getIsFeePaid()
             );

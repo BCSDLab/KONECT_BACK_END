@@ -85,7 +85,7 @@ public class ClubQueryRepository {
                 club.getId(),
                 club.getName(),
                 club.getImageUrl(),
-                club.getClubCategory().getName(),
+                club.getClubCategory().getDescription(),
                 club.getDescription(),
                 clubTagsMap.getOrDefault(club.getId(), List.of())
             ))

@@ -38,14 +38,6 @@ CREATE TABLE unregistered_user
     CONSTRAINT uq_unreg_email_provider UNIQUE (email, provider)
 );
 
-CREATE TABLE club_category
-(
-    id         INT AUTO_INCREMENT PRIMARY KEY,
-    name       VARCHAR(255)                        NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
-);
-
 CREATE TABLE club_tag
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -56,18 +48,17 @@ CREATE TABLE club_tag
 
 CREATE TABLE club
 (
-    id               INT AUTO_INCREMENT PRIMARY KEY,
-    club_category_id INT                                 NOT NULL,
-    university_id    INT                                 NOT NULL,
-    name             VARCHAR(50)                         NOT NULL,
-    description      VARCHAR(100)                        NOT NULL,
-    introduce        TEXT                                NOT NULL,
-    image_url        VARCHAR(255)                        NOT NULL,
-    location         VARCHAR(255)                        NOT NULL,
-    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    university_id INT                                 NOT NULL,
+    club_category VARCHAR(255)                        NOT NULL,
+    name          VARCHAR(50)                         NOT NULL,
+    description   VARCHAR(100)                        NOT NULL,
+    introduce     TEXT                                NOT NULL,
+    image_url     VARCHAR(255)                        NOT NULL,
+    location      VARCHAR(255)                        NOT NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    FOREIGN KEY (club_category_id) REFERENCES club_category (id),
     FOREIGN KEY (university_id) REFERENCES university (id)
 );
 

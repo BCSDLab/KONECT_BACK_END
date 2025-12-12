@@ -103,7 +103,7 @@ public record ClubDetailResponse(
             club.getDescription(),
             club.getIntroduce(),
             club.getImageUrl(),
-            club.getClubCategory().getName(),
+            club.getClubCategory().getDescription(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
             clubPresidents.stream()
