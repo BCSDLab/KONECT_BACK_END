@@ -1,16 +1,20 @@
 package gg.agit.konect.user.model;
 
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
 import gg.agit.konect.security.enums.Provider;
+import gg.agit.konect.university.model.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,6 +39,10 @@ public class User extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "university_id", nullable = false)
+    private University university;
+
     @Column(name = "email", length = 100, nullable = false)
     private String email;
 
@@ -54,6 +62,7 @@ public class User extends BaseEntity {
     @Builder
     private User(
         Integer id,
+        University university,
         String email,
         String name,
         String phoneNumber,
@@ -61,6 +70,7 @@ public class User extends BaseEntity {
         Provider provider
     ) {
         this.id = id;
+        this.university = university;
         this.email = email;
         this.name = name;
         this.phoneNumber = phoneNumber;
