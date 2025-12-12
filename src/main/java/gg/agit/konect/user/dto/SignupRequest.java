@@ -16,7 +16,7 @@ public record SignupRequest(
     @NotEmpty(message = "학교명은 필수 입력입니다.")
     @Size(max = 100, message = "학교명은 최대 100자 입니다.")
     @Schema(description = "학교명", example = "한국기술교육대학교", requiredMode = REQUIRED)
-    String school,
+    String schoolName,
 
     @NotEmpty(message = "학번은 필수 입력입니다.")
     @Size(max = 20, message = "학번은 최대 20자 입니다.")
