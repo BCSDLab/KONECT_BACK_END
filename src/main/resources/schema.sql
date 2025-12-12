@@ -79,7 +79,6 @@ CREATE TABLE club_position
 (
     id                     INT AUTO_INCREMENT,
     club_id                INT                                 NOT NULL,
-    club_position_group_id INT                                 NOT NULL,
     name                   VARCHAR(255)                        NOT NULL,
     club_position_group    VARCHAR(255)                        NOT NULL,
     created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -88,8 +87,7 @@ CREATE TABLE club_position
     PRIMARY KEY (id),
     UNIQUE (club_id, name),
 
-    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
-    FOREIGN KEY (club_position_group_id) REFERENCES club_position_group (id)
+    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE
 );
 
 CREATE TABLE club_recruitment
