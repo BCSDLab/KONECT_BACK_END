@@ -109,6 +109,7 @@ CREATE TABLE club_member
     club_id          INT                                 NOT NULL,
     user_id          INT                                 NOT NULL,
     club_position_id INT                                 NOT NULL,
+    is_fee_paid      BOOLEAN                             NOT NULL,
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 

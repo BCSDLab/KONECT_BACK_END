@@ -15,9 +15,7 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     @Query("""
         SELECT cm FROM ClubMember cm
         JOIN FETCH cm.club c
-        JOIN FETCH c.clubCategory
         JOIN FETCH cm.clubPosition cp
-        JOIN FETCH cp.clubPositionGroup
         WHERE cm.id.userId = :userId
         """)
     List<ClubMember> findAllByUserId(Integer userId);
