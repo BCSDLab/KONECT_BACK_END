@@ -1,7 +1,6 @@
 package gg.agit.konect.club.model;
 
 import static jakarta.persistence.FetchType.LAZY;
-import static java.lang.Boolean.FALSE;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
@@ -26,9 +25,6 @@ public class ClubMember extends BaseEntity {
     @EmbeddedId
     private ClubMemberId id;
 
-    @Column(name = "is_admin", nullable = false)
-    private Boolean isAdmin = FALSE;
-
     @MapsId(value = "clubId")
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "club_id", nullable = false, updatable = false)
@@ -43,12 +39,19 @@ public class ClubMember extends BaseEntity {
     @JoinColumn(name = "club_position_id", nullable = false)
     private ClubPosition clubPosition;
 
+    @Column(name = "is_fee_paid")
+    private Boolean isFeePaid;
+
     @Builder
-    private ClubMember(Boolean isAdmin, Club club, User user, ClubPosition clubPosition) {
+    private ClubMember(Club club, User user, ClubPosition clubPosition, Boolean isFeePaid) {
         this.id = new ClubMemberId(club.getId(), user.getId());
-        this.isAdmin = isAdmin;
         this.club = club;
         this.user = user;
         this.clubPosition = clubPosition;
+        this.isFeePaid = isFeePaid;
+    }
+
+    public boolean isPresident() {
+        return clubPosition.isPresident();
     }
 }

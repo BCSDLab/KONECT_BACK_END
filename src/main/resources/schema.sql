@@ -84,24 +84,13 @@ CREATE TABLE club_tag_map
     FOREIGN KEY (tag_id) REFERENCES club_tag (id) ON DELETE CASCADE
 );
 
-CREATE TABLE club_position_group
-(
-    id         INT AUTO_INCREMENT PRIMARY KEY,
-    name       VARCHAR(255)                        NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
-    PRIMARY KEY (id),
-    UNIQUE (name)
-);
-
 CREATE TABLE club_position
 (
     id                     INT AUTO_INCREMENT,
     club_id                INT                                 NOT NULL,
     club_position_group_id INT                                 NOT NULL,
     name                   VARCHAR(255)                        NOT NULL,
-
+    club_position_group    VARCHAR(255)                        NOT NULL,
     created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
@@ -131,7 +120,6 @@ CREATE TABLE club_member
     club_id          INT                                 NOT NULL,
     user_id          INT                                 NOT NULL,
     club_position_id INT                                 NOT NULL,
-    is_admin         BOOLEAN   DEFAULT FALSE             NOT NULL,
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
@@ -139,45 +127,6 @@ CREATE TABLE club_member
 
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (club_position_id) REFERENCES club_position (id)
-);
-
-CREATE TABLE club_representative
-(
-    club_id    INT                                 NOT NULL,
-    user_id    INT                                 NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
-    PRIMARY KEY (club_id, user_id),
-    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
-CREATE TABLE club_fee_payment
-(
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    club_id       INT                                 NOT NULL,
-    user_id       INT                                 NOT NULL,
-    date          DATE                                NOT NULL,
-    status        VARCHAR(255)                        NOT NULL,
-    exempt_reason VARCHAR(255) NULL,
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
-    UNIQUE (club_id, user_id, date),
-
-    FOREIGN KEY (club_id, user_id) REFERENCES club_member (club_id, user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE club_position_fee
-(
-    id               INT AUTO_INCREMENT PRIMARY KEY,
-    club_position_id INT                                 NOT NULL,
-    fee              INT                                 NOT NULL,
-    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-
     FOREIGN KEY (club_position_id) REFERENCES club_position (id)
 );
 
