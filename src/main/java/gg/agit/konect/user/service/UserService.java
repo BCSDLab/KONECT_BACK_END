@@ -2,6 +2,7 @@ package gg.agit.konect.user.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
@@ -66,6 +67,36 @@ public class UserService {
     public void updateUserInfo(Integer userId, UserUpdateRequest request) {
         User user = userRepository.getById(userId);
 
+        validateStudentNumberDuplication(user, request);
+        validatePhoneNumberDuplication(user, request);
+
         user.updateInfo(request.name(), request.studentNumber(), request.phoneNumber());
+    }
+
+    private void validateStudentNumberDuplication(User user, UserUpdateRequest request) {
+        if (user.getStudentNumber().equals(request.studentNumber())) {
+            return;
+        }
+
+        boolean exists = userRepository.existsByUniversityIdAndStudentNumberAndIdNot(
+            user.getUniversity().getId(), request.studentNumber(), user.getId());
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
+        }
+    }
+
+    private void validatePhoneNumberDuplication(User user, UserUpdateRequest request) {
+        String requestPhone = request.phoneNumber();
+
+        if (!StringUtils.hasText(requestPhone) || requestPhone.equals(user.getPhoneNumber())) {
+            return;
+        }
+
+        boolean exists = userRepository.existsByPhoneNumberAndIdNot(requestPhone, user.getId());
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_PHONE_NUMBER);
+        }
     }
 }
