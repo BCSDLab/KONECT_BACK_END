@@ -52,8 +52,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         sendLoginSuccessResponse(request, response, user.get());
     }
 
-    private void sendAdditionalInfoRequiredResponse(HttpServletRequest request, HttpServletResponse response,
-        String email, Provider provider) throws IOException {
+    private void sendAdditionalInfoRequiredResponse(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        String email,
+        Provider provider
+    ) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("email", email);
         session.setAttribute("provider", provider);
@@ -62,7 +66,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.sendRedirect(frontendBaseUrl + "/signup");
     }
 
-    private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user) throws IOException {
+    private void sendLoginSuccessResponse(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        User user
+    ) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
