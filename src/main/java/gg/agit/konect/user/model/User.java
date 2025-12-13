@@ -86,4 +86,10 @@ public class User extends BaseEntity {
         this.provider = provider;
         this.isMarketingAgreement = isMarketingAgreement;
     }
+
+    public void updateInfo(String name, String studentNumber, String phoneNumber) {
+        this.name = name;
+        this.studentNumber = studentNumber;
+        this.phoneNumber = phoneNumber;
+    }
 }

@@ -8,8 +8,9 @@ import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.university.model.University;
 import gg.agit.konect.university.repository.UniversityRepository;
-import gg.agit.konect.user.dto.UserInfoResponse;
 import gg.agit.konect.user.dto.SignupRequest;
+import gg.agit.konect.user.dto.UserInfoResponse;
+import gg.agit.konect.user.dto.UserUpdateRequest;
 import gg.agit.konect.user.model.UnRegisteredUser;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UnRegisteredUserRepository;
@@ -59,5 +60,12 @@ public class UserService {
         User user = userRepository.getById(userId);
 
         return UserInfoResponse.from(user);
+    }
+
+    @Transactional
+    public void updateUserInfo(Integer userId, UserUpdateRequest request) {
+        User user = userRepository.getById(userId);
+
+        user.updateInfo(request.name(), request.studentNumber(), request.phoneNumber());
     }
 }
