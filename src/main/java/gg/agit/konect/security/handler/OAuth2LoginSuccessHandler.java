@@ -11,6 +11,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
@@ -82,7 +84,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         for (String key : provider.getEmailPath().split("\\.")) {
             if (!(current instanceof Map<?, ?> map)) {
-                return null;
+                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
             }
 
             current = map.get(key);
