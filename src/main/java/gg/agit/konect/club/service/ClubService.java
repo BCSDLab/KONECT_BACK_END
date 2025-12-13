@@ -1,7 +1,6 @@
 package gg.agit.konect.club.service;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,15 +13,11 @@ import gg.agit.konect.club.dto.JoinedClubsResponse;
 import gg.agit.konect.club.model.Club;
 import gg.agit.konect.club.model.ClubMember;
 import gg.agit.konect.club.model.ClubRecruitment;
-import gg.agit.konect.club.model.ClubRepresentative;
 import gg.agit.konect.club.model.ClubSummaryInfo;
-import gg.agit.konect.club.repository.ClubFeePaymentQueryRepository;
 import gg.agit.konect.club.repository.ClubMemberRepository;
 import gg.agit.konect.club.repository.ClubQueryRepository;
 import gg.agit.konect.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.club.repository.ClubRepository;
-import gg.agit.konect.club.repository.ClubRepresentativeRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -34,8 +29,6 @@ public class ClubService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubRecruitmentRepository clubRecruitmentRepository;
-    private final ClubRepresentativeRepository clubRepresentativeRepository;
-    private final ClubFeePaymentQueryRepository clubFeePaymentQueryRepository;
 
     public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting) {
         PageRequest pageable = PageRequest.of(page - 1, limit);
@@ -45,33 +38,18 @@ public class ClubService {
 
     public ClubDetailResponse getClubDetail(Integer clubId) {
         Club club = clubRepository.getById(clubId);
-        Long memberCount = clubMemberRepository.countByClubId(clubId);
-        ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
-        List<ClubRepresentative> representatives = clubRepresentativeRepository.findByClubId(clubId);
-
-        List<ClubRepresentative> validRepresentatives = validateRepresentatives(clubId, representatives);
-
-        return ClubDetailResponse.of(club, memberCount, recruitment, validRepresentatives);
-    }
-
-    private List<ClubRepresentative> validateRepresentatives(
-        Integer clubId,
-        List<ClubRepresentative> representatives
-    ) {
-        return representatives.stream()
-            .filter(rep -> {
-                ClubMember member = clubMemberRepository.getByClubIdAndUserId(
-                    clubId,
-                    rep.getUser().getId()
-                );
-                return Boolean.TRUE.equals(member.getIsAdmin());
-            })
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(club.getId());
+        List<ClubMember> clubPresidents = clubMembers.stream()
+            .filter(ClubMember::isPresident)
             .toList();
+        Integer memberCount = clubMembers.size();
+        ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
+
+        return ClubDetailResponse.of(club, memberCount, recruitment, clubPresidents);
     }
 
     public JoinedClubsResponse getJoinedClubs() {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(1);
-        Map<Integer, Integer> unpaidFeeAmountMap = clubFeePaymentQueryRepository.findUnpaidFeeAmountByUserId(1);
-        return JoinedClubsResponse.of(clubMembers, unpaidFeeAmountMap);
+        return JoinedClubsResponse.of(clubMembers);
     }
 }
