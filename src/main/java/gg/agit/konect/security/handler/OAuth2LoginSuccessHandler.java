@@ -11,8 +11,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
@@ -31,7 +31,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
 
     private final UserRepository userRepository;
-    private final ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationSuccess(
@@ -52,11 +51,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
-        sendLoginSuccessResponse(request, response, user.get(), provider);
+        sendLoginSuccessResponse(request, response, user.get());
     }
 
-    private void sendAdditionalInfoRequiredResponse(HttpServletRequest request, HttpServletResponse response,
-        String email, Provider provider) throws IOException {
+    private void sendAdditionalInfoRequiredResponse(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        String email,
+        Provider provider
+    ) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("email", email);
         session.setAttribute("provider", provider);
@@ -65,8 +68,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.sendRedirect(frontendBaseUrl + "/signup");
     }
 
-    private void sendLoginSuccessResponse(HttpServletRequest request, HttpServletResponse response, User user,
-        Provider provider) throws IOException {
+    private void sendLoginSuccessResponse(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        User user
+    ) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
@@ -74,11 +80,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
-        if (provider == Provider.NAVER) {
-            Map<String, Object> responseMap = (Map<String, Object>)oauthUser.getAttributes().get("response");
-            return (String) responseMap.get("email");
+        Object current = oauthUser.getAttributes();
+
+        for (String key : provider.getEmailPath().split("\\.")) {
+            if (!(current instanceof Map<?, ?> map)) {
+                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
+            }
+
+            current = map.get(key);
         }
 
-        return (String) oauthUser.getAttributes().get("email");
+        return (String)current;
     }
 }
