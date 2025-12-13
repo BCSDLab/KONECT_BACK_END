@@ -18,5 +18,12 @@ public interface UserRepository extends Repository<User, Integer> {
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
+    Optional<User> findById(Integer id);
+
+    default User getById(Integer id) {
+        return findById(id).orElseThrow(() ->
+            CustomException.of(ApiResponseCode.NOT_FOUND_USER));
+    }
+
     User save(User user);
 }
