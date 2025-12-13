@@ -28,28 +28,18 @@ public class University {
     private Integer id;
 
     @NotNull
-    @Enumerated(value = STRING)
-    @Column(name = "campus", nullable = false)
-    private Campus campus;
-
-    @NotNull
     @Column(name = "korean_name", nullable = false)
     private String koreanName;
 
     @NotNull
-    @Column(name = "english_name", nullable = false)
-    private String englishName;
-
-    @NotNull
-    @Column(name = "email_domain", nullable = false)
-    private String emailDomain;
+    @Enumerated(value = STRING)
+    @Column(name = "campus", nullable = false)
+    private Campus campus;
 
     @Builder
-    private University(Integer id, Campus campus, String koreanName, String englishName, String emailDomain) {
+    private University(Integer id, String koreanName, Campus campus) {
         this.id = id;
-        this.campus = campus;
         this.koreanName = koreanName;
-        this.englishName = englishName;
-        this.emailDomain = emailDomain;
+        this.campus = campus;
     }
 }
