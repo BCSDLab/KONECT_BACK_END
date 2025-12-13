@@ -1,18 +1,22 @@
 package gg.agit.konect.club.model;
 
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import gg.agit.konect.club.enums.ClubCategory;
 import gg.agit.konect.common.model.BaseEntity;
 import gg.agit.konect.university.model.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,8 +32,9 @@ public class Club extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "club_category_id", nullable = false)
+    @NotNull
+    @Enumerated(value = STRING)
+    @Column(name = "club_category", nullable = false)
     private ClubCategory clubCategory;
 
     @ManyToOne(fetch = LAZY)

@@ -34,6 +34,10 @@ public class Council extends BaseEntity {
     private String name;
 
     @NotNull
+    @Column(name = "image_url", nullable = false)
+    private String imageUrl;
+
+    @NotNull
     @Column(name = "introduce", columnDefinition = "TEXT", nullable = false)
     private String introduce;
 
@@ -69,6 +73,7 @@ public class Council extends BaseEntity {
     private Council(
         Integer id,
         String name,
+        String imageUrl,
         String introduce,
         String location,
         String personalColor,
@@ -80,6 +85,7 @@ public class Council extends BaseEntity {
     ) {
         this.id = id;
         this.name = name;
+        this.imageUrl = imageUrl;
         this.introduce = introduce;
         this.location = location;
         this.personalColor = personalColor;
@@ -92,6 +98,7 @@ public class Council extends BaseEntity {
 
     public void update(
         String name,
+        String imageUrl,
         String introduce,
         String location,
         String personalColor,
@@ -99,6 +106,7 @@ public class Council extends BaseEntity {
         String operatingHour
     ) {
         this.name = name;
+        this.imageUrl = imageUrl;
         this.introduce = introduce;
         this.location = location;
         this.personalColor = personalColor;

@@ -3,12 +3,11 @@ package gg.agit.konect.club.enums;
 import java.time.LocalDate;
 
 import gg.agit.konect.club.model.ClubRecruitment;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Getter
+@RequiredArgsConstructor
 public enum RecruitmentStatus {
 
     BEFORE("모집 전"),

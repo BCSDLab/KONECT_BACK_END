@@ -101,11 +101,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorTraceId = UUID.randomUUID().toString();
 
         List<ErrorResponse.FieldError> fieldErrors = getFieldErrors(ex);
-        String firstErrorMessage = getFirstFieldErrorMessage(fieldErrors, errorCode.getMessage());
 
         ErrorResponse body = new ErrorResponse(
             errorCode.getCode(),
-            firstErrorMessage,
+            errorCode.getMessage(),
             errorTraceId,
             fieldErrors
         );
@@ -243,14 +242,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ) {
             return " - ";
         }
-    }
-
-    private String getFirstFieldErrorMessage(List<ErrorResponse.FieldError> fields, String defaultMessage) {
-        if (fields.isEmpty()) {
-            return defaultMessage;
-        }
-
-        return fields.get(0).message();
     }
 
     private List<ErrorResponse.FieldError> getFieldErrors(MethodArgumentNotValidException ex) {

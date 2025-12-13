@@ -12,6 +12,9 @@ public record CouncilResponse(
     @Schema(description = "총동아리연합회 이름", example = "개화", requiredMode = REQUIRED)
     String name,
 
+    @Schema(description = "총동아리연합회 이미지 링크", example = "https://konect.kro.kr/image.jpg", requiredMode = REQUIRED)
+    String imageUrl,
+
     @Schema(description = "총동아리연합회 설명", example = "홍총아리연합회는 ...", requiredMode = REQUIRED)
     String introduce,
 
@@ -31,6 +34,7 @@ public record CouncilResponse(
         return new CouncilResponse(
             council.getId(),
             council.getName(),
+            council.getImageUrl(),
             council.getIntroduce(),
             council.getLocation(),
             council.getPersonalColor(),

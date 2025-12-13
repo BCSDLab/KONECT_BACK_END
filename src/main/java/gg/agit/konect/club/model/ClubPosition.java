@@ -1,12 +1,15 @@
 package gg.agit.konect.club.model;
 
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import gg.agit.konect.club.enums.ClubPositionGroup;
 import gg.agit.konect.common.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -32,19 +35,24 @@ public class ClubPosition extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @NotNull
+    @Enumerated(value = STRING)
+    @Column(name = "club_position_group", nullable = false)
+    private ClubPositionGroup clubPositionGroup;
+
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "club_id", nullable = false)
     private Club club;
 
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "club_position_group_id", nullable = false)
-    private ClubPositionGroup clubPositionGroup;
-
     @Builder
-    private ClubPosition(Integer id, String name, Club club, ClubPositionGroup clubPositionGroup) {
+    private ClubPosition(Integer id, String name, ClubPositionGroup clubPositionGroup, Club club) {
         this.id = id;
         this.name = name;
-        this.club = club;
         this.clubPositionGroup = clubPositionGroup;
+        this.club = club;
+    }
+
+    public boolean isPresident() {
+        return clubPositionGroup == ClubPositionGroup.PRESIDENT;
     }
 }

@@ -33,6 +33,7 @@ public class CouncilService {
         Council council = councilRepository.getById(1);
         council.update(
             request.name(),
+            request.imageUrl(),
             request.introduce(),
             request.location(),
             request.personalColor(),

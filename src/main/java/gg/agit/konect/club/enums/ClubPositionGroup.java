@@ -3,7 +3,7 @@ package gg.agit.konect.club.enums;
 import lombok.Getter;
 
 @Getter
-public enum PositionGroup {
+public enum ClubPositionGroup {
     PRESIDENT("회장"),
     MANAGER("운영진"),
     MEMBER("일반회원"),
@@ -11,7 +11,7 @@ public enum PositionGroup {
 
     private final String description;
 
-    PositionGroup(String description) {
+    ClubPositionGroup(String description) {
         this.description = description;
     }
 }

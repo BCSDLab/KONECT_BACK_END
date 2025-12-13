@@ -5,11 +5,12 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum FeePaymentStatus {
-
-    UNPAID("미납"),
-    PAID("납부"),
-    EXEMPT("면제"),
+public enum ClubCategory {
+    ACADEMIC("학술"),
+    SPORTS("운동"),
+    HOBBY("취미"),
+    RELIGION("종교"),
+    PERFORMANCE("공연"),
     ;
 
     private final String description;

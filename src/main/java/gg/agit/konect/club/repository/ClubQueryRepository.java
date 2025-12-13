@@ -1,7 +1,6 @@
 package gg.agit.konect.club.repository;
 
 import static gg.agit.konect.club.model.QClub.club;
-import static gg.agit.konect.club.model.QClubCategory.clubCategory;
 import static gg.agit.konect.club.model.QClubRecruitment.clubRecruitment;
 import static gg.agit.konect.club.model.QClubTag.clubTag;
 import static gg.agit.konect.club.model.QClubTagMap.clubTagMap;
@@ -47,7 +46,6 @@ public class ClubQueryRepository {
     private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
         return jpaQueryFactory
             .selectFrom(club)
-            .join(club.clubCategory, clubCategory).fetchJoin()
             .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
             .where(filter)
             .orderBy(sort)
@@ -85,7 +83,7 @@ public class ClubQueryRepository {
                 club.getId(),
                 club.getName(),
                 club.getImageUrl(),
-                club.getClubCategory().getName(),
+                club.getClubCategory().getDescription(),
                 club.getDescription(),
                 clubTagsMap.getOrDefault(club.getId(), List.of())
             ))
