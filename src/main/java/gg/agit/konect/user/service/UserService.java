@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
+import gg.agit.konect.university.model.University;
+import gg.agit.konect.university.repository.UniversityRepository;
 import gg.agit.konect.user.dto.SignupRequest;
 import gg.agit.konect.user.model.UnRegisteredUser;
 import gg.agit.konect.user.model.User;
@@ -20,6 +22,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
+    private final UniversityRepository universityRepository;
 
     @Transactional
     public void signup(String email, Provider provider, SignupRequest request) {
@@ -32,12 +35,16 @@ public class UserService {
             .findByEmailAndProvider(email, provider)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_UNREGISTERED_USER));
 
+        University university = universityRepository.findById(request.universityId())
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
+
         User newUser = User.builder()
+            .university(university)
             .email(tempUser.getEmail())
             .name(request.name())
-            .phoneNumber(request.phoneNumber())
             .studentNumber(request.studentNumber())
             .provider(tempUser.getProvider())
+            .isMarketingAgreement(request.isMarketingAgreement())
             .build();
 
         userRepository.save(newUser);

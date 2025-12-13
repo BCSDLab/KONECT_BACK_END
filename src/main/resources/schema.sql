@@ -12,25 +12,30 @@ CREATE TABLE university
 
 CREATE TABLE users
 (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    email          VARCHAR(100)                        NOT NULL,
-    name           VARCHAR(50)                         NOT NULL,
-    phone_number   VARCHAR(20) UNIQUE                  NOT NULL,
-    student_number VARCHAR(20) UNIQUE                  NOT NULL,
-    provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
-    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id                     INT AUTO_INCREMENT PRIMARY KEY,
+    university_id          INT                                 NOT NULL,
+    email                  VARCHAR(100)                        NOT NULL,
+    name                   VARCHAR(50)                         NOT NULL,
+    phone_number           VARCHAR(20) UNIQUE,
+    student_number         VARCHAR(20)                         NOT NULL,
+    provider               ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    is_marketing_agreement BOOLEAN                             NOT NULL,
+    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    CONSTRAINT uq_reg_email_provider UNIQUE (email, provider)
+    FOREIGN KEY (university_id) REFERENCES university (id),
+
+    CONSTRAINT uq_reg_email_provider UNIQUE (email, provider),
+    CONSTRAINT uq_user_university_student_number UNIQUE (university_id, student_number)
 );
 
 CREATE TABLE unregistered_user
 (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    email          VARCHAR(255)                        NOT NULL,
-    provider       ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
-    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    email      VARCHAR(255)                        NOT NULL,
+    provider   ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     CONSTRAINT uq_unreg_email_provider UNIQUE (email, provider)
 );

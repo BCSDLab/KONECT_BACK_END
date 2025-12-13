@@ -270,28 +270,27 @@ VALUES ('국립금오공과대학교', 'MAIN'),
        ('국립군산대학교', 'MAIN');
 
 -- 유저
-INSERT INTO users (email, name, phone_number, student_number, provider)
-VALUES
-    ('user01@example.com', '홍길동', '010-1000-0001', '20250001', 'GOOGLE'),
-    ('user02@example.com', '김철수', '010-1000-0002', '20250002', 'GOOGLE'),
-    ('user03@example.com', '이영희', '010-1000-0003', '20250003', 'GOOGLE'),
-    ('user04@example.com', '박민수', '010-1000-0004', '20250004', 'GOOGLE'),
-    ('user05@example.com', '최서연', '010-1000-0005', '20250005', 'GOOGLE'),
-    ('user06@example.com', '정우진', '010-1000-0006', '20250006', 'GOOGLE'),
-    ('user07@example.com', '오하늘', '010-1000-0007', '20250007', 'GOOGLE'),
-    ('user08@example.com', '윤예진', '010-1000-0008', '20250008', 'GOOGLE'),
-    ('user09@example.com', '강도현', '010-1000-0009', '20250009', 'GOOGLE'),
-    ('user10@example.com', '신가윤', '010-1000-0010', '20250010', 'GOOGLE'),
-    ('user11@example.com', '서하준', '010-1000-0011', '20250011', 'GOOGLE'),
-    ('user12@example.com', '문정우', '010-1000-0012', '20250012', 'GOOGLE'),
-    ('user13@example.com', '김다은', '010-1000-0013', '20250013', 'GOOGLE'),
-    ('user14@example.com', '이주원', '010-1000-0014', '20250014', 'GOOGLE'),
-    ('user15@example.com', '박소현', '010-1000-0015', '20250015', 'GOOGLE'),
-    ('user16@example.com', '양도균', '010-1000-0016', '20250016', 'GOOGLE'),
-    ('user17@example.com', '조하림', '010-1000-0017', '20250017', 'GOOGLE'),
-    ('user18@example.com', '한예준', '010-1000-0018', '20250018', 'GOOGLE'),
-    ('user19@example.com', '권민재', '010-1000-0019', '20250019', 'GOOGLE'),
-    ('user20@example.com', '임소연', '010-1000-0020', '20250020', 'GOOGLE');
+INSERT INTO users (email, university_id, name, phone_number, student_number, provider, is_marketing_agreement)
+VALUES ('user01@example.com', 1, '홍길동', '010-1000-0001', '20250001', 'GOOGLE', TRUE),
+       ('user02@example.com', 1, '김철수', '010-1000-0002', '20250002', 'GOOGLE', TRUE),
+       ('user03@example.com', 1, '이영희', '010-1000-0003', '20250003', 'GOOGLE', TRUE),
+       ('user04@example.com', 1, '박민수', '010-1000-0004', '20250004', 'GOOGLE', FALSE),
+       ('user05@example.com', 1, '최서연', '010-1000-0005', '20250005', 'GOOGLE', TRUE),
+       ('user06@example.com', 1, '정우진', '010-1000-0006', '20250006', 'GOOGLE', FALSE),
+       ('user07@example.com', 1, '오하늘', '010-1000-0007', '20250007', 'GOOGLE', TRUE),
+       ('user08@example.com', 1, '윤예진', '010-1000-0008', '20250008', 'GOOGLE', FALSE),
+       ('user09@example.com', 1, '강도현', '010-1000-0009', '20250009', 'GOOGLE', FALSE),
+       ('user10@example.com', 1, '신가윤', '010-1000-0010', '20250010', 'GOOGLE', FALSE),
+       ('user11@example.com', 1, '서하준', '010-1000-0011', '20250011', 'GOOGLE', FALSE),
+       ('user12@example.com', 1, '문정우', '010-1000-0012', '20250012', 'GOOGLE', TRUE),
+       ('user13@example.com', 1, '김다은', '010-1000-0013', '20250013', 'GOOGLE', FALSE),
+       ('user14@example.com', 1, '이주원', '010-1000-0014', '20250014', 'GOOGLE', TRUE),
+       ('user15@example.com', 1, '박소현', '010-1000-0015', '20250015', 'GOOGLE', TRUE),
+       ('user16@example.com', 1, '양도균', '010-1000-0016', '20250016', 'GOOGLE', FALSE),
+       ('user17@example.com', 1, '조하림', '010-1000-0017', '20250017', 'GOOGLE', TRUE),
+       ('user18@example.com', 1, '한예준', '010-1000-0018', '20250018', 'GOOGLE', FALSE),
+       ('user19@example.com', 1, '권민재', '010-1000-0019', '20250019', 'GOOGLE', TRUE),
+       ('user20@example.com', 1, '임소연', '010-1000-0020', '20250020', 'GOOGLE', TRUE);
 
 -- 동아리
 INSERT INTO club (club_category, university_id, name, description, introduce, image_url, location)
@@ -510,7 +509,8 @@ VALUES (1, '2025-11-30', '2025-12-31'),
 INSERT INTO council (name, image_url, university_id, introduce, personal_color, location, phone_number, email, instagram_url, operating_hour)
 VALUES ('개화', 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png', 1,
         '총동아리연합회는 한국기술교육대학교 내 모든 동아리의 활동을 지원하고 관리하는 학생 자치 기구입니다.\n\n동아리 간의 원활한 소통을 증진하고, 동아리 문화 발전을 위해 다양한 행사와 지원 프로그램을 운영하고 있습니다.\n\n동아리 운영에 필요한 각종 행정 지원, 예산 지원, 시설 관리 등을 담당하며, 동아리 박람회, 축제 등 대형 행사를 주관합니다.',
-        '#C9DEF3', '학생회관 2층 202호', '041-560-1234', 'council@koreatech.ac.kr', 'https://www.instagram.com/koreatech_council', '평일 09:00 ~ 18:00');
+        '#C9DEF3', '학생회관 2층 202호', '041-560-1234', 'council@koreatech.ac.kr',
+        'https://www.instagram.com/koreatech_council', '평일 09:00 ~ 18:00');
 
 INSERT INTO council_notice (council_id, title, content)
 VALUES (1, '2025학년도 2학기 동아리 지원금 신청 안내',
