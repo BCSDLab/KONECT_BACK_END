@@ -26,7 +26,7 @@ public class UserService {
     private final UniversityRepository universityRepository;
 
     @Transactional
-    public void signup(String email, Provider provider, SignupRequest request) {
+    public User signup(String email, Provider provider, SignupRequest request) {
         userRepository.findByEmailAndProvider(email, provider)
             .ifPresent(u -> {
                 throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
@@ -48,9 +48,11 @@ public class UserService {
             .isMarketingAgreement(request.isMarketingAgreement())
             .build();
 
-        userRepository.save(newUser);
+        User savedUser = userRepository.save(newUser);
 
         unRegisteredUserRepository.delete(tempUser);
+
+        return savedUser;
     }
 
     public MyInfoResponse getUserInfo(Integer userId) {
