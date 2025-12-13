@@ -13,7 +13,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/universities")
 public interface UniversityApi {
 
-    @Operation(summary = "대학 리스트를 조회한다.")
+    @Operation(summary = "대학 리스트를 조회한다.", description = """
+        - 응답값은 이름 기준 오름차순 정렬됩니다
+        """)
     @GetMapping
     ResponseEntity<UniversitiesResponse> getUniversities();
 }
