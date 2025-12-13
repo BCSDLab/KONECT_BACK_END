@@ -11,8 +11,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
@@ -31,7 +29,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
 
     private final UserRepository userRepository;
-    private final ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationSuccess(
