@@ -74,16 +74,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
-        if (provider == Provider.NAVER) {
-            Map<String, Object> responseMap = oauthUser.getAttribute("response");
-            return (String) responseMap.get("email");
+        Object current = oauthUser.getAttributes();
+
+        for (String key : provider.getEmailPath().split("\\.")) {
+            if (!(current instanceof Map<?, ?> map)) {
+                return null;
+            }
+
+            current = map.get(key);
         }
 
-        else if (provider == Provider.KAKAO) {
-            Map<String, Object> kakaoAccount = oauthUser.getAttribute("kakao_account");
-            return (String) kakaoAccount.get("email");
-        }
-
-        return (String) oauthUser.getAttributes().get("email");
+        return (String)current;
     }
 }
