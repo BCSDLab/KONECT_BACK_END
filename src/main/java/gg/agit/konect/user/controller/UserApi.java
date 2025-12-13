@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import gg.agit.konect.user.dto.MyInfoResponse;
+import gg.agit.konect.user.dto.UserInfoResponse;
 import gg.agit.konect.user.dto.SignupRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +28,6 @@ public interface UserApi {
 
     @Operation(summary = "로그인한 사용자의 정보를 조회한다.")
     @GetMapping("/me")
-    ResponseEntity<MyInfoResponse> getMyInfo(HttpSession session);
+    ResponseEntity<UserInfoResponse> getMyInfo(HttpSession session);
 
 }

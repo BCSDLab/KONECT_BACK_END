@@ -6,7 +6,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import gg.agit.konect.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record MyInfoResponse(
+public record UserInfoResponse(
     @Schema(description = "사용자 이름", example = "이동훈", requiredMode = REQUIRED)
     String name,
 
@@ -20,8 +20,8 @@ public record MyInfoResponse(
     String phoneNumber
 ) {
 
-    public static MyInfoResponse from(User user) {
-        return new MyInfoResponse(
+    public static UserInfoResponse from(User user) {
+        return new UserInfoResponse(
             user.getName(),
             user.getUniversity().getKoreanName(),
             user.getStudentNumber(),

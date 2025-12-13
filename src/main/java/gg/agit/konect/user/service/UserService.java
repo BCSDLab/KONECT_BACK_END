@@ -8,7 +8,7 @@ import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.university.model.University;
 import gg.agit.konect.university.repository.UniversityRepository;
-import gg.agit.konect.user.dto.MyInfoResponse;
+import gg.agit.konect.user.dto.UserInfoResponse;
 import gg.agit.konect.user.dto.SignupRequest;
 import gg.agit.konect.user.model.UnRegisteredUser;
 import gg.agit.konect.user.model.User;
@@ -55,9 +55,9 @@ public class UserService {
         return savedUser;
     }
 
-    public MyInfoResponse getUserInfo(Integer userId) {
+    public UserInfoResponse getUserInfo(Integer userId) {
         User user = userRepository.getById(userId);
 
-        return MyInfoResponse.from(user);
+        return UserInfoResponse.from(user);
     }
 }

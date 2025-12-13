@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
-import gg.agit.konect.user.dto.MyInfoResponse;
+import gg.agit.konect.user.dto.UserInfoResponse;
 import gg.agit.konect.user.dto.SignupRequest;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.service.UserService;
@@ -49,10 +49,10 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public ResponseEntity<MyInfoResponse> getMyInfo(HttpSession session) {
+    public ResponseEntity<UserInfoResponse> getMyInfo(HttpSession session) {
         Integer userId = (Integer)session.getAttribute("userId");
 
-        MyInfoResponse response = userService.getUserInfo(userId);
+        UserInfoResponse response = userService.getUserInfo(userId);
 
         return ResponseEntity.ok(response);
     }
