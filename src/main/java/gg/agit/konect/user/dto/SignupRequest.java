@@ -25,6 +25,6 @@ public record SignupRequest(
 
     @NotNull(message = "마케팅 동의 여부는 필수입니다.")
     @Schema(description = "마케팅 수신 동의 여부", example = "true", requiredMode = REQUIRED)
-    Boolean marketingAgreement
+    Boolean isMarketingAgreement
 ) {
 }

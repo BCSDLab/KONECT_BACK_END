@@ -2,7 +2,7 @@ INSERT INTO university (korean_name, english_name, email_domain)
 VALUES ('한국기술교육대학교', 'koreatech', 'koreatech.ac.kr');
 
 -- 유저
-INSERT INTO users (email, university_id, name, phone_number, student_number, provider, marketing_agreement)
+INSERT INTO users (email, university_id, name, phone_number, student_number, provider, is_marketing_agreement)
 VALUES ('user01@example.com', 1, '홍길동', '010-1000-0001', '20250001', 'GOOGLE', TRUE),
        ('user02@example.com', 1, '김철수', '010-1000-0002', '20250002', 'GOOGLE', TRUE),
        ('user03@example.com', 1, '이영희', '010-1000-0003', '20250003', 'GOOGLE', TRUE),

@@ -44,7 +44,7 @@ public class UserService {
             .name(request.name())
             .studentNumber(request.studentNumber())
             .provider(tempUser.getProvider())
-            .marketingAgreement(request.marketingAgreement())
+            .isMarketingAgreement(request.isMarketingAgreement())
             .build();
 
         userRepository.save(newUser);
