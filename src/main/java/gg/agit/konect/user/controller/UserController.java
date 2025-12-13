@@ -59,7 +59,10 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateMyInfo(HttpSession session, UserUpdateRequest request) {
+    public ResponseEntity<Void> updateMyInfo(
+        HttpSession session,
+        @RequestBody @Valid UserUpdateRequest request
+    ) {
         Integer userId = (Integer)session.getAttribute("userId");
 
         userService.updateUserInfo(userId, request);
