@@ -8,5 +8,5 @@ import gg.agit.konect.university.model.University;
 
 public interface UniversityRepository extends Repository<University, Integer> {
 
-    Optional<University> findByKoreanName(String koreanName);
+    Optional<University> findById(Integer id);
 }

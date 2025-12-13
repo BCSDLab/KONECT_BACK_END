@@ -35,7 +35,7 @@ public class UserService {
             .findByEmailAndProvider(email, provider)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_UNREGISTERED_USER));
 
-        University university = universityRepository.findByKoreanName(request.schoolName())
+        University university = universityRepository.findById(request.universityId())
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
 
         User newUser = User.builder()
