@@ -56,7 +56,7 @@ public class User extends BaseEntity {
     @Column(name = "phone_number", length = 20, unique = true)
     private String phoneNumber;
 
-    @Column(name = "student_number", length = 20, nullable = false, unique = true)
+    @Column(name = "student_number", length = 20, nullable = false)
     private String studentNumber;
 
     @Column(name = "provider", length = 20)
@@ -85,5 +85,11 @@ public class User extends BaseEntity {
         this.studentNumber = studentNumber;
         this.provider = provider;
         this.isMarketingAgreement = isMarketingAgreement;
+    }
+
+    public void updateInfo(String name, String studentNumber, String phoneNumber) {
+        this.name = name;
+        this.studentNumber = studentNumber;
+        this.phoneNumber = phoneNumber;
     }
 }
