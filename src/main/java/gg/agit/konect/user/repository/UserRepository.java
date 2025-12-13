@@ -13,8 +13,10 @@ public interface UserRepository extends Repository<User, Integer> {
 
     Optional<User> findByEmailAndProvider(String email, Provider provider);
 
-    default User getByEmailAndProvider(String email, Provider provider) {
-        return findByEmailAndProvider(email, provider).orElseThrow(() ->
+    Optional<User> findById(Integer id);
+
+    default User getById(Integer id) {
+        return findById(id).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
