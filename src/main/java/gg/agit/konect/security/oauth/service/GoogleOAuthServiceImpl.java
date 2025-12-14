@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.security.enums.Provider;
-import gg.agit.konect.user.model.UnRegisteredUser;
-import gg.agit.konect.user.model.User;
-import gg.agit.konect.user.repository.UnRegisteredUserRepository;
-import gg.agit.konect.user.repository.UserRepository;
+import gg.agit.konect.domain.user.model.UnRegisteredUser;
+import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
+import gg.agit.konect.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service("google")
