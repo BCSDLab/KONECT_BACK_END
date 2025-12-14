@@ -1,4 +1,4 @@
-package gg.agit.konect.security.config;
+package gg.agit.konect.global.config;
 
 import java.util.Map;
 
