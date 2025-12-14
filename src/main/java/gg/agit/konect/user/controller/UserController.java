@@ -12,7 +12,6 @@ import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.user.dto.SignupRequest;
 import gg.agit.konect.user.dto.UserInfoResponse;
 import gg.agit.konect.user.dto.UserUpdateRequest;
-import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -39,12 +38,12 @@ public class UserController implements UserApi {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
         }
 
-        User user = userService.signup(email, provider, request);
+        Integer userId = userService.signup(email, provider, request);
 
         session.invalidate();
 
         HttpSession newSession = httpServletRequest.getSession(true);
-        newSession.setAttribute("userId", user.getId());
+        newSession.setAttribute("userId", userId);
 
         return ResponseEntity.ok().build();
     }
