@@ -26,7 +26,7 @@ public class UserService {
     private final UniversityRepository universityRepository;
 
     @Transactional
-    public User signup(String email, Provider provider, SignupRequest request) {
+    public Integer signup(String email, Provider provider, SignupRequest request) {
         userRepository.findByEmailAndProvider(email, provider)
             .ifPresent(u -> {
                 throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
@@ -52,7 +52,7 @@ public class UserService {
 
         unRegisteredUserRepository.delete(tempUser);
 
-        return savedUser;
+        return savedUser.getId();
     }
 
     public UserInfoResponse getUserInfo(Integer userId) {
