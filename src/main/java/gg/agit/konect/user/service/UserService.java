@@ -87,13 +87,13 @@ public class UserService {
     }
 
     private void validatePhoneNumberDuplication(User user, UserUpdateRequest request) {
-        String requestPhone = request.phoneNumber();
+        String phoneNumber = request.phoneNumber();
 
-        if (!StringUtils.hasText(requestPhone) || requestPhone.equals(user.getPhoneNumber())) {
+        if (!StringUtils.hasText(phoneNumber) || phoneNumber.equals(user.getPhoneNumber())) {
             return;
         }
 
-        boolean exists = userRepository.existsByPhoneNumberAndIdNot(requestPhone, user.getId());
+        boolean exists = userRepository.existsByPhoneNumberAndIdNot(phoneNumber, user.getId());
 
         if (exists) {
             throw CustomException.of(ApiResponseCode.DUPLICATE_PHONE_NUMBER);
