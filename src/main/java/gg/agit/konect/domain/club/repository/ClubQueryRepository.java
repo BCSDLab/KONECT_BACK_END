@@ -1,9 +1,9 @@
 package gg.agit.konect.domain.club.repository;
 
-import static gg.agit.konect.club.model.QClub.club;
-import static gg.agit.konect.club.model.QClubRecruitment.clubRecruitment;
-import static gg.agit.konect.club.model.QClubTag.clubTag;
-import static gg.agit.konect.club.model.QClubTagMap.clubTagMap;
+import static gg.agit.konect.domain.club.model.QClub.club;
+import static gg.agit.konect.domain.club.model.QClubRecruitment.clubRecruitment;
+import static gg.agit.konect.domain.club.model.QClubTag.clubTag;
+import static gg.agit.konect.domain.club.model.QClubTagMap.clubTagMap;
 
 import java.time.LocalDate;
 import java.util.List;
