@@ -11,6 +11,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.user.model.User;
 import gg.agit.konect.user.repository.UserRepository;
@@ -78,11 +80,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
-        if (provider == Provider.NAVER) {
-            Map<String, Object> responseMap = (Map<String, Object>)oauthUser.getAttributes().get("response");
-            return (String) responseMap.get("email");
+        Object current = oauthUser.getAttributes();
+
+        for (String key : provider.getEmailPath().split("\\.")) {
+            if (!(current instanceof Map<?, ?> map)) {
+                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
+            }
+
+            current = map.get(key);
         }
 
-        return (String) oauthUser.getAttributes().get("email");
+        return (String)current;
     }
 }
