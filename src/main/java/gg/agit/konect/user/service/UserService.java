@@ -74,12 +74,13 @@ public class UserService {
     }
 
     private void validateStudentNumberDuplication(User user, UserUpdateRequest request) {
-        if (user.getStudentNumber().equals(request.studentNumber())) {
+        if (user.hasSameStudentNumber(request.studentNumber())) {
             return;
         }
 
         boolean exists = userRepository.existsByUniversityIdAndStudentNumberAndIdNot(
-            user.getUniversity().getId(), request.studentNumber(), user.getId());
+            user.getUniversity().getId(), request.studentNumber(), user.getId()
+        );
 
         if (exists) {
             throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
@@ -89,7 +90,7 @@ public class UserService {
     private void validatePhoneNumberDuplication(User user, UserUpdateRequest request) {
         String phoneNumber = request.phoneNumber();
 
-        if (!StringUtils.hasText(phoneNumber) || phoneNumber.equals(user.getPhoneNumber())) {
+        if (!StringUtils.hasText(phoneNumber) || user.hasSamePhoneNumber(phoneNumber)) {
             return;
         }
 

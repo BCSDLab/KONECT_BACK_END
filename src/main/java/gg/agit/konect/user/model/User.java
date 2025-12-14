@@ -92,4 +92,13 @@ public class User extends BaseEntity {
         this.studentNumber = studentNumber;
         this.phoneNumber = phoneNumber;
     }
+
+    public boolean hasSameStudentNumber(String studentNumber) {
+        return this.studentNumber.equals(studentNumber);
+    }
+
+    public boolean hasSamePhoneNumber(String phoneNumber) {
+        return phoneNumber != null && phoneNumber.equals(this.phoneNumber);
+    }
+
 }
