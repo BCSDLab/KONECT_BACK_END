@@ -1,4 +1,4 @@
-package gg.agit.konect.security.enums;
+package gg.agit.konect.domain.user.enums;
 
 public enum Provider {
 

@@ -6,7 +6,7 @@ import org.springframework.data.repository.Repository;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.security.enums.Provider;
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 
 public interface UserRepository extends Repository<User, Integer> {

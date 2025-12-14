@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.security.enums.Provider;
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;

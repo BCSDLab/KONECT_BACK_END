@@ -5,7 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.security.enums.Provider;
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.university.repository.UniversityRepository;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;

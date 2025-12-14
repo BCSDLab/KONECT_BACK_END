@@ -5,7 +5,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.common.model.BaseEntity;
-import gg.agit.konect.security.enums.Provider;
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.university.model.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,6 +1,6 @@
 package gg.agit.konect.security.dto;
 
-import gg.agit.konect.security.enums.Provider;
+import gg.agit.konect.domain.user.enums.Provider;
 
 public record LoginSuccessResponse(
     Integer userId,
