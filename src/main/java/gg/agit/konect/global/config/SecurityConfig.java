@@ -11,8 +11,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
-import gg.agit.konect.security.handler.OAuth2LoginSuccessHandler;
-import gg.agit.konect.security.oauth.service.SocialOAuthService;
+import gg.agit.konect.global.auth.handler.OAuth2LoginSuccessHandler;
+import gg.agit.konect.global.auth.oauth.SocialOAuthService;
 
 @Configuration
 @EnableWebSecurity

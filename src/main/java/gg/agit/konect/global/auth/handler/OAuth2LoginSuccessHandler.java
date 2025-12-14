@@ -1,4 +1,4 @@
-package gg.agit.konect.security.handler;
+package gg.agit.konect.global.auth.handler;
 
 import java.io.IOException;
 import java.util.Map;

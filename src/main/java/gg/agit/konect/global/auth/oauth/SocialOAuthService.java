@@ -1,4 +1,4 @@
-package gg.agit.konect.security.oauth.service;
+package gg.agit.konect.global.auth.oauth;
 
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
