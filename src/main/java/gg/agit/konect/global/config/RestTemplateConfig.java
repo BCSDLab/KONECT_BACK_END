@@ -1,4 +1,4 @@
-package gg.agit.konect.config;
+package gg.agit.konect.global.config;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 

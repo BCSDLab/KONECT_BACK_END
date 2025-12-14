@@ -1,4 +1,4 @@
-package gg.agit.konect.config;
+package gg.agit.konect.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
