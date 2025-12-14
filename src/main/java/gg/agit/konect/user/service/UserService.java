@@ -8,6 +8,7 @@ import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.security.enums.Provider;
 import gg.agit.konect.university.model.University;
 import gg.agit.konect.university.repository.UniversityRepository;
+import gg.agit.konect.user.dto.UserInfoResponse;
 import gg.agit.konect.user.dto.SignupRequest;
 import gg.agit.konect.user.model.UnRegisteredUser;
 import gg.agit.konect.user.model.User;
@@ -25,7 +26,7 @@ public class UserService {
     private final UniversityRepository universityRepository;
 
     @Transactional
-    public void signup(String email, Provider provider, SignupRequest request) {
+    public Integer signup(String email, Provider provider, SignupRequest request) {
         userRepository.findByEmailAndProvider(email, provider)
             .ifPresent(u -> {
                 throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
@@ -47,8 +48,16 @@ public class UserService {
             .isMarketingAgreement(request.isMarketingAgreement())
             .build();
 
-        userRepository.save(newUser);
+        User savedUser = userRepository.save(newUser);
 
         unRegisteredUserRepository.delete(tempUser);
+
+        return savedUser.getId();
+    }
+
+    public UserInfoResponse getUserInfo(Integer userId) {
+        User user = userRepository.getById(userId);
+
+        return UserInfoResponse.from(user);
     }
 }
