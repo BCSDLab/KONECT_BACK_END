@@ -3,7 +3,7 @@ package gg.agit.konect.domain.club.model;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
 
-import gg.agit.konect.common.model.BaseEntity;
+import gg.agit.konect.global.model.BaseEntity;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;

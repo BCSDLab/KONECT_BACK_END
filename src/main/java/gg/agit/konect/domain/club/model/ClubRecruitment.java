@@ -5,7 +5,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDate;
 
-import gg.agit.konect.common.model.BaseEntity;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

@@ -1,4 +1,4 @@
-package gg.agit.konect.common.model;
+package gg.agit.konect.global.model;
 
 import java.time.LocalDateTime;
 
