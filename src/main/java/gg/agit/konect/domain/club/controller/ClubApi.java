@@ -20,6 +20,7 @@ public interface ClubApi {
 
     @Operation(summary = "페이지 네이션으로 동아리 리스트를 조회한다.", description = """
         - isRecruiting가 true일 경우, 모집일이 빠른 순으로 정렬됩니다.
+        - status은 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         """)
     @GetMapping
     ResponseEntity<ClubsResponse> getClubs(
