@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
+import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
@@ -44,6 +45,14 @@ public class ClubController implements ClubApi {
     @GetMapping("/joined")
     public ResponseEntity<JoinedClubsResponse> getJoinedClubs() {
         JoinedClubsResponse response = clubService.getJoinedClubs();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{clubId}/members")
+    public ResponseEntity<ClubMembersResponse> getClubMembers(
+        @PathVariable(name = "clubId") Integer clubId
+    ) {
+        ClubMembersResponse response = clubService.getClubMembers(clubId);
         return ResponseEntity.ok(response);
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
+import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
@@ -40,4 +41,10 @@ public interface ClubApi {
     @Operation(summary = "가입한 동아리 리스트를 조회한다.")
     @GetMapping("/joined")
     ResponseEntity<JoinedClubsResponse> getJoinedClubs();
+
+    @Operation(summary = "동아리 멤버 리스트를 조회한다.")
+    @GetMapping("/{clubId}/members")
+    ResponseEntity<ClubMembersResponse> getClubMembers(
+        @PathVariable(name = "clubId") Integer clubId
+    );
 }

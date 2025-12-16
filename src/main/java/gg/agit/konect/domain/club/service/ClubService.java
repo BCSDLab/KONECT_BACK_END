@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
+import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
@@ -51,5 +52,10 @@ public class ClubService {
     public JoinedClubsResponse getJoinedClubs() {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(1);
         return JoinedClubsResponse.of(clubMembers);
+    }
+
+    public ClubMembersResponse getClubMembers(Integer clubId) {
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(clubId);
+        return ClubMembersResponse.from(clubMembers);
     }
 }
