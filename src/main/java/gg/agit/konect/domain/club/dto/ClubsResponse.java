@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 
+import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -42,6 +43,9 @@ public record ClubsResponse(
         @Schema(description = "동아리 소개", example = "즐겁게 일하고 열심히 노는 IT 특성화 동아리", requiredMode = REQUIRED)
         String description,
 
+        @Schema(description = "동아리 모집 상태", example = "ONGOING", requiredMode = REQUIRED)
+        RecruitmentStatus status,
+
         @Schema(description = "동아리 태그 리스트", example = "[\"IT\", \"프로그래밍\"]", requiredMode = REQUIRED)
         List<String> tags
     ) {
@@ -52,6 +56,7 @@ public record ClubsResponse(
                 clubSummaryInfo.imageUrl(),
                 clubSummaryInfo.categoryName(),
                 clubSummaryInfo.description(),
+                clubSummaryInfo.status(),
                 clubSummaryInfo.tags()
             );
         }

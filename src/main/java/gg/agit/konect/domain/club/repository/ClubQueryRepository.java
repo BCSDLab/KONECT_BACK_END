@@ -20,7 +20,9 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
+import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -35,17 +37,21 @@ public class ClubQueryRepository {
         BooleanBuilder filter = clubSearchFilter(query, isRecruiting);
         OrderSpecifier<?> sort = clubSort(isRecruiting);
 
-        List<Club> clubs = fetchClubs(pageable, filter, sort);
+        List<Tuple> clubData = fetchClubs(pageable, filter, sort);
+        List<Club> clubs = clubData.stream()
+            .map(tuple -> tuple.get(club))
+            .toList();
         Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
-        List<ClubSummaryInfo> content = convertToSummaryInfo(clubs, clubTagsMap);
+        List<ClubSummaryInfo> content = convertToSummaryInfo(clubData, clubTagsMap);
         Long total = countClubs(filter);
 
         return new PageImpl<>(content, pageable, total);
     }
 
-    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
+    private List<Tuple> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
         return jpaQueryFactory
-            .selectFrom(club)
+            .select(club, clubRecruitment)
+            .from(club)
             .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
             .where(filter)
             .orderBy(sort)
@@ -77,16 +83,23 @@ public class ClubQueryRepository {
             ));
     }
 
-    private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
-        return clubs.stream()
-            .map(club -> new ClubSummaryInfo(
-                club.getId(),
-                club.getName(),
-                club.getImageUrl(),
-                club.getClubCategory().getDescription(),
-                club.getDescription(),
-                clubTagsMap.getOrDefault(club.getId(), List.of())
-            ))
+    private List<ClubSummaryInfo> convertToSummaryInfo(List<Tuple> clubData, Map<Integer, List<String>> clubTagsMap) {
+        return clubData.stream()
+            .map(tuple -> {
+                Club clubEntity = tuple.get(club);
+                ClubRecruitment recruitment = tuple.get(clubRecruitment);
+                RecruitmentStatus status = RecruitmentStatus.of(recruitment);
+
+                return new ClubSummaryInfo(
+                    clubEntity.getId(),
+                    clubEntity.getName(),
+                    clubEntity.getImageUrl(),
+                    clubEntity.getClubCategory().getDescription(),
+                    clubEntity.getDescription(),
+                    status,
+                    clubTagsMap.getOrDefault(clubEntity.getId(), List.of())
+                );
+            })
             .toList();
     }
 
