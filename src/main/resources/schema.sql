@@ -20,6 +20,7 @@ CREATE TABLE users
     student_number         VARCHAR(20)                         NOT NULL,
     provider               ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
     is_marketing_agreement BOOLEAN                             NOT NULL,
+    image_url              VARCHAR(255)                        NOT NULL,
     created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 

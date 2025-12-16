@@ -270,27 +270,27 @@ VALUES ('국립금오공과대학교', 'MAIN'),
        ('국립군산대학교', 'MAIN');
 
 -- 유저
-INSERT INTO users (email, university_id, name, phone_number, student_number, provider, is_marketing_agreement)
-VALUES ('user01@example.com', 1, '홍길동', '010-1000-0001', '20250001', 'GOOGLE', TRUE),
-       ('user02@example.com', 1, '김철수', '010-1000-0002', '20250002', 'GOOGLE', TRUE),
-       ('user03@example.com', 1, '이영희', '010-1000-0003', '20250003', 'GOOGLE', TRUE),
-       ('user04@example.com', 1, '박민수', '010-1000-0004', '20250004', 'GOOGLE', FALSE),
-       ('user05@example.com', 1, '최서연', '010-1000-0005', '20250005', 'GOOGLE', TRUE),
-       ('user06@example.com', 1, '정우진', '010-1000-0006', '20250006', 'GOOGLE', FALSE),
-       ('user07@example.com', 1, '오하늘', '010-1000-0007', '20250007', 'GOOGLE', TRUE),
-       ('user08@example.com', 1, '윤예진', '010-1000-0008', '20250008', 'GOOGLE', FALSE),
-       ('user09@example.com', 1, '강도현', '010-1000-0009', '20250009', 'GOOGLE', FALSE),
-       ('user10@example.com', 1, '신가윤', '010-1000-0010', '20250010', 'GOOGLE', FALSE),
-       ('user11@example.com', 1, '서하준', '010-1000-0011', '20250011', 'GOOGLE', FALSE),
-       ('user12@example.com', 1, '문정우', '010-1000-0012', '20250012', 'GOOGLE', TRUE),
-       ('user13@example.com', 1, '김다은', '010-1000-0013', '20250013', 'GOOGLE', FALSE),
-       ('user14@example.com', 1, '이주원', '010-1000-0014', '20250014', 'GOOGLE', TRUE),
-       ('user15@example.com', 1, '박소현', '010-1000-0015', '20250015', 'GOOGLE', TRUE),
-       ('user16@example.com', 1, '양도균', '010-1000-0016', '20250016', 'GOOGLE', FALSE),
-       ('user17@example.com', 1, '조하림', '010-1000-0017', '20250017', 'GOOGLE', TRUE),
-       ('user18@example.com', 1, '한예준', '010-1000-0018', '20250018', 'GOOGLE', FALSE),
-       ('user19@example.com', 1, '권민재', '010-1000-0019', '20250019', 'GOOGLE', TRUE),
-       ('user20@example.com', 1, '임소연', '010-1000-0020', '20250020', 'GOOGLE', TRUE);
+INSERT INTO users (email, university_id, name, phone_number, student_number, provider, is_marketing_agreement, image_url)
+VALUES ('user01@example.com', 1, '홍길동', '010-1000-0001', '20250001', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user02@example.com', 1, '김철수', '010-1000-0002', '20250002', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user03@example.com', 1, '이영희', '010-1000-0003', '20250003', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user04@example.com', 1, '박민수', '010-1000-0004', '20250004', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user05@example.com', 1, '최서연', '010-1000-0005', '20250005', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user06@example.com', 1, '정우진', '010-1000-0006', '20250006', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user07@example.com', 1, '오하늘', '010-1000-0007', '20250007', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user08@example.com', 1, '윤예진', '010-1000-0008', '20250008', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user09@example.com', 1, '강도현', '010-1000-0009', '20250009', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user10@example.com', 1, '신가윤', '010-1000-0010', '20250010', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user11@example.com', 1, '서하준', '010-1000-0011', '20250011', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user12@example.com', 1, '문정우', '010-1000-0012', '20250012', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user13@example.com', 1, '김다은', '010-1000-0013', '20250013', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user14@example.com', 1, '이주원', '010-1000-0014', '20250014', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user15@example.com', 1, '박소현', '010-1000-0015', '20250015', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user16@example.com', 1, '양도균', '010-1000-0016', '20250016', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user17@example.com', 1, '조하림', '010-1000-0017', '20250017', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user18@example.com', 1, '한예준', '010-1000-0018', '20250018', 'GOOGLE', FALSE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user19@example.com', 1, '권민재', '010-1000-0019', '20250019', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       ('user20@example.com', 1, '임소연', '010-1000-0020', '20250020', 'GOOGLE', TRUE, 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png');
 
 -- 동아리
 INSERT INTO club (club_category, university_id, name, description, introduce, image_url, location)

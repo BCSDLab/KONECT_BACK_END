@@ -66,6 +66,9 @@ public class User extends BaseEntity {
     @Column(name = "is_marketing_agreement", nullable = false)
     private Boolean isMarketingAgreement;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Builder
     private User(
         Integer id,
@@ -75,7 +78,8 @@ public class User extends BaseEntity {
         String phoneNumber,
         String studentNumber,
         Provider provider,
-        Boolean isMarketingAgreement
+        Boolean isMarketingAgreement,
+        String imageUrl
     ) {
         this.id = id;
         this.university = university;
@@ -85,5 +89,6 @@ public class User extends BaseEntity {
         this.studentNumber = studentNumber;
         this.provider = provider;
         this.isMarketingAgreement = isMarketingAgreement;
+        this.imageUrl = imageUrl;
     }
 }
