@@ -1,5 +1,11 @@
 package gg.agit.konect.domain.notice.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -25,15 +31,44 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class NoticeService {
 
+    private static final int NOTICE_READ_EXPIRATION_DAYS = 7;
+
     private final CouncilNoticeReadRepository councilNoticeReadRepository;
     private final CouncilNoticeRepository councilNoticeRepository;
     private final CouncilRepository councilRepository;
     private final UserRepository userRepository;
 
-    public CouncilNoticesResponse getNotices(Integer page, Integer limit) {
+    public CouncilNoticesResponse getNotices(Integer page, Integer limit, Integer userId) {
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<CouncilNotice> councilNoticePage = councilNoticeRepository.findAll(pageable);
-        return CouncilNoticesResponse.from(councilNoticePage);
+        Map<Integer, Boolean> councilNoticeReadMap = getCouncilNoticeReadMap(userId, councilNoticePage.getContent());
+        return CouncilNoticesResponse.from(councilNoticePage, councilNoticeReadMap);
+    }
+
+    private Map<Integer, Boolean> getCouncilNoticeReadMap(Integer userId, List<CouncilNotice> councilNotices) {
+        User user = userRepository.getById(userId);
+        Set<Integer> readNoticeIds = getReadNoticeIds(user.getId(), councilNotices);
+        LocalDateTime readExpirationDateTime = LocalDateTime.now().minusDays(NOTICE_READ_EXPIRATION_DAYS);
+
+        return councilNotices.stream()
+            .collect(Collectors.toMap(
+                CouncilNotice::getId,
+                notice -> notice.getCreatedAt().isBefore(readExpirationDateTime)
+                    || readNoticeIds.contains(notice.getId())
+            ));
+    }
+
+    private Set<Integer> getReadNoticeIds(Integer userId, List<CouncilNotice> councilNotices) {
+        List<Integer> noticeIds = councilNotices.stream()
+            .map(CouncilNotice::getId)
+            .toList();
+
+        List<CouncilNoticeReadHistory> councilNoticeReadHistories =
+            councilNoticeReadRepository.findByUserIdAndCouncilNoticeIdIn(userId, noticeIds);
+
+        return councilNoticeReadHistories.stream()
+            .map(history -> history.getCouncilNotice().getId())
+            .collect(Collectors.toSet());
     }
 
     @Transactional

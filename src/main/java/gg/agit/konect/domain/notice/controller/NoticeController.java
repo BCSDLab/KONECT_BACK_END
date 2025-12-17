@@ -29,9 +29,11 @@ public class NoticeController implements NoticeApi {
     @GetMapping("/councils/notices")
     public ResponseEntity<CouncilNoticesResponse> getNotices(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit
+        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
+        HttpSession session
     ) {
-        CouncilNoticesResponse response = noticeService.getNotices(page, limit);
+        Integer userId = (Integer) session.getAttribute("userId");
+        CouncilNoticesResponse response = noticeService.getNotices(page, limit, userId);
         return ResponseEntity.ok(response);
     }
 

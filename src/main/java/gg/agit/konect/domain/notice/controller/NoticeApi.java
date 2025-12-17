@@ -26,7 +26,8 @@ public interface NoticeApi {
     @GetMapping("/councils/notices")
     ResponseEntity<CouncilNoticesResponse> getNotices(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit
+        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
+        HttpSession session
     );
 
     @Operation(
