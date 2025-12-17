@@ -76,7 +76,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
-        response.sendRedirect(frontendBaseUrl);
+        response.sendRedirect(frontendBaseUrl + "/home");
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
