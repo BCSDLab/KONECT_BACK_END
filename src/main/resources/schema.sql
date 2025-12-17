@@ -153,3 +153,17 @@ CREATE TABLE council_notice
 
     FOREIGN KEY (council_id) REFERENCES council (id) on DELETE CASCADE
 );
+
+CREATE TABLE council_notice_read_history
+(
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    user_id           INT                                 NOT NULL,
+    council_notice_id INT                                 NOT NULL,
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    UNIQUE (user_id, council_notice_id),
+
+    FOREIGN KEY (user_id) REFERENCES users (id) on DELETE CASCADE,
+    FOREIGN KEY (council_notice_id) REFERENCES council_notice (id) on DELETE CASCADE
+)

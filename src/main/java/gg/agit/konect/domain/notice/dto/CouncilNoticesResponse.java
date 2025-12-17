@@ -4,12 +4,13 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 
-import gg.agit.konect.domain.notice.model.CouncilNotice;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import gg.agit.konect.domain.notice.model.CouncilNotice;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record CouncilNoticesResponse(
@@ -37,26 +38,29 @@ public record CouncilNoticesResponse(
 
         @Schema(description = "총동아리연합회 공지사항 생성 일자", example = "2025.11.30", requiredMode = REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd")
-        LocalDate createdAt
+        LocalDate createdAt,
 
+        @Schema(description = "총동아리연합회 공지사항 읽음 여부", example = "true", requiredMode = REQUIRED)
+        Boolean isRead
     ) {
-        public static InnerCouncilNoticeResponse from(CouncilNotice councilNotice) {
+        public static InnerCouncilNoticeResponse from(CouncilNotice councilNotice, Map<Integer, Boolean> isReadMap) {
             return new InnerCouncilNoticeResponse(
                 councilNotice.getId(),
                 councilNotice.getTitle(),
-                councilNotice.getCreatedAt().toLocalDate()
+                councilNotice.getCreatedAt().toLocalDate(),
+                isReadMap.get(councilNotice.getId())
             );
         }
     }
 
-    public static CouncilNoticesResponse from(Page<CouncilNotice> page) {
+    public static CouncilNoticesResponse from(Page<CouncilNotice> page, Map<Integer, Boolean> isReadMap) {
         return new CouncilNoticesResponse(
             page.getTotalElements(),
             page.getNumberOfElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
             page.stream()
-                .map(InnerCouncilNoticeResponse::from)
+                .map(notice -> InnerCouncilNoticeResponse.from(notice, isReadMap))
                 .toList()
         );
     }
