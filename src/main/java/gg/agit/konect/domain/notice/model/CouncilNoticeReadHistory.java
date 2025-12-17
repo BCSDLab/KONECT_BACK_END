@@ -42,4 +42,11 @@ public class CouncilNoticeReadHistory extends BaseEntity {
         this.user = user;
         this.councilNotice = councilNotice;
     }
+
+    public static CouncilNoticeReadHistory of(User user, CouncilNotice councilNotice) {
+        return CouncilNoticeReadHistory.builder()
+            .user(user)
+            .councilNotice(councilNotice)
+            .build();
+    }
 }

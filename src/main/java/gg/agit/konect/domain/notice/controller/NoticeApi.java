@@ -16,6 +16,7 @@ import gg.agit.konect.domain.notice.dto.CouncilNoticeUpdateRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 @Tag(name = "(Normal) Notice: 공지사항", description = "공지사항 API")
@@ -38,7 +39,8 @@ public interface NoticeApi {
     )
     @GetMapping("/councils/notices/{id}")
     ResponseEntity<CouncilNoticeResponse> getNotice(
-        @PathVariable Integer id
+        @PathVariable Integer id,
+        HttpSession session
     );
 
     @Operation(

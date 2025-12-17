@@ -16,6 +16,7 @@ import gg.agit.konect.domain.notice.dto.CouncilNoticeResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeUpdateRequest;
 import gg.agit.konect.domain.notice.service.NoticeService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -36,9 +37,11 @@ public class NoticeController implements NoticeApi {
 
     @GetMapping("/councils/notices/{id}")
     public ResponseEntity<CouncilNoticeResponse> getNotice(
-        @PathVariable Integer id
+        @PathVariable Integer id,
+        HttpSession session
     ) {
-        CouncilNoticeResponse response = noticeService.getNotice(id);
+        Integer userId = (Integer)session.getAttribute("userId");
+        CouncilNoticeResponse response = noticeService.getNotice(id, userId);
         return ResponseEntity.ok(response);
     }
 
