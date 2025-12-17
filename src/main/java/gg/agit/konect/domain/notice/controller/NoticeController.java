@@ -10,13 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.domain.notice.dto.CouncilNoticesResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeCreateRequest;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeUpdateRequest;
+import gg.agit.konect.domain.notice.dto.CouncilNoticesResponse;
 import gg.agit.konect.domain.notice.service.NoticeService;
-
-import jakarta.servlet.http.HttpSession;
+import gg.agit.konect.global.auth.annotation.LoginUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -30,9 +29,8 @@ public class NoticeController implements NoticeApi {
     public ResponseEntity<CouncilNoticesResponse> getNotices(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
-        HttpSession session
+        @LoginUser Integer userId
     ) {
-        Integer userId = (Integer) session.getAttribute("userId");
         CouncilNoticesResponse response = noticeService.getNotices(page, limit, userId);
         return ResponseEntity.ok(response);
     }
@@ -40,9 +38,8 @@ public class NoticeController implements NoticeApi {
     @GetMapping("/councils/notices/{id}")
     public ResponseEntity<CouncilNoticeResponse> getNotice(
         @PathVariable Integer id,
-        HttpSession session
+        @LoginUser Integer userId
     ) {
-        Integer userId = (Integer)session.getAttribute("userId");
         CouncilNoticeResponse response = noticeService.getNotice(id, userId);
         return ResponseEntity.ok(response);
     }

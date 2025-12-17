@@ -13,6 +13,7 @@ import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
 
+import gg.agit.konect.global.auth.annotation.LoginUser;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -43,8 +44,8 @@ public class ClubController implements ClubApi {
 
     // TODO. 인증 개발이 진행되면 파라미터 수정해야 함
     @GetMapping("/joined")
-    public ResponseEntity<JoinedClubsResponse> getJoinedClubs() {
-        JoinedClubsResponse response = clubService.getJoinedClubs();
+    public ResponseEntity<JoinedClubsResponse> getJoinedClubs(@LoginUser Integer userId) {
+        JoinedClubsResponse response = clubService.getJoinedClubs(userId);
         return ResponseEntity.ok(response);
     }
 

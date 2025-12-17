@@ -9,14 +9,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import gg.agit.konect.domain.notice.dto.CouncilNoticesResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeCreateRequest;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeUpdateRequest;
-
+import gg.agit.konect.domain.notice.dto.CouncilNoticesResponse;
+import gg.agit.konect.global.auth.annotation.LoginUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 @Tag(name = "(Normal) Notice: 공지사항", description = "공지사항 API")
@@ -27,7 +26,7 @@ public interface NoticeApi {
     ResponseEntity<CouncilNoticesResponse> getNotices(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
-        HttpSession session
+        @LoginUser Integer userId
     );
 
     @Operation(
@@ -41,7 +40,7 @@ public interface NoticeApi {
     @GetMapping("/councils/notices/{id}")
     ResponseEntity<CouncilNoticeResponse> getNotice(
         @PathVariable Integer id,
-        HttpSession session
+        @LoginUser Integer userId
     );
 
     @Operation(

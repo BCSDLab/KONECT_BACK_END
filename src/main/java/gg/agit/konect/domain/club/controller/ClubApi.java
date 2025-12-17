@@ -11,6 +11,7 @@ import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
+import gg.agit.konect.global.auth.annotation.LoginUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -41,7 +42,7 @@ public interface ClubApi {
 
     @Operation(summary = "가입한 동아리 리스트를 조회한다.")
     @GetMapping("/joined")
-    ResponseEntity<JoinedClubsResponse> getJoinedClubs();
+    ResponseEntity<JoinedClubsResponse> getJoinedClubs(@LoginUser Integer userId);
 
     @Operation(summary = "동아리 멤버 리스트를 조회한다.")
     @GetMapping("/{clubId}/members")

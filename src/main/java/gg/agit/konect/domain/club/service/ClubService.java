@@ -49,8 +49,8 @@ public class ClubService {
         return ClubDetailResponse.of(club, memberCount, recruitment, clubPresidents);
     }
 
-    public JoinedClubsResponse getJoinedClubs() {
-        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(1);
+    public JoinedClubsResponse getJoinedClubs(Integer userId) {
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(userId);
         return JoinedClubsResponse.of(clubMembers);
     }
 
