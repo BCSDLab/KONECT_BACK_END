@@ -167,3 +167,17 @@ CREATE TABLE council_notice_read_history
     FOREIGN KEY (user_id) REFERENCES users (id) on DELETE CASCADE,
     FOREIGN KEY (council_notice_id) REFERENCES council_notice (id) on DELETE CASCADE
 )
+
+CREATE TABLE university_schedule
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    university_id INT                                 NOT NULL,
+    title         VARCHAR(255)                        NOT NULL,
+    started_at    DATE                                NOT NULL,
+    start_time    TIME,
+    end_time      TIME,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (university_id) REFERENCES university (id) ON DELETE CASCADE
+)
