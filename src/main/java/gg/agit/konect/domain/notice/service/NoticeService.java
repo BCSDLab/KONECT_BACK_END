@@ -1,6 +1,5 @@
 package gg.agit.konect.domain.notice.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,8 +30,6 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class NoticeService {
 
-    private static final int NOTICE_READ_EXPIRATION_DAYS = 7;
-
     private final CouncilNoticeReadRepository councilNoticeReadRepository;
     private final CouncilNoticeRepository councilNoticeRepository;
     private final CouncilRepository councilRepository;
@@ -48,13 +45,11 @@ public class NoticeService {
     private Map<Integer, Boolean> getCouncilNoticeReadMap(Integer userId, List<CouncilNotice> councilNotices) {
         User user = userRepository.getById(userId);
         Set<Integer> readNoticeIds = getReadNoticeIds(user.getId(), councilNotices);
-        LocalDateTime readExpirationDateTime = LocalDateTime.now().minusDays(NOTICE_READ_EXPIRATION_DAYS);
 
         return councilNotices.stream()
             .collect(Collectors.toMap(
                 CouncilNotice::getId,
-                notice -> notice.getCreatedAt().isBefore(readExpirationDateTime)
-                    || readNoticeIds.contains(notice.getId())
+                notice -> readNoticeIds.contains(notice.getId())
             ));
     }
 
