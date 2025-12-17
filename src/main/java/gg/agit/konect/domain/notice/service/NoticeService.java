@@ -8,13 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.council.model.Council;
 import gg.agit.konect.domain.council.repository.CouncilRepository;
-import gg.agit.konect.domain.notice.dto.CouncilNoticesResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeCreateRequest;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeUpdateRequest;
+import gg.agit.konect.domain.notice.dto.CouncilNoticesResponse;
 import gg.agit.konect.domain.notice.model.CouncilNotice;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
