@@ -16,12 +16,12 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UniversityScheduleService {
+public class ScheduleService {
 
     private final UniversityScheduleRepository universityScheduleRepository;
     private final UserRepository userRepository;
 
-    public SchedulesResponse getUniversitySchedules(Integer userId) {
+    public SchedulesResponse getSchedules(Integer userId) {
         User user = userRepository.getById(userId);
         List<UniversitySchedule> universitySchedules = universityScheduleRepository.findUpcomingSchedules(
             user.getUniversity().getId(),

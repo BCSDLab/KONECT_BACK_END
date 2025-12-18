@@ -28,5 +28,5 @@ public interface ScheduleApi {
         - 오늘이 12.15 → dDay: null (당일)
         """)
     @GetMapping("/schedules")
-    ResponseEntity<SchedulesResponse> getUniversitySchedules(HttpSession session);
+    ResponseEntity<SchedulesResponse> getSchedules(HttpSession session);
 }
