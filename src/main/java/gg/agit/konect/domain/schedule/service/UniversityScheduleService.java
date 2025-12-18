@@ -23,11 +23,11 @@ public class UniversityScheduleService {
 
     public SchedulesResponse getUniversitySchedules(Integer userId) {
         User user = userRepository.getById(userId);
-        List<UniversitySchedule> schedules = universityScheduleRepository.findUpcomingSchedules(
+        List<UniversitySchedule> universitySchedules = universityScheduleRepository.findUpcomingSchedules(
             user.getUniversity().getId(),
             LocalDate.now()
         );
 
-        return SchedulesResponse.from(schedules);
+        return SchedulesResponse.from(universitySchedules);
     }
 }
