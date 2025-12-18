@@ -3,7 +3,7 @@ package gg.agit.konect.domain.schedule.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import gg.agit.konect.domain.schedule.dto.UniversitySchedulesResponse;
+import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
@@ -27,6 +27,6 @@ public interface ScheduleApi {
         - 오늘이 12.13 → dDay: 2 (시작까지 2일 남음)
         - 오늘이 12.15 → dDay: null (당일)
         """)
-    @GetMapping("/schedules/universities")
-    ResponseEntity<UniversitySchedulesResponse> getUniversitySchedules(HttpSession session);
+    @GetMapping("/schedules")
+    ResponseEntity<SchedulesResponse> getUniversitySchedules(HttpSession session);
 }
