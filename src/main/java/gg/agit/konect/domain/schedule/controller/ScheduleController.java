@@ -15,7 +15,7 @@ public class ScheduleController implements ScheduleApi {
 
     private final UniversityScheduleService universityScheduleService;
 
-    @GetMapping("/schedules")
+    @GetMapping("/schedules/universities")
     public ResponseEntity<UniversitySchedulesResponse> getUniversitySchedules(HttpSession session) {
         Integer userId = (Integer) session.getAttribute("userId");
         UniversitySchedulesResponse response = universityScheduleService.getUniversitySchedules(userId);

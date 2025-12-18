@@ -27,6 +27,6 @@ public interface ScheduleApi {
         - 오늘이 12.13 → dDay: 2 (시작까지 2일 남음)
         - 오늘이 12.15 → dDay: null (당일)
         """)
-    @GetMapping("/schedules")
+    @GetMapping("/schedules/universities")
     ResponseEntity<UniversitySchedulesResponse> getUniversitySchedules(HttpSession session);
 }
