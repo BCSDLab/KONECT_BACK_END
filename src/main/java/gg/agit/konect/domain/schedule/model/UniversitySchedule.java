@@ -75,9 +75,9 @@ public class UniversitySchedule extends BaseEntity {
     }
 
     public Integer calculateDDay(LocalDate today) {
-        if (!this.startedDate.equals(this.endedDate)) {
-            return null;
+        if (today.isBefore(this.startedDate)) {
+            return (int)ChronoUnit.DAYS.between(today, this.startedDate);
         }
-        return (int)ChronoUnit.DAYS.between(today, this.startedDate);
+        return null;
     }
 }
