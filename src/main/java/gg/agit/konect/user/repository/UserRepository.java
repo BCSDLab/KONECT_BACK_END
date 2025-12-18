@@ -15,10 +15,6 @@ public interface UserRepository extends Repository<User, Integer> {
 
     Optional<User> findById(Integer id);
 
-    boolean existsByUniversityIdAndStudentNumberAndIdNot(Integer universityId, String studentNumber, Integer id);
-
-    boolean existsByPhoneNumberAndIdNot(String phoneNumber, Integer id);
-
     default User getById(Integer id) {
         return findById(id).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));

@@ -3,13 +3,11 @@ package gg.agit.konect.user.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.user.dto.UserInfoResponse;
 import gg.agit.konect.user.dto.SignupRequest;
-import gg.agit.konect.user.dto.UserUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,10 +30,4 @@ public interface UserApi {
     @GetMapping("/me")
     ResponseEntity<UserInfoResponse> getMyInfo(HttpSession session);
 
-    @Operation(summary = "로그인한 사용자의 정보를 수정한다.")
-    @PutMapping("/me")
-    ResponseEntity<Void> updateMyInfo(
-        HttpSession session,
-        @RequestBody @Valid UserUpdateRequest request
-    );
 }

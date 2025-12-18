@@ -56,7 +56,7 @@ public class User extends BaseEntity {
     @Column(name = "phone_number", length = 20, unique = true)
     private String phoneNumber;
 
-    @Column(name = "student_number", length = 20, nullable = false)
+    @Column(name = "student_number", length = 20, nullable = false, unique = true)
     private String studentNumber;
 
     @Column(name = "provider", length = 20)
@@ -86,19 +86,4 @@ public class User extends BaseEntity {
         this.provider = provider;
         this.isMarketingAgreement = isMarketingAgreement;
     }
-
-    public void updateInfo(String name, String studentNumber, String phoneNumber) {
-        this.name = name;
-        this.studentNumber = studentNumber;
-        this.phoneNumber = phoneNumber;
-    }
-
-    public boolean hasSameStudentNumber(String studentNumber) {
-        return this.studentNumber.equals(studentNumber);
-    }
-
-    public boolean hasSamePhoneNumber(String phoneNumber) {
-        return phoneNumber != null && phoneNumber.equals(this.phoneNumber);
-    }
-
 }
