@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record SchedulesResponse(
     @Schema(description = "일정 리스트", requiredMode = REQUIRED)
-    List<InnerScheduleResponse> universitySchedules
+    List<InnerScheduleResponse> schedules
 ) {
     public record InnerScheduleResponse(
         @Schema(description = "일정 제목", example = "동아리 박람회", requiredMode = REQUIRED)
