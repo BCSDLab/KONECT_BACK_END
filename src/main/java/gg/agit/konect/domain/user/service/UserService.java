@@ -2,18 +2,20 @@ package gg.agit.konect.domain.user.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
-import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.university.repository.UniversityRepository;
-import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.domain.user.dto.UserInfoResponse;
+import gg.agit.konect.domain.user.dto.UserUpdateRequest;
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -60,5 +62,43 @@ public class UserService {
         User user = userRepository.getById(userId);
 
         return UserInfoResponse.from(user);
+    }
+
+    @Transactional
+    public void updateUserInfo(Integer userId, UserUpdateRequest request) {
+        User user = userRepository.getById(userId);
+
+        validateStudentNumberDuplication(user, request);
+        validatePhoneNumberDuplication(user, request);
+
+        user.updateInfo(request.name(), request.studentNumber(), request.phoneNumber());
+    }
+
+    private void validateStudentNumberDuplication(User user, UserUpdateRequest request) {
+        if (user.hasSameStudentNumber(request.studentNumber())) {
+            return;
+        }
+
+        boolean exists = userRepository.existsByUniversityIdAndStudentNumberAndIdNot(
+            user.getUniversity().getId(), request.studentNumber(), user.getId()
+        );
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
+        }
+    }
+
+    private void validatePhoneNumberDuplication(User user, UserUpdateRequest request) {
+        String phoneNumber = request.phoneNumber();
+
+        if (!StringUtils.hasText(phoneNumber) || user.hasSamePhoneNumber(phoneNumber)) {
+            return;
+        }
+
+        boolean exists = userRepository.existsByPhoneNumberAndIdNot(phoneNumber, user.getId());
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_PHONE_NUMBER);
+        }
     }
 }
