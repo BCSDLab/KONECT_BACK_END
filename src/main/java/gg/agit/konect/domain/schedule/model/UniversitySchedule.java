@@ -6,6 +6,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.global.model.BaseEntity;
@@ -41,29 +42,42 @@ public class UniversitySchedule extends BaseEntity {
     private String title;
 
     @NotNull
-    @Column(name = "started_at", nullable = false)
-    private LocalDate startedAt;
+    @Column(name = "started_date", nullable = false)
+    private LocalDate startedDate;
 
-    @Column(name = "start_time")
-    private LocalTime startTime;
+    @Column(name = "started_time")
+    private LocalTime startedTime;
 
-    @Column(name = "end_time")
-    private LocalTime endTime;
+    @NotNull
+    @Column(name = "ended_date", nullable = false)
+    private LocalDate endedDate;
+
+    @Column(name = "ended_time")
+    private LocalTime endedTime;
 
     @Builder
     private UniversitySchedule(
         Integer id,
         University university,
         String title,
-        LocalDate startedAt,
-        LocalTime startTime,
-        LocalTime endTime
+        LocalDate startedDate,
+        LocalTime startedTime,
+        LocalDate endedDate,
+        LocalTime endedTime
     ) {
         this.id = id;
         this.university = university;
         this.title = title;
-        this.startedAt = startedAt;
-        this.startTime = startTime;
-        this.endTime = endTime;
+        this.startedDate = startedDate;
+        this.startedTime = startedTime;
+        this.endedDate = endedDate;
+        this.endedTime = endedTime;
+    }
+
+    public Integer calculateDDay(LocalDate today) {
+        if (!this.startedDate.equals(this.endedDate)) {
+            return null;
+        }
+        return (int)ChronoUnit.DAYS.between(today, this.startedDate);
     }
 }
