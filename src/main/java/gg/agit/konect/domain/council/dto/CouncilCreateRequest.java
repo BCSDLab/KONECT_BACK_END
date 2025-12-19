@@ -3,6 +3,7 @@ package gg.agit.konect.domain.council.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import gg.agit.konect.domain.council.model.Council;
+import gg.agit.konect.domain.university.model.University;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -44,7 +45,7 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
     String instagramUrl
 ) {
-    public Council toEntity() {
+    public Council toEntity(University university) {
         return Council.builder()
             .name(name)
             .imageUrl(imageUrl)
@@ -53,6 +54,7 @@ public record CouncilCreateRequest(
             .personalColor(personalColor)
             .instagramUrl(instagramUrl)
             .operatingHour(operatingHour)
+            .university(university)
             .build();
     }
 }

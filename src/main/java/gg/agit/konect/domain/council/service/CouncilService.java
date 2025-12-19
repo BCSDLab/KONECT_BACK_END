@@ -8,6 +8,9 @@ import gg.agit.konect.domain.council.dto.CouncilResponse;
 import gg.agit.konect.domain.council.dto.CouncilUpdateRequest;
 import gg.agit.konect.domain.council.model.Council;
 import gg.agit.konect.domain.council.repository.CouncilRepository;
+import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -16,21 +19,31 @@ import lombok.RequiredArgsConstructor;
 public class CouncilService {
 
     private final CouncilRepository councilRepository;
+    private final UserRepository userRepository;
 
     @Transactional
-    public void createCouncil(CouncilCreateRequest request) {
-        Council council = request.toEntity();
+    public void createCouncil(Integer userId, CouncilCreateRequest request) {
+        User user = userRepository.getById(userId);
+        University university = user.getUniversity();
+        Council council = request.toEntity(university);
+
         councilRepository.save(council);
     }
 
-    public CouncilResponse getCouncil() {
-        Council council = councilRepository.getById(1);
+    public CouncilResponse getCouncil(Integer userId) {
+        User user = userRepository.getById(userId);
+        University university = user.getUniversity();
+        Council council = councilRepository.getByUniversity(university);
+
         return CouncilResponse.from(council);
     }
 
     @Transactional
-    public void updateCouncil(CouncilUpdateRequest request) {
-        Council council = councilRepository.getById(1);
+    public void updateCouncil(Integer userId, CouncilUpdateRequest request) {
+        User user = userRepository.getById(userId);
+        University university = user.getUniversity();
+        Council council = councilRepository.getByUniversity(university);
+
         council.update(
             request.name(),
             request.imageUrl(),
@@ -43,8 +56,11 @@ public class CouncilService {
     }
 
     @Transactional
-    public void deleteCouncil() {
-        Council council = councilRepository.getById(1);
+    public void deleteCouncil(Integer userId) {
+        User user = userRepository.getById(userId);
+        University university = user.getUniversity();
+        Council council = councilRepository.getByUniversity(university);
+
         councilRepository.deleteById(council.getId());
     }
 }

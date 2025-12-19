@@ -13,6 +13,7 @@ import gg.agit.konect.domain.council.dto.CouncilCreateRequest;
 import gg.agit.konect.domain.council.dto.CouncilResponse;
 import gg.agit.konect.domain.council.dto.CouncilUpdateRequest;
 import gg.agit.konect.domain.council.service.CouncilService;
+import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -24,30 +25,32 @@ public class CouncilController implements CouncilApi {
     private final CouncilService councilService;
 
     @GetMapping
-    public ResponseEntity<CouncilResponse> getCouncil() {
-        CouncilResponse response = councilService.getCouncil();
+    public ResponseEntity<CouncilResponse> getCouncil(@UserId Integer userId) {
+        CouncilResponse response = councilService.getCouncil(userId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping
     public ResponseEntity<Void> createCouncil(
+        @UserId Integer userId,
         @Valid @RequestBody CouncilCreateRequest request
     ) {
-        councilService.createCouncil(request);
+        councilService.createCouncil(userId, request);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping
     public ResponseEntity<Void> updateCouncil(
+        @UserId Integer userId,
         @Valid @RequestBody CouncilUpdateRequest request
     ) {
-        councilService.updateCouncil(request);
+        councilService.updateCouncil(userId, request);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> deleteCouncil() {
-        councilService.deleteCouncil();
+    public ResponseEntity<Void> deleteCouncil(@UserId Integer userId) {
+        councilService.deleteCouncil(userId);
         return ResponseEntity.noContent().build();
     }
 }

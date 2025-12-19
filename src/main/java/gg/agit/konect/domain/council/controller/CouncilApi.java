@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import gg.agit.konect.domain.council.dto.CouncilCreateRequest;
 import gg.agit.konect.domain.council.dto.CouncilResponse;
 import gg.agit.konect.domain.council.dto.CouncilUpdateRequest;
+import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,7 +22,7 @@ public interface CouncilApi {
 
     @Operation(summary = "총동아리연합회 정보를 조회한다.")
     @GetMapping
-    ResponseEntity<CouncilResponse> getCouncil();
+    ResponseEntity<CouncilResponse> getCouncil(@UserId Integer userId);
 
     @Operation(
         summary = "총동아리연합회 정보를 생성한다.",
@@ -33,6 +34,7 @@ public interface CouncilApi {
     )
     @PostMapping
     ResponseEntity<Void> createCouncil(
+        @UserId Integer userId,
         @Valid @RequestBody CouncilCreateRequest request
     );
 
@@ -47,6 +49,7 @@ public interface CouncilApi {
     )
     @PutMapping
     ResponseEntity<Void> updateCouncil(
+        @UserId Integer userId,
         @Valid @RequestBody CouncilUpdateRequest request
     );
 
@@ -59,5 +62,5 @@ public interface CouncilApi {
             """
     )
     @DeleteMapping
-    ResponseEntity<Void> deleteCouncil();
+    ResponseEntity<Void> deleteCouncil(@UserId Integer userId);
 }
