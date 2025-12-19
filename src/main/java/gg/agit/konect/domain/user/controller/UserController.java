@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
+import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.service.UserService;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -52,5 +53,17 @@ public class UserController implements UserApi {
         UserInfoResponse response = userService.getUserInfo(userId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> updateMyInfo(
+        HttpSession session,
+        @RequestBody @Valid UserUpdateRequest request
+    ) {
+        Integer userId = (Integer)session.getAttribute("userId");
+
+        userService.updateUserInfo(userId, request);
+
+        return ResponseEntity.ok().build();
     }
 }

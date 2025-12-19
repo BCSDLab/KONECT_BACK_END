@@ -20,5 +20,9 @@ public interface UserRepository extends Repository<User, Integer> {
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
+    boolean existsByUniversityIdAndStudentNumberAndIdNot(Integer universityId, String studentNumber, Integer id);
+
+    boolean existsByPhoneNumberAndIdNot(String phoneNumber, Integer id);
+
     User save(User user);
 }

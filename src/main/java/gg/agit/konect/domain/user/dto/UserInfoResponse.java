@@ -17,7 +17,10 @@ public record UserInfoResponse(
     String studentNumber,
 
     @Schema(description = "사용자 전화번호", example = "010-1234-5678", requiredMode = NOT_REQUIRED)
-    String phoneNumber
+    String phoneNumber,
+
+    @Schema(description = "사용자 프로필 이미지 링크", example = "https://stage-static.koreatech.in/konect/User_02.png",requiredMode = REQUIRED)
+    String imageUrl
 ) {
 
     public static UserInfoResponse from(User user) {
@@ -25,7 +28,8 @@ public record UserInfoResponse(
             user.getName(),
             user.getUniversity().getKoreanName(),
             user.getStudentNumber(),
-            user.getPhoneNumber()
+            user.getPhoneNumber(),
+            user.getImageUrl()
         );
     }
 }
