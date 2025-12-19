@@ -41,4 +41,9 @@ public interface UserApi {
         HttpSession session,
         @RequestBody @Valid UserUpdateRequest request
     );
+
+    @Operation(summary = "로그아웃한다.")
+    @PostMapping("/logout")
+    @PublicApi
+    ResponseEntity<Void> logout(HttpServletRequest request);
 }
