@@ -64,7 +64,7 @@ public class ChatRoom extends BaseEntity {
 
     public String getLastMessageContent() {
         ChatMessage lastMessage = getLastMessage();
-        return lastMessage != null ? lastMessage.getContent() : "";
+        return lastMessage != null ? lastMessage.getContent() : null;
     }
 
     public LocalDateTime getLastMessageTime() {

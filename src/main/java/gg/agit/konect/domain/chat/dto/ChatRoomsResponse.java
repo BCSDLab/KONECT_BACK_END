@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.chat.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDateTime;
@@ -25,10 +26,10 @@ public record ChatRoomsResponse(
         @Schema(description = "상대방 프로필 사진", example = "https://bcsdlab.com/static/img/logo.d89d9cc.png", requiredMode = REQUIRED)
         String chatPartnerProfileImage,
 
-        @Schema(description = "마지막 메시지", example = "지원 어디서 해요", requiredMode = REQUIRED)
+        @Schema(description = "마지막 메시지", example = "지원 어디서 해요", requiredMode = NOT_REQUIRED)
         String lastMessage,
 
-        @Schema(description = "마지막 메시지 전송 시간", example = "2025.12.19 23:21", requiredMode = REQUIRED)
+        @Schema(description = "마지막 메시지 전송 시간", example = "2025.12.19 23:21", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
         LocalDateTime lastSentTime,
 
