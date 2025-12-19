@@ -4,6 +4,8 @@ import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACC
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,13 +35,14 @@ public class ChatRoomService {
         return ChatRoomsResponse.from(chatRooms, user);
     }
 
-    public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId) {
+    public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
         if (!chatRoom.isParticipant(userId)) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
 
-        List<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId);
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
         return ChatMessagesResponse.from(messages, userId);
     }
 }

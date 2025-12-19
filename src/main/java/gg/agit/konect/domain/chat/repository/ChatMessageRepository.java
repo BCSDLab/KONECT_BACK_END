@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.chat.repository;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -17,5 +17,5 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         WHERE cm.chatRoom.id = :chatRoomId
         ORDER BY cm.createdAt ASC
         """)
-    List<ChatMessage> findByChatRoomId(@Param("chatRoomId") Integer chatRoomId);
+    Page<ChatMessage> findByChatRoomId(@Param("chatRoomId") Integer chatRoomId, Pageable pageable);
 }

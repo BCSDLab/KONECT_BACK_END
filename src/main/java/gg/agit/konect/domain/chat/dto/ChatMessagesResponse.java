@@ -5,12 +5,26 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ChatMessagesResponse(
+    @Schema(description = "조건에 해당하는 메시지 수", example = "100", requiredMode = REQUIRED)
+    Long totalCount,
+
+    @Schema(description = "현재 페이지에서 조회된 메시지 수", example = "20", requiredMode = REQUIRED)
+    Integer currentCount,
+
+    @Schema(description = "최대 페이지", example = "5", requiredMode = REQUIRED)
+    Integer totalPage,
+
+    @Schema(description = "현재 페이지", example = "1", requiredMode = REQUIRED)
+    Integer currentPage,
+
     @Schema(description = "채팅 메시지 리스트", requiredMode = REQUIRED)
     List<InnerChatMessageResponse> messages
 ) {
@@ -46,9 +60,13 @@ public record ChatMessagesResponse(
         }
     }
 
-    public static ChatMessagesResponse from(List<ChatMessage> messages, Integer currentUserId) {
+    public static ChatMessagesResponse from(Page<ChatMessage> page, Integer currentUserId) {
         return new ChatMessagesResponse(
-            messages.stream()
+            page.getTotalElements(),
+            page.getNumberOfElements(),
+            page.getTotalPages(),
+            page.getNumber() + 1,
+            page.stream()
                 .map(message -> InnerChatMessageResponse.from(message, currentUserId))
                 .toList()
         );
