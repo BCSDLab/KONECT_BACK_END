@@ -7,7 +7,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import gg.agit.konect.global.auth.annotation.LoginUser;
+import gg.agit.konect.global.auth.annotation.UserId;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +18,7 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
-        boolean hasAnnotation = parameter.hasParameterAnnotation(LoginUser.class);
+        boolean hasAnnotation = parameter.hasParameterAnnotation(UserId.class);
         boolean isIntegerType = Integer.class.equals(parameter.getParameterType())
             || int.class.equals(parameter.getParameterType());
 

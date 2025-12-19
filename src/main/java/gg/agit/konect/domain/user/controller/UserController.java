@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.global.auth.annotation.LoginUser;
+import gg.agit.konect.global.auth.annotation.UserId;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.domain.user.enums.Provider;
@@ -49,7 +49,7 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public ResponseEntity<UserInfoResponse> getMyInfo(@LoginUser Integer userId) {
+    public ResponseEntity<UserInfoResponse> getMyInfo(@UserId Integer userId) {
         UserInfoResponse response = userService.getUserInfo(userId);
 
         return ResponseEntity.ok(response);

@@ -13,7 +13,7 @@ import gg.agit.konect.domain.notice.dto.CouncilNoticeCreateRequest;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeResponse;
 import gg.agit.konect.domain.notice.dto.CouncilNoticeUpdateRequest;
 import gg.agit.konect.domain.notice.dto.CouncilNoticesResponse;
-import gg.agit.konect.global.auth.annotation.LoginUser;
+import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,7 +26,7 @@ public interface NoticeApi {
     ResponseEntity<CouncilNoticesResponse> getNotices(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
-        @LoginUser Integer userId
+        @UserId Integer userId
     );
 
     @Operation(
@@ -40,7 +40,7 @@ public interface NoticeApi {
     @GetMapping("/councils/notices/{id}")
     ResponseEntity<CouncilNoticeResponse> getNotice(
         @PathVariable Integer id,
-        @LoginUser Integer userId
+        @UserId Integer userId
     );
 
     @Operation(
