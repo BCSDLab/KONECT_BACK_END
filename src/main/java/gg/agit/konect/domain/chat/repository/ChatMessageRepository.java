@@ -19,7 +19,7 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         FROM ChatMessage cm
         JOIN FETCH cm.sender
         WHERE cm.chatRoom.id = :chatRoomId
-        ORDER BY cm.createdAt ASC
+        ORDER BY cm.createdAt DESC
         """)
     Page<ChatMessage> findByChatRoomId(@Param("chatRoomId") Integer chatRoomId, Pageable pageable);
 
