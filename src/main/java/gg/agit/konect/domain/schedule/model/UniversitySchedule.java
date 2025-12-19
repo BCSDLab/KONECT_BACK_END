@@ -5,7 +5,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import gg.agit.konect.domain.university.model.University;
@@ -42,41 +42,31 @@ public class UniversitySchedule extends BaseEntity {
     private String title;
 
     @NotNull
-    @Column(name = "started_date", nullable = false)
-    private LocalDate startedDate;
-
-    @Column(name = "started_time")
-    private LocalTime startedTime;
+    @Column(name = "started_at", nullable = false)
+    private LocalDateTime startedAt;
 
     @NotNull
-    @Column(name = "ended_date", nullable = false)
-    private LocalDate endedDate;
-
-    @Column(name = "ended_time")
-    private LocalTime endedTime;
+    @Column(name = "ended_at", nullable = false)
+    private LocalDateTime endedAt;
 
     @Builder
     private UniversitySchedule(
         Integer id,
         University university,
         String title,
-        LocalDate startedDate,
-        LocalTime startedTime,
-        LocalDate endedDate,
-        LocalTime endedTime
+        LocalDateTime startedAt,
+        LocalDateTime endedAt
     ) {
         this.id = id;
         this.university = university;
         this.title = title;
-        this.startedDate = startedDate;
-        this.startedTime = startedTime;
-        this.endedDate = endedDate;
-        this.endedTime = endedTime;
+        this.startedAt = startedAt;
+        this.endedAt = endedAt;
     }
 
     public Integer calculateDDay(LocalDate today) {
-        if (today.isBefore(this.startedDate)) {
-            return (int)ChronoUnit.DAYS.between(today, this.startedDate);
+        if (today.isBefore(this.startedAt.toLocalDate())) {
+            return (int)ChronoUnit.DAYS.between(today, this.startedAt.toLocalDate());
         }
         return null;
     }

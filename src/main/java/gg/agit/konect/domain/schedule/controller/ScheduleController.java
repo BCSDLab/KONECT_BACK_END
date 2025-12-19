@@ -17,8 +17,8 @@ public class ScheduleController implements ScheduleApi {
 
     @GetMapping("/schedules")
     public ResponseEntity<SchedulesResponse> getSchedules(HttpSession session) {
-        Integer userId = (Integer) session.getAttribute("userId");
-        SchedulesResponse response = scheduleService.getSchedules(userId);
+        // Integer userId = (Integer) session.getAttribute("userId");
+        SchedulesResponse response = scheduleService.getSchedules(1);
         return ResponseEntity.ok(response);
     }
 }

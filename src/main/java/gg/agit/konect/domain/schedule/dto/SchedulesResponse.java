@@ -4,7 +4,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIR
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -20,21 +20,13 @@ public record SchedulesResponse(
         @Schema(description = "일정 제목", example = "동아리 박람회", requiredMode = REQUIRED)
         String title,
 
-        @Schema(description = "일정 시작일", example = "2025.12.03", requiredMode = REQUIRED)
-        @JsonFormat(pattern = "yyyy.MM.dd")
-        LocalDate startedDate,
+        @Schema(description = "일정 시작일시", example = "2025.12.03 00:00", requiredMode = REQUIRED)
+        @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+        LocalDateTime startedAt,
 
-        @Schema(description = "일정 시작시간", example = "10:00", requiredMode = NOT_REQUIRED)
-        @JsonFormat(pattern = "HH:mm")
-        LocalTime startedTime,
-
-        @Schema(description = "일정 종료일", example = "2025.12.05", requiredMode = REQUIRED)
-        @JsonFormat(pattern = "yyyy.MM.dd")
-        LocalDate endedDate,
-
-        @Schema(description = "일정 종료시간", example = "18:00", requiredMode = NOT_REQUIRED)
-        @JsonFormat(pattern = "HH:mm")
-        LocalTime endedTime,
+        @Schema(description = "일정 종료일시", example = "2025.12.05 00:00", requiredMode = REQUIRED)
+        @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+        LocalDateTime endedAt,
 
         @Schema(description = "일정 디데이", example = "5", requiredMode = NOT_REQUIRED)
         Integer dDay
@@ -44,10 +36,8 @@ public record SchedulesResponse(
 
             return new InnerScheduleResponse(
                 schedule.getTitle(),
-                schedule.getStartedDate(),
-                schedule.getStartedTime(),
-                schedule.getEndedDate(),
-                schedule.getEndedTime(),
+                schedule.getStartedAt(),
+                schedule.getEndedAt(),
                 schedule.calculateDDay(today)
             );
         }

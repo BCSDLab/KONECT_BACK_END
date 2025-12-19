@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.schedule.repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.Query;
@@ -14,11 +14,11 @@ public interface UniversityScheduleRepository extends Repository<UniversitySched
     @Query("""
         SELECT us FROM UniversitySchedule us
         WHERE us.university.id = :universityId
-        AND us.endedDate >= :today
-        ORDER BY us.startedDate ASC, us.startedTime ASC
+        AND us.endedAt >= :today
+        ORDER BY us.startedAt ASC
         """)
     List<UniversitySchedule> findUpcomingSchedules(
         @Param("universityId") Integer universityId,
-        @Param("today") LocalDate today
+        @Param("today") LocalDateTime today
     );
 }

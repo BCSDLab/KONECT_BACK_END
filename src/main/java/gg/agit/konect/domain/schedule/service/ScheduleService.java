@@ -25,7 +25,7 @@ public class ScheduleService {
         User user = userRepository.getById(userId);
         List<UniversitySchedule> universitySchedules = universityScheduleRepository.findUpcomingSchedules(
             user.getUniversity().getId(),
-            LocalDate.now()
+            LocalDate.now().atStartOfDay()
         );
 
         return SchedulesResponse.from(universitySchedules);
