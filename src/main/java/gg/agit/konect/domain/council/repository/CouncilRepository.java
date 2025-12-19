@@ -13,6 +13,7 @@ import gg.agit.konect.global.exception.CustomException;
 public interface CouncilRepository extends Repository<Council, Integer> {
 
     Optional<Council> findById(Integer id);
+
     Optional<Council> findByUniversity(University university);
 
     default Council getById(Integer id) {

@@ -28,7 +28,7 @@ public interface CouncilApi {
         summary = "총동아리연합회 정보를 생성한다.",
         description = """
             총동아리연합회의 기본 정보, 운영 시간, 소셜 미디어 정보를 생성합니다.
-
+            
             - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
             """
     )
@@ -42,7 +42,7 @@ public interface CouncilApi {
         summary = "총동아리연합회 정보를 수정한다.",
         description = """
             총동아리연합회의 기본 정보, 운영 시간, 소셜 미디어 정보를 수정합니다.
-
+            
             - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
             - `NOT_FOUND_COUNCIL` (404): 총동아리연합회를 찾을 수 없습니다.
             """
@@ -57,7 +57,7 @@ public interface CouncilApi {
         summary = "총동아리연합회 정보를 삭제한다.",
         description = """
             총동아리연합회의 기본 정보와 운영 시간, 소셜 미디어 정보를 모두 삭제합니다.
-
+            
             - `NOT_FOUND_COUNCIL` (404): 총동아리연합회를 찾을 수 없습니다.
             """
     )
