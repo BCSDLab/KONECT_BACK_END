@@ -50,6 +50,7 @@ public interface NoticeApi {
             
             - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
             - `NOT_FOUND_COUNCIL` (404): 총동아리연합회를 찾을 수 없습니다.
+            - `ALREADY_EXIST_COUNCIL` (409): 이미 해당 대학교에 총동아리연합회가 존재하는 경우
             """
     )
     @PostMapping("/councils/notices")
