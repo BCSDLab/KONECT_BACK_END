@@ -27,6 +27,7 @@ public interface ChatApi {
     @GetMapping("/rooms")
     ResponseEntity<ChatRoomsResponse> getChatRooms(@UserId Integer userId);
 
+    @Operation(summary = "문의하기 메시지 리스트를 조회한다.")
     @GetMapping("/rooms/{chatRoomId}")
     ResponseEntity<ChatMessagesResponse> getChatRoomMessages(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
