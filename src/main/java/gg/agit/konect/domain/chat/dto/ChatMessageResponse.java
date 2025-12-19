@@ -29,5 +29,14 @@ public record ChatMessageResponse(
     @Schema(description = "내가 보낸 메시지 여부", example = "true", requiredMode = REQUIRED)
     Boolean isMine
 ) {
-
+    public static ChatMessageResponse from(ChatMessage message, Integer currentUserId) {
+        return new ChatMessageResponse(
+            message.getId(),
+            message.getSender().getId(),
+            message.getContent(),
+            message.getCreatedAt(),
+            message.getIsRead(),
+            message.isSentBy(currentUserId)
+        );
+    }
 }

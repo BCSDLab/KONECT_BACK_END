@@ -12,6 +12,8 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 
 public interface ChatMessageRepository extends Repository<ChatMessage, Integer> {
 
+    ChatMessage save(ChatMessage chatMessage);
+
     @Query("""
         SELECT cm
         FROM ChatMessage cm

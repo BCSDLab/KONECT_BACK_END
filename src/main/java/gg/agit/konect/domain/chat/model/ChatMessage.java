@@ -66,6 +66,15 @@ public class ChatMessage extends BaseEntity {
         this.receiver = receiver;
     }
 
+    public static ChatMessage of(ChatRoom chatRoom, User sender, User receiver, String content) {
+        return ChatMessage.builder()
+            .content(content)
+            .chatRoom(chatRoom)
+            .sender(sender)
+            .receiver(receiver)
+            .build();
+    }
+
     public Boolean isSentBy(Integer userId) {
         return sender.getId().equals(userId);
     }
