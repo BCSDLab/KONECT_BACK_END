@@ -29,10 +29,21 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 위치", example = "학생회관 2층 202호", requiredMode = REQUIRED)
     String location,
 
-    @NotEmpty(message = "총동아리연합회 퍼스널 컬러는 필수 입력깁니다.")
+    @NotEmpty(message = "총동아리연합회 퍼스널 컬러는 필수 입력입니다.")
     @Size(max = 255, message = "총동아리연합회 퍼스널 컬러는 최대 255자 입니다.")
     @Schema(description = "총동아리연합회 퍼스널 컬러", example = "#FF5733", requiredMode = REQUIRED)
     String personalColor,
+
+    @NotEmpty(message = "총동아리연합회 전화번호는 필수 입력입니다.")
+    @Pattern(regexp = "^01[0-9]-?\\d{3,4}-?\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.")
+    @Schema(description = "총동아리연합회 전화번호", example = "010-1234-5678", requiredMode = REQUIRED)
+    String phoneNumber,
+
+    @NotEmpty(message = "총동아리연합회 이메일은 필수 입력입니다.")
+    @Pattern(regexp="^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])+[.][a-zA-Z]{2,3}$", message="이메일 주소 양식을 확인해주세요")
+    @Size(max = 255, message = "총동아리연합회 이메일은 최대 255자 입니다.")
+    @Schema(description = "총동아리연합회 이메일", example = "council@example.com", requiredMode = REQUIRED)
+    String email,
 
     @NotEmpty(message = "총동아리연합회 운영 시간은 필수 입력입니다.")
     @Size(max = 255, message = "총동아리연합회 운영 시간은 최대 255자 입니다.")
@@ -52,6 +63,8 @@ public record CouncilCreateRequest(
             .introduce(introduce)
             .location(location)
             .personalColor(personalColor)
+            .phoneNumber(phoneNumber)
+            .email(email)
             .instagramUrl(instagramUrl)
             .operatingHour(operatingHour)
             .university(university)
