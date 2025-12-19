@@ -66,4 +66,15 @@ public class UserController implements UserApi {
 
         return ResponseEntity.ok().build();
     }
+
+    @Override
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+
+        if (session != null) {
+            session.invalidate();
+        }
+
+        return ResponseEntity.ok().build();
+    }
 }
