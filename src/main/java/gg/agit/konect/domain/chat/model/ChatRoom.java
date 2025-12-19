@@ -56,6 +56,10 @@ public class ChatRoom extends BaseEntity {
         return sender.getId().equals(currentUser.getId()) ? receiver : sender;
     }
 
+    public boolean isParticipant(Integer userId) {
+        return sender.getId().equals(userId) || receiver.getId().equals(userId);
+    }
+
     public ChatMessage getLastMessage() {
         return chatMessages.stream()
             .max(Comparator.comparing(BaseEntity::getCreatedAt))

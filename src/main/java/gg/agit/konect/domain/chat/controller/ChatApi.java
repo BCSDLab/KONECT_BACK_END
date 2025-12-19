@@ -22,8 +22,8 @@ public interface ChatApi {
     ResponseEntity<ChatRoomsResponse> getChatRooms(@UserId Integer userId);
 
     @GetMapping("/rooms/{chatRoomId}")
-    ResponseEntity<ChatMessagesResponse> getChatRoom(
-        @PathVariable("chatRoomId") Integer chatRoomId,
+    ResponseEntity<ChatMessagesResponse> getChatRoomMessages(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     );
 }

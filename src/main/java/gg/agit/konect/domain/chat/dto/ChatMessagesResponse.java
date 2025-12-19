@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import gg.agit.konect.domain.chat.model.ChatMessage;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ChatMessagesResponse(
@@ -33,6 +34,23 @@ public record ChatMessagesResponse(
         @Schema(description = "내가 보낸 메시지 여부", example = "true", requiredMode = REQUIRED)
         Boolean isMine
     ) {
+        public static InnerChatMessageResponse from(ChatMessage message, Integer currentUserId) {
+            return new InnerChatMessageResponse(
+                message.getId(),
+                message.getSender().getId(),
+                message.getContent(),
+                message.getCreatedAt(),
+                message.getIsRead(),
+                message.isSentBy(currentUserId)
+            );
+        }
+    }
 
+    public static ChatMessagesResponse from(List<ChatMessage> messages, Integer currentUserId) {
+        return new ChatMessagesResponse(
+            messages.stream()
+                .map(message -> InnerChatMessageResponse.from(message, currentUserId))
+                .toList()
+        );
     }
 }
