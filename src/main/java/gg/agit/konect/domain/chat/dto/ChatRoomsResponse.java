@@ -2,10 +2,13 @@ package gg.agit.konect.domain.chat.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ChatRoomsResponse(
@@ -27,11 +30,28 @@ public record ChatRoomsResponse(
 
         @Schema(description = "마지막 메시지 전송 시간", example = "2025.12.19 23:21", requiredMode = REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-        String lastSentTime,
+        LocalDateTime lastSentTime,
 
         @Schema(description = "읽지 않은 메시지 개수", example = "12", requiredMode = REQUIRED)
         Integer unreadCount
     ) {
+        public static InnerChatRoomResponse from(ChatRoom chatRoom, User currentUser) {
+            User chatPartner = chatRoom.getChatPartner(currentUser);
 
+            return new InnerChatRoomResponse(
+                chatRoom.getId(),
+                chatPartner.getName(),
+                chatPartner.getImageUrl(),
+                chatRoom.getLastMessageContent(),
+                chatRoom.getLastMessageTime(),
+                chatRoom.getUnreadCount(currentUser.getId())
+            );
+        }
+    }
+
+    public static ChatRoomsResponse from(List<ChatRoom> chatRooms, User currentUser) {
+        return new ChatRoomsResponse(chatRooms.stream()
+            .map(chatRoom -> InnerChatRoomResponse.from(chatRoom, currentUser))
+            .toList());
     }
 }
