@@ -11,6 +11,8 @@ import gg.agit.konect.domain.council.repository.CouncilRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -25,6 +27,11 @@ public class CouncilService {
     public void createCouncil(Integer userId, CouncilCreateRequest request) {
         User user = userRepository.getById(userId);
         University university = user.getUniversity();
+
+        if (councilRepository.findByUniversity(university).isPresent()) {
+            throw CustomException.of(ApiResponseCode.ALREADY_EXIST_COUNCIL);
+        }
+
         Council council = request.toEntity(university);
 
         councilRepository.save(council);
