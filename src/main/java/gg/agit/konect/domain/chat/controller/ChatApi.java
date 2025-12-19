@@ -2,8 +2,10 @@ package gg.agit.konect.domain.chat.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,4 +20,10 @@ public interface ChatApi {
         """)
     @GetMapping("/rooms")
     ResponseEntity<ChatRoomsResponse> getChatRooms(@UserId Integer userId);
+
+    @GetMapping("/rooms/{chatRoomId}")
+    ResponseEntity<ChatMessagesResponse> getChatRoom(
+        @PathVariable("chatRoomId") Integer chatRoomId,
+        @UserId Integer userId
+    );
 }
