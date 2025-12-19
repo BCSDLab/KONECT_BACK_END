@@ -1,18 +1,17 @@
 package gg.agit.konect.domain.user.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.domain.user.dto.UserInfoResponse;
+import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.service.UserService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.domain.user.enums.Provider;
-import gg.agit.konect.domain.user.dto.SignupRequest;
-import gg.agit.konect.domain.user.dto.UserInfoResponse;
-import gg.agit.konect.domain.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -25,7 +24,7 @@ public class UserController implements UserApi {
 
     private final UserService userService;
 
-    @PostMapping("/signup")
+    @Override
     public ResponseEntity<Void> signup(
         HttpServletRequest httpServletRequest,
         HttpSession session,

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +22,7 @@ public interface UserApi {
 
     @Operation(summary = "추가 정보가 필요한 사용자의 정보를 받아 회원가입을 진행한다.")
     @PostMapping("/signup")
+    @PublicApi
     ResponseEntity<Void> signup(
         HttpServletRequest httpServletRequest,
         HttpSession session,
