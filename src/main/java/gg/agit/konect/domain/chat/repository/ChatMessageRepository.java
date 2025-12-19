@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.chat.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +20,13 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         ORDER BY cm.createdAt ASC
         """)
     Page<ChatMessage> findByChatRoomId(@Param("chatRoomId") Integer chatRoomId, Pageable pageable);
+
+    @Query("""
+        SELECT cm
+        FROM ChatMessage cm
+        WHERE cm.chatRoom.id = :chatRoomId
+        AND cm.receiver.id = :receiverId
+        AND cm.isRead = false
+        """)
+    List<ChatMessage> findUnreadMessages(@Param("chatRoomId") Integer chatRoomId, @Param("receiverId") Integer receiverId);
 }

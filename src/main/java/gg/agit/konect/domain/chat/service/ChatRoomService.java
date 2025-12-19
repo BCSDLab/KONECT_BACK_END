@@ -35,11 +35,15 @@ public class ChatRoomService {
         return ChatRoomsResponse.from(chatRooms, user);
     }
 
+    @Transactional
     public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
         if (!chatRoom.isParticipant(userId)) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
+
+        List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessages(roomId, userId);
+        unreadMessages.forEach(ChatMessage::markAsRead);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
