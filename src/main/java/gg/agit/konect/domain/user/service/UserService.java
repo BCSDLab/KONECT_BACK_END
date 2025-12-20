@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.university.repository.UniversityRepository;
 import gg.agit.konect.domain.user.dto.SignupRequest;
@@ -26,6 +28,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final UniversityRepository universityRepository;
+    private final ClubMemberRepository clubMemberRepository;
+    private final CouncilNoticeReadRepository councilNoticeReadRepository;
 
     @Transactional
     public Integer signup(String email, Provider provider, SignupRequest request) {
@@ -60,8 +64,10 @@ public class UserService {
 
     public UserInfoResponse getUserInfo(Integer userId) {
         User user = userRepository.getById(userId);
+        int joinedClubCount = clubMemberRepository.findAllByUserId(user.getId()).size();
+        Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
 
-        return UserInfoResponse.from(user);
+        return UserInfoResponse.from(user, joinedClubCount, unreadCouncilNoticeCount);
     }
 
     @Transactional

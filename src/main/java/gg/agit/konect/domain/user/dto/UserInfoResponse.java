@@ -34,16 +34,19 @@ public record UserInfoResponse(
     LocalTime studyTime,
 
     @Schema(description = "읽지 않은 총 동아리 연합회 공지", example = "1", requiredMode = REQUIRED)
-    Integer unreadCouncilNoticeCount
+    Long unreadCouncilNoticeCount
 ) {
 
-    public static UserInfoResponse from(User user) {
+    public static UserInfoResponse from(User user, Integer joinedClubCount, Long unreadCouncilNoticeCount) {
         return new UserInfoResponse(
             user.getName(),
             user.getUniversity().getKoreanName(),
             user.getStudentNumber(),
             user.getPhoneNumber(),
-            user.getImageUrl()
+            user.getImageUrl(),
+            joinedClubCount,
+            LocalTime.of(0, 0, 0),
+            unreadCouncilNoticeCount
         );
     }
 }
