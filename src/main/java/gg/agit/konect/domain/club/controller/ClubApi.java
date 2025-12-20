@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
+import gg.agit.konect.domain.club.dto.ClubSurveyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
@@ -81,5 +82,11 @@ public interface ClubApi {
     ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 가입 설문 문항을 조회한다.")
+    @GetMapping("/{clubId}/questions")
+    ResponseEntity<ClubSurveyQuestionsResponse> getSurveyQuestions(
+        @PathVariable(name = "clubId") Integer clubId
     );
 }

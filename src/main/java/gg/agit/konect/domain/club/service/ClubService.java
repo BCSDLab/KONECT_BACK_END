@@ -19,6 +19,7 @@ import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.domain.club.dto.ClubSurveyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -90,6 +91,11 @@ public class ClubService {
         }
 
         return ClubFeeInfoResponse.from(club);
+    }
+
+    public ClubSurveyQuestionsResponse getSurveyQuestions(Integer clubId) {
+        List<ClubSurveyQuestion> questions = clubSurveyQuestionRepository.findAllByClubId(clubId);
+        return ClubSurveyQuestionsResponse.from(questions);
     }
 
     @Transactional
