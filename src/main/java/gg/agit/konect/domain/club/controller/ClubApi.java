@@ -67,7 +67,7 @@ public interface ClubApi {
     @PostMapping("/{clubId}/apply")
     ResponseEntity<ClubFeeInfoResponse> applyClub(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubApplyRequest request,
+        @Valid @RequestBody(required = false) ClubApplyRequest request,
         @UserId Integer userId
     );
 

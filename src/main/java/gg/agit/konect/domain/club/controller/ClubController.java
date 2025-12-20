@@ -62,7 +62,7 @@ public class ClubController implements ClubApi {
     @Override
     public ResponseEntity<ClubFeeInfoResponse> applyClub(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubApplyRequest request,
+        @Valid @RequestBody(required = false) ClubApplyRequest request,
         @UserId Integer userId
     ) {
         ClubFeeInfoResponse response = clubService.applyClub(clubId, userId, request);
