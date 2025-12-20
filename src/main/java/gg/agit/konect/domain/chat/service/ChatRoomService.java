@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
 import java.util.List;
 
@@ -12,11 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
+import gg.agit.konect.domain.chat.dto.CreateChatRoomRequest;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -30,6 +35,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final ClubMemberRepository clubMemberRepository;
 
     public ChatRoomsResponse getChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
@@ -65,5 +71,22 @@ public class ChatRoomService {
         ChatMessage message = ChatMessage.of(chatRoom, sender, receiver, request.content());
         ChatMessage savedMessage = chatMessageRepository.save(message);
         return ChatMessageResponse.from(savedMessage, userId);
+    }
+
+    @Transactional
+    public ChatRoomResponse createOrGetChatRoom(Integer userId, CreateChatRoomRequest request) {
+        ClubMember president = clubMemberRepository.findPresidentByClubId(request.clubId())
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
+
+        User currentUser = userRepository.getById(userId);
+        User presidentUser = president.getUser();
+
+        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), presidentUser.getId())
+            .orElseGet(() -> {
+                ChatRoom newChatRoom = ChatRoom.of(currentUser, presidentUser);
+                return chatRoomRepository.save(newChatRoom);
+            });
+
+        return ChatRoomResponse.from(chatRoom);
     }
 }

@@ -52,6 +52,13 @@ public class ChatRoom extends BaseEntity {
         this.receiver = receiver;
     }
 
+    public static ChatRoom of(User sender, User receiver) {
+        return  ChatRoom.builder()
+            .sender(sender)
+            .receiver(receiver)
+            .build();
+    }
+
     public User getChatPartner(User currentUser) {
         return sender.getId().equals(currentUser.getId()) ? receiver : sender;
     }
