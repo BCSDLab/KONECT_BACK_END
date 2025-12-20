@@ -28,7 +28,7 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         JOIN FETCH cm.user
         JOIN FETCH cm.clubPosition cp
         WHERE cm.club.id = :clubId
-        AND cp.clubPositionGroup = gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT
+        AND cp.name = '회장'
         """)
     Optional<ClubMember> findPresidentByClubId(@Param("clubId") Integer clubId);
 }
