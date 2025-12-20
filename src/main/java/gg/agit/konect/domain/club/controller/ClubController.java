@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
@@ -59,12 +60,21 @@ public class ClubController implements ClubApi {
     }
 
     @Override
-    public ResponseEntity<Void> applyClub(
+    public ResponseEntity<ClubFeeInfoResponse> applyClub(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubApplyRequest request,
+        @Valid @RequestBody(required = false) ClubApplyRequest request,
         @UserId Integer userId
     ) {
-        clubService.applyClub(clubId, userId, request);
-        return ResponseEntity.ok().build();
+        ClubFeeInfoResponse response = clubService.applyClub(clubId, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    ) {
+        ClubFeeInfoResponse response = clubService.getFeeInfo(clubId, userId);
+        return ResponseEntity.ok(response);
     }
 }

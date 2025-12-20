@@ -14,10 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
+import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -48,8 +49,8 @@ public class ClubService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubRecruitmentRepository clubRecruitmentRepository;
-    private final ClubSurveyQuestionRepository clubSurveyQuestionRepository;
     private final ClubApplyRepository clubApplyRepository;
+    private final ClubSurveyQuestionRepository clubSurveyQuestionRepository;
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final UserRepository userRepository;
 
@@ -81,8 +82,18 @@ public class ClubService {
         return ClubMembersResponse.from(clubMembers);
     }
 
+    public ClubFeeInfoResponse getFeeInfo(Integer clubId, Integer userId) {
+        Club club = clubRepository.getById(clubId);
+
+        if (!clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
+            throw CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_FEE_INFO);
+        }
+
+        return ClubFeeInfoResponse.from(club);
+    }
+
     @Transactional
-    public void applyClub(Integer clubId, Integer userId, ClubApplyRequest request) {
+    public ClubFeeInfoResponse applyClub(Integer clubId, Integer userId, ClubApplyRequest request) {
         Club club = clubRepository.getById(clubId);
         User user = userRepository.getById(userId);
 
@@ -91,7 +102,10 @@ public class ClubService {
         }
 
         List<ClubSurveyQuestion> questions = clubSurveyQuestionRepository.findAllByClubId(clubId);
-        validateSurveyAnswers(questions, request.answers());
+        List<ClubApplyRequest.AnswerRequest> answers = (request == null || request.answers() == null)
+            ? List.of()
+            : request.answers();
+        validateSurveyAnswers(questions, answers);
 
         ClubApply apply = clubApplyRepository.save(
             ClubApply.builder()
@@ -100,8 +114,8 @@ public class ClubService {
                 .build()
         );
 
-        if (!request.answers().isEmpty()) {
-            List<ClubApplyAnswer> answers = request.answers().stream()
+        if (!answers.isEmpty()) {
+            List<ClubApplyAnswer> applyAnswers = answers.stream()
                 .filter(answer -> StringUtils.hasText(answer.answer()))
                 .map(answer -> ClubApplyAnswer.builder()
                     .apply(apply)
@@ -110,10 +124,12 @@ public class ClubService {
                     .build()
                 ).toList();
 
-            if (!answers.isEmpty()) {
-                clubApplyAnswerRepository.saveAll(answers);
+            if (!applyAnswers.isEmpty()) {
+                clubApplyAnswerRepository.saveAll(applyAnswers);
             }
         }
+
+        return ClubFeeInfoResponse.from(club);
     }
 
     private void validateSurveyAnswers(List<ClubSurveyQuestion> questions, List<ClubApplyRequest.AnswerRequest> answers) {
