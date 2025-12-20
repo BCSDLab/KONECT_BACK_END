@@ -37,6 +37,23 @@ public class ChatRoomService {
     private final UserRepository userRepository;
     private final ClubMemberRepository clubMemberRepository;
 
+    @Transactional
+    public ChatRoomResponse createOrGetChatRoom(Integer userId, CreateChatRoomRequest request) {
+        ClubMember president = clubMemberRepository.findPresidentByClubId(request.clubId())
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
+
+        User currentUser = userRepository.getById(userId);
+        User presidentUser = president.getUser();
+
+        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), presidentUser.getId())
+            .orElseGet(() -> {
+                ChatRoom newChatRoom = ChatRoom.of(currentUser, presidentUser);
+                return chatRoomRepository.save(newChatRoom);
+            });
+
+        return ChatRoomResponse.from(chatRoom);
+    }
+
     public ChatRoomsResponse getChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
         List<ChatRoom> chatRooms = chatRoomRepository.findByUserId(userId);
@@ -71,22 +88,5 @@ public class ChatRoomService {
         ChatMessage message = ChatMessage.of(chatRoom, sender, receiver, request.content());
         ChatMessage savedMessage = chatMessageRepository.save(message);
         return ChatMessageResponse.from(savedMessage, userId);
-    }
-
-    @Transactional
-    public ChatRoomResponse createOrGetChatRoom(Integer userId, CreateChatRoomRequest request) {
-        ClubMember president = clubMemberRepository.findPresidentByClubId(request.clubId())
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
-
-        User currentUser = userRepository.getById(userId);
-        User presidentUser = president.getUser();
-
-        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), presidentUser.getId())
-            .orElseGet(() -> {
-                ChatRoom newChatRoom = ChatRoom.of(currentUser, presidentUser);
-                return chatRoomRepository.save(newChatRoom);
-            });
-
-        return ChatRoomResponse.from(chatRoom);
     }
 }
