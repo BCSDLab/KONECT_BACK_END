@@ -355,8 +355,8 @@ SET fee_amount = 10000,
     fee_account_holder = 'BCSD'
 WHERE id = 1;
 
--- 동아리 설문 질문
-INSERT INTO club_survey_question (club_id, question, is_required)
+-- 동아리 가입 질문
+INSERT INTO club_apply_question (club_id, question, is_required)
 VALUES (1, '지원 동기를 입력해주세요.', TRUE),
        (1, '동아리에서 기대하는 점을 적어주세요.', FALSE);
 -- 태그

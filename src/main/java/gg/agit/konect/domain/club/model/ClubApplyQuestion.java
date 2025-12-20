@@ -19,9 +19,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "club_survey_question")
+@Table(name = "club_apply_question")
 @NoArgsConstructor(access = PROTECTED)
-public class ClubSurveyQuestion extends BaseEntity {
+public class ClubApplyQuestion extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -41,7 +41,7 @@ public class ClubSurveyQuestion extends BaseEntity {
     private Boolean isRequired;
 
     @Builder
-    private ClubSurveyQuestion(Integer id, Club club, String question, Boolean isRequired) {
+    private ClubApplyQuestion(Integer id, Club club, String question, Boolean isRequired) {
         this.id = id;
         this.club = club;
         this.question = question;

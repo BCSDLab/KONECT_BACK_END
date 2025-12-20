@@ -36,7 +36,7 @@ public class ClubApplyAnswer extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "question_id", nullable = false, updatable = false)
-    private ClubSurveyQuestion question;
+    private ClubApplyQuestion question;
 
     @NotNull
     @Column(name = "answer", columnDefinition = "TEXT", nullable = false)
@@ -46,7 +46,7 @@ public class ClubApplyAnswer extends BaseEntity {
     private ClubApplyAnswer(
         Integer id,
         ClubApply apply,
-        ClubSurveyQuestion question,
+        ClubApplyQuestion question,
         String answer
     ) {
         this.id = id;

@@ -69,7 +69,7 @@ CREATE TABLE club
     FOREIGN KEY (university_id) REFERENCES university (id)
 );
 
-CREATE TABLE club_survey_question
+CREATE TABLE club_apply_question
 (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     club_id     INT                                 NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE club_apply_answer
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (apply_id) REFERENCES club_apply (id) ON DELETE CASCADE,
-    FOREIGN KEY (question_id) REFERENCES club_survey_question (id) ON DELETE CASCADE
+    FOREIGN KEY (question_id) REFERENCES club_apply_question (id) ON DELETE CASCADE
 );
 
 CREATE TABLE club_tag_map

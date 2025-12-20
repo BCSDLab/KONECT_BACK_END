@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
-import gg.agit.konect.domain.club.dto.ClubSurveyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
@@ -61,9 +61,9 @@ public interface ClubApi {
         설문 질문이 없는 경우 answers는 빈 배열을 전달합니다.
 
         - ALREADY_APPLIED_CLUB (409): 이미 가입 신청을 완료한 사용자입니다.
-        - NOT_FOUND_CLUB_SURVEY_QUESTION (404): 존재하지 않는 설문 문항입니다.
-        - DUPLICATE_CLUB_SURVEY_QUESTION (409): 중복된 id의 설문 문항이 포함되어 있습니다.
-        - REQUIRED_CLUB_SURVEY_ANSWER_MISSING (400): 필수 설문 답변이 누락되었습니다.
+        - NOT_FOUND_CLUB_APPLY_QUESTION (404): 존재하지 않는 가입 문항입니다.
+        - DUPLICATE_CLUB_APPLY_QUESTION (409): 중복된 id의 가입 문항이 포함되어 있습니다.
+        - REQUIRED_CLUB_APPLY_ANSWER_MISSING (400): 필수 가입 답변이 누락되었습니다.
         """)
     @PostMapping("/{clubId}/apply")
     ResponseEntity<ClubFeeInfoResponse> applyClub(
@@ -84,9 +84,9 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 가입 설문 문항을 조회한다.")
+    @Operation(summary = "동아리 가입 문항을 조회한다.")
     @GetMapping("/{clubId}/questions")
-    ResponseEntity<ClubSurveyQuestionsResponse> getSurveyQuestions(
+    ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
         @PathVariable(name = "clubId") Integer clubId
     );
 }

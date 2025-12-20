@@ -19,7 +19,7 @@ import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.ClubSurveyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -27,14 +27,14 @@ import gg.agit.konect.domain.club.model.ClubApplyAnswer;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
-import gg.agit.konect.domain.club.model.ClubSurveyQuestion;
+import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.club.repository.ClubSurveyQuestionRepository;
+import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -51,7 +51,7 @@ public class ClubService {
     private final ClubMemberRepository clubMemberRepository;
     private final ClubRecruitmentRepository clubRecruitmentRepository;
     private final ClubApplyRepository clubApplyRepository;
-    private final ClubSurveyQuestionRepository clubSurveyQuestionRepository;
+    private final ClubApplyQuestionRepository clubApplyQuestionRepository;
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final UserRepository userRepository;
 
@@ -93,9 +93,9 @@ public class ClubService {
         return ClubFeeInfoResponse.from(club);
     }
 
-    public ClubSurveyQuestionsResponse getSurveyQuestions(Integer clubId) {
-        List<ClubSurveyQuestion> questions = clubSurveyQuestionRepository.findAllByClubId(clubId);
-        return ClubSurveyQuestionsResponse.from(questions);
+    public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId) {
+        List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
+        return ClubApplyQuestionsResponse.from(questions);
     }
 
     @Transactional
@@ -107,11 +107,11 @@ public class ClubService {
             throw CustomException.of(ApiResponseCode.ALREADY_APPLIED_CLUB);
         }
 
-        List<ClubSurveyQuestion> questions = clubSurveyQuestionRepository.findAllByClubId(clubId);
+        List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
         List<ClubApplyRequest.AnswerRequest> answers = (request == null || request.answers() == null)
             ? List.of()
             : request.answers();
-        validateSurveyAnswers(questions, answers);
+        validateApplyAnswers(questions, answers);
 
         ClubApply apply = clubApplyRepository.save(
             ClubApply.builder()
@@ -138,27 +138,27 @@ public class ClubService {
         return ClubFeeInfoResponse.from(club);
     }
 
-    private void validateSurveyAnswers(List<ClubSurveyQuestion> questions, List<ClubApplyRequest.AnswerRequest> answers) {
-        Map<Integer, ClubSurveyQuestion> questionMap = questions.stream()
-            .collect(Collectors.toMap(ClubSurveyQuestion::getId, question -> question));
+    private void validateApplyAnswers(List<ClubApplyQuestion> questions, List<ClubApplyRequest.AnswerRequest> answers) {
+        Map<Integer, ClubApplyQuestion> questionMap = questions.stream()
+            .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
 
         Set<Integer> answeredQuestionIds = new HashSet<>();
         Set<Integer> seenQuestionIds = new HashSet<>();
 
         for (ClubApplyRequest.AnswerRequest answer : answers) {
             if (!questionMap.containsKey(answer.questionId())) {
-                throw CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_SURVEY_QUESTION);
+                throw CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY_QUESTION);
             }
 
             if (!seenQuestionIds.add(answer.questionId())) {
-                throw CustomException.of(ApiResponseCode.DUPLICATE_CLUB_SURVEY_QUESTION);
+                throw CustomException.of(ApiResponseCode.DUPLICATE_CLUB_APPLY_QUESTION);
             }
 
-            ClubSurveyQuestion question = questionMap.get(answer.questionId());
+            ClubApplyQuestion question = questionMap.get(answer.questionId());
             boolean hasAnswer = StringUtils.hasText(answer.answer());
 
             if (question.getIsRequired().equals(TRUE) && !hasAnswer) {
-                throw CustomException.of(ApiResponseCode.REQUIRED_CLUB_SURVEY_ANSWER_MISSING);
+                throw CustomException.of(ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING);
             }
 
             if (hasAnswer) {
@@ -166,17 +166,17 @@ public class ClubService {
             }
         }
 
-        for (ClubSurveyQuestion question : questions) {
+        for (ClubApplyQuestion question : questions) {
             if (question.getIsRequired().equals(TRUE) && !answeredQuestionIds.contains(question.getId())) {
-                throw CustomException.of(ApiResponseCode.REQUIRED_CLUB_SURVEY_ANSWER_MISSING);
+                throw CustomException.of(ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING);
             }
         }
     }
 
-    private ClubSurveyQuestion getQuestionById(List<ClubSurveyQuestion> questions, Integer questionId) {
+    private ClubApplyQuestion getQuestionById(List<ClubApplyQuestion> questions, Integer questionId) {
         return questions.stream()
             .filter(question -> question.getId().equals(questionId))
             .findFirst()
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_SURVEY_QUESTION));
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY_QUESTION));
     }
 }
