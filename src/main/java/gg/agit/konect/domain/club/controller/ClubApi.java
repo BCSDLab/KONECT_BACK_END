@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
@@ -67,6 +68,18 @@ public interface ClubApi {
     ResponseEntity<Void> applyClub(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubApplyRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
+        신청 완료한 사용자만 회비 계좌 정보를 조회할 수 있습니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_FEE_INFO (403): 회비 정보 조회 권한이 없습니다.
+        """)
+    @GetMapping("/{clubId}/apply")
+    ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
+        @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     );
 }
