@@ -20,4 +20,13 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         ORDER BY cr.updatedAt DESC
         """)
     List<ChatRoom> findByUserId(@Param("userId") Integer userId);
+
+    @Query("""
+        SELECT cr
+        FROM ChatRoom cr
+        JOIN FETCH cr.sender
+        JOIN FETCH cr.receiver
+        WHERE cr.id = :chatRoomId
+        """)
+    ChatRoom getById(@Param("chatRoomId") Integer chatRoomId);
 }
