@@ -10,7 +10,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 public record ClubApplyRequest(
-    @Schema(description = "설문 답변 목록", requiredMode = NOT_REQUIRED)
+    @Schema(description = "설문 답변 목록", requiredMode = REQUIRED)
+    @NotNull(message = "설문 답변 목록은 필수입니다.")
     @Valid
     List<AnswerRequest> answers
 ) {

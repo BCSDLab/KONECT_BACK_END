@@ -108,10 +108,7 @@ public class ClubService {
         }
 
         List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
-        List<ClubApplyRequest.AnswerRequest> answers = (request == null || request.answers() == null)
-            ? List.of()
-            : request.answers();
-        validateApplyAnswers(questions, answers);
+        validateApplyAnswers(questions, request.answers());
 
         ClubApply apply = clubApplyRepository.save(
             ClubApply.builder()
@@ -120,8 +117,8 @@ public class ClubService {
                 .build()
         );
 
-        if (!answers.isEmpty()) {
-            List<ClubApplyAnswer> applyAnswers = answers.stream()
+        if (!request.answers().isEmpty()) {
+            List<ClubApplyAnswer> applyAnswers = request.answers().stream()
                 .filter(answer -> StringUtils.hasText(answer.answer()))
                 .map(answer -> ClubApplyAnswer.builder()
                     .apply(apply)
