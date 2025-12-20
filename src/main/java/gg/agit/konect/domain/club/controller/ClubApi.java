@@ -65,7 +65,7 @@ public interface ClubApi {
         - REQUIRED_CLUB_SURVEY_ANSWER_MISSING (400): 필수 설문 답변이 누락되었습니다.
         """)
     @PostMapping("/{clubId}/apply")
-    ResponseEntity<Void> applyClub(
+    ResponseEntity<ClubFeeInfoResponse> applyClub(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubApplyRequest request,
         @UserId Integer userId

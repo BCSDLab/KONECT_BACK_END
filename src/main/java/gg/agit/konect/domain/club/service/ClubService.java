@@ -93,7 +93,7 @@ public class ClubService {
     }
 
     @Transactional
-    public void applyClub(Integer clubId, Integer userId, ClubApplyRequest request) {
+    public ClubFeeInfoResponse applyClub(Integer clubId, Integer userId, ClubApplyRequest request) {
         Club club = clubRepository.getById(clubId);
         User user = userRepository.getById(userId);
 
@@ -125,6 +125,8 @@ public class ClubService {
                 clubApplyAnswerRepository.saveAll(answers);
             }
         }
+
+        return ClubFeeInfoResponse.from(club);
     }
 
     private void validateSurveyAnswers(List<ClubSurveyQuestion> questions, List<ClubApplyRequest.AnswerRequest> answers) {
