@@ -72,12 +72,12 @@ public interface ClubApi {
     );
 
     @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
-        신청 완료한 사용자만 회비 계좌 정보를 조회할 수 있습니다.
+        동아리 가입 신청을 완료한 사용자만 회비 계좌 정보를 조회할 수 있습니다.
 
         ## 에러
         - FORBIDDEN_CLUB_FEE_INFO (403): 회비 정보 조회 권한이 없습니다.
         """)
-    @GetMapping("/{clubId}/apply")
+    @GetMapping("/{clubId}/fee")
     ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
