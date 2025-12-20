@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.chat.service;
 
+import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
@@ -44,6 +45,9 @@ public class ChatRoomService {
 
         User currentUser = userRepository.getById(userId);
         User presidentUser = president.getUser();
+        if (currentUser.getId().equals(presidentUser.getId())) {
+            throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
+        }
 
         ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), presidentUser.getId())
             .orElseGet(() -> {

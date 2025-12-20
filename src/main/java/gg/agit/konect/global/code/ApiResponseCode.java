@@ -19,6 +19,7 @@ public enum ApiResponseCode {
     INVALID_JSON_FORMAT(HttpStatus.BAD_REQUEST, "요청 본문의 JSON 형식이 잘못되었습니다."),
     MISSING_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "필수 요청 파라미터가 누락되었습니다."),
     FAILED_EXTRACT_EMAIL(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 이메일 정보를 가져올 수 없습니다."),
+    CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
