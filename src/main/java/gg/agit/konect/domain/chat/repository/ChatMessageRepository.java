@@ -12,12 +12,14 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 
 public interface ChatMessageRepository extends Repository<ChatMessage, Integer> {
 
+    ChatMessage save(ChatMessage chatMessage);
+
     @Query("""
         SELECT cm
         FROM ChatMessage cm
         JOIN FETCH cm.sender
         WHERE cm.chatRoom.id = :chatRoomId
-        ORDER BY cm.createdAt ASC
+        ORDER BY cm.createdAt DESC
         """)
     Page<ChatMessage> findByChatRoomId(@Param("chatRoomId") Integer chatRoomId, Pageable pageable);
 

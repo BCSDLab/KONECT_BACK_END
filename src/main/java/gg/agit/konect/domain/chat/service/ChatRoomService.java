@@ -9,6 +9,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
+import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
 import gg.agit.konect.domain.chat.model.ChatMessage;
@@ -48,5 +50,20 @@ public class ChatRoomService {
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
         return ChatMessagesResponse.from(messages, userId);
+    }
+
+    @Transactional
+    public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
+        ChatRoom chatRoom = chatRoomRepository.getById(roomId);
+        if (!chatRoom.isParticipant(userId)) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+
+        User sender = userRepository.getById(userId);
+        User receiver = chatRoom.getChatPartner(sender);
+
+        ChatMessage message = ChatMessage.of(chatRoom, sender, receiver, request.content());
+        ChatMessage savedMessage = chatMessageRepository.save(message);
+        return ChatMessageResponse.from(savedMessage, userId);
     }
 }
