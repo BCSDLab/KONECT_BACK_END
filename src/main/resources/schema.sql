@@ -171,12 +171,39 @@ CREATE TABLE council_notice_read_history
 CREATE TABLE university_schedule
 (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    university_id INT          NOT NULL,
-    title         VARCHAR(255) NOT NULL,
-    started_at    TIMESTAMP    NOT NULL,
-    ended_at      TIMESTAMP    NOT NULL,
-    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    university_id INT                                 NOT NULL,
+    title         VARCHAR(255)                        NOT NULL,
+    started_at    TIMESTAMP                           NOT NULL,
+    ended_at      TIMESTAMP                           NOT NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (university_id) REFERENCES university (id) ON DELETE CASCADE
+);
+
+CREATE TABLE chat_room
+(
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id   INT,
+    receiver_id INT,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE SET NULL,
+    FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE SET NULL
+);
+
+CREATE TABLE chat_message
+(
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    chat_room_id INT     NOT NULL,
+    sender_id    INT,
+    receiver_id  INT,
+    content      TEXT    NOT NULL,
+    is_read      BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at   TIMESTAMP        DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at   TIMESTAMP        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (chat_room_id) REFERENCES chat_room (id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE SET NULL
 );

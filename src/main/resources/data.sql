@@ -290,7 +290,8 @@ VALUES ('user01@example.com', 1, '홍길동', '010-1000-0001', '20250001', 'GOOG
        ('user17@example.com', 1, '조하림', '010-1000-0017', '20250017', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png'),
        ('user18@example.com', 1, '한예준', '010-1000-0018', '20250018', 'GOOGLE', FALSE, 'https://stage-static.koreatech.in/konect/User_02.png'),
        ('user19@example.com', 1, '권민재', '010-1000-0019', '20250019', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png'),
-       ('user20@example.com', 1, '임소연', '010-1000-0020', '20250020', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png');
+       ('user20@example.com', 1, '임소연', '010-1000-0020', '20250020', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png'),
+       ('konecttest12@gmail.com', 1, '테스트', '010-1000-0021', '20250120', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png');
 
 -- 동아리
 INSERT INTO club (club_category, university_id, name, description, introduce, image_url, location)
@@ -456,7 +457,7 @@ VALUES (1, '회장', 'PRESIDENT'),
 
 -- 동아리 멤버
 INSERT INTO club_member (club_id, user_id, club_position_id, is_fee_paid)
-VALUES (1, 1, 1, true),
+VALUES (1, 21, 1, true),
        (1, 2, 2, true),
        (1, 3, 3, false),
        (1, 5, 4, true),
