@@ -72,6 +72,7 @@ public class ChatMessage extends BaseEntity {
             .chatRoom(chatRoom)
             .sender(sender)
             .receiver(receiver)
+            .isRead(FALSE)
             .build();
     }
 
