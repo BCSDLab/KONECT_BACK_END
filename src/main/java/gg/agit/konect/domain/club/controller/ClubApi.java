@@ -92,7 +92,8 @@ public interface ClubApi {
     @Operation(summary = "동아리 가입 문항을 조회한다.")
     @GetMapping("/{clubId}/questions")
     ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리 모집 정보를 조회한다.", description = """

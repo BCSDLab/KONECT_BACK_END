@@ -85,9 +85,10 @@ public class ClubController implements ClubApi {
 
     @Override
     public ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     ) {
-        ClubApplyQuestionsResponse response = clubService.getApplyQuestions(clubId);
+        ClubApplyQuestionsResponse response = clubService.getApplyQuestions(clubId, userId);
         return ResponseEntity.ok(response);
     }
 

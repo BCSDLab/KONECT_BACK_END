@@ -105,7 +105,8 @@ public class ClubService {
         return ClubFeeInfoResponse.from(club);
     }
 
-    public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId) {
+    public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
+        User user = userRepository.getById(userId);
         List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
         return ClubApplyQuestionsResponse.from(questions);
     }
