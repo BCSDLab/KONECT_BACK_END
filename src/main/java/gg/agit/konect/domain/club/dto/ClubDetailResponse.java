@@ -52,7 +52,13 @@ public record ClubDetailResponse(
     InnerRecruitment recruitment,
 
     @Schema(description = "동아리 대표 임원진", requiredMode = REQUIRED)
-    List<InnerRepresentative> representatives
+    List<InnerRepresentative> representatives,
+
+    @Schema(description = "동아리 소속 여부", example = "true", requiredMode = REQUIRED)
+    Boolean isMember,
+
+    @Schema(description = "동아리 지원 여부", example = "false", requiredMode = REQUIRED)
+    Boolean isApplied
 ) {
     public record InnerRecruitment(
         @Schema(description = "동아리 모집 상태", example = "ONGOING", requiredMode = REQUIRED)
@@ -94,7 +100,9 @@ public record ClubDetailResponse(
         Club club,
         Integer memberCount,
         ClubRecruitment clubRecruitment,
-        List<ClubMember> clubPresidents
+        List<ClubMember> clubPresidents,
+        Boolean isMember,
+        Boolean isApplied
     ) {
         return new ClubDetailResponse(
             club.getId(),
@@ -108,7 +116,9 @@ public record ClubDetailResponse(
             InnerRecruitment.from(clubRecruitment),
             clubPresidents.stream()
                 .map(InnerRepresentative::from)
-                .toList()
+                .toList(),
+            isMember,
+            isApplied
         );
     }
 }

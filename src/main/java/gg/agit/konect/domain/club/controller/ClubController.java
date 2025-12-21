@@ -40,9 +40,10 @@ public class ClubController implements ClubApi {
 
     @GetMapping("/{clubId}")
     public ResponseEntity<ClubDetailResponse> getClubDetail(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     ) {
-        ClubDetailResponse response = clubService.getClubDetail(clubId);
+        ClubDetailResponse response = clubService.getClubDetail(clubId, userId);
         return ResponseEntity.ok(response);
     }
 

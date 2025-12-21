@@ -61,7 +61,7 @@ public class ClubService {
         return ClubsResponse.of(clubSummaryInfoPage);
     }
 
-    public ClubDetailResponse getClubDetail(Integer clubId) {
+    public ClubDetailResponse getClubDetail(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
         List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(club.getId());
         List<ClubMember> clubPresidents = clubMembers.stream()
@@ -70,7 +70,11 @@ public class ClubService {
         Integer memberCount = clubMembers.size();
         ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
 
-        return ClubDetailResponse.of(club, memberCount, recruitment, clubPresidents);
+        boolean isMember = clubMembers.stream()
+            .anyMatch(clubMember -> clubMember.getUser().getId().equals(userId));
+        Boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
+
+        return ClubDetailResponse.of(club, memberCount, recruitment, clubPresidents, isMember, isApplied);
     }
 
     public JoinedClubsResponse getJoinedClubs(Integer userId) {

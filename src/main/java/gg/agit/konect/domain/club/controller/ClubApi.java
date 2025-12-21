@@ -43,7 +43,8 @@ public interface ClubApi {
         """)
     @GetMapping("/{clubId}")
     ResponseEntity<ClubDetailResponse> getClubDetail(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     );
 
     @Operation(summary = "가입한 동아리 리스트를 조회한다.")
