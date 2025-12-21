@@ -21,7 +21,7 @@ public record UserUpdateRequest(
     @Schema(description = "회원 학번", example = "2021136091", requiredMode = REQUIRED)
     String studentNumber,
 
-    @Pattern(regexp = "^01[0-9]-?\\d{3,4}-?\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.")
+    @Pattern(regexp = "^$|^01[0-9]-?\\d{3,4}-?\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.")
     @Schema(description = "회원 전화번호", example = "010-1234-5678", requiredMode = NOT_REQUIRED)
     String phoneNumber
 ) {
