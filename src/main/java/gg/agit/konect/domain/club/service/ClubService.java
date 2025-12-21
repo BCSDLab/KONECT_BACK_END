@@ -14,28 +14,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
-import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
+import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
+import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
-import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
+import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -56,9 +56,10 @@ public class ClubService {
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final UserRepository userRepository;
 
-    public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting) {
+    public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting, Integer userId) {
+        User user = userRepository.getById(userId);
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(pageable, query, isRecruiting);
+        Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(pageable, query, isRecruiting, user.getUniversity().getId());
         return ClubsResponse.of(clubSummaryInfoPage);
     }
 

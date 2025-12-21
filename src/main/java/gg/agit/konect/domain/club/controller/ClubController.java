@@ -33,9 +33,10 @@ public class ClubController implements ClubApi {
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
         @RequestParam(name = "query", defaultValue = "", required = false) String query,
-        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting
+        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting,
+        @UserId Integer userId
     ) {
-        ClubsResponse response = clubService.getClubs(page, limit, query, isRecruiting);
+        ClubsResponse response = clubService.getClubs(page, limit, query, isRecruiting, userId);
         return ResponseEntity.ok(response);
     }
 

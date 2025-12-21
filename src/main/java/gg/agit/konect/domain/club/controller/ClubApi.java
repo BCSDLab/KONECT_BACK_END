@@ -35,7 +35,8 @@ public interface ClubApi {
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
         @RequestParam(name = "query", defaultValue = "", required = false) String query,
-        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting
+        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리의 상세 정보를 조회한다.", description = """
