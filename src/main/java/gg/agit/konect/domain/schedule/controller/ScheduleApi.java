@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
+import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
@@ -32,5 +33,5 @@ public interface ScheduleApi {
         - 시간이 정해진 경우 : 정해진 시간
         """)
     @GetMapping("/schedules")
-    ResponseEntity<SchedulesResponse> getSchedules(HttpSession session);
+    ResponseEntity<SchedulesResponse> getSchedules(@UserId Integer userId);
 }

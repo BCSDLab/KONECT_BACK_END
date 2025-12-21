@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
 import gg.agit.konect.domain.schedule.service.ScheduleService;
+import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
@@ -16,9 +17,8 @@ public class ScheduleController implements ScheduleApi {
     private final ScheduleService scheduleService;
 
     @GetMapping("/schedules")
-    public ResponseEntity<SchedulesResponse> getSchedules(HttpSession session) {
-        // Integer userId = (Integer) session.getAttribute("userId");
-        SchedulesResponse response = scheduleService.getSchedules(1);
+    public ResponseEntity<SchedulesResponse> getSchedules(@UserId Integer userId) {
+        SchedulesResponse response = scheduleService.getSchedules(userId);
         return ResponseEntity.ok(response);
     }
 }
