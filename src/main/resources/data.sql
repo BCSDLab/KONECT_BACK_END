@@ -352,7 +352,8 @@ UPDATE club
 SET fee_amount = 10000,
     fee_bank = '국민은행',
     fee_account_number = '123-456-7890',
-    fee_account_holder = 'BCSD'
+    fee_account_holder = 'BCSD',
+    fee_deadline = '2025-12-31'
 WHERE id = 1;
 
 -- 동아리 가입 질문

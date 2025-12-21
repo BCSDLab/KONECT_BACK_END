@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -68,6 +69,9 @@ public class Club extends BaseEntity {
     @Column(name = "fee_account_holder", length = 100)
     private String feeAccountHolder;
 
+    @Column(name = "fee_deadline")
+    private LocalDate feeDeadline;
+
     @Builder
     private Club(
         Integer id,
@@ -81,7 +85,8 @@ public class Club extends BaseEntity {
         Integer feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder
+        String feeAccountHolder,
+        LocalDate feeDeadline
     ) {
         this.id = id;
         this.clubCategory = clubCategory;
@@ -95,5 +100,6 @@ public class Club extends BaseEntity {
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
+        this.feeDeadline = feeDeadline;
     }
 }
