@@ -31,4 +31,6 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         AND cp.name = '회장'
         """)
     Optional<ClubMember> findPresidentByClubId(@Param("clubId") Integer clubId);
+
+    boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
 }
