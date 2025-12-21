@@ -19,8 +19,8 @@ public record ChatMessageResponse(
     @Schema(description = "메시지 내용", example = "투명 케이스가 끼워져 있었어요!", requiredMode = REQUIRED)
     String content,
 
-    @Schema(description = "메시지 전송 시간", example = "2025.07.23 15:53", requiredMode = REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+    @Schema(description = "메시지 전송 시간", example = "2025.07.23 15:53:12.123", requiredMode = REQUIRED)
+    @JsonFormat(pattern = "yyyy.MM.dd HH:mm:ss.SSS")
     LocalDateTime createdAt,
 
     @Schema(description = "읽음 여부", example = "false", requiredMode = REQUIRED)
