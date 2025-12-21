@@ -27,4 +27,6 @@ public interface UserRepository extends Repository<User, Integer> {
     boolean existsByPhoneNumberAndIdNot(String phoneNumber, Integer id);
 
     User save(User user);
+
+    void delete(User user);
 }
