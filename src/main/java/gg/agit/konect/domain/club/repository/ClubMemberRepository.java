@@ -33,4 +33,8 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     Optional<ClubMember> findPresidentByClubId(@Param("clubId") Integer clubId);
 
     boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
+
+    List<ClubMember> findByUserId(Integer userId);
+
+    void deleteByUserId(Integer userId);
 }

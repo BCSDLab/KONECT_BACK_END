@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.user.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -57,4 +58,8 @@ public interface UserApi {
     @PostMapping("/logout")
     @PublicApi
     ResponseEntity<Void> logout(HttpServletRequest request);
+
+    @Operation(summary = "회원탈퇴를 한다.")
+    @DeleteMapping("/withdraw")
+    ResponseEntity<Void> logout(@UserId Integer userId);
 }

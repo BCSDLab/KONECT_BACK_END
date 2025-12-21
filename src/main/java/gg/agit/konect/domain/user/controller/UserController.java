@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.user.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,5 +77,11 @@ public class UserController implements UserApi {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<Void> logout(@UserId Integer userId) {
+        userService.deleteUser(userId);
+        return ResponseEntity.notFound().build();
     }
 }

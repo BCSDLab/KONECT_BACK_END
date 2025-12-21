@@ -9,4 +9,6 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
     boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
 
     ClubApply save(ClubApply clubApply);
+
+    void deleteByUserId(Integer userId);
 }

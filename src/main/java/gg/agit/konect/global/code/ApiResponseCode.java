@@ -21,6 +21,7 @@ public enum ApiResponseCode {
     FAILED_EXTRACT_EMAIL(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 이메일 정보를 가져올 수 없습니다."),
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
     REQUIRED_CLUB_APPLY_ANSWER_MISSING(HttpStatus.BAD_REQUEST, "필수 가입 답변이 누락되었습니다."),
+    CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
