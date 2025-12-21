@@ -33,8 +33,13 @@ public class ClubQueryRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
-    public Page<ClubSummaryInfo> findAllByFilter(PageRequest pageable, String query, Boolean isRecruiting) {
-        BooleanBuilder filter = clubSearchFilter(query, isRecruiting);
+    public Page<ClubSummaryInfo> findAllByFilter(
+        PageRequest pageable,
+        Integer universityId,
+        String query,
+        Boolean isRecruiting
+    ) {
+        BooleanBuilder filter = clubSearchFilter(universityId, query, isRecruiting);
         OrderSpecifier<?> sort = clubSort(isRecruiting);
 
         List<Tuple> clubData = fetchClubs(pageable, filter, sort);
@@ -112,8 +117,9 @@ public class ClubQueryRepository {
             .fetchOne();
     }
 
-    private BooleanBuilder clubSearchFilter(String query, Boolean isRecruiting) {
+    private BooleanBuilder clubSearchFilter(Integer universityId, String query, Boolean isRecruiting) {
         BooleanBuilder builder = new BooleanBuilder();
+        builder.and(club.university.id.eq(universityId));
 
         if (!StringUtils.isEmpty(query)) {
             String normalizedQuery = query.trim().toLowerCase();

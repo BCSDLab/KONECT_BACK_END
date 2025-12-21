@@ -33,9 +33,10 @@ public class ClubController implements ClubApi {
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
         @RequestParam(name = "query", defaultValue = "", required = false) String query,
-        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting
+        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting,
+        @UserId Integer userId
     ) {
-        ClubsResponse response = clubService.getClubs(page, limit, query, isRecruiting);
+        ClubsResponse response = clubService.getClubs(page, limit, query, isRecruiting, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -56,9 +57,10 @@ public class ClubController implements ClubApi {
 
     @GetMapping("/{clubId}/members")
     public ResponseEntity<ClubMembersResponse> getClubMembers(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     ) {
-        ClubMembersResponse response = clubService.getClubMembers(clubId);
+        ClubMembersResponse response = clubService.getClubMembers(clubId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -83,9 +85,10 @@ public class ClubController implements ClubApi {
 
     @Override
     public ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     ) {
-        ClubApplyQuestionsResponse response = clubService.getApplyQuestions(clubId);
+        ClubApplyQuestionsResponse response = clubService.getApplyQuestions(clubId, userId);
         return ResponseEntity.ok(response);
     }
 

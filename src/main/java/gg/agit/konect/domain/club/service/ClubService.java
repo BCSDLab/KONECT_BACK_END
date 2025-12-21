@@ -14,30 +14,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
-import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
+import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
+import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
-import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
+import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.service.UserService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -54,25 +54,41 @@ public class ClubService {
     private final ClubApplyRepository clubApplyRepository;
     private final ClubApplyQuestionRepository clubApplyQuestionRepository;
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting) {
+    public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting, Integer userId) {
+        Integer universityId = userService.getUniversityId(userId);
+
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(pageable, query, isRecruiting);
+        Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(
+            pageable,
+            universityId,
+            query,
+            isRecruiting
+        );
+
         return ClubsResponse.of(clubSummaryInfoPage);
     }
 
     public ClubDetailResponse getClubDetail(Integer clubId, Integer userId) {
-        Club club = clubRepository.getById(clubId);
+        Club club = getClubForUser(clubId, userId);
+
         List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(club.getId());
         List<ClubMember> clubPresidents = clubMembers.stream()
             .filter(ClubMember::isPresident)
             .toList();
+
         Integer memberCount = clubMembers.size();
+
         ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
 
         boolean isMember = clubMembers.stream()
-            .anyMatch(clubMember -> clubMember.getUser().getId().equals(userId));
+            .anyMatch(clubMember ->
+                clubMember.getUser()
+                    .getId()
+                    .equals(userId)
+            );
+
         Boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
 
         return ClubDetailResponse.of(club, memberCount, recruitment, clubPresidents, isMember, isApplied);
@@ -80,16 +96,20 @@ public class ClubService {
 
     public JoinedClubsResponse getJoinedClubs(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(userId);
+
         return JoinedClubsResponse.of(clubMembers);
     }
 
-    public ClubMembersResponse getClubMembers(Integer clubId) {
+    public ClubMembersResponse getClubMembers(Integer clubId, Integer userId) {
+        getClubForUser(clubId, userId);
+
         List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(clubId);
+
         return ClubMembersResponse.from(clubMembers);
     }
 
     public ClubFeeInfoResponse getFeeInfo(Integer clubId, Integer userId) {
-        Club club = clubRepository.getById(clubId);
+        Club club = getClubForUser(clubId, userId);
 
         if (!clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
             throw CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_FEE_INFO);
@@ -98,25 +118,28 @@ public class ClubService {
         return ClubFeeInfoResponse.from(club);
     }
 
-    public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId) {
+    public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
+        getClubForUser(clubId, userId);
+
         List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
+
         return ClubApplyQuestionsResponse.from(questions);
     }
 
     public ClubRecruitmentResponse getRecruitment(Integer clubId, Integer userId) {
-        Club club = clubRepository.getById(clubId);
-        User user = userRepository.getById(userId);
+        Club club = getClubForUser(clubId, userId);
         ClubRecruitment recruitment = clubRecruitmentRepository.getByClubId(club.getId());
+
         boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
-        boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(club.getId(), user.getId());
+        boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(club.getId(), userId);
 
         return ClubRecruitmentResponse.of(recruitment, isApplied);
     }
 
     @Transactional
     public ClubFeeInfoResponse applyClub(Integer clubId, Integer userId, ClubApplyRequest request) {
-        Club club = clubRepository.getById(clubId);
-        User user = userRepository.getById(userId);
+        Club club = getClubForUser(clubId, userId);
+        User user = userService.getUser(userId);
 
         if (clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
             throw CustomException.of(ApiResponseCode.ALREADY_APPLIED_CLUB);
@@ -148,6 +171,12 @@ public class ClubService {
         }
 
         return ClubFeeInfoResponse.from(club);
+    }
+
+    private Club getClubForUser(Integer clubId, Integer userId) {
+        Integer universityId = userService.getUniversityId(userId);
+
+        return clubRepository.getByIdAndUniversityId(clubId, universityId);
     }
 
     private void validateApplyAnswers(List<ClubApplyQuestion> questions, List<ClubApplyRequest.AnswerRequest> answers) {

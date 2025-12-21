@@ -12,8 +12,15 @@ public interface ClubRepository extends Repository<Club, Integer> {
 
     Optional<Club> findById(Integer id);
 
+    Optional<Club> findByIdAndUniversityId(Integer id, Integer universityId);
+
     default Club getById(Integer id) {
         return findById(id).orElseThrow(() ->
+            CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
+    }
+
+    default Club getByIdAndUniversityId(Integer id, Integer universityId) {
+        return findByIdAndUniversityId(id, universityId).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
     }
 }

@@ -27,6 +27,7 @@ import jakarta.validation.Valid;
 public interface ClubApi {
 
     @Operation(summary = "페이지 네이션으로 동아리 리스트를 조회한다.", description = """
+        - 로그인한 유저의 대학교에 속한 동아리만 조회합니다.
         - isRecruiting가 true일 경우, 모집일이 빠른 순으로 정렬됩니다.
         - status은 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         """)
@@ -35,7 +36,8 @@ public interface ClubApi {
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
         @RequestParam(name = "query", defaultValue = "", required = false) String query,
-        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting
+        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리의 상세 정보를 조회한다.", description = """
@@ -56,7 +58,8 @@ public interface ClubApi {
     @Operation(summary = "동아리 멤버 리스트를 조회한다.")
     @GetMapping("/{clubId}/members")
     ResponseEntity<ClubMembersResponse> getClubMembers(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리 가입 신청을 한다.", description = """
@@ -90,7 +93,8 @@ public interface ClubApi {
     @Operation(summary = "동아리 가입 문항을 조회한다.")
     @GetMapping("/{clubId}/questions")
     ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리 모집 정보를 조회한다.", description = """

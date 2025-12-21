@@ -45,6 +45,8 @@ public class UserService {
         University university = universityRepository.findById(request.universityId())
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
 
+        validateStudentNumberDuplicationOnSignup(university.getId(), request.studentNumber());
+
         User newUser = User.builder()
             .university(university)
             .email(tempUser.getEmail())
@@ -63,16 +65,24 @@ public class UserService {
     }
 
     public UserInfoResponse getUserInfo(Integer userId) {
-        User user = userRepository.getById(userId);
+        User user = getUser(userId);
         int joinedClubCount = clubMemberRepository.findAllByUserId(user.getId()).size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
 
         return UserInfoResponse.from(user, joinedClubCount, unreadCouncilNoticeCount);
     }
 
+    public User getUser(Integer userId) {
+        return userRepository.getById(userId);
+    }
+
+    public Integer getUniversityId(Integer userId) {
+        return getUser(userId).getUniversity().getId();
+    }
+
     @Transactional
     public void updateUserInfo(Integer userId, UserUpdateRequest request) {
-        User user = userRepository.getById(userId);
+        User user = getUser(userId);
 
         validateStudentNumberDuplication(user, request);
         validatePhoneNumberDuplication(user, request);
@@ -88,6 +98,14 @@ public class UserService {
         boolean exists = userRepository.existsByUniversityIdAndStudentNumberAndIdNot(
             user.getUniversity().getId(), request.studentNumber(), user.getId()
         );
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
+        }
+    }
+
+    private void validateStudentNumberDuplicationOnSignup(Integer universityId, String studentNumber) {
+        boolean exists = userRepository.existsByUniversityIdAndStudentNumber(universityId, studentNumber);
 
         if (exists) {
             throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
