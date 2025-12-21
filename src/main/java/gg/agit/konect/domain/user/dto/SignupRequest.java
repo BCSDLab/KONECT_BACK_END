@@ -5,6 +5,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record SignupRequest(
@@ -19,6 +20,7 @@ public record SignupRequest(
 
     @NotEmpty(message = "학번은 필수 입력입니다.")
     @Size(max = 20, message = "학번은 최대 20자 입니다.")
+    @Pattern(regexp = "^\\S+$", message = "학번은 공백을 포함할 수 없습니다.")
     @Schema(description = "회원 학번", example = "20250001", requiredMode = REQUIRED)
     String studentNumber,
 
