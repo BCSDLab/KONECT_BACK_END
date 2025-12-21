@@ -28,6 +28,7 @@ public enum ApiResponseCode {
     // 403 Forbidden (접근 권한 없음)
     FORBIDDEN_CHAT_ROOM_ACCESS(HttpStatus.FORBIDDEN, "채팅방에 접근할 권한이 없습니다."),
     FORBIDDEN_CLUB_FEE_INFO(HttpStatus.FORBIDDEN, "회비 정보 조회 권한이 없습니다."),
+    FORBIDDEN_CLUB_MEMBER_ACCESS(HttpStatus.FORBIDDEN, "동아리 멤버 조회 권한이 없습니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),

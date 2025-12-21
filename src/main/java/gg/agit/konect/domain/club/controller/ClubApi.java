@@ -57,7 +57,8 @@ public interface ClubApi {
     @Operation(summary = "동아리 멤버 리스트를 조회한다.")
     @GetMapping("/{clubId}/members")
     ResponseEntity<ClubMembersResponse> getClubMembers(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리 가입 신청을 한다.", description = """

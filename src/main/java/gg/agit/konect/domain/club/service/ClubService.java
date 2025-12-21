@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
+import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CLUB_MEMBER_ACCESS;
 import static java.lang.Boolean.TRUE;
 
 import java.util.HashSet;
@@ -84,7 +85,12 @@ public class ClubService {
         return JoinedClubsResponse.of(clubMembers);
     }
 
-    public ClubMembersResponse getClubMembers(Integer clubId) {
+    public ClubMembersResponse getClubMembers(Integer clubId, Integer userId) {
+        boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
+        if (!isMember) {
+            throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
+        }
+
         List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(clubId);
         return ClubMembersResponse.from(clubMembers);
     }
