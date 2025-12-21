@@ -22,7 +22,15 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "club_position")
+@Table(
+    name = "club_position",
+    uniqueConstraints = {
+        @jakarta.persistence.UniqueConstraint(
+            name = "uq_club_position_club_id_name",
+            columnNames = {"club_id", "name"}
+        )
+    }
+)
 @NoArgsConstructor(access = PROTECTED)
 public class ClubPosition extends BaseEntity {
 
