@@ -51,20 +51,21 @@ CREATE TABLE club_tag
 
 CREATE TABLE club
 (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    university_id INT                                 NOT NULL,
-    club_category VARCHAR(255)                        NOT NULL,
-    name          VARCHAR(50)                         NOT NULL,
-    description   VARCHAR(100)                        NOT NULL,
-    introduce     TEXT                                NOT NULL,
-    image_url     VARCHAR(255)                        NOT NULL,
-    location      VARCHAR(255)                        NOT NULL,
-    fee_amount    INT,
-    fee_bank      VARCHAR(100),
+    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    university_id      INT                                 NOT NULL,
+    club_category      VARCHAR(255)                        NOT NULL,
+    name               VARCHAR(50)                         NOT NULL,
+    description        VARCHAR(100)                        NOT NULL,
+    introduce          TEXT                                NOT NULL,
+    image_url          VARCHAR(255)                        NOT NULL,
+    location           VARCHAR(255)                        NOT NULL,
+    fee_amount         INT,
+    fee_bank           VARCHAR(100),
     fee_account_number VARCHAR(100),
     fee_account_holder VARCHAR(100),
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    fee_deadline       DATE,
+    created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (university_id) REFERENCES university (id)
 );
