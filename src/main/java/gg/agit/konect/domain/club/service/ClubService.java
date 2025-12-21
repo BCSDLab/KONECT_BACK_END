@@ -20,6 +20,7 @@ import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -100,6 +101,16 @@ public class ClubService {
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId) {
         List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
         return ClubApplyQuestionsResponse.from(questions);
+    }
+
+    public ClubRecruitmentResponse getRecruitment(Integer clubId, Integer userId) {
+        Club club = clubRepository.getById(clubId);
+        User user = userRepository.getById(userId);
+        ClubRecruitment recruitment = clubRecruitmentRepository.getByClubId(club.getId());
+        boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
+        boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(club.getId(), user.getId());
+
+        return ClubRecruitmentResponse.of(recruitment, isApplied);
     }
 
     @Transactional
