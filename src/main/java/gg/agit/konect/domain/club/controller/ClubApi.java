@@ -40,6 +40,7 @@ public interface ClubApi {
     @Operation(summary = "동아리의 상세 정보를 조회한다.", description = """
         - recruitmentStatus는 모집 기간에 따라 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         - 모집 일정 데이터가 존재하지 않는다면 CLOSED(모집 마감)으로 간주되며, startDate, endDate는 null로 반환됩니다.
+        - 동아리 멤버이거나 지원 이력이 존재할 경우 isApplied는 true로 반환됩니다.
         """)
     @GetMapping("/{clubId}")
     ResponseEntity<ClubDetailResponse> getClubDetail(
