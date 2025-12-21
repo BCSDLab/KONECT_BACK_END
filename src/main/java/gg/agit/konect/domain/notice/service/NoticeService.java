@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.notice.service;
 
+import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_COUNCIL_NOTICE_ACCESS;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +25,7 @@ import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -70,6 +73,10 @@ public class NoticeService {
     public CouncilNoticeResponse getNotice(Integer id, Integer userId) {
         CouncilNotice councilNotice = councilNoticeRepository.getById(id);
         User user = userRepository.getById(userId);
+
+        if (!councilNotice.getCouncil().getUniversity().equals(user.getUniversity())) {
+            throw CustomException.of(FORBIDDEN_COUNCIL_NOTICE_ACCESS);
+        }
 
         if (!councilNoticeReadRepository.existsByUserIdAndCouncilNoticeId(userId, id)) {
             councilNoticeReadRepository.save(CouncilNoticeReadHistory.of(user, councilNotice));
