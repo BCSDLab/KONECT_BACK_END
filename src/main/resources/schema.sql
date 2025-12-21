@@ -143,6 +143,8 @@ CREATE TABLE club_recruitment
     club_id    INT                                 NOT NULL,
     start_date DATE                                NOT NULL,
     end_date   DATE                                NOT NULL,
+    content    TEXT                                NOT NULL,
+    image_url  VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 

@@ -518,11 +518,19 @@ VALUES (1, 21, 1, true),
        (12, 9, 48, true),
        (12, 14, 48, false);
 
-INSERT INTO club_recruitment (club_id, start_date, end_date)
-VALUES (1, '2025-11-30', '2025-12-31'),
-       (2, '2025-11-29', '2025-12-31'),
-       (3, '2025-11-28', '2025-12-31'),
-       (4, '2025-11-27', '2025-12-31');
+INSERT INTO club_recruitment (club_id, start_date, end_date, content, image_url)
+VALUES (1, '2025-11-30', '2025-12-31',
+        'BCSD 2025학년도 2학기 신입 부원 모집\n\n■ 모집 대상\n- IT에 관심 있는 한국기술교육대학교 재학생\n- 프로그래밍 경험 무관 (열정만 있으면 OK!)\n\n■ 활동 내용\n- 실무 프로젝트 경험\n- 스터디 및 세미나 참여\n- 선배 개발자와의 네트워킹\n\n■ 지원 방법\n- 지원서 작성 및 제출\n- 면접 진행\n\n많은 지원 바랍니다!',
+        'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png'),
+       (2, '2025-11-29', '2025-12-31',
+        'CUT 탁구 동아리 신입 부원 모집\n\n■ 모집 대상\n- 탁구에 관심 있는 학생 누구나\n- 초보자 환영!\n\n■ 활동 내용\n- 주 2회 정기 모임\n- 탁구 실력 향상 훈련\n- 동아리 대회 참가\n\n■ 혜택\n- 탁구 장비 지원\n- 체육관 이용권 제공\n\n많은 관심 부탁드립니다!',
+        'https://static.koreatech.in/upload/LOST_ITEMS/2025/6/12/bbacbbb4-5f64-4582-8f5f-e6e446031362/1000035027.jpg'),
+       (3, '2025-11-28', '2025-12-31',
+        'K-오케스트라 신입 단원 모집\n\n■ 모집 파트\n- 현악: 바이올린, 비올라, 첼로\n- 관악: 플루트, 클라리넷, 트럼펫\n- 타악기\n\n■ 활동 내용\n- 주 1회 정기 합주\n- 학기말 정기 연주회\n- 교내외 공연 활동\n\n■ 지원 자격\n- 악기 연주 가능자 (실력 무관)\n- 음악에 대한 열정\n\n함께 아름다운 음악을 만들어요!',
+        'https://static.koreatech.in/upload/LOST_ITEMS/2025/6/15/e12716ab-d5bc-4143-9101-5a2b6f0bfb94/1000014263.jpg'),
+       (4, '2025-11-27', '2025-12-31',
+        '스텝업 클라이밍 동아리 신입 부원 모집\n\n■ 모집 대상\n- 클라이밍에 관심 있는 학생\n- 체력 단련을 원하는 학생\n- 초보자 대환영!\n\n■ 활동 내용\n- 주 2회 클라이밍장 방문\n- 기초부터 고급 기술 교육\n- 동아리 MT 및 친목 활동\n\n■ 혜택\n- 클라이밍장 이용료 할인\n- 장비 대여 지원\n\n함께 정상을 향해 올라가요!',
+        'https://static.koreatech.in/upload/CLUB/2025/7/7/a72b37fb-e82b-4cbb-a2c2-4c59d8fc6b84/923ECFF9-871B-40A3-A13A-8230F0B666F8.jpeg');
 
 INSERT INTO council (name, image_url, university_id, introduce, personal_color, location, phone_number, email, instagram_url, operating_hour)
 VALUES ('개화', 'https://static.koreatech.in/upload/CLUB/2025/6/10/d0320625-7055-4a33-aad7-ee852a008ce7/BCSD Logo-symbol.png', 1,

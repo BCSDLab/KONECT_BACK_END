@@ -36,15 +36,23 @@ public class ClubRecruitment extends BaseEntity {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @Column(name = "image_url", length = 255)
+    private String imageUrl;
+
     @OneToOne(fetch = LAZY)
     @JoinColumn(name = "club_id", nullable = false, updatable = false)
     private Club club;
 
     @Builder
-    private ClubRecruitment(Integer id, LocalDate startDate, LocalDate endDate, Club club) {
+    private ClubRecruitment(Integer id, LocalDate startDate, LocalDate endDate, String content, String imageUrl, Club club) {
         this.id = id;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.content = content;
+        this.imageUrl = imageUrl;
         this.club = club;
     }
 }
