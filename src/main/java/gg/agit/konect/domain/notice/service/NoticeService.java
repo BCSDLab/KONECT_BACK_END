@@ -39,15 +39,16 @@ public class NoticeService {
     private final UserRepository userRepository;
 
     public CouncilNoticesResponse getNotices(Integer page, Integer limit, Integer userId) {
+        User user = userRepository.getById(userId);
+        Council council = councilRepository.getByUniversity(user.getUniversity());
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<CouncilNotice> councilNoticePage = councilNoticeRepository.findAll(pageable);
-        Map<Integer, Boolean> councilNoticeReadMap = getCouncilNoticeReadMap(userId, councilNoticePage.getContent());
+        Page<CouncilNotice> councilNoticePage = councilNoticeRepository.findByCouncilId(council.getId(), pageable);
+        Map<Integer, Boolean> councilNoticeReadMap = getCouncilNoticeReadMap(user.getId(), councilNoticePage.getContent());
         return CouncilNoticesResponse.from(councilNoticePage, councilNoticeReadMap);
     }
 
     private Map<Integer, Boolean> getCouncilNoticeReadMap(Integer userId, List<CouncilNotice> councilNotices) {
-        User user = userRepository.getById(userId);
-        Set<Integer> readNoticeIds = getReadNoticeIds(user.getId(), councilNotices);
+        Set<Integer> readNoticeIds = getReadNoticeIds(userId, councilNotices);
 
         return councilNotices.stream()
             .collect(Collectors.toMap(
