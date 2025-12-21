@@ -15,6 +15,9 @@ public record ClubRecruitmentResponse(
     @Schema(description = "모집 공고 ID", example = "1", requiredMode = REQUIRED)
     Integer id,
 
+    @Schema(description = "동아리 ID", example = "1", requiredMode = REQUIRED)
+    Integer clubId,
+
     @Schema(description = "모집 상태", example = "ONGOING", requiredMode = REQUIRED)
     RecruitmentStatus status,
 
@@ -38,6 +41,7 @@ public record ClubRecruitmentResponse(
     public static ClubRecruitmentResponse of(ClubRecruitment recruitment, Boolean isApplied) {
         return new ClubRecruitmentResponse(
             recruitment.getId(),
+            recruitment.getClub().getId(),
             RecruitmentStatus.of(recruitment),
             recruitment.getStartDate(),
             recruitment.getEndDate(),
