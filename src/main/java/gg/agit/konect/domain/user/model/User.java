@@ -26,11 +26,11 @@ import lombok.NoArgsConstructor;
     name = "users",
     uniqueConstraints = {
         @jakarta.persistence.UniqueConstraint(
-            name = "uq_reg_email_provider",
+            name = "uq_users_email_provider",
             columnNames = {"email", "provider"}
         ),
         @jakarta.persistence.UniqueConstraint(
-            name = "uq_user_university_student_number",
+            name = "uq_users_university_id_student_number",
             columnNames = {"university_id", "student_number"}
         )
     }
