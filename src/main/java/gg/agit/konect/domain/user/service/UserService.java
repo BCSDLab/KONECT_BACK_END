@@ -45,6 +45,8 @@ public class UserService {
         University university = universityRepository.findById(request.universityId())
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
 
+        validateStudentNumberDuplicationOnSignup(university.getId(), request.studentNumber());
+
         User newUser = User.builder()
             .university(university)
             .email(tempUser.getEmail())
@@ -88,6 +90,14 @@ public class UserService {
         boolean exists = userRepository.existsByUniversityIdAndStudentNumberAndIdNot(
             user.getUniversity().getId(), request.studentNumber(), user.getId()
         );
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
+        }
+    }
+
+    private void validateStudentNumberDuplicationOnSignup(Integer universityId, String studentNumber) {
+        boolean exists = userRepository.existsByUniversityIdAndStudentNumber(universityId, studentNumber);
 
         if (exists) {
             throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
