@@ -4,8 +4,8 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-import gg.agit.konect.global.model.BaseEntity;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -19,7 +19,15 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "council_notice_read_history")
+@Table(
+    name = "council_notice_read_history",
+    uniqueConstraints = {
+        @jakarta.persistence.UniqueConstraint(
+            name = "uq_council_notice_read_history_user_id_council_notice_id",
+            columnNames = {"user_id, council_notice_id"}
+        )
+    }
+)
 @NoArgsConstructor(access = PROTECTED)
 public class CouncilNoticeReadHistory extends BaseEntity {
 
