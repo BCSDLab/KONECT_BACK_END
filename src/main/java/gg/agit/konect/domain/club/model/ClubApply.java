@@ -23,7 +23,10 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(
     name = "club_apply",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"club_id", "user_id"})
+    uniqueConstraints = @UniqueConstraint(
+        name = "uq_club_apply_club_id_user_id",
+        columnNames = {"club_id", "user_id"}
+    )
 )
 @NoArgsConstructor(access = PROTECTED)
 public class ClubApply extends BaseEntity {

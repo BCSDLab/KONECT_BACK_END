@@ -18,7 +18,14 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "university")
+@Table(
+    name = "university",
+    uniqueConstraints = {
+        @jakarta.persistence.UniqueConstraint(
+            name = "uq_university_korean_name_campus",
+            columnNames = {"korean_name", "campus"}
+        ),
+    })
 @NoArgsConstructor(access = PROTECTED)
 public class University {
 

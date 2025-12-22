@@ -16,7 +16,15 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "club_tag")
+@Table(
+    name = "club_tag",
+    uniqueConstraints = {
+        @jakarta.persistence.UniqueConstraint(
+            name = "uq_club_tag_name",
+            columnNames = {"name"}
+        )
+    }
+)
 @NoArgsConstructor(access = PROTECTED)
 public class ClubTag extends BaseEntity {
 
