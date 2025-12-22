@@ -15,7 +15,7 @@ CREATE TABLE users
     id                     INT AUTO_INCREMENT PRIMARY KEY,
     university_id          INT                                 NOT NULL,
     email                  VARCHAR(100)                        NOT NULL,
-    name                   VARCHAR(50)                         NOT NULL,
+    name                   VARCHAR(30)                         NOT NULL,
     phone_number           VARCHAR(20) UNIQUE,
     student_number         VARCHAR(20)                         NOT NULL,
     provider               ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
