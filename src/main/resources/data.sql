@@ -134,20 +134,6 @@ VALUES (1, 1),
        (12, 25);
 
 -- 동아리 직책
-INSERT INTO club_member (club_id, user_id, club_position_id, is_fee_paid)
-VALUES (1, 1, 1, true),
-       (2, 1, 1, true),
-       (3, 1, 1, true),
-       (4, 1, 1, true),
-       (5, 1, 1, true),
-       (6, 1, 1, true),
-       (7, 1, 1, true),
-       (8, 1, 1, true),
-       (9, 1, 1, true),
-       (10, 1, 1, true),
-       (11, 1, 1, true);
-
--- 동아리 멤버
 INSERT INTO club_position (club_id, name, club_position_group)
 VALUES (1, '회장', 'PRESIDENT'),
        (2, '회장', 'PRESIDENT'),
@@ -161,6 +147,21 @@ VALUES (1, '회장', 'PRESIDENT'),
        (10, '회장', 'PRESIDENT'),
        (11, '회장', 'PRESIDENT'),
        (12, '회장', 'PRESIDENT');
+
+-- 동아리 멤버
+INSERT INTO club_member (club_id, user_id, club_position_id, is_fee_paid)
+VALUES (1, 1, 1, true),
+       (2, 1, 2, true),
+       (3, 1, 3, true),
+       (4, 1, 4, true),
+       (5, 1, 5, true),
+       (6, 1, 6, true),
+       (7, 1, 7, true),
+       (8, 1, 8, true),
+       (9, 1, 9, true),
+       (10, 1, 10, true),
+       (11, 1, 11, true),
+       (12, 1, 12, true);
 
 INSERT INTO club_recruitment (club_id, start_date, end_date, content, image_url)
 VALUES (1, '2025-11-30', '2025-12-31',
