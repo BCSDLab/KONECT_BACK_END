@@ -10,12 +10,4 @@
 
     <!-- 테스트 코드는 매직 넘버 허용 -->
     <suppress files="[\\/]test[\\/]" checks="MagicNumber"/>
-
-    <!-- 설정 클래스는 TODO 허용 -->
-    <suppress files=".*Config\.java" checks="TodoComment"/>
-
-    <!-- DTO/Entity는 Javadoc 필수 아님 -->
-    <suppress files=".*Request\.java" checks="JavadocType"/>
-    <suppress files=".*Response\.java" checks="JavadocType"/>
-    <suppress files=".*Entity\.java" checks="JavadocType"/>
 </suppressions>
