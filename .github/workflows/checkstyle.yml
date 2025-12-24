@@ -51,10 +51,8 @@ jobs:
           name: checkstyle-report
           path: |
             build/reports/checkstyle/main.html
-            build/reports/checkstyle/test.html
             build/reports/checkstyle/main.xml
-            build/reports/checkstyle/test.xml
-          retention-days: 30
+          retention-days: 7
 
       - name: Comment PR with Checkstyle Results
         if: github.event_name == 'pull_request' && failure()
@@ -69,7 +67,6 @@ jobs:
             comment += 'Checkstyle 검사에서 코딩 컨벤션 위반이 발견되었습니다.\n\n';
             comment += '### 📋 상세 리포트\n';
             comment += '- [Main 소스 리포트 다운로드](../actions/runs/${{ github.run_id }})\n';
-            comment += '- [Test 소스 리포트 다운로드](../actions/runs/${{ github.run_id }})\n\n';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
