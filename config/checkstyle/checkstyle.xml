@@ -100,16 +100,6 @@
         <!-- 중복 import 금지 -->
         <module name="RedundantImport"/>
 
-        <!-- Import 순서 -->
-        <module name="CustomImportOrder">
-            <property name="customImportOrderRules"
-                      value="STATIC###STANDARD_JAVA_PACKAGE###SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE"/>
-            <property name="standardPackageRegExp" value="^java\.|^javax\."/>
-            <property name="thirdPartyPackageRegExp" value="^org\.|^net\.|^com\."/>
-            <property name="separateLineBetweenGroups" value="true"/>
-            <property name="sortImportsInGroupAlphabetically" value="true"/>
-        </module>
-
         <!-- ========================================== -->
         <!-- 3. 코드 포맷팅 -->
         <!-- ========================================== -->
