@@ -136,7 +136,7 @@
         </module>
 
         <module name="RightCurly">
-            <property name="option" value="alone"/>
+            <property name="option" value="same"/>
         </module>
 
         <!-- 중괄호 필수 (if, else, for, do, while) -->
@@ -236,12 +236,6 @@
             <property name="ignoreHashCodeMethod" value="true"/>
             <property name="ignoreAnnotation" value="true"/>
             <property name="ignoreFieldDeclaration" value="true"/>
-        </module>
-
-        <!-- TODO/FIXME 주석 경고 -->
-        <module name="TodoComment">
-            <property name="severity" value="warning"/>
-            <property name="format" value="(TODO)|(FIXME)"/>
         </module>
 
     </module>
