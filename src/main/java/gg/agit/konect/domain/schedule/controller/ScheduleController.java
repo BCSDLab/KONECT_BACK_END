@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
 import gg.agit.konect.domain.schedule.service.ScheduleService;
 import gg.agit.konect.global.auth.annotation.UserId;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 @RestController

@@ -1,5 +1,7 @@
 package gg.agit.konect.global.config;
 
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +35,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, authException) -> {
-                    response.sendError(401);
+                    response.sendError(UNAUTHORIZED.value());
                 })
             ).oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo

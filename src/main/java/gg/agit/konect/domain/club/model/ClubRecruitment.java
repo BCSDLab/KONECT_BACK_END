@@ -47,7 +47,14 @@ public class ClubRecruitment extends BaseEntity {
     private Club club;
 
     @Builder
-    private ClubRecruitment(Integer id, LocalDate startDate, LocalDate endDate, String content, String imageUrl, Club club) {
+    private ClubRecruitment(
+        Integer id,
+        LocalDate startDate,
+        LocalDate endDate,
+        String content,
+        String imageUrl,
+        Club club
+    ) {
         this.id = id;
         this.startDate = startDate;
         this.endDate = endDate;

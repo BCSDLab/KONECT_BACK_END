@@ -56,7 +56,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(DateTimeException.class)
-    public ResponseEntity<Object> DateTimeException() {
+    public ResponseEntity<Object> dateTimeException() {
         return buildErrorResponse(ApiResponseCode.INVALID_DATE_TIME);
     }
 
@@ -238,8 +238,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 return " - ";
             }
             return new String(buf, wrapper.getCharacterEncoding());
-        } catch (Exception e
-        ) {
+        } catch (Exception e) {
             return " - ";
         }
     }

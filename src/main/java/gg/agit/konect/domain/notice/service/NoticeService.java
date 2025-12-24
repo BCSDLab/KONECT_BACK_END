@@ -43,7 +43,9 @@ public class NoticeService {
         Council council = councilRepository.getByUniversity(user.getUniversity());
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<CouncilNotice> councilNoticePage = councilNoticeRepository.findByCouncilId(council.getId(), pageable);
-        Map<Integer, Boolean> councilNoticeReadMap = getCouncilNoticeReadMap(user.getId(), councilNoticePage.getContent());
+        Map<Integer, Boolean> councilNoticeReadMap = getCouncilNoticeReadMap(
+            user.getId(), councilNoticePage.getContent()
+        );
         return CouncilNoticesResponse.from(councilNoticePage, councilNoticeReadMap);
     }
 

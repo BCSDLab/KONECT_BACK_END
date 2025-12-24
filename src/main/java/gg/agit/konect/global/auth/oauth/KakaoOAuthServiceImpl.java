@@ -31,7 +31,7 @@ public class KakaoOAuthServiceImpl extends DefaultOAuth2UserService implements S
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
         Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
-        String email = (String) kakaoAccount.get("email");
+        String email = (String)kakaoAccount.get("email");
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);

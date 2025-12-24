@@ -53,7 +53,7 @@ public class ChatRoom extends BaseEntity {
     }
 
     public static ChatRoom of(User sender, User receiver) {
-        return  ChatRoom.builder()
+        return ChatRoom.builder()
             .sender(sender)
             .receiver(receiver)
             .build();
@@ -84,7 +84,7 @@ public class ChatRoom extends BaseEntity {
     }
 
     public Integer getUnreadCount(Integer userId) {
-        return (int) chatMessages.stream()
+        return (int)chatMessages.stream()
             .filter(message -> message.getReceiver().getId().equals(userId))
             .filter(message -> !message.getIsRead())
             .count();
