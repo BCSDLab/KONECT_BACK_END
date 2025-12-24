@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types: [closed]
 
 jobs:
   deploy:
-    if: github.event_name == 'push' || (github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +22,16 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -71,4 +78,19 @@ jobs:
             sudo systemctl restart konect
             echo "Checking service status..."
             sudo systemctl status konect --no-pager
+            echo "Waiting for service to respond..."
+            ready=0
+            for i in {1..20}; do
+                if curl -fsS http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+                echo "Service is up."
+                ready=1
+                break
+              fi
+              echo "Service not ready yet. Retrying..."
+              sleep 3
+            done
+            if [ "$ready" -ne 1 ]; then
+              echo "Service did not become ready in time."
+              exit 1
+            fi
             echo "Deployment completed"
