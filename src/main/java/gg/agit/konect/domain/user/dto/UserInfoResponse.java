@@ -23,6 +23,9 @@ public record UserInfoResponse(
     @Schema(description = "사용자 전화번호", example = "010-1234-5678", requiredMode = NOT_REQUIRED)
     String phoneNumber,
 
+    @Schema(description = "사용자 이메일", example = "2dh2@naver.com", requiredMode = REQUIRED)
+    String email,
+
     @Schema(description = "사용자 프로필 이미지 링크", example = "https://stage-static.koreatech.in/konect/User_02.png",requiredMode = REQUIRED)
     String imageUrl,
 
@@ -43,6 +46,7 @@ public record UserInfoResponse(
             user.getUniversity().getKoreanName(),
             user.getStudentNumber(),
             user.getPhoneNumber(),
+            user.getEmail(),
             user.getImageUrl(),
             joinedClubCount,
             LocalTime.of(0, 0, 0),
