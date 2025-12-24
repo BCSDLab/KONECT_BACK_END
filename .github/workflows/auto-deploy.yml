@@ -74,23 +74,4 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            echo "Restarting konect service..."
-            sudo systemctl restart konect
-            echo "Checking service status..."
-            sudo systemctl status konect --no-pager
-            echo "Waiting for service to respond..."
-            ready=0
-            for i in {1..20}; do
-                if curl -fsS http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
-                echo "Service is up."
-                ready=1
-                break
-              fi
-              echo "Service not ready yet. Retrying..."
-              sleep 3
-            done
-            if [ "$ready" -ne 1 ]; then
-              echo "Service did not become ready in time."
-              exit 1
-            fi
-            echo "Deployment completed"
+            bash -s < scripts/blue-green-deploy.sh
