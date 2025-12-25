@@ -78,10 +78,6 @@ checkstyleMain {
 	source = 'src/main/java'
 }
 
-checkstyleTest {
-	source = 'src/test/java'
-}
-
 tasks.named('build') {
 	dependsOn 'checkstyleMain'
 }
