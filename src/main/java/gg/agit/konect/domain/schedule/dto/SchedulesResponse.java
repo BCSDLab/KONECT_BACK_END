@@ -42,6 +42,7 @@ public record SchedulesResponse(
             );
         }
     }
+
     public static SchedulesResponse from(List<UniversitySchedule> universitySchedules) {
         return new SchedulesResponse(
             universitySchedules.stream()

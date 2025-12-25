@@ -60,7 +60,9 @@ public class ClubService {
     public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting, Integer userId) {
         User user = userRepository.getById(userId);
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(pageable, query, isRecruiting, user.getUniversity().getId());
+        Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(
+            pageable, query, isRecruiting, user.getUniversity().getId()
+        );
         return ClubsResponse.of(clubSummaryInfoPage);
     }
 

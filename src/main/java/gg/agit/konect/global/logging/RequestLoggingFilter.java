@@ -33,7 +33,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private final ObjectProvider<PathMatcher> pathMatcherProvider;
     private final LoggingProperties properties;
 
-
     @Override
     public void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
         FilterChain chain) throws ServletException, IOException {

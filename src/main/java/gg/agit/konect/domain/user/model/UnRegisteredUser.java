@@ -12,6 +12,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,10 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "unregistered_user",
     uniqueConstraints = {
-        @jakarta.persistence.UniqueConstraint(
-            name = "uq_unreg_email_provider",
-            columnNames = {"email", "provider"}
-        )
+        @UniqueConstraint(name = "uq_unreg_email_provider", columnNames = {"email", "provider"})
     }
 )
 @NoArgsConstructor(access = PROTECTED)

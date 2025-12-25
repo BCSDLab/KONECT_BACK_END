@@ -26,7 +26,7 @@ public record UserInfoResponse(
     @Schema(description = "사용자 이메일", example = "2dh2@naver.com", requiredMode = REQUIRED)
     String email,
 
-    @Schema(description = "사용자 프로필 이미지 링크", example = "https://stage-static.koreatech.in/konect/User_02.png",requiredMode = REQUIRED)
+    @Schema(description = "사용자 프로필 이미지 링크", example = "https://stage-static.koreatech.in/konect/User_02.png", requiredMode = REQUIRED)
     String imageUrl,
 
     @Schema(description = "가입 동아리 개수", example = "1", requiredMode = REQUIRED)

@@ -33,7 +33,9 @@ public class ClubQueryRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
-    public Page<ClubSummaryInfo> findAllByFilter(PageRequest pageable, String query, Boolean isRecruiting, Integer universityId) {
+    public Page<ClubSummaryInfo> findAllByFilter(
+        PageRequest pageable, String query, Boolean isRecruiting, Integer universityId
+    ) {
         BooleanBuilder filter = clubSearchFilter(query, isRecruiting, universityId);
         OrderSpecifier<?> sort = clubSort(isRecruiting);
 
