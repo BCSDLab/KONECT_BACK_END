@@ -7,7 +7,6 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import gg.agit.konect.domain.user.model.User;
@@ -87,20 +86,12 @@ public class ChatRoom extends BaseEntity {
         this.lastMessageSentAt = lastMessageSentAt;
     }
 
-    public ChatMessage getLastMessage() {
-        return chatMessages.stream()
-            .max(Comparator.comparing(BaseEntity::getCreatedAt))
-            .orElse(null);
-    }
-
     public String getLastMessageContent() {
-        ChatMessage lastMessage = getLastMessage();
-        return lastMessage != null ? lastMessage.getContent() : null;
+        return this.lastMessageContent != null ? this.lastMessageContent : null;
     }
 
     public LocalDateTime getLastMessageTime() {
-        ChatMessage lastMessage = getLastMessage();
-        return lastMessage != null ? lastMessage.getCreatedAt() : null;
+        return this.lastMessageSentAt != null ? this.lastMessageSentAt : null;
     }
 
     public Integer getUnreadCount(Integer userId) {
