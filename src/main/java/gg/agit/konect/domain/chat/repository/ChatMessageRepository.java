@@ -48,7 +48,7 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         AND cm.receiver.id = :receiverId
         AND cm.isRead = false
         """)
-    List<ChatMessage> findUnreadMessages(
+    List<ChatMessage> findUnreadMessagesByChatRoomIdAndUserId(
         @Param("chatRoomId") Integer chatRoomId,
         @Param("receiverId") Integer receiverId
     );

@@ -87,7 +87,9 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
         chatRoom.validateIsParticipant(userId);
 
-        List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessages(roomId, userId);
+        List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessagesByChatRoomIdAndUserId(
+            roomId, userId
+        );
         unreadMessages.forEach(ChatMessage::markAsRead);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
