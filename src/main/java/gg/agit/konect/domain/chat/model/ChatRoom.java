@@ -36,6 +36,12 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
+    @Column(name = "last_message_content", columnDefinition = "TEXT")
+    private String lastMessageContent;
+
+    @Column(name = "last_message_sent_at")
+    private LocalDateTime lastMessageSentAt;
+
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "sender_id")
     private User sender;

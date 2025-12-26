@@ -229,11 +229,13 @@ CREATE TABLE university_schedule
 
 CREATE TABLE chat_room
 (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    sender_id   INT,
-    receiver_id INT,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id                   INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id            INT,
+    receiver_id          INT,
+    last_message_content TEXT NULL,
+    last_message_sent_at TIMESTAMP NULL,
+    created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE SET NULL,
     FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE SET NULL
