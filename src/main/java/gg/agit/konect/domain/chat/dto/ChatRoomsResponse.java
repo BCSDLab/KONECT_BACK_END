@@ -47,7 +47,7 @@ public record ChatRoomsResponse(
                 chatPartner.getName(),
                 chatPartner.getImageUrl(),
                 chatRoom.getLastMessageContent(),
-                chatRoom.getLastMessageTime(),
+                chatRoom.getLastMessageSentAt(),
                 unreadCountMap.getOrDefault(chatRoom.getId(), 0)
             );
         }

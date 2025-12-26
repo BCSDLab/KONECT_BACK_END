@@ -78,14 +78,6 @@ public class ChatRoom extends BaseEntity {
         return sender.getId().equals(userId) || receiver.getId().equals(userId);
     }
 
-    public String getLastMessageContent() {
-        return this.lastMessageContent != null ? this.lastMessageContent : null;
-    }
-
-    public LocalDateTime getLastMessageTime() {
-        return this.lastMessageSentAt != null ? this.lastMessageSentAt : null;
-    }
-
     public User getChatPartner(User currentUser) {
         return sender.getId().equals(currentUser.getId()) ? receiver : sender;
     }
