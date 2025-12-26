@@ -100,11 +100,4 @@ public class ChatRoom extends BaseEntity {
     public LocalDateTime getLastMessageTime() {
         return this.lastMessageSentAt != null ? this.lastMessageSentAt : null;
     }
-
-    public Integer getUnreadCount(Integer userId) {
-        return (int)chatMessages.stream()
-            .filter(message -> message.getReceiver().getId().equals(userId))
-            .filter(message -> !message.getIsRead())
-            .count();
-    }
 }

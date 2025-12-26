@@ -3,6 +3,8 @@ package gg.agit.konect.domain.chat.service;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,6 +17,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
 import gg.agit.konect.domain.chat.dto.CreateChatRoomRequest;
+import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
@@ -56,7 +59,27 @@ public class ChatRoomService {
     public ChatRoomsResponse getChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
         List<ChatRoom> chatRooms = chatRoomRepository.findByUserId(userId);
-        return ChatRoomsResponse.from(chatRooms, user);
+        List<Integer> chatRoomIds = chatRooms.stream()
+            .map(ChatRoom::getId)
+            .toList();
+        Map<Integer, Integer> unreadCountMap = getUnreadCountMap(chatRoomIds, userId);
+        return ChatRoomsResponse.from(chatRooms, user, unreadCountMap);
+    }
+
+    private Map<Integer, Integer> getUnreadCountMap(List<Integer> chatRoomIds, Integer userId) {
+        if (chatRoomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesByChatRoom(
+            chatRoomIds, userId
+        );
+
+        return unreadMessageCounts.stream()
+            .collect(Collectors.toMap(
+                UnreadMessageCount::chatRoomId,
+                unreadMessageCount -> unreadMessageCount.unreadCount().intValue()
+            ));
     }
 
     @Transactional

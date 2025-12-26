@@ -19,7 +19,6 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         FROM ChatRoom cr
         JOIN FETCH cr.sender
         JOIN FETCH cr.receiver
-        LEFT JOIN FETCH cr.chatMessages
         WHERE cr.sender.id = :userId OR cr.receiver.id = :userId
         ORDER BY cr.updatedAt DESC
         """)
