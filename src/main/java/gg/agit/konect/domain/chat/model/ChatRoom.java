@@ -7,8 +7,6 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.exception.CustomException;
@@ -19,7 +17,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Builder;
 import lombok.Getter;
@@ -49,9 +46,6 @@ public class ChatRoom extends BaseEntity {
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "receiver_id")
     private User receiver;
-
-    @OneToMany(mappedBy = "chatRoom", fetch = LAZY)
-    private List<ChatMessage> chatMessages = new ArrayList<>();
 
     @Builder
     private ChatRoom(Integer id, User sender, User receiver) {
