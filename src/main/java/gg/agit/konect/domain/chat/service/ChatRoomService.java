@@ -85,10 +85,10 @@ public class ChatRoomService {
         User sender = userRepository.getById(userId);
         User receiver = chatRoom.getChatPartner(sender);
 
-        ChatMessage savedMessage = chatMessageRepository.save(
+        ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, receiver, request.content())
         );
-        chatRoom.updateLastMessage(savedMessage.getContent(), savedMessage.getCreatedAt());
-        return ChatMessageResponse.from(savedMessage, userId);
+        chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        return ChatMessageResponse.from(chatMessage, userId);
     }
 }
