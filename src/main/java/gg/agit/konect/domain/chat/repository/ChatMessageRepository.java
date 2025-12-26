@@ -14,6 +14,8 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 
 public interface ChatMessageRepository extends Repository<ChatMessage, Integer> {
 
+    ChatMessage save(ChatMessage chatMessage);
+
     @Query("""
         SELECT new gg.agit.konect.domain.chat.dto.UnreadMessageCount(
             cm.chatRoom.id,
@@ -29,8 +31,6 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         @Param("chatRoomIds") List<Integer> chatRoomIds,
         @Param("receiverId") Integer receiverId
     );
-
-    ChatMessage save(ChatMessage chatMessage);
 
     @Query("""
         SELECT cm
