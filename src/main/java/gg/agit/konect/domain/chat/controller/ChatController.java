@@ -15,7 +15,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
-import gg.agit.konect.domain.chat.service.ChatRoomService;
+import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,20 +25,20 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/chats")
 public class ChatController implements ChatApi {
 
-    private final ChatRoomService chatRoomService;
+    private final ChatService chatService;
 
     @PostMapping("/rooms")
     public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
         @Valid @RequestBody ChatRoomCreateRequest request,
         @UserId Integer userId
     ) {
-        ChatRoomResponse response = chatRoomService.createOrGetChatRoom(userId, request);
+        ChatRoomResponse response = chatService.createOrGetChatRoom(userId, request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/rooms")
     public ResponseEntity<ChatRoomsResponse> getChatRooms(@UserId Integer userId) {
-        ChatRoomsResponse response = chatRoomService.getChatRooms(userId);
+        ChatRoomsResponse response = chatService.getChatRooms(userId);
         return ResponseEntity.ok(response);
     }
 
@@ -49,7 +49,7 @@ public class ChatController implements ChatApi {
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
-        ChatMessagesResponse response = chatRoomService.getChatRoomMessages(userId, chatRoomId, page, limit);
+        ChatMessagesResponse response = chatService.getChatRoomMessages(userId, chatRoomId, page, limit);
         return ResponseEntity.ok(response);
     }
 
@@ -59,7 +59,7 @@ public class ChatController implements ChatApi {
         @Valid @RequestBody ChatMessageSendRequest request,
         @UserId Integer userId
     ) {
-        ChatMessageResponse response = chatRoomService.sendMessage(userId, chatRoomId, request);
+        ChatMessageResponse response = chatService.sendMessage(userId, chatRoomId, request);
         return ResponseEntity.ok(response);
     }
 }
