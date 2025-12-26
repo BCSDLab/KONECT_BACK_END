@@ -1,6 +1,5 @@
 package gg.agit.konect.domain.chat.service;
 
-import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
 import java.util.List;
@@ -63,9 +62,7 @@ public class ChatRoomService {
     @Transactional
     public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
-        if (chatRoom.isNotParticipant(userId)) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
+        chatRoom.validateIsParticipant(userId);
 
         List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessages(roomId, userId);
         unreadMessages.forEach(ChatMessage::markAsRead);
@@ -78,9 +75,7 @@ public class ChatRoomService {
     @Transactional
     public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
-        if (chatRoom.isNotParticipant(userId)) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
+        chatRoom.validateIsParticipant(userId);
 
         User sender = userRepository.getById(userId);
         User receiver = chatRoom.getChatPartner(sender);

@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.chat.model;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
+import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
@@ -77,8 +78,14 @@ public class ChatRoom extends BaseEntity {
         return sender.getId().equals(currentUser.getId()) ? receiver : sender;
     }
 
-    public boolean isNotParticipant(Integer userId) {
-        return !sender.getId().equals(userId) && !receiver.getId().equals(userId);
+    public void validateIsParticipant(Integer userId) {
+        if (!isParticipant(userId)) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+    }
+
+    public boolean isParticipant(Integer userId) {
+        return sender.getId().equals(userId) || receiver.getId().equals(userId);
     }
 
     public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {
