@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
@@ -58,11 +58,13 @@ public class ChatRoomService {
 
     public ChatRoomsResponse getChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
+
         List<ChatRoom> chatRooms = chatRoomRepository.findByUserId(userId);
         List<Integer> chatRoomIds = chatRooms.stream()
             .map(ChatRoom::getId)
             .toList();
         Map<Integer, Integer> unreadCountMap = getUnreadCountMap(chatRoomIds, userId);
+
         return ChatRoomsResponse.from(chatRooms, user, unreadCountMap);
     }
 
