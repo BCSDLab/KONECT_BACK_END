@@ -82,6 +82,11 @@ public class ChatRoom extends BaseEntity {
         return !sender.getId().equals(userId) && !receiver.getId().equals(userId);
     }
 
+    public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {
+        this.lastMessageContent = lastMessageContent;
+        this.lastMessageSentAt = lastMessageSentAt;
+    }
+
     public ChatMessage getLastMessage() {
         return chatMessages.stream()
             .max(Comparator.comparing(BaseEntity::getCreatedAt))

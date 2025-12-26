@@ -87,6 +87,7 @@ public class ChatRoomService {
 
         ChatMessage message = ChatMessage.of(chatRoom, sender, receiver, request.content());
         ChatMessage savedMessage = chatMessageRepository.save(message);
+        chatRoom.updateLastMessage(savedMessage.getContent(), savedMessage.getCreatedAt());
         return ChatMessageResponse.from(savedMessage, userId);
     }
 }
