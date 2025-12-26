@@ -37,7 +37,9 @@ public class ChatController implements ChatApi {
     }
 
     @GetMapping("/rooms")
-    public ResponseEntity<ChatRoomsResponse> getChatRooms(@UserId Integer userId) {
+    public ResponseEntity<ChatRoomsResponse> getChatRooms(
+        @UserId Integer userId
+    ) {
         ChatRoomsResponse response = chatService.getChatRooms(userId);
         return ResponseEntity.ok(response);
     }

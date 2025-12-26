@@ -52,7 +52,9 @@ public interface ChatApi {
         - 최근 메시지가 있는 순서대로 정렬됩니다.
         """)
     @GetMapping("/rooms")
-    ResponseEntity<ChatRoomsResponse> getChatRooms(@UserId Integer userId);
+    ResponseEntity<ChatRoomsResponse> getChatRooms(
+        @UserId Integer userId
+    );
 
     @Operation(summary = "문의하기 메시지 리스트를 조회한다.", description = """
         ## 설명
