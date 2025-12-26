@@ -71,7 +71,7 @@ public class ChatRoomService {
             return Map.of();
         }
 
-        List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesByChatRoom(
+        List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesByChatRoomIdsAndUserId(
             chatRoomIds, userId
         );
 

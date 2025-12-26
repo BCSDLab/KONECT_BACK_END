@@ -25,7 +25,7 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         AND cm.isRead = false
         GROUP BY cm.chatRoom.id
         """)
-    List<UnreadMessageCount> countUnreadMessagesByChatRoom(
+    List<UnreadMessageCount> countUnreadMessagesByChatRoomIdsAndUserId(
         @Param("chatRoomIds") List<Integer> chatRoomIds,
         @Param("receiverId") Integer receiverId
     );
