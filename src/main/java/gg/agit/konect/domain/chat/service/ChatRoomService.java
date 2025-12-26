@@ -63,7 +63,7 @@ public class ChatRoomService {
     @Transactional
     public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
-        if (!chatRoom.isParticipant(userId)) {
+        if (chatRoom.isNotParticipant(userId)) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
 
@@ -78,7 +78,7 @@ public class ChatRoomService {
     @Transactional
     public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
-        if (!chatRoom.isParticipant(userId)) {
+        if (chatRoom.isNotParticipant(userId)) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
 
