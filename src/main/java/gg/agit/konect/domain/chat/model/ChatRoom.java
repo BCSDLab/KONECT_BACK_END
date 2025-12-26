@@ -68,10 +68,6 @@ public class ChatRoom extends BaseEntity {
         }
     }
 
-    public User getChatPartner(User currentUser) {
-        return sender.getId().equals(currentUser.getId()) ? receiver : sender;
-    }
-
     public void validateIsParticipant(Integer userId) {
         if (!isParticipant(userId)) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
@@ -82,16 +78,20 @@ public class ChatRoom extends BaseEntity {
         return sender.getId().equals(userId) || receiver.getId().equals(userId);
     }
 
-    public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {
-        this.lastMessageContent = lastMessageContent;
-        this.lastMessageSentAt = lastMessageSentAt;
-    }
-
     public String getLastMessageContent() {
         return this.lastMessageContent != null ? this.lastMessageContent : null;
     }
 
     public LocalDateTime getLastMessageTime() {
         return this.lastMessageSentAt != null ? this.lastMessageSentAt : null;
+    }
+
+    public User getChatPartner(User currentUser) {
+        return sender.getId().equals(currentUser.getId()) ? receiver : sender;
+    }
+
+    public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {
+        this.lastMessageContent = lastMessageContent;
+        this.lastMessageSentAt = lastMessageSentAt;
     }
 }
