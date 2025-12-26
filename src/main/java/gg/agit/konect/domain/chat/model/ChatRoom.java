@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.chat.model;
 
+import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
@@ -10,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,10 +55,17 @@ public class ChatRoom extends BaseEntity {
     }
 
     public static ChatRoom of(User sender, User receiver) {
+        validateIsNotSameParticipant(sender, receiver);
         return ChatRoom.builder()
             .sender(sender)
             .receiver(receiver)
             .build();
+    }
+
+    public static void validateIsNotSameParticipant(User sender, User receiver) {
+        if (sender.getId().equals(receiver.getId())) {
+            throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
+        }
     }
 
     public User getChatPartner(User currentUser) {
