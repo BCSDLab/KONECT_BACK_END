@@ -39,16 +39,15 @@ public class ChatRoomService {
 
     @Transactional
     public ChatRoomResponse createOrGetChatRoom(Integer userId, CreateChatRoomRequest request) {
-        ClubMember president = clubMemberRepository.findPresidentByClubId(request.clubId())
+        ClubMember clubPresident = clubMemberRepository.findPresidentByClubId(request.clubId())
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
 
         User currentUser = userRepository.getById(userId);
-        User presidentUser = president.getUser();
+        User president = clubPresident.getUser();
 
-
-        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), presidentUser.getId())
+        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), president.getId())
             .orElseGet(() -> {
-                ChatRoom newChatRoom = ChatRoom.of(currentUser, presidentUser);
+                ChatRoom newChatRoom = ChatRoom.of(currentUser, president);
                 return chatRoomRepository.save(newChatRoom);
             });
 
