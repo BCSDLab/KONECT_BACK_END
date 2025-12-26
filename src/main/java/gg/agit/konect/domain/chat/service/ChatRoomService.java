@@ -16,7 +16,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.chat.dto.CreateChatRoomRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
@@ -40,7 +40,7 @@ public class ChatRoomService {
     private final ClubMemberRepository clubMemberRepository;
 
     @Transactional
-    public ChatRoomResponse createOrGetChatRoom(Integer userId, CreateChatRoomRequest request) {
+    public ChatRoomResponse createOrGetChatRoom(Integer userId, ChatRoomCreateRequest request) {
         ClubMember clubPresident = clubMemberRepository.findPresidentByClubId(request.clubId())
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
 

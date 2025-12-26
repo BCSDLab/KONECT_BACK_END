@@ -13,7 +13,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.chat.dto.CreateChatRoomRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,7 +38,7 @@ public interface ChatApi {
         """)
     @PostMapping("/rooms")
     ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
-        @Valid @RequestBody CreateChatRoomRequest request,
+        @Valid @RequestBody ChatRoomCreateRequest request,
         @UserId Integer userId
     );
 

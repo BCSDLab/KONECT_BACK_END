@@ -14,7 +14,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.chat.dto.CreateChatRoomRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.service.ChatRoomService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -29,7 +29,7 @@ public class ChatController implements ChatApi {
 
     @PostMapping("/rooms")
     public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
-        @Valid @RequestBody CreateChatRoomRequest request,
+        @Valid @RequestBody ChatRoomCreateRequest request,
         @UserId Integer userId
     ) {
         ChatRoomResponse response = chatRoomService.createOrGetChatRoom(userId, request);
