@@ -20,7 +20,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         JOIN FETCH cr.sender
         JOIN FETCH cr.receiver
         WHERE cr.sender.id = :userId OR cr.receiver.id = :userId
-        ORDER BY cr.lastMessageSentAt DESC NULLS LAST
+        ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
     List<ChatRoom> findByUserId(@Param("userId") Integer userId);
 
