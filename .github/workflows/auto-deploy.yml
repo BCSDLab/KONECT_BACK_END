@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types: [closed]
 
 jobs:
   deploy:
-    if: github.event_name == 'push' || (github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +22,16 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -59,6 +66,15 @@ jobs:
           target: ${{ secrets.WORK_DIR }}
           rm: false
 
+      - name: Read deploy script
+        id: deploy_script
+        run: |
+          {
+            echo 'script<<__SCRIPT__'
+            cat scripts/blue-green-deploy.sh
+            echo '__SCRIPT__'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Deploy on server
         uses: appleboy/ssh-action@v0.1.8
         with:
@@ -67,8 +83,6 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            echo "Restarting konect service..."
-            sudo systemctl restart konect
-            echo "Checking service status..."
-            sudo systemctl status konect --no-pager
-            echo "Deployment completed"
+            bash -s <<'__SCRIPT__'
+            ${{ steps.deploy_script.outputs.script }}
+            __SCRIPT__
