@@ -13,18 +13,31 @@
         </encoder>
     </appender>
 
-    <appender name="SLACK" class="com.github.maricn.logback.SlackAppender">
+    <appender name="SLACK_STARTUP" class="com.github.maricn.logback.SlackAppender">
         <webhookUri>${SLACK_WEBHOOK_ERROR}</webhookUri>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern><![CDATA[
 :rotating_light: *서버에서 에러가 발생했습니다!* :rotating_light:%n
-URI: `%mdc{uri}`%n
-Location: `%mdc{location}`%n
-Exception: `%mdc{exception}`%n
-```%mdc{message}```
+`%msg`%n
+%rootException{1}%n
 ]]></pattern>
         </layout>
         <colorCoding>true</colorCoding>
+    </appender>
+
+    <appender name="SLACK_RUNTIME" class="com.github.maricn.logback.SlackAppender">
+        <webhookUri>${SLACK_WEBHOOK_ERROR}</webhookUri>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern><![CDATA[
+:rotating_light: *서버에서 에러가 발생했습니다!* :rotating_light:%n
+%msg
+]]></pattern>
+        </layout>
+        <colorCoding>true</colorCoding>
+    </appender>
+
+    <appender name="ASYNC_SLACK_STARTUP" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="SLACK_STARTUP"/>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>ACCEPT</onMatch>
@@ -32,17 +45,21 @@ Exception: `%mdc{exception}`%n
         </filter>
     </appender>
 
-    <appender name="ASYNC_SLACK" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="SLACK"/>
+    <appender name="ASYNC_SLACK_RUNTIME" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="SLACK_RUNTIME"/>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
     </appender>
+
+    <logger name="runtime.error" level="ERROR" additivity="false">
+        <appender-ref ref="ASYNC_SLACK_RUNTIME"/>
+    </logger>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="ASYNC_SLACK"/>
+        <appender-ref ref="ASYNC_SLACK_STARTUP"/>
     </root>
 </configuration>
