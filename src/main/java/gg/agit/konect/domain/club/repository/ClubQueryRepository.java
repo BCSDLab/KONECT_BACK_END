@@ -53,6 +53,7 @@ public class ClubQueryRepository {
         return jpaQueryFactory.select(club)
             .from(club)
             .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
+            .where(condition)
             .orderBy(orders.toArray(new OrderSpecifier[0]))
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
