@@ -37,7 +37,7 @@ public class ClubQueryRepository {
     public Page<ClubSummaryInfo> findAllByFilter(
         PageRequest pageable, String query, Boolean isRecruiting, Integer universityId
     ) {
-        BooleanBuilder filter = clubSearchFilter(query, isRecruiting, universityId);
+        BooleanBuilder filter = createClubSearchCondition(query, isRecruiting, universityId);
         OrderSpecifier<?> sort = clubSort(isRecruiting);
 
         List<Club> clubs = fetchClubs(pageable, filter, sort);
@@ -126,7 +126,7 @@ public class ClubQueryRepository {
             .toList();
     }
 
-    private BooleanBuilder clubSearchFilter(String query, Boolean isRecruiting, Integer universityId) {
+    private BooleanBuilder createClubSearchCondition(String query, Boolean isRecruiting, Integer universityId) {
         BooleanBuilder builder = new BooleanBuilder();
 
         addUniversityFilter(builder, universityId);
@@ -136,30 +136,30 @@ public class ClubQueryRepository {
         return builder;
     }
 
-    private void addUniversityFilter(BooleanBuilder filter, Integer universityId) {
-        filter.and(club.university.id.eq(universityId));
+    private void addUniversityFilter(BooleanBuilder condition, Integer universityId) {
+        condition.and(club.university.id.eq(universityId));
     }
 
-    private void addQuerySearchFilter(BooleanBuilder filter, String query) {
+    private void addQuerySearchFilter(BooleanBuilder condition, String query) {
         if (StringUtils.isEmpty(query)) {
             return;
         }
 
         String normalizedQuery = query.trim().toLowerCase();
-        BooleanBuilder searchBuilder = new BooleanBuilder();
-        searchBuilder.or(club.name.lower().contains(normalizedQuery));
-        searchBuilder.or(club.id.in(createClubIdsByTagNameSubquery(normalizedQuery)));
+        BooleanBuilder searchCondition = new BooleanBuilder();
+        searchCondition.or(club.name.lower().contains(normalizedQuery));
+        searchCondition.or(club.id.in(createClubIdsByTagNameSubquery(normalizedQuery)));
 
-        filter.and(searchBuilder);
+        condition.and(searchCondition);
     }
 
-    private void addRecruitingFilter(BooleanBuilder filter, Boolean isRecruiting) {
+    private void addRecruitingFilter(BooleanBuilder condition, Boolean isRecruiting) {
         if (!isRecruiting) {
             return;
         }
 
         LocalDate today = LocalDate.now();
-        filter.and(clubRecruitment.id.isNotNull())
+        condition.and(clubRecruitment.id.isNotNull())
             .and(clubRecruitment.startDate.loe(today))
             .and(clubRecruitment.endDate.goe(today));
     }
