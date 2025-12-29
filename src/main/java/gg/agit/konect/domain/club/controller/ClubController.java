@@ -49,7 +49,9 @@ public class ClubController implements ClubApi {
     }
 
     @GetMapping("/joined")
-    public ResponseEntity<JoinedClubsResponse> getJoinedClubs(@UserId Integer userId) {
+    public ResponseEntity<JoinedClubsResponse> getJoinedClubs(
+        @UserId Integer userId
+    ) {
         JoinedClubsResponse response = clubService.getJoinedClubs(userId);
         return ResponseEntity.ok(response);
     }
