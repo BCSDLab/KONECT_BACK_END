@@ -30,7 +30,7 @@ public record ClubMembershipsResponse(
         @Schema(description = "회비 완납 여부", example = "true", requiredMode = REQUIRED)
         Boolean isFeePaid
     ) {
-        public static InnerJoinedClubResponse of(ClubMember clubMember) {
+        public static InnerJoinedClubResponse from(ClubMember clubMember) {
             return new InnerJoinedClubResponse(
                 clubMember.getClub().getId(),
                 clubMember.getClub().getName(),
@@ -42,9 +42,9 @@ public record ClubMembershipsResponse(
         }
     }
 
-    public static ClubMembershipsResponse of(List<ClubMember> clubMembers) {
+    public static ClubMembershipsResponse from(List<ClubMember> clubMembers) {
         return new ClubMembershipsResponse(clubMembers.stream()
-            .map(InnerJoinedClubResponse::of)
+            .map(InnerJoinedClubResponse::from)
             .toList());
     }
 }

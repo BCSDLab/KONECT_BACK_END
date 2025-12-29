@@ -84,7 +84,7 @@ public class ClubService {
 
     public ClubMembershipsResponse getJoinedClubs(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(userId);
-        return ClubMembershipsResponse.of(clubMembers);
+        return ClubMembershipsResponse.from(clubMembers);
     }
 
     public ClubMembersResponse getClubMembers(Integer clubId, Integer userId) {
