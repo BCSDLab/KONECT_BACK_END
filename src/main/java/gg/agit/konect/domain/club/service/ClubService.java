@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
+import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
@@ -57,11 +58,11 @@ public class ClubService {
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final UserRepository userRepository;
 
-    public ClubsResponse getClubs(Integer page, Integer limit, String query, Boolean isRecruiting, Integer userId) {
+    public ClubsResponse getClubs(ClubCondition condition, Integer userId) {
         User user = userRepository.getById(userId);
-        PageRequest pageable = PageRequest.of(page - 1, limit);
+        PageRequest pageable = PageRequest.of(condition.page() - 1, condition.limit());
         Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(
-            pageable, query, isRecruiting, user.getUniversity().getId()
+            pageable, condition.query(), condition.isRecruiting(), user.getUniversity().getId()
         );
         return ClubsResponse.of(clubSummaryInfoPage);
     }

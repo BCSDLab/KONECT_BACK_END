@@ -1,15 +1,17 @@
 package gg.agit.konect.domain.club.controller;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
+import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
@@ -30,13 +32,10 @@ public class ClubController implements ClubApi {
 
     @GetMapping
     public ResponseEntity<ClubsResponse> getClubs(
-        @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
-        @RequestParam(name = "query", defaultValue = "", required = false) String query,
-        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting,
+        @Valid @ParameterObject @ModelAttribute ClubCondition condition,
         @UserId Integer userId
     ) {
-        ClubsResponse response = clubService.getClubs(page, limit, query, isRecruiting, userId);
+        ClubsResponse response = clubService.getClubs(condition, userId);
         return ResponseEntity.ok(response);
     }
 
