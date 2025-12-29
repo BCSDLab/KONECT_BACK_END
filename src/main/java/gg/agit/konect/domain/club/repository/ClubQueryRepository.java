@@ -49,6 +49,7 @@ public class ClubQueryRepository {
         return new PageImpl<>(content, pageable, total);
     }
 
+    /*      쿼리       */
     private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder condition, List<OrderSpecifier<?>> orders) {
         return jpaQueryFactory.select(club)
             .from(club)
@@ -95,6 +96,7 @@ public class ClubQueryRepository {
             ));
     }
 
+    /*      서브 쿼리       */
     private JPAQuery<Integer> createClubIdsByTagNameSubquery(String normalizedQuery) {
         return jpaQueryFactory
             .select(clubTagMap.club.id)
@@ -164,6 +166,7 @@ public class ClubQueryRepository {
         orders.add(club.id.asc());
     }
 
+    /*      헬퍼 메소드      */
     private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
         return clubs.stream()
             .map(clubEntity -> {
