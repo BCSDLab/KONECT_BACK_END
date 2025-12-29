@@ -99,6 +99,14 @@ public class ClubQueryRepository {
             ));
     }
 
+    private JPAQuery<Integer> createClubIdsByTagNameSubquery(String normalizedQuery) {
+        return jpaQueryFactory
+            .select(clubTagMap.club.id)
+            .from(clubTagMap)
+            .innerJoin(clubTagMap.tag, clubTag)
+            .where(clubTag.name.lower().contains(normalizedQuery));
+    }
+
     private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
         return clubs.stream()
             .map(clubEntity -> {
@@ -120,32 +128,40 @@ public class ClubQueryRepository {
 
     private BooleanBuilder clubSearchFilter(String query, Boolean isRecruiting, Integer universityId) {
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(club.university.id.eq(universityId));
 
-        if (!StringUtils.isEmpty(query)) {
-            String normalizedQuery = query.trim().toLowerCase();
-
-            BooleanBuilder searchBuilder = new BooleanBuilder();
-            searchBuilder.or(club.name.lower().contains(normalizedQuery));
-            searchBuilder.or(club.id.in(
-                jpaQueryFactory
-                    .select(clubTagMap.club.id)
-                    .from(clubTagMap)
-                    .innerJoin(clubTagMap.tag, clubTag)
-                    .where(clubTag.name.lower().contains(normalizedQuery))
-            ));
-
-            builder.and(searchBuilder);
-        }
-
-        if (isRecruiting) {
-            LocalDate today = LocalDate.now();
-            builder.and(clubRecruitment.id.isNotNull())
-                .and(clubRecruitment.startDate.loe(today))
-                .and(clubRecruitment.endDate.goe(today));
-        }
+        addUniversityFilter(builder, universityId);
+        addQuerySearchFilter(builder, query);
+        addRecruitingFilter(builder, isRecruiting);
 
         return builder;
+    }
+
+    private void addUniversityFilter(BooleanBuilder filter, Integer universityId) {
+        filter.and(club.university.id.eq(universityId));
+    }
+
+    private void addQuerySearchFilter(BooleanBuilder filter, String query) {
+        if (StringUtils.isEmpty(query)) {
+            return;
+        }
+
+        String normalizedQuery = query.trim().toLowerCase();
+        BooleanBuilder searchBuilder = new BooleanBuilder();
+        searchBuilder.or(club.name.lower().contains(normalizedQuery));
+        searchBuilder.or(club.id.in(createClubIdsByTagNameSubquery(normalizedQuery)));
+
+        filter.and(searchBuilder);
+    }
+
+    private void addRecruitingFilter(BooleanBuilder filter, Boolean isRecruiting) {
+        if (!isRecruiting) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        filter.and(clubRecruitment.id.isNotNull())
+            .and(clubRecruitment.startDate.loe(today))
+            .and(clubRecruitment.endDate.goe(today));
     }
 
     private OrderSpecifier<?> clubSort(Boolean isRecruiting) {
