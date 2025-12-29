@@ -6,6 +6,7 @@ import static gg.agit.konect.domain.club.model.QClubTag.clubTag;
 import static gg.agit.konect.domain.club.model.QClubTagMap.clubTagMap;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,9 +39,9 @@ public class ClubQueryRepository {
         PageRequest pageable, String query, Boolean isRecruiting, Integer universityId
     ) {
         BooleanBuilder condition = createClubSearchCondition(query, isRecruiting, universityId);
-        OrderSpecifier<?> sort = clubSort(isRecruiting);
+        List<OrderSpecifier<?>> orders = createClubSortOrders(isRecruiting);
 
-        List<Club> clubs = fetchClubs(pageable, condition, sort);
+        List<Club> clubs = fetchClubs(pageable, condition, orders);
         Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
         List<ClubSummaryInfo> content = convertToSummaryInfo(clubs, clubTagsMap);
         Long total = countClubs(condition, isRecruiting);
@@ -55,10 +56,10 @@ public class ClubQueryRepository {
             .where(condition);
     }
 
-    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder condition, OrderSpecifier<?> sort) {
+    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder condition, List<OrderSpecifier<?>> orders) {
         return baseQuery(condition)
             .select(club)
-            .orderBy(sort)
+            .orderBy(orders.toArray(new OrderSpecifier[0]))
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();
@@ -145,12 +146,25 @@ public class ClubQueryRepository {
             .and(clubRecruitment.endDate.goe(today));
     }
 
-    private OrderSpecifier<?> clubSort(Boolean isRecruiting) {
-        if (isRecruiting) {
-            return clubRecruitment.endDate.asc();
+    private List<OrderSpecifier<?>> createClubSortOrders(Boolean isRecruiting) {
+        List<OrderSpecifier<?>> orders = new ArrayList<>();
+
+        addRecruitmentSortOrder(orders, isRecruiting);
+        addDefaultSortOrder(orders);
+
+        return orders;
+    }
+
+    private void addRecruitmentSortOrder(List<OrderSpecifier<?>> orders, Boolean isRecruiting) {
+        if (!isRecruiting) {
+            return;
         }
 
-        return club.id.asc();
+        orders.add(clubRecruitment.endDate.asc());
+    }
+
+    private void addDefaultSortOrder(List<OrderSpecifier<?>> orders) {
+        orders.add(club.id.asc());
     }
 
     private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
