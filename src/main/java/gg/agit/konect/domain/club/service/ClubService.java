@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CLUB_MEMBER_ACCESS;
+import static gg.agit.konect.global.code.ApiResponseCode.*;
 import static java.lang.Boolean.TRUE;
 
 import java.util.HashSet;
@@ -21,9 +21,9 @@ import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
+import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
@@ -41,7 +41,6 @@ import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
-import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
@@ -101,7 +100,7 @@ public class ClubService {
         Club club = clubRepository.getById(clubId);
 
         if (!clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
-            throw CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_FEE_INFO);
+            throw CustomException.of(FORBIDDEN_CLUB_FEE_INFO);
         }
 
         return ClubFeeInfoResponse.from(club);
@@ -129,7 +128,7 @@ public class ClubService {
         User user = userRepository.getById(userId);
 
         if (clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
-            throw CustomException.of(ApiResponseCode.ALREADY_APPLIED_CLUB);
+            throw CustomException.of(ALREADY_APPLIED_CLUB);
         }
 
         List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
@@ -169,18 +168,18 @@ public class ClubService {
 
         for (ClubApplyRequest.AnswerRequest answer : answers) {
             if (!questionMap.containsKey(answer.questionId())) {
-                throw CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY_QUESTION);
+                throw CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION);
             }
 
             if (!seenQuestionIds.add(answer.questionId())) {
-                throw CustomException.of(ApiResponseCode.DUPLICATE_CLUB_APPLY_QUESTION);
+                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION);
             }
 
             ClubApplyQuestion question = questionMap.get(answer.questionId());
             boolean hasAnswer = StringUtils.hasText(answer.answer());
 
             if (question.getIsRequired().equals(TRUE) && !hasAnswer) {
-                throw CustomException.of(ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING);
+                throw CustomException.of(REQUIRED_CLUB_APPLY_ANSWER_MISSING);
             }
 
             if (hasAnswer) {
@@ -190,7 +189,7 @@ public class ClubService {
 
         for (ClubApplyQuestion question : questions) {
             if (question.getIsRequired().equals(TRUE) && !answeredQuestionIds.contains(question.getId())) {
-                throw CustomException.of(ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING);
+                throw CustomException.of(REQUIRED_CLUB_APPLY_ANSWER_MISSING);
             }
         }
     }
@@ -199,6 +198,6 @@ public class ClubService {
         return questions.stream()
             .filter(question -> question.getId().equals(questionId))
             .findFirst()
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY_QUESTION));
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION));
     }
 }
