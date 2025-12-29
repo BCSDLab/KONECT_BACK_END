@@ -12,7 +12,14 @@ import gg.agit.konect.domain.club.model.ClubMemberId;
 
 public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberId> {
 
-    List<ClubMember> findAllByClubId(Integer clubId);
+    @Query("""
+        SELECT cm
+        FROM ClubMember cm
+        JOIN FETCH cm.user
+        JOIN FETCH cm.clubPosition
+        WHERE cm.club.id = :clubId
+        """)
+    List<ClubMember> findAllByClubId(@Param("clubId") Integer clubId);
 
     @Query("""
         SELECT cm
