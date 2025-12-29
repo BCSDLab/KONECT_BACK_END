@@ -29,6 +29,7 @@ import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
 import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.model.ClubMembers;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
 import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
@@ -69,15 +70,13 @@ public class ClubService {
 
     public ClubDetailResponse getClubDetail(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
-        List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(club.getId());
-        List<ClubMember> clubPresidents = clubMembers.stream()
-            .filter(ClubMember::isPresident)
-            .toList();
-        Integer memberCount = clubMembers.size();
+        ClubMembers clubMembers = ClubMembers.from(clubMemberRepository.findAllByClubId(club.getId()));
+
+        List<ClubMember> clubPresidents = clubMembers.getPresidents();
+        Integer memberCount = clubMembers.getCount();
         ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
 
-        boolean isMember = clubMembers.stream()
-            .anyMatch(clubMember -> clubMember.getUser().getId().equals(userId));
+        boolean isMember = clubMembers.contains(userId);
         Boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
 
         return ClubDetailResponse.of(club, memberCount, recruitment, clubPresidents, isMember, isApplied);
