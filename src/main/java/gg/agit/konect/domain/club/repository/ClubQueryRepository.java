@@ -4,12 +4,12 @@ import static gg.agit.konect.domain.club.model.QClub.club;
 import static gg.agit.konect.domain.club.model.QClubRecruitment.clubRecruitment;
 import static gg.agit.konect.domain.club.model.QClubTag.clubTag;
 import static gg.agit.konect.domain.club.model.QClubTagMap.clubTagMap;
+import static java.util.stream.Collectors.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -89,9 +89,9 @@ public class ClubQueryRepository {
             .fetch();
 
         return tagResults.stream()
-            .collect(Collectors.groupingBy(
+            .collect(groupingBy(
                 tuple -> tuple.get(clubTagMap.club.id),
-                Collectors.mapping(tuple -> tuple.get(clubTag.name), Collectors.toList())
+                mapping(tuple -> tuple.get(clubTag.name), toList())
             ));
     }
 
