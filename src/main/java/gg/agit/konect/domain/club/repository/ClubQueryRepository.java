@@ -46,7 +46,7 @@ public class ClubQueryRepository {
             .toList();
         Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
         List<ClubSummaryInfo> content = convertToSummaryInfo(clubData, clubTagsMap);
-        Long total = countClubs(filter);
+        Long total = countClubs(filter, isRecruiting);
 
         return new PageImpl<>(content, pageable, total);
     }
@@ -67,10 +67,16 @@ public class ClubQueryRepository {
             .fetch();
     }
 
-    private Long countClubs(BooleanBuilder filter) {
-        return baseQuery(filter)
+    private Long countClubs(BooleanBuilder filter, Boolean isRecruiting) {
+        JPAQuery<Long> query = jpaQueryFactory
             .select(club.countDistinct())
-            .fetchOne();
+            .from(club);
+
+        if (isRecruiting) {
+            query.leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id));
+        }
+
+        return query.where(filter).fetchOne();
     }
 
     private Map<Integer, List<String>> fetchClubTags(List<Club> clubs) {
