@@ -169,18 +169,18 @@ public class ClubQueryRepository {
     /*      헬퍼 메소드      */
     private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
         return clubs.stream()
-            .map(clubEntity -> {
-                ClubRecruitment recruitment = clubEntity.getClubRecruitment();
+            .map(club -> {
+                ClubRecruitment recruitment = club.getClubRecruitment();
                 RecruitmentStatus status = RecruitmentStatus.of(recruitment);
 
                 return new ClubSummaryInfo(
-                    clubEntity.getId(),
-                    clubEntity.getName(),
-                    clubEntity.getImageUrl(),
-                    clubEntity.getClubCategory().getDescription(),
-                    clubEntity.getDescription(),
+                    club.getId(),
+                    club.getName(),
+                    club.getImageUrl(),
+                    club.getClubCategory().getDescription(),
+                    club.getDescription(),
                     status,
-                    clubTagsMap.getOrDefault(clubEntity.getId(), List.of())
+                    clubTagsMap.getOrDefault(club.getId(), List.of())
                 );
             })
             .toList();
