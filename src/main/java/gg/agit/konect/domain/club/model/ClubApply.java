@@ -49,4 +49,11 @@ public class ClubApply extends BaseEntity {
         this.club = club;
         this.user = user;
     }
+
+    public static ClubApply of(Club club, User user) {
+        return ClubApply.builder()
+            .club(club)
+            .user(user)
+            .build();
+    }
 }

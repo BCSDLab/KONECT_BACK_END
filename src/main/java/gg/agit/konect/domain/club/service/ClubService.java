@@ -134,12 +134,7 @@ public class ClubService {
         List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
         validateApplyAnswers(questions, request.answers());
 
-        ClubApply apply = clubApplyRepository.save(
-            ClubApply.builder()
-                .club(club)
-                .user(user)
-                .build()
-        );
+        ClubApply apply = clubApplyRepository.save(ClubApply.of(club, user));
 
         if (!request.answers().isEmpty()) {
             List<ClubApplyAnswer> applyAnswers = request.answers().stream()
