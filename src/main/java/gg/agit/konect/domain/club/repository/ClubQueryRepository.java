@@ -49,16 +49,10 @@ public class ClubQueryRepository {
         return new PageImpl<>(content, pageable, total);
     }
 
-    private JPAQuery<?> baseQuery(BooleanBuilder condition) {
-        return jpaQueryFactory
+    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder condition, List<OrderSpecifier<?>> orders) {
+        return jpaQueryFactory.select(club)
             .from(club)
             .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
-            .where(condition);
-    }
-
-    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder condition, List<OrderSpecifier<?>> orders) {
-        return baseQuery(condition)
-            .select(club)
             .orderBy(orders.toArray(new OrderSpecifier[0]))
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
