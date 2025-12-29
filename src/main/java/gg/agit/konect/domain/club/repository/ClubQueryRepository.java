@@ -18,6 +18,7 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
@@ -50,16 +51,26 @@ public class ClubQueryRepository {
         return new PageImpl<>(content, pageable, total);
     }
 
-    private List<Tuple> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
+    private JPAQuery<?> baseQuery(BooleanBuilder filter) {
         return jpaQueryFactory
-            .select(club, clubRecruitment)
             .from(club)
             .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
-            .where(filter)
+            .where(filter);
+    }
+
+    private List<Tuple> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
+        return baseQuery(filter)
+            .select(club, clubRecruitment)
             .orderBy(sort)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();
+    }
+
+    private Long countClubs(BooleanBuilder filter) {
+        return baseQuery(filter)
+            .select(club.countDistinct())
+            .fetchOne();
     }
 
     private Map<Integer, List<String>> fetchClubTags(List<Club> clubs) {
@@ -103,15 +114,6 @@ public class ClubQueryRepository {
                 );
             })
             .toList();
-    }
-
-    private Long countClubs(BooleanBuilder filter) {
-        return jpaQueryFactory
-            .select(club.countDistinct())
-            .from(club)
-            .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
-            .where(filter)
-            .fetchOne();
     }
 
     private BooleanBuilder clubSearchFilter(String query, Boolean isRecruiting, Integer universityId) {
