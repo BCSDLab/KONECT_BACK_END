@@ -107,25 +107,6 @@ public class ClubQueryRepository {
             .where(clubTag.name.lower().contains(normalizedQuery));
     }
 
-    private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
-        return clubs.stream()
-            .map(clubEntity -> {
-                ClubRecruitment recruitment = clubEntity.getClubRecruitment();
-                RecruitmentStatus status = RecruitmentStatus.of(recruitment);
-
-                return new ClubSummaryInfo(
-                    clubEntity.getId(),
-                    clubEntity.getName(),
-                    clubEntity.getImageUrl(),
-                    clubEntity.getClubCategory().getDescription(),
-                    clubEntity.getDescription(),
-                    status,
-                    clubTagsMap.getOrDefault(clubEntity.getId(), List.of())
-                );
-            })
-            .toList();
-    }
-
     private BooleanBuilder createClubSearchCondition(String query, Boolean isRecruiting, Integer universityId) {
         BooleanBuilder builder = new BooleanBuilder();
 
@@ -170,5 +151,24 @@ public class ClubQueryRepository {
         }
 
         return club.id.asc();
+    }
+
+    private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
+        return clubs.stream()
+            .map(clubEntity -> {
+                ClubRecruitment recruitment = clubEntity.getClubRecruitment();
+                RecruitmentStatus status = RecruitmentStatus.of(recruitment);
+
+                return new ClubSummaryInfo(
+                    clubEntity.getId(),
+                    clubEntity.getName(),
+                    clubEntity.getImageUrl(),
+                    clubEntity.getClubCategory().getDescription(),
+                    clubEntity.getDescription(),
+                    status,
+                    clubTagsMap.getOrDefault(clubEntity.getId(), List.of())
+                );
+            })
+            .toList();
     }
 }
