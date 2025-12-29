@@ -23,7 +23,7 @@ import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
+import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
@@ -82,9 +82,9 @@ public class ClubService {
         return ClubDetailResponse.of(club, memberCount, recruitment, clubPresidents, isMember, isApplied);
     }
 
-    public JoinedClubsResponse getJoinedClubs(Integer userId) {
+    public ClubMembershipsResponse getJoinedClubs(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(userId);
-        return JoinedClubsResponse.of(clubMembers);
+        return ClubMembershipsResponse.of(clubMembers);
     }
 
     public ClubMembersResponse getClubMembers(Integer clubId, Integer userId) {

@@ -17,7 +17,7 @@ import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
+import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -49,10 +49,10 @@ public class ClubController implements ClubApi {
     }
 
     @GetMapping("/joined")
-    public ResponseEntity<JoinedClubsResponse> getJoinedClubs(
+    public ResponseEntity<ClubMembershipsResponse> getJoinedClubs(
         @UserId Integer userId
     ) {
-        JoinedClubsResponse response = clubService.getJoinedClubs(userId);
+        ClubMembershipsResponse response = clubService.getJoinedClubs(userId);
         return ResponseEntity.ok(response);
     }
 

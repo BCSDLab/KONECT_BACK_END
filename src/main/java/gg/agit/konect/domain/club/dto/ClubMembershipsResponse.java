@@ -7,7 +7,7 @@ import java.util.List;
 import gg.agit.konect.domain.club.model.ClubMember;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record JoinedClubsResponse(
+public record ClubMembershipsResponse(
     @Schema(description = "가입한 동아리 리스트", requiredMode = REQUIRED)
     List<InnerJoinedClubResponse> joinedClubs
 ) {
@@ -42,8 +42,8 @@ public record JoinedClubsResponse(
         }
     }
 
-    public static JoinedClubsResponse of(List<ClubMember> clubMembers) {
-        return new JoinedClubsResponse(clubMembers.stream()
+    public static ClubMembershipsResponse of(List<ClubMember> clubMembers) {
+        return new ClubMembershipsResponse(clubMembers.stream()
             .map(InnerJoinedClubResponse::of)
             .toList());
     }
