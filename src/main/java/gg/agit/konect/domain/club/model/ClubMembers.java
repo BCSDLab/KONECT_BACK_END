@@ -22,7 +22,7 @@ public record ClubMembers(
 
     public boolean contains(Integer userId) {
         return members.stream()
-            .anyMatch(member -> member.getUser().getId().equals(userId));
+            .anyMatch(member -> member.isSameUser(userId));
     }
 
     @Override

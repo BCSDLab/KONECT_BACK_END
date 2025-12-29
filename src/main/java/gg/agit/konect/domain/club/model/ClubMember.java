@@ -54,4 +54,8 @@ public class ClubMember extends BaseEntity {
     public boolean isPresident() {
         return clubPosition.isPresident();
     }
+
+    public boolean isSameUser(Integer userId) {
+        return this.user.getId().equals(userId);
+    }
 }
