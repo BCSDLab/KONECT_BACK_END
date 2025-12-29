@@ -108,6 +108,7 @@ public class ClubQueryRepository {
             .where(clubTag.name.lower().contains(normalizedQuery));
     }
 
+    /*      검색 조건       */
     private BooleanBuilder createClubSearchCondition(String query, Boolean isRecruiting, Integer universityId) {
         BooleanBuilder condition = new BooleanBuilder();
 
@@ -146,6 +147,7 @@ public class ClubQueryRepository {
             .and(clubRecruitment.endDate.goe(today));
     }
 
+    /*      정렬 조건       */
     private List<OrderSpecifier<?>> createClubSortOrders(Boolean isRecruiting) {
         List<OrderSpecifier<?>> orders = new ArrayList<>();
 
