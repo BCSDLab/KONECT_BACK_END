@@ -108,13 +108,13 @@ public class ClubQueryRepository {
     }
 
     private BooleanBuilder createClubSearchCondition(String query, Boolean isRecruiting, Integer universityId) {
-        BooleanBuilder builder = new BooleanBuilder();
+        BooleanBuilder condition = new BooleanBuilder();
 
-        addUniversityCondition(builder, universityId);
-        addQuerySearchCondition(builder, query);
-        addRecruitingCondition(builder, isRecruiting);
+        addUniversityCondition(condition, universityId);
+        addQuerySearchCondition(condition, query);
+        addRecruitingCondition(condition, isRecruiting);
 
-        return builder;
+        return condition;
     }
 
     private void addUniversityCondition(BooleanBuilder condition, Integer universityId) {
