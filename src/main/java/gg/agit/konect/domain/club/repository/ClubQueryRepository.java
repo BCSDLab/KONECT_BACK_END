@@ -166,7 +166,7 @@ public class ClubQueryRepository {
         orders.add(club.id.asc());
     }
 
-    /*      헬퍼 메소드      */
+    /*      DTO 변환      */
     private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
         return clubs.stream()
             .map(club -> {
