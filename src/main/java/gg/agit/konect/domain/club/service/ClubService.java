@@ -74,7 +74,7 @@ public class ClubService {
 
         List<ClubMember> clubPresidents = clubMembers.getPresidents();
         Integer memberCount = clubMembers.getCount();
-        ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(clubId).orElse(null);
+        ClubRecruitment recruitment = club.getClubRecruitment();
 
         boolean isMember = clubMembers.contains(userId);
         Boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
