@@ -40,12 +40,9 @@ public class ClubQueryRepository {
         BooleanBuilder filter = clubSearchFilter(query, isRecruiting, universityId);
         OrderSpecifier<?> sort = clubSort(isRecruiting);
 
-        List<Tuple> clubData = fetchClubs(pageable, filter, sort);
-        List<Club> clubs = clubData.stream()
-            .map(tuple -> tuple.get(club))
-            .toList();
+        List<Club> clubs = fetchClubs(pageable, filter, sort);
         Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
-        List<ClubSummaryInfo> content = convertToSummaryInfo(clubData, clubTagsMap);
+        List<ClubSummaryInfo> content = convertToSummaryInfo(clubs, clubTagsMap);
         Long total = countClubs(filter, isRecruiting);
 
         return new PageImpl<>(content, pageable, total);
@@ -54,13 +51,13 @@ public class ClubQueryRepository {
     private JPAQuery<?> baseQuery(BooleanBuilder filter) {
         return jpaQueryFactory
             .from(club)
-            .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
+            .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
             .where(filter);
     }
 
-    private List<Tuple> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
+    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
         return baseQuery(filter)
-            .select(club, clubRecruitment)
+            .select(club)
             .orderBy(sort)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
@@ -102,11 +99,10 @@ public class ClubQueryRepository {
             ));
     }
 
-    private List<ClubSummaryInfo> convertToSummaryInfo(List<Tuple> clubData, Map<Integer, List<String>> clubTagsMap) {
-        return clubData.stream()
-            .map(tuple -> {
-                Club clubEntity = tuple.get(club);
-                ClubRecruitment recruitment = tuple.get(clubRecruitment);
+    private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
+        return clubs.stream()
+            .map(clubEntity -> {
+                ClubRecruitment recruitment = clubEntity.getClubRecruitment();
                 RecruitmentStatus status = RecruitmentStatus.of(recruitment);
 
                 return new ClubSummaryInfo(
