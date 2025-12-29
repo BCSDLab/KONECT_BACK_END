@@ -37,26 +37,26 @@ public class ClubQueryRepository {
     public Page<ClubSummaryInfo> findAllByFilter(
         PageRequest pageable, String query, Boolean isRecruiting, Integer universityId
     ) {
-        BooleanBuilder filter = createClubSearchCondition(query, isRecruiting, universityId);
+        BooleanBuilder condition = createClubSearchCondition(query, isRecruiting, universityId);
         OrderSpecifier<?> sort = clubSort(isRecruiting);
 
-        List<Club> clubs = fetchClubs(pageable, filter, sort);
+        List<Club> clubs = fetchClubs(pageable, condition, sort);
         Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
         List<ClubSummaryInfo> content = convertToSummaryInfo(clubs, clubTagsMap);
-        Long total = countClubs(filter, isRecruiting);
+        Long total = countClubs(condition, isRecruiting);
 
         return new PageImpl<>(content, pageable, total);
     }
 
-    private JPAQuery<?> baseQuery(BooleanBuilder filter) {
+    private JPAQuery<?> baseQuery(BooleanBuilder condition) {
         return jpaQueryFactory
             .from(club)
             .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
-            .where(filter);
+            .where(condition);
     }
 
-    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
-        return baseQuery(filter)
+    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder condition, OrderSpecifier<?> sort) {
+        return baseQuery(condition)
             .select(club)
             .orderBy(sort)
             .offset(pageable.getOffset())
@@ -64,7 +64,7 @@ public class ClubQueryRepository {
             .fetch();
     }
 
-    private Long countClubs(BooleanBuilder filter, Boolean isRecruiting) {
+    private Long countClubs(BooleanBuilder condition, Boolean isRecruiting) {
         JPAQuery<Long> query = jpaQueryFactory
             .select(club.countDistinct())
             .from(club);
@@ -73,7 +73,7 @@ public class ClubQueryRepository {
             query.leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id));
         }
 
-        return query.where(filter).fetchOne();
+        return query.where(condition).fetchOne();
     }
 
     private Map<Integer, List<String>> fetchClubTags(List<Club> clubs) {
@@ -110,18 +110,18 @@ public class ClubQueryRepository {
     private BooleanBuilder createClubSearchCondition(String query, Boolean isRecruiting, Integer universityId) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        addUniversityFilter(builder, universityId);
-        addQuerySearchFilter(builder, query);
-        addRecruitingFilter(builder, isRecruiting);
+        addUniversityCondition(builder, universityId);
+        addQuerySearchCondition(builder, query);
+        addRecruitingCondition(builder, isRecruiting);
 
         return builder;
     }
 
-    private void addUniversityFilter(BooleanBuilder condition, Integer universityId) {
+    private void addUniversityCondition(BooleanBuilder condition, Integer universityId) {
         condition.and(club.university.id.eq(universityId));
     }
 
-    private void addQuerySearchFilter(BooleanBuilder condition, String query) {
+    private void addQuerySearchCondition(BooleanBuilder condition, String query) {
         if (StringUtils.isEmpty(query)) {
             return;
         }
@@ -134,7 +134,7 @@ public class ClubQueryRepository {
         condition.and(searchCondition);
     }
 
-    private void addRecruitingFilter(BooleanBuilder condition, Boolean isRecruiting) {
+    private void addRecruitingCondition(BooleanBuilder condition, Boolean isRecruiting) {
         if (!isRecruiting) {
             return;
         }
