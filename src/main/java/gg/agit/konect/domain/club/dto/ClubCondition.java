@@ -20,10 +20,15 @@ public record ClubCondition(
     @Schema(description = "모집 중인 동아리 조회 여부", example = "false", defaultValue = "false")
     Boolean isRecruiting
 ) {
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_LIMIT = 10;
+    private static final String DEFAULT_QUERY = "";
+    private static final boolean DEFAULT_IS_RECRUITING = false;
+
     public ClubCondition {
-        page = page != null ? page : 1;
-        limit = limit != null ? limit : 10;
-        query = query != null ? query : "";
-        isRecruiting = isRecruiting != null ? isRecruiting : false;
+        page = page != null ? page : DEFAULT_PAGE;
+        limit = limit != null ? limit : DEFAULT_LIMIT;
+        query = query != null ? query : DEFAULT_QUERY;
+        isRecruiting = isRecruiting != null ? isRecruiting : DEFAULT_IS_RECRUITING;
     }
 }
