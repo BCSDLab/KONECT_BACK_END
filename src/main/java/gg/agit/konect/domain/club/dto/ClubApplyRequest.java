@@ -4,6 +4,8 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIR
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -23,5 +25,14 @@ public record ClubApplyRequest(
         @Schema(description = "설문 답변", example = "동아리 활동을 통해 성장하고 싶습니다.", requiredMode = NOT_REQUIRED)
         String answer
     ) {
+
+    }
+
+    public Map<Integer, String> toAnswerMap() {
+        return answers.stream()
+            .collect(Collectors.toMap(
+                InnerClubQuestionAnswer::questionId,
+                InnerClubQuestionAnswer::answer
+            ));
     }
 }
