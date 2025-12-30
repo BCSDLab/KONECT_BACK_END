@@ -93,6 +93,7 @@ public class ClubService {
 
     public ClubFeeInfoResponse getFeeInfo(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
+        User user = userRepository.getById(userId);
 
         if (!clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
             throw CustomException.of(FORBIDDEN_CLUB_FEE_INFO);
