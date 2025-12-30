@@ -54,4 +54,12 @@ public class ClubApplyAnswer extends BaseEntity {
         this.question = question;
         this.answer = answer;
     }
+
+    public static ClubApplyAnswer of(ClubApply apply, ClubApplyQuestion question, String answer) {
+        return ClubApplyAnswer.builder()
+            .apply(apply)
+            .question(question)
+            .answer(answer)
+            .build();
+    }
 }

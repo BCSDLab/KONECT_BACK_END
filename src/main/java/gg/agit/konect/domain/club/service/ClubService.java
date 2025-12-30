@@ -1,19 +1,13 @@
 package gg.agit.konect.domain.club.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.*;
-import static java.lang.Boolean.TRUE;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
@@ -28,6 +22,7 @@ import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
 import gg.agit.konect.domain.club.model.ClubApplyQuestion;
+import gg.agit.konect.domain.club.model.ClubApplyQuestionAnswers;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubMembers;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
@@ -132,67 +127,15 @@ public class ClubService {
         }
 
         List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
-        validateApplyAnswers(questions, request.answers());
+        ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
         ClubApply apply = clubApplyRepository.save(ClubApply.of(club, user));
 
-        if (!request.answers().isEmpty()) {
-            List<ClubApplyAnswer> applyAnswers = request.answers().stream()
-                .filter(answer -> StringUtils.hasText(answer.answer()))
-                .map(answer -> ClubApplyAnswer.builder()
-                    .apply(apply)
-                    .question(getQuestionById(questions, answer.questionId()))
-                    .answer(answer.answer())
-                    .build()
-                ).toList();
-
-            if (!applyAnswers.isEmpty()) {
-                clubApplyAnswerRepository.saveAll(applyAnswers);
-            }
+        List<ClubApplyAnswer> applyAnswers = answers.toEntities(apply);
+        if (!applyAnswers.isEmpty()) {
+            clubApplyAnswerRepository.saveAll(applyAnswers);
         }
 
         return ClubFeeInfoResponse.from(club);
-    }
-
-    private void validateApplyAnswers(List<ClubApplyQuestion> questions, List<ClubApplyRequest.InnerClubQuestionAnswer> answers) {
-        Map<Integer, ClubApplyQuestion> questionMap = questions.stream()
-            .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
-
-        Set<Integer> answeredQuestionIds = new HashSet<>();
-        Set<Integer> seenQuestionIds = new HashSet<>();
-
-        for (ClubApplyRequest.InnerClubQuestionAnswer answer : answers) {
-            if (!questionMap.containsKey(answer.questionId())) {
-                throw CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION);
-            }
-
-            if (!seenQuestionIds.add(answer.questionId())) {
-                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION);
-            }
-
-            ClubApplyQuestion question = questionMap.get(answer.questionId());
-            boolean hasAnswer = StringUtils.hasText(answer.answer());
-
-            if (question.getIsRequired().equals(TRUE) && !hasAnswer) {
-                throw CustomException.of(REQUIRED_CLUB_APPLY_ANSWER_MISSING);
-            }
-
-            if (hasAnswer) {
-                answeredQuestionIds.add(answer.questionId());
-            }
-        }
-
-        for (ClubApplyQuestion question : questions) {
-            if (question.getIsRequired().equals(TRUE) && !answeredQuestionIds.contains(question.getId())) {
-                throw CustomException.of(REQUIRED_CLUB_APPLY_ANSWER_MISSING);
-            }
-        }
-    }
-
-    private ClubApplyQuestion getQuestionById(List<ClubApplyQuestion> questions, Integer questionId) {
-        return questions.stream()
-            .filter(question -> question.getId().equals(questionId))
-            .findFirst()
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION));
     }
 }

@@ -1,12 +1,14 @@
 package gg.agit.konect.domain.club.dto;
 
+import static gg.agit.konect.global.code.ApiResponseCode.DUPLICATE_CLUB_APPLY_QUESTION;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import gg.agit.konect.global.exception.CustomException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -29,10 +31,15 @@ public record ClubApplyRequest(
     }
 
     public Map<Integer, String> toAnswerMap() {
-        return answers.stream()
-            .collect(Collectors.toMap(
-                InnerClubQuestionAnswer::questionId,
-                InnerClubQuestionAnswer::answer
-            ));
+        Map<Integer, String> answerMap = new HashMap<>();
+
+        for (InnerClubQuestionAnswer answer : answers) {
+            if (answerMap.containsKey(answer.questionId())) {
+                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION);
+            }
+            answerMap.put(answer.questionId(), answer.answer());
+        }
+
+        return answerMap;
     }
 }
