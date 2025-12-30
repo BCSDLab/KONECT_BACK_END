@@ -83,6 +83,6 @@ public class UserController implements UserApi {
         userService.deleteUser(userId);
         logout(request);
 
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.noContent().build();
     }
 }
