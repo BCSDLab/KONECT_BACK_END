@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.club.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +27,7 @@ public class ClubController implements ClubApi {
 
     private final ClubService clubService;
 
-    @GetMapping
+    @Override
     public ResponseEntity<ClubsResponse> getClubs(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
@@ -40,7 +39,7 @@ public class ClubController implements ClubApi {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{clubId}")
+    @Override
     public ResponseEntity<ClubDetailResponse> getClubDetail(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
@@ -49,13 +48,13 @@ public class ClubController implements ClubApi {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/joined")
+    @Override
     public ResponseEntity<JoinedClubsResponse> getJoinedClubs(@UserId Integer userId) {
         JoinedClubsResponse response = clubService.getJoinedClubs(userId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{clubId}/members")
+    @Override
     public ResponseEntity<ClubMembersResponse> getClubMembers(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
