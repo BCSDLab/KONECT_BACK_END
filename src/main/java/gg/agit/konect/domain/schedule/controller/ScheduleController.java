@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.schedule.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
@@ -15,7 +14,7 @@ public class ScheduleController implements ScheduleApi {
 
     private final ScheduleService scheduleService;
 
-    @GetMapping("/schedules")
+    @Override
     public ResponseEntity<SchedulesResponse> getSchedules(@UserId Integer userId) {
         SchedulesResponse response = scheduleService.getSchedules(userId);
         return ResponseEntity.ok(response);
