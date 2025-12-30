@@ -13,9 +13,9 @@ public record ClubApplyRequest(
     @Schema(description = "설문 답변 목록", requiredMode = REQUIRED)
     @NotNull(message = "설문 답변 목록은 필수입니다.")
     @Valid
-    List<AnswerRequest> answers
+    List<InnerClubQuestionAnswer> answers
 ) {
-    public record AnswerRequest(
+    public record InnerClubQuestionAnswer(
         @Schema(description = "설문 질문 ID", example = "1", requiredMode = REQUIRED)
         @NotNull(message = "설문 질문 ID는 필수입니다.")
         Integer questionId,

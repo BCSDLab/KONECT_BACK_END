@@ -154,14 +154,14 @@ public class ClubService {
         return ClubFeeInfoResponse.from(club);
     }
 
-    private void validateApplyAnswers(List<ClubApplyQuestion> questions, List<ClubApplyRequest.AnswerRequest> answers) {
+    private void validateApplyAnswers(List<ClubApplyQuestion> questions, List<ClubApplyRequest.InnerClubQuestionAnswer> answers) {
         Map<Integer, ClubApplyQuestion> questionMap = questions.stream()
             .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
 
         Set<Integer> answeredQuestionIds = new HashSet<>();
         Set<Integer> seenQuestionIds = new HashSet<>();
 
-        for (ClubApplyRequest.AnswerRequest answer : answers) {
+        for (ClubApplyRequest.InnerClubQuestionAnswer answer : answers) {
             if (!questionMap.containsKey(answer.questionId())) {
                 throw CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION);
             }
