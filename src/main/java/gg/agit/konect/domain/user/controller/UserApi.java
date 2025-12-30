@@ -61,5 +61,5 @@ public interface UserApi {
 
     @Operation(summary = "회원탈퇴를 한다.")
     @DeleteMapping("/withdraw")
-    ResponseEntity<Void> logout(@UserId Integer userId);
+    ResponseEntity<Void> withdraw(@UserId Integer userId);
 }

@@ -79,8 +79,9 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public ResponseEntity<Void> logout(@UserId Integer userId) {
+    public ResponseEntity<Void> withdraw(@UserId Integer userId) {
         userService.deleteUser(userId);
+
         return ResponseEntity.notFound().build();
     }
 }
