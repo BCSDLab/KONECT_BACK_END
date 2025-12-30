@@ -6,7 +6,8 @@ INSERT INTO users (email, university_id, name, phone_number, student_number, pro
 VALUES ('konecttest12@gmail.com', 1, '배진호', '010-1000-0021', '20250120', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png'),
        ('ff1451@gmail.com', 1, '이준영', '010-1000-0022', '20250030', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png'),
        ('dhun2906@gmail.com', 1, '이동훈', '010-1000-0023', '20250040', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png'),
-       ('soundbar91@gmail.com', 1, '신관규', '010-1000-0024', '20250041', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png')
+       ('soundbar91@gmail.com', 1, '신관규', '010-1000-0024', '20250041', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png'),
+       ('bcsdtest85@gmail.com', 1, '테스트', '010-1234-1234', '20250042', 'GOOGLE', TRUE, 'https://stage-static.koreatech.in/konect/User_02.png')
        ;
 
 -- 동아리
