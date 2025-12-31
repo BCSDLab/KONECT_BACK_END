@@ -2,6 +2,7 @@ package gg.agit.konect.domain.schedule.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class ScheduleService {
 
         YearMonth yearMonth = YearMonth.of(condition.year(), condition.month());
         LocalDateTime monthStart = yearMonth.atDay(1).atStartOfDay();
-        LocalDateTime monthEnd = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+        LocalDateTime monthEnd = yearMonth.atEndOfMonth().atTime(LocalTime.MAX);
 
         List<UniversitySchedule> universitySchedules = universityScheduleRepository.findSchedulesByMonth(
             user.getUniversity().getId(),
