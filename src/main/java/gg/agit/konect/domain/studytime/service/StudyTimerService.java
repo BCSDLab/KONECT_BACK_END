@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
 import gg.agit.konect.domain.studytime.model.StudyTimeAggregate;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
 import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
@@ -50,7 +51,7 @@ public class StudyTimerService {
     }
 
     @Transactional
-    public StudyTimeAggregate stop(Integer userId) {
+    public StudyTimerStopResponse stop(Integer userId) {
         StudyTimer studyTimer = studyTimerRepository.getByUserId(userId);
 
         LocalDateTime endedAt = LocalDateTime.now();
@@ -59,7 +60,12 @@ public class StudyTimerService {
 
         studyTimerRepository.delete(studyTimer);
 
-        return aggregate;
+        return StudyTimerStopResponse.of(
+            aggregate.sessionSeconds(),
+            aggregate.dailySeconds(),
+            aggregate.monthlySeconds(),
+            aggregate.totalSeconds()
+        );
     }
 
     private StudyTimeAggregate applyStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
