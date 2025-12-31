@@ -1,12 +1,15 @@
 package gg.agit.konect.domain.schedule.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.schedule.dto.ScheduleCondition;
 import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
 import gg.agit.konect.domain.schedule.model.UniversitySchedule;
 import gg.agit.konect.domain.schedule.repository.UniversityScheduleRepository;
@@ -35,11 +38,17 @@ public class ScheduleService {
         return SchedulesResponse.from(universitySchedules);
     }
 
-    public SchedulesResponse getSchedules(Integer userId) {
+    public SchedulesResponse getSchedules(ScheduleCondition condition, Integer userId) {
         User user = userRepository.getById(userId);
-        List<UniversitySchedule> universitySchedules = universityScheduleRepository.findUpcomingSchedules(
+
+        YearMonth yearMonth = YearMonth.of(condition.year(), condition.month());
+        LocalDateTime monthStart = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime monthEnd = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+
+        List<UniversitySchedule> universitySchedules = universityScheduleRepository.findSchedulesByMonth(
             user.getUniversity().getId(),
-            LocalDate.now().atStartOfDay()
+            monthStart,
+            monthEnd
         );
 
         return SchedulesResponse.from(universitySchedules);

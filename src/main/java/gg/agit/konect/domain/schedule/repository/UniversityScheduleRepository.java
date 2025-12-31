@@ -35,4 +35,21 @@ public interface UniversityScheduleRepository extends Repository<UniversitySched
         @Param("today") LocalDateTime today,
         Pageable pageable
     );
+
+    @Query("""
+        SELECT us
+        FROM UniversitySchedule us
+        WHERE us.university.id = :universityId
+        AND (
+            (us.startedAt >= :monthStart AND us.startedAt < :monthEnd)
+            OR (us.endedAt >= :monthStart AND us.endedAt < :monthEnd)
+            OR (us.startedAt < :monthStart AND us.endedAt >= :monthEnd)
+        )
+        ORDER BY us.startedAt ASC
+        """)
+    List<UniversitySchedule> findSchedulesByMonth(
+        @Param("universityId") Integer universityId,
+        @Param("monthStart") LocalDateTime monthStart,
+        @Param("monthEnd") LocalDateTime monthEnd
+    );
 }

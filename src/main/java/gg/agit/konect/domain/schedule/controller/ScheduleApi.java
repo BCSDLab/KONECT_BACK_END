@@ -2,11 +2,14 @@ package gg.agit.konect.domain.schedule.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
+import gg.agit.konect.domain.schedule.dto.ScheduleCondition;
 import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @Tag(name = "(Normal) Schedule: 일정", description = "일정 API")
 public interface ScheduleApi {
@@ -36,8 +39,12 @@ public interface ScheduleApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "대학교 일정을 조회한다.", description = """
-        오늘을 기준으로 종료일이 오늘 이후인 일정들을 조회합니다.
+    @Operation(summary = "특정 월의 대학교 일정을 조회한다.", description = """
+        년월을 기준으로 해당 월의 모든 일정을 조회합니다.
+
+        **조회 조건:**
+        - 요청한 년월에 시작일 또는 종료일이 포함되는 일정
+        - 시작일 기준 오름차순 정렬
 
         **dDay 계산 규칙:**
         - 오늘이 일정 **시작 전**인 경우: D-Day 계산 (시작일까지 남은 일수)
@@ -57,5 +64,8 @@ public interface ScheduleApi {
         - 시간이 정해진 경우 : 정해진 시간
         """)
     @GetMapping("/schedules")
-    ResponseEntity<SchedulesResponse> getSchedules(@UserId Integer userId);
+    ResponseEntity<SchedulesResponse> getSchedules(
+        @Valid @ModelAttribute ScheduleCondition request,
+        @UserId Integer userId
+    );
 }
