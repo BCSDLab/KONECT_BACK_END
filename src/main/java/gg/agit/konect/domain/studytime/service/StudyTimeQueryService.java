@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class StudyTimeQueryService {
 
+    private static final int SECONDS_PER_HOUR = 3600;
+    private static final int SECONDS_PER_MINUTE = 60;
+
     private final StudyTimeDailyRepository studyTimeDailyRepository;
     private final StudyTimeTotalRepository studyTimeTotalRepository;
 
@@ -45,9 +48,9 @@ public class StudyTimeQueryService {
     }
 
     private String formatSeconds(long seconds) {
-        long hours = seconds / 3600;
-        long minutes = (seconds % 3600) / 60;
-        long remainingSeconds = seconds % 60;
+        long hours = seconds / SECONDS_PER_HOUR;
+        long minutes = (seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+        long remainingSeconds = seconds % SECONDS_PER_MINUTE;
 
         return String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds);
     }
