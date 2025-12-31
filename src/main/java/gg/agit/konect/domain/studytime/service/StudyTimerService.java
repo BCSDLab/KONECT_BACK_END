@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import gg.agit.konect.domain.studytime.repository.StudyTimerRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -34,6 +36,7 @@ public class StudyTimerService {
     private final StudyTimeMonthlyRepository studyTimeMonthlyRepository;
     private final StudyTimeTotalRepository studyTimeTotalRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
     @Transactional
     public void start(Integer userId) {
@@ -44,10 +47,15 @@ public class StudyTimerService {
         User user = userRepository.getById(userId);
         LocalDateTime startedAt = LocalDateTime.now();
 
-        studyTimerRepository.save(StudyTimer.builder()
-            .user(user)
-            .startedAt(startedAt)
-            .build());
+        try {
+            studyTimerRepository.save(StudyTimer.builder()
+                .user(user)
+                .startedAt(startedAt)
+                .build());
+            entityManager.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw CustomException.of(ALREADY_RUNNING_STUDY_TIMER);
+        }
     }
 
     @Transactional
