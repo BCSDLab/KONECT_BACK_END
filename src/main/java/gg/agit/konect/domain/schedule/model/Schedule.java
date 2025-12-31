@@ -45,6 +45,9 @@ public abstract class Schedule extends BaseEntity {
     @Column(name = "ended_at", nullable = false)
     private LocalDateTime endedAt;
 
+    @Column(name = "schedule_type", insertable = false, updatable = false)
+    private String scheduleType;
+
     protected Schedule(Integer id, String title, LocalDateTime startedAt, LocalDateTime endedAt) {
         this.id = id;
         this.title = title;
