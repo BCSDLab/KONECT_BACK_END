@@ -258,12 +258,13 @@ CREATE TABLE chat_message
 
 CREATE TABLE study_timer
 (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
     user_id    INT                                 NOT NULL,
     started_at TIMESTAMP                           NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    PRIMARY KEY (user_id),
+    UNIQUE (user_id),
 
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -298,12 +299,13 @@ CREATE TABLE study_time_monthly
 
 CREATE TABLE study_time_total
 (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
     user_id       INT                                 NOT NULL,
     total_seconds BIGINT                              NOT NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    PRIMARY KEY (user_id),
+    UNIQUE (user_id),
 
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
