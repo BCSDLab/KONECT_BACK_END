@@ -20,5 +20,5 @@ public record ScheduleCondition(
     @Max(value = 12, message = "월은 12 이하여야 합니다.")
     Integer month
 ) {
-    
+
 }
