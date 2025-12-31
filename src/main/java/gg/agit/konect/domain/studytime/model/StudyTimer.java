@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.study.model;
+package gg.agit.konect.domain.studytime.model;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
