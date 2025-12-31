@@ -15,6 +15,14 @@ public class ScheduleController implements ScheduleApi {
     private final ScheduleService scheduleService;
 
     @Override
+    public ResponseEntity<SchedulesResponse> getUpcomingSchedules(
+        @UserId Integer userId
+    ) {
+        SchedulesResponse response = scheduleService.getUpcomingSchedules(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<SchedulesResponse> getSchedules(@UserId Integer userId) {
         SchedulesResponse response = scheduleService.getSchedules(userId);
         return ResponseEntity.ok(response);
