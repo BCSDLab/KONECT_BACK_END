@@ -2,12 +2,15 @@ package gg.agit.konect.domain.studytime.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @Tag(name = "(Normal) Study Time: 순공 시간", description = "순공 시간 API")
 @RequestMapping("/study-times")
@@ -31,8 +34,12 @@ public interface StudyTimeApi {
         - 일간, 월간, 총 누적 시간을 함께 갱신합니다.
 
         ## 에러
+        - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 1분 이상인 경우
         - `STUDY_TIMER_NOT_RUNNING` (400): 실행 중인 타이머가 없는 경우
         """)
     @PostMapping("/stop")
-    ResponseEntity<StudyTimerStopResponse> stop(@UserId Integer userId);
+    ResponseEntity<StudyTimerStopResponse> stop(
+        @UserId Integer userId,
+        @RequestBody @Valid StudyTimerStopRequest request
+    );
 }

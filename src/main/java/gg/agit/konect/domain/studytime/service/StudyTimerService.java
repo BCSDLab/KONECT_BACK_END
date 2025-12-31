@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.studytime.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.ALREADY_RUNNING_STUDY_TIMER;
+import static gg.agit.konect.global.code.ApiResponseCode.STUDY_TIMER_TIME_MISMATCH;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -10,6 +11,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
 import gg.agit.konect.domain.studytime.model.StudyTimeAggregate;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
@@ -30,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StudyTimerService {
+
+    private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 60L;
 
     private final StudyTimerRepository studyTimerRepository;
     private final StudyTimeDailyRepository studyTimeDailyRepository;
@@ -58,12 +62,20 @@ public class StudyTimerService {
         }
     }
 
-    @Transactional
-    public StudyTimerStopResponse stop(Integer userId) {
+    @Transactional(noRollbackFor = CustomException.class)
+    public StudyTimerStopResponse stop(Integer userId, StudyTimerStopRequest request) {
         StudyTimer studyTimer = studyTimerRepository.getByUserId(userId);
 
         LocalDateTime endedAt = LocalDateTime.now();
         LocalDateTime startedAt = studyTimer.getStartedAt();
+        long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
+        long clientSeconds = parseElapsedSeconds(request.elapsedTime());
+
+        if (isMismatch(serverSeconds, clientSeconds)) {
+            studyTimerRepository.delete(studyTimer);
+            throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
+        }
+
         StudyTimeAggregate aggregate = applyStudyTime(studyTimer.getUser(), startedAt, endedAt);
 
         studyTimerRepository.delete(studyTimer);
@@ -156,5 +168,18 @@ public class StudyTimerService {
             .orElse(0L);
 
         return new StudyTimeAggregate(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
+    }
+
+    private boolean isMismatch(long serverSeconds, long clientSeconds) {
+        return Math.abs(serverSeconds - clientSeconds) >= TIMER_MISMATCH_THRESHOLD_SECONDS;
+    }
+
+    private long parseElapsedSeconds(String elapsedTime) {
+        String[] parts = elapsedTime.split(":");
+        long hours = Long.parseLong(parts[0]);
+        long minutes = Long.parseLong(parts[1]);
+        long seconds = Long.parseLong(parts[2]);
+
+        return hours * 3600 + minutes * 60 + seconds;
     }
 }
