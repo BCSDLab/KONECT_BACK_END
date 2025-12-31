@@ -141,6 +141,6 @@ public class StudyTimerService {
             .map(StudyTimeTotal::getTotalSeconds)
             .orElse(0L);
 
-        return new StudyTimeAggregate(dailySeconds, monthlySeconds, totalSeconds, sessionSeconds);
+        return new StudyTimeAggregate(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
     }
 }
