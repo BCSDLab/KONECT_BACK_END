@@ -34,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 public class StudyTimerService {
 
     private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 60L;
+    private static final int SECONDS_PER_MINUTE = 60;
+    private static final int SECONDS_PER_HOUR = 3600;
 
     private final StudyTimerRepository studyTimerRepository;
     private final StudyTimeDailyRepository studyTimeDailyRepository;
@@ -180,6 +182,6 @@ public class StudyTimerService {
         long minutes = Long.parseLong(parts[1]);
         long seconds = Long.parseLong(parts[2]);
 
-        return hours * 3600 + minutes * 60 + seconds;
+        return hours * SECONDS_PER_HOUR + minutes * SECONDS_PER_MINUTE + seconds;
     }
 }
