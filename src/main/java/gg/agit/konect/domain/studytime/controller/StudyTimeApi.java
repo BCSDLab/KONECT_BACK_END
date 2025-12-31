@@ -9,9 +9,9 @@ import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "(Normal) Study Timer: 공부 타이머", description = "공부 타이머 API")
-@RequestMapping("/study-timers")
-public interface StudyTimerApi {
+@Tag(name = "(Normal) Study Time: 순공 시간", description = "순공 시간 API")
+@RequestMapping("/study-times")
+public interface StudyTimeApi {
 
     @Operation(summary = "스터디 타이머를 시작한다.", description = """
         ## 설명
