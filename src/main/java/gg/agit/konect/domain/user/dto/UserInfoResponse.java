@@ -3,10 +3,6 @@ package gg.agit.konect.domain.user.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.time.LocalTime;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -32,15 +28,19 @@ public record UserInfoResponse(
     @Schema(description = "가입 동아리 개수", example = "1", requiredMode = REQUIRED)
     Integer joinedClubCount,
 
-    @Schema(description = "순공 시간", example = "13:13", requiredMode = REQUIRED)
-    @JsonFormat(pattern = "HH:mm")
-    LocalTime studyTime,
+    @Schema(description = "순공 시간(H+:mm:ss)", example = "120:10:05", requiredMode = REQUIRED)
+    String studyTime,
 
     @Schema(description = "읽지 않은 총 동아리 연합회 공지", example = "1", requiredMode = REQUIRED)
     Long unreadCouncilNoticeCount
 ) {
 
-    public static UserInfoResponse from(User user, Integer joinedClubCount, Long unreadCouncilNoticeCount) {
+    public static UserInfoResponse from(
+        User user,
+        Integer joinedClubCount,
+        String studyTime,
+        Long unreadCouncilNoticeCount
+    ) {
         return new UserInfoResponse(
             user.getName(),
             user.getUniversity().getKoreanName(),
@@ -49,7 +49,7 @@ public record UserInfoResponse(
             user.getEmail(),
             user.getImageUrl(),
             joinedClubCount,
-            LocalTime.of(0, 0, 0),
+            studyTime,
             unreadCouncilNoticeCount
         );
     }
