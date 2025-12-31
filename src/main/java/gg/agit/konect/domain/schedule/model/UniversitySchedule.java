@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(name = "university_schedule")
-@DiscriminatorValue("UNIVERSITY")
+@DiscriminatorValue(ScheduleType.UNIVERSITY)
 @NoArgsConstructor(access = PROTECTED)
 public class UniversitySchedule extends Schedule {
 
