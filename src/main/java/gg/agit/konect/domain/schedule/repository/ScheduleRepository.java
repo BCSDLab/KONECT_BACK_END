@@ -37,11 +37,7 @@ public interface ScheduleRepository extends Repository<Schedule, Integer> {
             WHEN us.id IS NOT NULL AND us.university.id = :universityId THEN 1
             ELSE 0
         END
-        AND (
-            (s.startedAt >= :monthStart AND s.startedAt < :monthEnd)
-            OR (s.endedAt >= :monthStart AND s.endedAt < :monthEnd)
-            OR (s.startedAt < :monthStart AND s.endedAt >= :monthEnd)
-        )
+        AND (s.startedAt < :monthEnd AND s.endedAt > :monthStart)
         ORDER BY s.startedAt ASC
         """)
     List<Schedule> findSchedulesByMonth(
