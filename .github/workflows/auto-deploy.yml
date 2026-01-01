@@ -48,6 +48,11 @@ jobs:
           OAUTH_KAKAO_CLIENT_SECRET: dummy
 
           SLACK_ERROR_WEBHOOK: dummy
+
+          MYSQL_URL: dummy
+          MYSQL_USERNAME: dummy
+          MYSQL_PASSWORD: dummy
+
         run: ./gradlew clean build -x test -Dspring.profiles.active=prod
 
       - name: Rename jar to app.jar
