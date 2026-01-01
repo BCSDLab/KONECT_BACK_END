@@ -1,6 +1,5 @@
 package gg.agit.konect.domain.club.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public record ClubMembers(
@@ -23,10 +22,5 @@ public record ClubMembers(
     public boolean contains(Integer userId) {
         return members.stream()
             .anyMatch(member -> member.isSameUser(userId));
-    }
-
-    @Override
-    public List<ClubMember> members() {
-        return new ArrayList<>(members);
     }
 }
