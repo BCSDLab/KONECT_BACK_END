@@ -2,8 +2,6 @@ package gg.agit.konect.domain.club.controller;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +28,7 @@ public class ClubController implements ClubApi {
 
     private final ClubService clubService;
 
-    @GetMapping
+    @Override
     public ResponseEntity<ClubsResponse> getClubs(
         @Valid @ParameterObject @ModelAttribute ClubCondition condition,
         @UserId Integer userId
@@ -39,7 +37,7 @@ public class ClubController implements ClubApi {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{clubId}")
+    @Override
     public ResponseEntity<ClubDetailResponse> getClubDetail(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
@@ -48,15 +46,13 @@ public class ClubController implements ClubApi {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/joined")
-    public ResponseEntity<ClubMembershipsResponse> getJoinedClubs(
-        @UserId Integer userId
-    ) {
-        ClubMembershipsResponse response = clubService.getJoinedClubs(userId);
+    @Override
+    public ResponseEntity<JoinedClubsResponse> getJoinedClubs(@UserId Integer userId) {
+        JoinedClubsResponse response = clubService.getJoinedClubs(userId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{clubId}/members")
+    @Override
     public ResponseEntity<ClubMembersResponse> getClubMembers(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
