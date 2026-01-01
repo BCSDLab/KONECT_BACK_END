@@ -43,13 +43,13 @@ public class ScheduleService {
         User user = userRepository.getById(userId);
 
         YearMonth yearMonth = YearMonth.of(condition.year(), condition.month());
-        LocalDateTime monthStart = yearMonth.atDay(1).atStartOfDay();
-        LocalDateTime monthEnd = yearMonth.atEndOfMonth().atTime(LocalTime.MAX);
+        LocalDateTime monthStartAt = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime monthEndAt = yearMonth.atEndOfMonth().atTime(LocalTime.MAX);
 
         List<UniversitySchedule> universitySchedules = universityScheduleRepository.findSchedulesByMonth(
             user.getUniversity().getId(),
-            monthStart,
-            monthEnd
+            monthStartAt,
+            monthEndAt
         );
 
         return SchedulesResponse.from(universitySchedules);
