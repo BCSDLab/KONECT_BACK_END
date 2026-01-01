@@ -34,8 +34,6 @@ import lombok.RequiredArgsConstructor;
 public class StudyTimerService {
 
     private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 60L;
-    private static final int SECONDS_PER_MINUTE = 60;
-    private static final int SECONDS_PER_HOUR = 3600;
 
     private final StudyTimerRepository studyTimerRepository;
     private final StudyTimeDailyRepository studyTimeDailyRepository;
@@ -71,7 +69,7 @@ public class StudyTimerService {
         LocalDateTime endedAt = LocalDateTime.now();
         LocalDateTime startedAt = studyTimer.getStartedAt();
         long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
-        long clientSeconds = parseElapsedSeconds(request.elapsedTime());
+        long clientSeconds = request.toTotalSeconds();
 
         if (isMismatch(serverSeconds, clientSeconds)) {
             studyTimerRepository.delete(studyTimer);
@@ -174,14 +172,5 @@ public class StudyTimerService {
 
     private boolean isMismatch(long serverSeconds, long clientSeconds) {
         return Math.abs(serverSeconds - clientSeconds) >= TIMER_MISMATCH_THRESHOLD_SECONDS;
-    }
-
-    private long parseElapsedSeconds(String elapsedTime) {
-        String[] parts = elapsedTime.split(":");
-        long hours = Long.parseLong(parts[0]);
-        long minutes = Long.parseLong(parts[1]);
-        long seconds = Long.parseLong(parts[2]);
-
-        return hours * SECONDS_PER_HOUR + minutes * SECONDS_PER_MINUTE + seconds;
     }
 }

@@ -3,13 +3,30 @@ package gg.agit.konect.domain.studytime.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 public record StudyTimerStopRequest(
-    @NotEmpty(message = "타이머 누적 시간은 필수 입력입니다.")
-    @Pattern(regexp = "^[0-9]{2}:[0-5][0-9]:[0-5][0-9]$", message = "타이머 누적 시간 형식이 올바르지 않습니다.")
-    @Schema(description = "타이머 누적 시간(HH:mm:ss)", example = "01:30:15", requiredMode = REQUIRED)
-    String elapsedTime
+    @NotNull(message = "시간(hour)은 필수 입력입니다.")
+    @Min(value = 0, message = "시간은 0 이상이어야 합니다.")
+    @Schema(description = "타이머 시간 - 시간", example = "1", requiredMode = REQUIRED)
+    Integer hour,
+
+    @NotNull(message = "분(minute)은 필수 입력입니다.")
+    @Min(value = 0, message = "분은 0 이상이어야 합니다.")
+    @Max(value = 59, message = "분은 59 이하여야 합니다.")
+    @Schema(description = "타이머 시간 - 분", example = "30", requiredMode = REQUIRED)
+    Integer minute,
+
+    @NotNull(message = "초(second)는 필수 입력입니다.")
+    @Min(value = 0, message = "초는 0 이상이어야 합니다.")
+    @Max(value = 59, message = "초는 59 이하여야 합니다.")
+    @Schema(description = "타이머 시간 - 초", example = "15", requiredMode = REQUIRED)
+    Integer second
 ) {
+
+    public long toTotalSeconds() {
+        return hour * 3600L + minute * 60L + second;
+    }
 }
