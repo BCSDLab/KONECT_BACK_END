@@ -76,7 +76,7 @@ public class StudyTimerService {
             throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
         }
 
-        StudyTimeSummary aggregate = applyStudyTime(studyTimer.getUser(), startedAt, endedAt);
+        StudyTimeSummary aggregate = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
 
         studyTimerRepository.delete(studyTimer);
 
@@ -88,7 +88,7 @@ public class StudyTimerService {
         );
     }
 
-    private StudyTimeSummary applyStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
+    private StudyTimeSummary accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
         LocalDateTime cursor = startedAt;
         long sessionSeconds = 0L;
 
