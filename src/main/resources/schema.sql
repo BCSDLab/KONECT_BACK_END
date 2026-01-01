@@ -214,16 +214,25 @@ CREATE TABLE council_notice_read_history
     FOREIGN KEY (council_notice_id) REFERENCES council_notice (id) on DELETE CASCADE
 );
 
-CREATE TABLE university_schedule
+CREATE TABLE schedule
 (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    university_id INT                                 NOT NULL,
     title         VARCHAR(255)                        NOT NULL,
     started_at    TIMESTAMP                           NOT NULL,
     ended_at      TIMESTAMP                           NOT NULL,
+    schedule_type VARCHAR(255)                        NOT NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE university_schedule
+(
+    id            INT PRIMARY KEY,
+    university_id INT                                 NOT NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
+    FOREIGN KEY (id) REFERENCES schedule (id) ON DELETE CASCADE,
     FOREIGN KEY (university_id) REFERENCES university (id) ON DELETE CASCADE
 );
 

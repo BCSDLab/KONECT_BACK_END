@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import gg.agit.konect.domain.schedule.model.UniversitySchedule;
+import gg.agit.konect.domain.schedule.model.Schedule;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record SchedulesResponse(
@@ -29,23 +29,27 @@ public record SchedulesResponse(
         LocalDateTime endedAt,
 
         @Schema(description = "일정 디데이", example = "5", requiredMode = NOT_REQUIRED)
-        Integer dDay
+        Integer dDay,
+
+        @Schema(description = "일정 카테고리", example = "UNIVERSITY", requiredMode = REQUIRED)
+        String scheduleCategory
     ) {
-        public static InnerScheduleResponse from(UniversitySchedule schedule) {
+        public static InnerScheduleResponse from(Schedule schedule) {
             LocalDate today = LocalDate.now();
 
             return new InnerScheduleResponse(
                 schedule.getTitle(),
                 schedule.getStartedAt(),
                 schedule.getEndedAt(),
-                schedule.calculateDDay(today)
+                schedule.calculateDDay(today),
+                schedule.getScheduleType().name()
             );
         }
     }
 
-    public static SchedulesResponse from(List<UniversitySchedule> universitySchedules) {
+    public static SchedulesResponse from(List<Schedule> schedules) {
         return new SchedulesResponse(
-            universitySchedules.stream()
+            schedules.stream()
                 .map(InnerScheduleResponse::from)
                 .toList()
         );
