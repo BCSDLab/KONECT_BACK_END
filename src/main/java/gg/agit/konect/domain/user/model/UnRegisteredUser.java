@@ -3,8 +3,8 @@ package gg.agit.konect.domain.user.model;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-import gg.agit.konect.global.model.BaseEntity;
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -22,7 +22,10 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "unregistered_user",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uq_unreg_email_provider", columnNames = {"email", "provider"})
+        @UniqueConstraint(
+            name = "uq_unregistered_user_email_provider",
+            columnNames = {"email", "provider"}
+        )
     }
 )
 @NoArgsConstructor(access = PROTECTED)

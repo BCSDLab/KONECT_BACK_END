@@ -1,13 +1,16 @@
 package gg.agit.konect.domain.club.model;
 
+import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.time.LocalDate;
+
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.global.model.BaseEntity;
 import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
@@ -15,9 +18,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDate;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -72,6 +75,9 @@ public class Club extends BaseEntity {
     @Column(name = "fee_deadline")
     private LocalDate feeDeadline;
 
+    @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
+    private ClubRecruitment clubRecruitment;
+
     @Builder
     private Club(
         Integer id,
@@ -86,7 +92,8 @@ public class Club extends BaseEntity {
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        LocalDate feeDeadline
+        LocalDate feeDeadline,
+        ClubRecruitment clubRecruitment
     ) {
         this.id = id;
         this.clubCategory = clubCategory;
@@ -101,5 +108,6 @@ public class Club extends BaseEntity {
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
         this.feeDeadline = feeDeadline;
+        this.clubRecruitment = clubRecruitment;
     }
 }

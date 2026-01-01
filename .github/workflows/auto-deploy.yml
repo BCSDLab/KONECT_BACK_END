@@ -38,6 +38,10 @@ jobs:
 
       - name: Build with Gradle
         env:
+          MYSQL_URL: dummy
+          MYSQL_USERNAME: dummy
+          MYSQL_PASSWORD: dummy
+
           OAUTH_GOOGLE_CLIENT_ID: dummy
           OAUTH_GOOGLE_CLIENT_SECRET: dummy
 
@@ -48,6 +52,7 @@ jobs:
           OAUTH_KAKAO_CLIENT_SECRET: dummy
 
           SLACK_ERROR_WEBHOOK: dummy
+
         run: ./gradlew clean build -x test -Dspring.profiles.active=prod
 
       - name: Rename jar to app.jar

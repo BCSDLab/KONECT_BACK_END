@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,7 +23,15 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "club_position")
+@Table(
+    name = "club_position",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_club_position_club_id_name",
+            columnNames = {"club_id", "name"}
+        )
+    }
+)
 @NoArgsConstructor(access = PROTECTED)
 public class ClubPosition extends BaseEntity {
 

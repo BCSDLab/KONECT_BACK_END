@@ -32,8 +32,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // db
-    implementation 'com.h2database:h2'
-    runtimeOnly 'com.h2database:h2'
+    implementation 'com.mysql:mysql-connector-j'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    implementation 'org.flywaydb:flyway-mysql'
 
     // lombok
     compileOnly 'org.projectlombok:lombok'

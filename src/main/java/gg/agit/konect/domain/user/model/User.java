@@ -4,9 +4,9 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-import gg.agit.konect.global.model.BaseEntity;
-import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -26,8 +26,17 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "users",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uq_reg_email_provider", columnNames = {"email", "provider"}),
-        @UniqueConstraint(name = "uq_user_university_student_number", columnNames = {"university_id", "student_number"})
+        @UniqueConstraint(name = "uq_users_phone_number",
+            columnNames = {"phone_number"}
+        ),
+        @UniqueConstraint(
+            name = "uq_users_email_provider",
+            columnNames = {"email", "provider"}
+        ),
+        @UniqueConstraint(
+            name = "uq_users_university_id_student_number",
+            columnNames = {"university_id", "student_number"}
+        )
     }
 )
 @NoArgsConstructor(access = PROTECTED)
@@ -45,7 +54,7 @@ public class User extends BaseEntity {
     @Column(name = "email", length = 100, nullable = false)
     private String email;
 
-    @Column(name = "name", length = 30, nullable = false)
+    @Column(name = "name", length = 50, nullable = false)
     private String name;
 
     @Column(name = "phone_number", length = 20, unique = true)

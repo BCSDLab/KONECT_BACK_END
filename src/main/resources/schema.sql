@@ -1,55 +1,56 @@
-CREATE TABLE university
+CREATE TABLE IF NOT EXISTS university
 (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    korean_name  VARCHAR(255) NOT NULL,
-    campus       VARCHAR(255) NOT NULL,
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    korean_name VARCHAR(255)                        NOT NULL,
+    campus      VARCHAR(255)                        NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    UNIQUE (korean_name, campus),
-
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+    CONSTRAINT uq_university_korean_name_campus UNIQUE (korean_name, campus)
 );
 
-CREATE TABLE users
+CREATE TABLE IF NOT EXISTS users
 (
     id                     INT AUTO_INCREMENT PRIMARY KEY,
     university_id          INT                                 NOT NULL,
     email                  VARCHAR(100)                        NOT NULL,
     name                   VARCHAR(30)                         NOT NULL,
-    phone_number           VARCHAR(20) UNIQUE,
+    phone_number           VARCHAR(20),
     student_number         VARCHAR(20)                         NOT NULL,
-    provider               ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    provider               ENUM ('GOOGLE', 'KAKAO', 'NAVER')   NOT NULL,
     is_marketing_agreement BOOLEAN                             NOT NULL,
     image_url              VARCHAR(255)                        NOT NULL,
     created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (university_id) REFERENCES university (id),
-
-    CONSTRAINT uq_reg_email_provider UNIQUE (email, provider),
-    CONSTRAINT uq_user_university_student_number UNIQUE (university_id, student_number)
+    CONSTRAINT uq_users_phone_number UNIQUE (phone_number),
+    CONSTRAINT uq_users_email_provider UNIQUE (email, provider),
+    CONSTRAINT uq_users_university_id_student_number UNIQUE (university_id, student_number)
 );
 
-CREATE TABLE unregistered_user
+CREATE TABLE IF NOT EXISTS unregistered_user
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     email      VARCHAR(255)                        NOT NULL,
-    provider   ENUM('GOOGLE', 'KAKAO', 'NAVER')    NOT NULL,
+    provider   ENUM ('GOOGLE', 'KAKAO', 'NAVER')   NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    CONSTRAINT uq_unreg_email_provider UNIQUE (email, provider)
+    CONSTRAINT uq_unregistered_user_email_provider UNIQUE (email, provider)
 );
 
-CREATE TABLE club_tag
+CREATE TABLE IF NOT EXISTS club_tag
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
-    name       VARCHAR(50)                         NOT NULL UNIQUE,
+    name       VARCHAR(50)                         NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    CONSTRAINT uq_club_tag_name UNIQUE (name)
 );
 
-CREATE TABLE club
+CREATE TABLE IF NOT EXISTS club
 (
     id                 INT AUTO_INCREMENT PRIMARY KEY,
     university_id      INT                                 NOT NULL,
@@ -70,7 +71,7 @@ CREATE TABLE club
     FOREIGN KEY (university_id) REFERENCES university (id)
 );
 
-CREATE TABLE club_apply_question
+CREATE TABLE IF NOT EXISTS club_apply_question
 (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     club_id     INT                                 NOT NULL,
@@ -82,7 +83,7 @@ CREATE TABLE club_apply_question
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE
 );
 
-CREATE TABLE club_apply
+CREATE TABLE IF NOT EXISTS club_apply
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     club_id    INT                                 NOT NULL,
@@ -90,26 +91,25 @@ CREATE TABLE club_apply
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    UNIQUE (club_id, user_id),
-
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT uq_club_apply_club_id_user_id UNIQUE (club_id, user_id)
 );
 
-CREATE TABLE club_apply_answer
+CREATE TABLE IF NOT EXISTS club_apply_answer
 (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    apply_id       INT                                 NOT NULL,
-    question_id    INT                                 NOT NULL,
-    answer         TEXT                                NOT NULL,
-    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    apply_id    INT                                 NOT NULL,
+    question_id INT                                 NOT NULL,
+    answer      TEXT                                NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (apply_id) REFERENCES club_apply (id) ON DELETE CASCADE,
     FOREIGN KEY (question_id) REFERENCES club_apply_question (id) ON DELETE CASCADE
 );
 
-CREATE TABLE club_tag_map
+CREATE TABLE IF NOT EXISTS club_tag_map
 (
     club_id    INT                                 NOT NULL,
     tag_id     INT                                 NOT NULL,
@@ -117,27 +117,25 @@ CREATE TABLE club_tag_map
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     PRIMARY KEY (club_id, tag_id),
-
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES club_tag (id) ON DELETE CASCADE
 );
 
-CREATE TABLE club_position
+CREATE TABLE IF NOT EXISTS club_position
 (
-    id                     INT AUTO_INCREMENT,
-    club_id                INT                                 NOT NULL,
-    name                   VARCHAR(255)                        NOT NULL,
-    club_position_group    VARCHAR(255)                        NOT NULL,
-    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id                  INT AUTO_INCREMENT,
+    club_id             INT                                 NOT NULL,
+    name                VARCHAR(255)                        NOT NULL,
+    club_position_group VARCHAR(255)                        NOT NULL,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     PRIMARY KEY (id),
-    UNIQUE (club_id, name),
-
-    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE
+    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
+    CONSTRAINT uq_club_position_club_id_name UNIQUE (club_id, name)
 );
 
-CREATE TABLE club_recruitment
+CREATE TABLE IF NOT EXISTS club_recruitment
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     club_id    INT                                 NOT NULL,
@@ -148,12 +146,11 @@ CREATE TABLE club_recruitment
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    UNIQUE (club_id),
-
-    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE
+    FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
+    CONSTRAINT uq_club_recruitment_club_id UNIQUE (club_id)
 );
 
-CREATE TABLE club_member
+CREATE TABLE IF NOT EXISTS club_member
 (
     club_id          INT                                 NOT NULL,
     user_id          INT                                 NOT NULL,
@@ -163,13 +160,12 @@ CREATE TABLE club_member
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     PRIMARY KEY (club_id, user_id),
-
     FOREIGN KEY (club_id) REFERENCES club (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (club_position_id) REFERENCES club_position (id)
 );
 
-CREATE TABLE council
+CREATE TABLE IF NOT EXISTS council
 (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     university_id  INT                                 NOT NULL,
@@ -188,7 +184,7 @@ CREATE TABLE council
     FOREIGN KEY (university_id) REFERENCES university (id)
 );
 
-CREATE TABLE council_notice
+CREATE TABLE IF NOT EXISTS council_notice
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     council_id INT                                 NOT NULL,
@@ -197,10 +193,10 @@ CREATE TABLE council_notice
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    FOREIGN KEY (council_id) REFERENCES council (id) on DELETE CASCADE
+    FOREIGN KEY (council_id) REFERENCES council (id) ON DELETE CASCADE
 );
 
-CREATE TABLE council_notice_read_history
+CREATE TABLE IF NOT EXISTS council_notice_read_history
 (
     id                INT AUTO_INCREMENT PRIMARY KEY,
     user_id           INT                                 NOT NULL,
@@ -208,13 +204,12 @@ CREATE TABLE council_notice_read_history
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    UNIQUE (user_id, council_notice_id),
-
     FOREIGN KEY (user_id) REFERENCES users (id) on DELETE CASCADE,
-    FOREIGN KEY (council_notice_id) REFERENCES council_notice (id) on DELETE CASCADE
+    FOREIGN KEY (council_notice_id) REFERENCES council_notice (id) on DELETE CASCADE,
+    CONSTRAINT uq_council_notice_read_history_user_id_council_notice_id UNIQUE (user_id, council_notice_id)
 );
 
-CREATE TABLE schedule
+CREATE TABLE IF NOT EXISTS schedule
 (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     title         VARCHAR(255)                        NOT NULL,
@@ -232,11 +227,10 @@ CREATE TABLE university_schedule
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    FOREIGN KEY (id) REFERENCES schedule (id) ON DELETE CASCADE,
     FOREIGN KEY (university_id) REFERENCES university (id) ON DELETE CASCADE
 );
 
-CREATE TABLE chat_room
+CREATE TABLE IF NOT EXISTS chat_room
 (
     id                   INT AUTO_INCREMENT PRIMARY KEY,
     sender_id            INT,
@@ -246,21 +240,21 @@ CREATE TABLE chat_room
     created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE SET NULL,
-    FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE SET NULL
+    FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE chat_message
+CREATE TABLE IF NOT EXISTS chat_message
 (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    chat_room_id INT     NOT NULL,
-    sender_id    INT,
-    receiver_id  INT,
-    content      TEXT    NOT NULL,
-    is_read      BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at   TIMESTAMP        DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at   TIMESTAMP        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    chat_room_id INT                                 NOT NULL,
+    sender_id    INT                                 NOT NULL,
+    receiver_id  INT                                 NOT NULL,
+    content      TEXT                                NOT NULL,
+    is_read      BOOLEAN DEFAULT FALSE               NOT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (chat_room_id) REFERENCES chat_room (id) ON DELETE CASCADE,
-    FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE SET NULL
+    FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE
 );
