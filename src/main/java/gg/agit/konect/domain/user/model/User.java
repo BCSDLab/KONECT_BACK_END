@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,15 +26,14 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "users",
     uniqueConstraints = {
-        @jakarta.persistence.UniqueConstraint(
-            name = "uq_users_phone_number",
+        @UniqueConstraint(name = "uq_users_phone_number",
             columnNames = {"phone_number"}
         ),
-        @jakarta.persistence.UniqueConstraint(
+        @UniqueConstraint(
             name = "uq_users_email_provider",
             columnNames = {"email", "provider"}
         ),
-        @jakarta.persistence.UniqueConstraint(
+        @UniqueConstraint(
             name = "uq_users_university_id_student_number",
             columnNames = {"university_id", "student_number"}
         )
