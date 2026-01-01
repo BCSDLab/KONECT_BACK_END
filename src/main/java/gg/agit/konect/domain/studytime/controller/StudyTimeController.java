@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.studytime.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,19 +16,19 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/study-times")
+@RequestMapping("/studytimes")
 public class StudyTimeController implements StudyTimeApi {
 
     private final StudyTimerService studyTimerService;
 
-    @PostMapping("/start")
+    @PostMapping("/timers")
     public ResponseEntity<Void> start(@UserId Integer userId) {
         studyTimerService.start(userId);
 
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/stop")
+    @DeleteMapping("/timers")
     public ResponseEntity<StudyTimerStopResponse> stop(
         @UserId Integer userId,
         @RequestBody @Valid StudyTimerStopRequest request
