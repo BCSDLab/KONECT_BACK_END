@@ -71,7 +71,7 @@ public class StudyTimerService {
         long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
         long clientSeconds = request.toTotalSeconds();
 
-        if (isMismatch(serverSeconds, clientSeconds)) {
+        if (isElapsedTimeInvalid(serverSeconds, clientSeconds)) {
             studyTimerRepository.delete(studyTimer);
             throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
         }
@@ -170,7 +170,7 @@ public class StudyTimerService {
         return new StudyTimeSummary(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
     }
 
-    private boolean isMismatch(long serverSeconds, long clientSeconds) {
+    private boolean isElapsedTimeInvalid(long serverSeconds, long clientSeconds) {
         return Math.abs(serverSeconds - clientSeconds) >= TIMER_MISMATCH_THRESHOLD_SECONDS;
     }
 }
