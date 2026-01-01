@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
-import gg.agit.konect.domain.studytime.model.StudyTimeAggregate;
+import gg.agit.konect.domain.studytime.model.StudyTimeSummary;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
 import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
 import gg.agit.konect.domain.studytime.model.StudyTimeTotal;
@@ -76,7 +76,7 @@ public class StudyTimerService {
             throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
         }
 
-        StudyTimeAggregate aggregate = applyStudyTime(studyTimer.getUser(), startedAt, endedAt);
+        StudyTimeSummary aggregate = applyStudyTime(studyTimer.getUser(), startedAt, endedAt);
 
         studyTimerRepository.delete(studyTimer);
 
@@ -88,7 +88,7 @@ public class StudyTimerService {
         );
     }
 
-    private StudyTimeAggregate applyStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
+    private StudyTimeSummary applyStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
         LocalDateTime cursor = startedAt;
         long sessionSeconds = 0L;
 
@@ -152,7 +152,7 @@ public class StudyTimerService {
         studyTimeTotalRepository.save(total);
     }
 
-    private StudyTimeAggregate buildAggregate(Integer userId, LocalDate endDate, long sessionSeconds) {
+    private StudyTimeSummary buildAggregate(Integer userId, LocalDate endDate, long sessionSeconds) {
         LocalDate month = endDate.withDayOfMonth(1);
 
         long dailySeconds = studyTimeDailyRepository.findByUserIdAndStudyDate(userId, endDate)
@@ -167,7 +167,7 @@ public class StudyTimerService {
             .map(StudyTimeTotal::getTotalSeconds)
             .orElse(0L);
 
-        return new StudyTimeAggregate(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
+        return new StudyTimeSummary(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
     }
 
     private boolean isMismatch(long serverSeconds, long clientSeconds) {
