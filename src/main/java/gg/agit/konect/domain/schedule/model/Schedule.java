@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.schedule.model;
 
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
@@ -10,6 +11,7 @@ import java.time.temporal.ChronoUnit;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -42,11 +44,18 @@ public class Schedule extends BaseEntity {
     private LocalDateTime endedAt;
 
     @NotNull
+    @Enumerated(value = STRING)
     @Column(name = "schedule_type", nullable = false)
-    private String scheduleType;
+    private ScheduleType scheduleType;
 
     @Builder
-    private Schedule(Integer id, String title, LocalDateTime startedAt, LocalDateTime endedAt, String scheduleType) {
+    private Schedule(
+        Integer id,
+        String title,
+        LocalDateTime startedAt,
+        LocalDateTime endedAt,
+        ScheduleType scheduleType
+    ) {
         this.id = id;
         this.title = title;
         this.startedAt = startedAt;
@@ -56,7 +65,7 @@ public class Schedule extends BaseEntity {
 
     public Integer calculateDDay(LocalDate today) {
         if (today.isBefore(this.startedAt.toLocalDate())) {
-            return (int) ChronoUnit.DAYS.between(today, this.startedAt.toLocalDate());
+            return (int)ChronoUnit.DAYS.between(today, this.startedAt.toLocalDate());
         }
         return null;
     }

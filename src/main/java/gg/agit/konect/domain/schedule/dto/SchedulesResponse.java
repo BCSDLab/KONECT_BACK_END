@@ -42,7 +42,7 @@ public record SchedulesResponse(
                 schedule.getStartedAt(),
                 schedule.getEndedAt(),
                 schedule.calculateDDay(today),
-                schedule.getScheduleType()
+                schedule.getScheduleType().name()
             );
         }
     }
