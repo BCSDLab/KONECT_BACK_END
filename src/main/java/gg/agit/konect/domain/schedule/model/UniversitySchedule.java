@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.schedule.model;
 
+import static gg.agit.konect.domain.schedule.model.ScheduleType.UNIVERSITY;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
 
@@ -18,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(name = "university_schedule")
-@DiscriminatorValue(ScheduleType.UNIVERSITY)
+@DiscriminatorValue(value = UNIVERSITY)
 @NoArgsConstructor(access = PROTECTED)
 public class UniversitySchedule extends Schedule {
 
