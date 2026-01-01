@@ -17,6 +17,11 @@ public interface ScheduleApi {
     @Operation(summary = "다가오는 대학교 일정을 조회한다.", description = """
         오늘을 기준으로 다가오는 일정을 최대 3개까지 조회합니다.
         
+        **scheduleType (일정 구분):**
+        - `UNIVERSITY`: 대학교 일정
+        - `CLUB`: 동아리 일정
+        - `COUNCIL`: 총동아리연합회 일정
+        
         **dDay 계산 규칙:**
         - 오늘이 일정 **시작 전**인 경우: D-Day 계산 (시작일까지 남은 일수)
         - 오늘이 일정 **당일 또는 진행중**인 경우: null
@@ -45,6 +50,11 @@ public interface ScheduleApi {
         **조회 조건:**
         - 요청한 년월에 시작일 또는 종료일이 포함되는 일정
         - 시작일 기준 오름차순 정렬
+        
+        **scheduleType (일정 구분):**
+        - `UNIVERSITY`: 대학교 일정
+        - `CLUB`: 동아리 일정
+        - `COUNCIL`: 총동아리연합회 일정
         
         **dDay 계산 규칙:**
         - 오늘이 일정 **시작 전**인 경우: D-Day 계산 (시작일까지 남은 일수)
