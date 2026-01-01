@@ -40,11 +40,7 @@ public interface UniversityScheduleRepository extends Repository<UniversitySched
         SELECT us
         FROM UniversitySchedule us
         WHERE us.university.id = :universityId
-        AND (
-            (us.startedAt >= :monthStart AND us.startedAt < :monthEnd)
-            OR (us.endedAt >= :monthStart AND us.endedAt < :monthEnd)
-            OR (us.startedAt < :monthStart AND us.endedAt >= :monthEnd)
-        )
+        AND (us.startedAt < :monthEnd AND us.endedAt > :monthStart)
         ORDER BY us.startedAt ASC
         """)
     List<UniversitySchedule> findSchedulesByMonth(
