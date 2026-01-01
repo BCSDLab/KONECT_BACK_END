@@ -1,10 +1,7 @@
 package gg.agit.konect.domain.schedule.model;
 
-import static gg.agit.konect.domain.schedule.model.ScheduleType.UNIVERSITY;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
-
-import java.time.LocalDateTime;
 
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.global.model.BaseEntity;
