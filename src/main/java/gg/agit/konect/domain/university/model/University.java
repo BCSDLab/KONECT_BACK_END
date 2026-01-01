@@ -11,6 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "university",
     uniqueConstraints = {
-        @jakarta.persistence.UniqueConstraint(
+        @UniqueConstraint(
             name = "uq_university_korean_name_campus",
             columnNames = {"korean_name", "campus"}
         ),

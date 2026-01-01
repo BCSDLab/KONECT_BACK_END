@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "council_notice_read_history",
     uniqueConstraints = {
-        @jakarta.persistence.UniqueConstraint(
+        @UniqueConstraint(
             name = "uq_council_notice_read_history_user_id_council_notice_id",
             columnNames = {"user_id, council_notice_id"}
         )
