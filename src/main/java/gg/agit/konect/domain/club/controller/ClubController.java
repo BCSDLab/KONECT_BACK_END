@@ -2,6 +2,7 @@ package gg.agit.konect.domain.club.controller;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,9 +14,9 @@ import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
+import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -47,8 +48,8 @@ public class ClubController implements ClubApi {
     }
 
     @Override
-    public ResponseEntity<JoinedClubsResponse> getJoinedClubs(@UserId Integer userId) {
-        JoinedClubsResponse response = clubService.getJoinedClubs(userId);
+    public ResponseEntity<ClubMembershipsResponse> getJoinedClubs(@UserId Integer userId) {
+        ClubMembershipsResponse response = clubService.getJoinedClubs(userId);
         return ResponseEntity.ok(response);
     }
 
