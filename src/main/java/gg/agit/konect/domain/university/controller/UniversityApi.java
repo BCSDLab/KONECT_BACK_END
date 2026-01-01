@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.university.dto.UniversitiesResponse;
 
+import gg.agit.konect.global.auth.annotation.PublicApi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -17,5 +18,6 @@ public interface UniversityApi {
         - 응답값은 이름 기준 오름차순 정렬됩니다
         """)
     @GetMapping
+    @PublicApi
     ResponseEntity<UniversitiesResponse> getUniversities();
 }

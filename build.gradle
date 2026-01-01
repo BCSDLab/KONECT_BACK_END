@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.8'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'checkstyle'
 }
 
 group = 'gg.agit'
@@ -28,6 +29,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // db
     implementation 'com.h2database:h2'
@@ -63,4 +65,20 @@ clean {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+checkstyle {
+	toolVersion = '10.12.5'
+	configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+	configProperties = ['suppressionFile': "${rootDir}/config/checkstyle/suppressions.xml"]
+	maxWarnings = 0
+	ignoreFailures = false
+}
+
+checkstyleMain {
+	source = 'src/main/java'
+}
+
+tasks.named('build') {
+	dependsOn 'checkstyleMain'
 }

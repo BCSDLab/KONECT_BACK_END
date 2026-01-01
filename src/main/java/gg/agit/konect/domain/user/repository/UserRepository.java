@@ -22,7 +22,11 @@ public interface UserRepository extends Repository<User, Integer> {
 
     boolean existsByUniversityIdAndStudentNumberAndIdNot(Integer universityId, String studentNumber, Integer id);
 
+    boolean existsByUniversityIdAndStudentNumber(Integer universityId, String studentNumber);
+
     boolean existsByPhoneNumberAndIdNot(String phoneNumber, Integer id);
 
     User save(User user);
+
+    void delete(User user);
 }

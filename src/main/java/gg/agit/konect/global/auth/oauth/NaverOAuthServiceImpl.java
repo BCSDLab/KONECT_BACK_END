@@ -31,7 +31,7 @@ public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements S
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
         Map<String, Object> response = oAuth2User.getAttribute("response");
-        String email = (String) response.get("email");
+        String email = (String)response.get("email");
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);

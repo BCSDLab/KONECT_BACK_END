@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
 
+    private static final Integer CORS_PREFLIGHT_MAX_AGE_SECONDS = 3600;
+
     private final CorsProperties corsProperties;
     private final LoginCheckInterceptor loginCheckInterceptor;
     private final LoginUserArgumentResolver loginUserArgumentResolver;
@@ -27,7 +29,7 @@ public class WebConfig implements WebMvcConfigurer {
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
             .allowedHeaders("*")
             .allowCredentials(true)
-            .maxAge(3600);
+            .maxAge(CORS_PREFLIGHT_MAX_AGE_SECONDS);
     }
 
     @Override
@@ -38,6 +40,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginCheckInterceptor)
-            .addPathPatterns("/**");
+            .addPathPatterns("/**")
+            .excludePathPatterns(SecurityPaths.PUBLIC_PATHS);
     }
 }

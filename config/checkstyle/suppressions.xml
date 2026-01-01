@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- QueryDSL 생성 파일 제외 -->
+    <suppress files="[\\/]generated[\\/]" checks=".*"/>
+    <suppress files="Q.*\.java" checks=".*"/>
+
+    <!-- 테스트 코드는 매직 넘버 허용 -->
+    <suppress files="[\\/]test[\\/]" checks="MagicNumber"/>
+</suppressions>

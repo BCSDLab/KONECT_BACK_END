@@ -13,7 +13,7 @@ import gg.agit.konect.domain.notice.model.CouncilNotice;
 
 public interface CouncilNoticeRepository extends Repository<CouncilNotice, Integer> {
 
-    Page<CouncilNotice> findAll(Pageable pageable);
+    Page<CouncilNotice> findByCouncilId(Integer councilId, Pageable pageable);
 
     Optional<CouncilNotice> findById(Integer id);
 

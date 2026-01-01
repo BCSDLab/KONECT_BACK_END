@@ -5,6 +5,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -36,7 +37,9 @@ public record ChatRoomsResponse(
         @Schema(description = "읽지 않은 메시지 개수", example = "12", requiredMode = REQUIRED)
         Integer unreadCount
     ) {
-        public static InnerChatRoomResponse from(ChatRoom chatRoom, User currentUser) {
+        public static InnerChatRoomResponse from(
+            ChatRoom chatRoom, User currentUser, Map<Integer, Integer> unreadCountMap
+        ) {
             User chatPartner = chatRoom.getChatPartner(currentUser);
 
             return new InnerChatRoomResponse(
@@ -44,15 +47,17 @@ public record ChatRoomsResponse(
                 chatPartner.getName(),
                 chatPartner.getImageUrl(),
                 chatRoom.getLastMessageContent(),
-                chatRoom.getLastMessageTime(),
-                chatRoom.getUnreadCount(currentUser.getId())
+                chatRoom.getLastMessageSentAt(),
+                unreadCountMap.getOrDefault(chatRoom.getId(), 0)
             );
         }
     }
 
-    public static ChatRoomsResponse from(List<ChatRoom> chatRooms, User currentUser) {
+    public static ChatRoomsResponse from(
+        List<ChatRoom> chatRooms, User currentUser, Map<Integer, Integer> unreadCountMap
+    ) {
         return new ChatRoomsResponse(chatRooms.stream()
-            .map(chatRoom -> InnerChatRoomResponse.from(chatRoom, currentUser))
+            .map(chatRoom -> InnerChatRoomResponse.from(chatRoom, currentUser, unreadCountMap))
             .toList());
     }
 }

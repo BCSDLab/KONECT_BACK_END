@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.user.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,7 +23,18 @@ import jakarta.validation.Valid;
 @RequestMapping("/users")
 public interface UserApi {
 
-    @Operation(summary = "추가 정보가 필요한 사용자의 정보를 받아 회원가입을 진행한다.")
+    @Operation(
+        summary = "추가 정보가 필요한 사용자의 정보를 받아 회원가입을 진행한다.",
+        description = """
+            추가 정보를 입력받아 회원가입을 완료합니다.
+
+            - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
+            - `DUPLICATE_STUDENT_NUMBER` (409): 동일 대학교 + 학번 조합이 이미 존재하는 경우
+            - `ALREADY_REGISTERED_USER` (409): 이미 가입된 회원인 경우
+            - `UNIVERSITY_NOT_FOUND` (404): 대학교를 찾을 수 없는 경우
+            - `NOT_FOUND_UNREGISTERED_USER` (404): 임시 유저를 찾을 수 없는 경우
+            """
+    )
     @PostMapping("/signup")
     @PublicApi
     ResponseEntity<Void> signup(
@@ -46,4 +58,8 @@ public interface UserApi {
     @PostMapping("/logout")
     @PublicApi
     ResponseEntity<Void> logout(HttpServletRequest request);
+
+    @Operation(summary = "회원탈퇴를 한다.")
+    @DeleteMapping("/withdraw")
+    ResponseEntity<Void> withdraw(HttpServletRequest request, @UserId Integer userId);
 }

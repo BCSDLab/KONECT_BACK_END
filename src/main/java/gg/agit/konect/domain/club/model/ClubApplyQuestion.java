@@ -1,9 +1,14 @@
 package gg.agit.konect.domain.club.model;
 
+import static gg.agit.konect.global.code.ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
+import static java.lang.Boolean.TRUE;
 import static lombok.AccessLevel.PROTECTED;
 
+import org.springframework.util.StringUtils;
+
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -46,5 +51,15 @@ public class ClubApplyQuestion extends BaseEntity {
         this.club = club;
         this.question = question;
         this.isRequired = isRequired;
+    }
+
+    public void validateAnswer(String answer) {
+        validateRequiredAnswer(answer);
+    }
+
+    private void validateRequiredAnswer(String answer) {
+        if (this.isRequired.equals(TRUE) && !StringUtils.hasText(answer)) {
+            throw CustomException.of(REQUIRED_CLUB_APPLY_ANSWER_MISSING);
+        }
     }
 }

@@ -21,10 +21,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "unregistered_user",
     uniqueConstraints = {
-        @jakarta.persistence.UniqueConstraint(
-            name = "uq_unregistered_user_email_provider",
-            columnNames = {"email", "provider"}
-        )
+        @jakarta.persistence.UniqueConstraint(name = "uq_unregistered_user_email_provider", columnNames = {"email", "provider"})
     }
 )
 @NoArgsConstructor(access = PROTECTED)

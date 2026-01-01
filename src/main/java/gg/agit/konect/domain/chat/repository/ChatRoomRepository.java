@@ -3,6 +3,7 @@ package gg.agit.konect.domain.chat.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -18,9 +19,8 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         FROM ChatRoom cr
         JOIN FETCH cr.sender
         JOIN FETCH cr.receiver
-        LEFT JOIN FETCH cr.chatMessages
         WHERE cr.sender.id = :userId OR cr.receiver.id = :userId
-        ORDER BY cr.updatedAt DESC
+        ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
     List<ChatRoom> findByUserId(@Param("userId") Integer userId);
 
@@ -40,4 +40,11 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
            OR (cr.sender.id = :userId2 AND cr.receiver.id = :userId1)
         """)
     Optional<ChatRoom> findByTwoUsers(@Param("userId1") Integer userId1, @Param("userId2") Integer userId2);
+
+    @Modifying
+    @Query("""
+        DELETE FROM ChatRoom cr
+        WHERE cr.sender.id = :userId OR cr.receiver.id = :userId
+        """)
+    void deleteByUserId(@Param("userId") Integer userId);
 }

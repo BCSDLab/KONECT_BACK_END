@@ -28,7 +28,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
-    private final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
+    private static final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
 
     private final UserRepository userRepository;
 

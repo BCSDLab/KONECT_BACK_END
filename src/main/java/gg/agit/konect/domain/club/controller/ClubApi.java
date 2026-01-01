@@ -1,13 +1,15 @@
 package gg.agit.konect.domain.club.controller;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -16,7 +18,7 @@ import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 
-import gg.agit.konect.domain.club.dto.JoinedClubsResponse;
+import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,10 +34,8 @@ public interface ClubApi {
         """)
     @GetMapping
     ResponseEntity<ClubsResponse> getClubs(
-        @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
-        @RequestParam(name = "query", defaultValue = "", required = false) String query,
-        @RequestParam(name = "isRecruiting", defaultValue = "false", required = false) Boolean isRecruiting
+        @Valid @ParameterObject @ModelAttribute ClubCondition condition,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리의 상세 정보를 조회한다.", description = """
@@ -51,12 +51,15 @@ public interface ClubApi {
 
     @Operation(summary = "가입한 동아리 리스트를 조회한다.")
     @GetMapping("/joined")
-    ResponseEntity<JoinedClubsResponse> getJoinedClubs(@UserId Integer userId);
+    ResponseEntity<ClubMembershipsResponse> getJoinedClubs(
+        @UserId Integer userId
+    );
 
     @Operation(summary = "동아리 멤버 리스트를 조회한다.")
     @GetMapping("/{clubId}/members")
     ResponseEntity<ClubMembersResponse> getClubMembers(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리 가입 신청을 한다.", description = """
@@ -90,7 +93,8 @@ public interface ClubApi {
     @Operation(summary = "동아리 가입 문항을 조회한다.")
     @GetMapping("/{clubId}/questions")
     ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
-        @PathVariable(name = "clubId") Integer clubId
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
     );
 
     @Operation(summary = "동아리 모집 정보를 조회한다.", description = """

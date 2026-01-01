@@ -12,10 +12,18 @@ import gg.agit.konect.domain.club.model.ClubMemberId;
 
 public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberId> {
 
-    List<ClubMember> findAllByClubId(Integer clubId);
+    @Query("""
+        SELECT cm
+        FROM ClubMember cm
+        JOIN FETCH cm.user
+        JOIN FETCH cm.clubPosition
+        WHERE cm.club.id = :clubId
+        """)
+    List<ClubMember> findAllByClubId(@Param("clubId") Integer clubId);
 
     @Query("""
-        SELECT cm FROM ClubMember cm
+        SELECT cm
+        FROM ClubMember cm
         JOIN FETCH cm.club c
         JOIN FETCH cm.clubPosition cp
         WHERE cm.id.userId = :userId
@@ -33,4 +41,8 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     Optional<ClubMember> findPresidentByClubId(@Param("clubId") Integer clubId);
 
     boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
+
+    List<ClubMember> findByUserId(Integer userId);
+
+    void deleteByUserId(Integer userId);
 }

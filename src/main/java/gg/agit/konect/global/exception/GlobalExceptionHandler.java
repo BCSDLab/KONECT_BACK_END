@@ -9,7 +9,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
-import org.slf4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -29,13 +30,14 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.WebUtils;
 
 import gg.agit.konect.global.code.ApiResponseCode;
-
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger RUNTIME_ERROR_LOGGER = LoggerFactory.getLogger("runtime.error");
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Object> handleCustomException(
@@ -56,7 +58,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(DateTimeException.class)
-    public ResponseEntity<Object> DateTimeException() {
+    public ResponseEntity<Object> dateTimeException() {
         return buildErrorResponse(ApiResponseCode.INVALID_DATE_TIME);
     }
 
@@ -147,20 +149,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         StackTraceElement origin = e.getStackTrace()[0];
 
         String uri = String.format("%s %s", request.getMethod(), request.getRequestURI());
-        String location = String.format(
-            "%s:%d",
-            origin.getFileName(),
-            origin.getLineNumber()
-        );
         String exception = e.getClass().getSimpleName();
+        String location = String.format("%s:%d", origin.getFileName(), origin.getLineNumber());
         String message = e.getMessage();
 
-        MDC.put("uri", uri);
-        MDC.put("location", location);
-        MDC.put("exception", exception);
-        MDC.put("message", message);
+        String slackMessage = String.format(
+            """
+            URI: `%s`
+            Location: `%s`
+            Exception: `%s`
+            ```%s```
+            """,
+            uri, location, exception, message
+        );
 
-        log.error("URI: {} | Location: {} | Exception: {} | Message: {}", uri, location, exception, message);
+        RUNTIME_ERROR_LOGGER.error(slackMessage);
 
         return buildErrorResponse(ApiResponseCode.UNEXPECTED_SERVER_ERROR);
     }
@@ -238,8 +241,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 return " - ";
             }
             return new String(buf, wrapper.getCharacterEncoding());
-        } catch (Exception e
-        ) {
+        } catch (Exception e) {
             return " - ";
         }
     }

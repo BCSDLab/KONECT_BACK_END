@@ -1,9 +1,17 @@
 package gg.agit.konect.domain.user.service;
 
+import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
+
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
 import gg.agit.konect.domain.university.model.University;
@@ -30,6 +38,9 @@ public class UserService {
     private final UniversityRepository universityRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final CouncilNoticeReadRepository councilNoticeReadRepository;
+    private final ClubApplyRepository clubApplyRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     @Transactional
     public Integer signup(String email, Provider provider, SignupRequest request) {
@@ -44,6 +55,8 @@ public class UserService {
 
         University university = universityRepository.findById(request.universityId())
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
+
+        validateStudentNumberDuplicationOnSignup(university.getId(), request.studentNumber());
 
         User newUser = User.builder()
             .university(university)
@@ -94,6 +107,14 @@ public class UserService {
         }
     }
 
+    private void validateStudentNumberDuplicationOnSignup(Integer universityId, String studentNumber) {
+        boolean exists = userRepository.existsByUniversityIdAndStudentNumber(universityId, studentNumber);
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
+        }
+    }
+
     private void validatePhoneNumberDuplication(User user, UserUpdateRequest request) {
         String phoneNumber = request.phoneNumber();
 
@@ -106,5 +127,24 @@ public class UserService {
         if (exists) {
             throw CustomException.of(ApiResponseCode.DUPLICATE_PHONE_NUMBER);
         }
+    }
+
+    @Transactional
+    public void deleteUser(Integer userId) {
+        User user = userRepository.getById(userId);
+
+        List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
+        boolean isPresident = clubMembers.stream().anyMatch(ClubMember::isPresident);
+        if (isPresident) {
+            throw CustomException.of(CANNOT_DELETE_CLUB_PRESIDENT);
+        }
+
+        // TODO. 메시지 데이터 히스토리 테이블로 이관 로직 추가
+        chatMessageRepository.deleteByUserId(userId);
+        chatRoomRepository.deleteByUserId(userId);
+        councilNoticeReadRepository.deleteByUserId(userId);
+        clubApplyRepository.deleteByUserId(userId);
+        clubMemberRepository.deleteByUserId(userId);
+        userRepository.delete(user);
     }
 }

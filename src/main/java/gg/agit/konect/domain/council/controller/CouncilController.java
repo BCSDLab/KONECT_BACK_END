@@ -1,10 +1,6 @@
 package gg.agit.konect.domain.council.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,13 +20,13 @@ public class CouncilController implements CouncilApi {
 
     private final CouncilService councilService;
 
-    @GetMapping
+    @Override
     public ResponseEntity<CouncilResponse> getCouncil(@UserId Integer userId) {
         CouncilResponse response = councilService.getCouncil(userId);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping
+    @Override
     public ResponseEntity<Void> createCouncil(
         @UserId Integer userId,
         @Valid @RequestBody CouncilCreateRequest request
@@ -39,7 +35,7 @@ public class CouncilController implements CouncilApi {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping
+    @Override
     public ResponseEntity<Void> updateCouncil(
         @UserId Integer userId,
         @Valid @RequestBody CouncilUpdateRequest request
@@ -48,7 +44,7 @@ public class CouncilController implements CouncilApi {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping
+    @Override
     public ResponseEntity<Void> deleteCouncil(@UserId Integer userId) {
         councilService.deleteCouncil(userId);
         return ResponseEntity.noContent().build();

@@ -4,11 +4,12 @@ import static gg.agit.konect.domain.club.model.QClub.club;
 import static gg.agit.konect.domain.club.model.QClubRecruitment.clubRecruitment;
 import static gg.agit.konect.domain.club.model.QClubTag.clubTag;
 import static gg.agit.konect.domain.club.model.QClubTagMap.clubTagMap;
+import static java.util.stream.Collectors.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
@@ -33,31 +35,42 @@ public class ClubQueryRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
-    public Page<ClubSummaryInfo> findAllByFilter(PageRequest pageable, String query, Boolean isRecruiting) {
-        BooleanBuilder filter = clubSearchFilter(query, isRecruiting);
-        OrderSpecifier<?> sort = clubSort(isRecruiting);
+    public Page<ClubSummaryInfo> findAllByFilter(
+        PageRequest pageable, String query, Boolean isRecruiting, Integer universityId
+    ) {
+        BooleanBuilder condition = createClubSearchCondition(query, isRecruiting, universityId);
+        List<OrderSpecifier<?>> orders = createClubSortOrders(isRecruiting);
 
-        List<Tuple> clubData = fetchClubs(pageable, filter, sort);
-        List<Club> clubs = clubData.stream()
-            .map(tuple -> tuple.get(club))
-            .toList();
+        List<Club> clubs = fetchClubs(pageable, condition, orders);
         Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
-        List<ClubSummaryInfo> content = convertToSummaryInfo(clubData, clubTagsMap);
-        Long total = countClubs(filter);
+        List<ClubSummaryInfo> content = convertToSummaryInfo(clubs, clubTagsMap);
+        Long total = countClubs(condition, isRecruiting);
 
         return new PageImpl<>(content, pageable, total);
     }
 
-    private List<Tuple> fetchClubs(PageRequest pageable, BooleanBuilder filter, OrderSpecifier<?> sort) {
-        return jpaQueryFactory
-            .select(club, clubRecruitment)
+    /*      쿼리       */
+    private List<Club> fetchClubs(PageRequest pageable, BooleanBuilder condition, List<OrderSpecifier<?>> orders) {
+        return jpaQueryFactory.select(club)
             .from(club)
-            .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
-            .where(filter)
-            .orderBy(sort)
+            .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
+            .where(condition)
+            .orderBy(orders.toArray(new OrderSpecifier[0]))
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();
+    }
+
+    private Long countClubs(BooleanBuilder condition, Boolean isRecruiting) {
+        JPAQuery<Long> query = jpaQueryFactory
+            .select(club.countDistinct())
+            .from(club);
+
+        if (isRecruiting) {
+            query.leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id));
+        }
+
+        return query.where(condition).fetchOne();
     }
 
     private Map<Integer, List<String>> fetchClubTags(List<Club> clubs) {
@@ -77,75 +90,99 @@ public class ClubQueryRepository {
             .fetch();
 
         return tagResults.stream()
-            .collect(Collectors.groupingBy(
+            .collect(groupingBy(
                 tuple -> tuple.get(clubTagMap.club.id),
-                Collectors.mapping(tuple -> tuple.get(clubTag.name), Collectors.toList())
+                mapping(tuple -> tuple.get(clubTag.name), toList())
             ));
     }
 
-    private List<ClubSummaryInfo> convertToSummaryInfo(List<Tuple> clubData, Map<Integer, List<String>> clubTagsMap) {
-        return clubData.stream()
-            .map(tuple -> {
-                Club clubEntity = tuple.get(club);
-                ClubRecruitment recruitment = tuple.get(clubRecruitment);
+    /*      서브 쿼리       */
+    private JPAQuery<Integer> createClubIdsByTagNameSubquery(String normalizedQuery) {
+        return jpaQueryFactory
+            .select(clubTagMap.club.id)
+            .from(clubTagMap)
+            .innerJoin(clubTagMap.tag, clubTag)
+            .where(clubTag.name.lower().contains(normalizedQuery));
+    }
+
+    /*      검색 조건       */
+    private BooleanBuilder createClubSearchCondition(String query, Boolean isRecruiting, Integer universityId) {
+        BooleanBuilder condition = new BooleanBuilder();
+
+        addUniversityCondition(condition, universityId);
+        addQuerySearchCondition(condition, query);
+        addRecruitingCondition(condition, isRecruiting);
+
+        return condition;
+    }
+
+    private void addUniversityCondition(BooleanBuilder condition, Integer universityId) {
+        condition.and(club.university.id.eq(universityId));
+    }
+
+    private void addQuerySearchCondition(BooleanBuilder condition, String query) {
+        if (StringUtils.isEmpty(query)) {
+            return;
+        }
+
+        String normalizedQuery = query.trim().toLowerCase();
+        BooleanBuilder searchCondition = new BooleanBuilder();
+        searchCondition.or(club.name.lower().contains(normalizedQuery));
+        searchCondition.or(club.id.in(createClubIdsByTagNameSubquery(normalizedQuery)));
+
+        condition.and(searchCondition);
+    }
+
+    private void addRecruitingCondition(BooleanBuilder condition, Boolean isRecruiting) {
+        if (!isRecruiting) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        condition.and(clubRecruitment.id.isNotNull())
+            .and(clubRecruitment.startDate.loe(today))
+            .and(clubRecruitment.endDate.goe(today));
+    }
+
+    /*      정렬 조건       */
+    private List<OrderSpecifier<?>> createClubSortOrders(Boolean isRecruiting) {
+        List<OrderSpecifier<?>> orders = new ArrayList<>();
+
+        addRecruitmentSortOrder(orders, isRecruiting);
+        addDefaultSortOrder(orders);
+
+        return orders;
+    }
+
+    private void addRecruitmentSortOrder(List<OrderSpecifier<?>> orders, Boolean isRecruiting) {
+        if (!isRecruiting) {
+            return;
+        }
+
+        orders.add(clubRecruitment.endDate.asc());
+    }
+
+    private void addDefaultSortOrder(List<OrderSpecifier<?>> orders) {
+        orders.add(club.id.asc());
+    }
+
+    /*      DTO 변환      */
+    private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
+        return clubs.stream()
+            .map(club -> {
+                ClubRecruitment recruitment = club.getClubRecruitment();
                 RecruitmentStatus status = RecruitmentStatus.of(recruitment);
 
                 return new ClubSummaryInfo(
-                    clubEntity.getId(),
-                    clubEntity.getName(),
-                    clubEntity.getImageUrl(),
-                    clubEntity.getClubCategory().getDescription(),
-                    clubEntity.getDescription(),
+                    club.getId(),
+                    club.getName(),
+                    club.getImageUrl(),
+                    club.getClubCategory().getDescription(),
+                    club.getDescription(),
                     status,
-                    clubTagsMap.getOrDefault(clubEntity.getId(), List.of())
+                    clubTagsMap.getOrDefault(club.getId(), List.of())
                 );
             })
             .toList();
-    }
-
-    private Long countClubs(BooleanBuilder filter) {
-        return jpaQueryFactory
-            .select(club.countDistinct())
-            .from(club)
-            .leftJoin(clubRecruitment).on(clubRecruitment.club.id.eq(club.id))
-            .where(filter)
-            .fetchOne();
-    }
-
-    private BooleanBuilder clubSearchFilter(String query, Boolean isRecruiting) {
-        BooleanBuilder builder = new BooleanBuilder();
-
-        if (!StringUtils.isEmpty(query)) {
-            String normalizedQuery = query.trim().toLowerCase();
-
-            BooleanBuilder searchBuilder = new BooleanBuilder();
-            searchBuilder.or(club.name.lower().contains(normalizedQuery));
-            searchBuilder.or(club.id.in(
-                jpaQueryFactory
-                    .select(clubTagMap.club.id)
-                    .from(clubTagMap)
-                    .innerJoin(clubTagMap.tag, clubTag)
-                    .where(clubTag.name.lower().contains(normalizedQuery))
-            ));
-
-            builder.and(searchBuilder);
-        }
-
-        if (isRecruiting) {
-            LocalDate today = LocalDate.now();
-            builder.and(clubRecruitment.id.isNotNull())
-                .and(clubRecruitment.startDate.loe(today))
-                .and(clubRecruitment.endDate.goe(today));
-        }
-
-        return builder;
-    }
-
-    private OrderSpecifier<?> clubSort(Boolean isRecruiting) {
-        if (isRecruiting) {
-            return clubRecruitment.endDate.asc();
-        }
-
-        return club.id.asc();
     }
 }

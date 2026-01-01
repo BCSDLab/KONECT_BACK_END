@@ -76,7 +76,7 @@ public class ChatMessage extends BaseEntity {
             .build();
     }
 
-    public Boolean isSentBy(Integer userId) {
+    public boolean isSentBy(Integer userId) {
         return sender.getId().equals(userId);
     }
 

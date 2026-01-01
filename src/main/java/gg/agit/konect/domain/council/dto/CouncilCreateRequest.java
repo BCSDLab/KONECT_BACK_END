@@ -40,7 +40,10 @@ public record CouncilCreateRequest(
     String phoneNumber,
 
     @NotEmpty(message = "총동아리연합회 이메일은 필수 입력입니다.")
-    @Pattern(regexp = "^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])+[.][a-zA-Z]{2,3}$", message = "이메일 주소 양식을 확인해주세요")
+    @Pattern(
+        regexp = "^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])+[.][a-zA-Z]{2,3}$",
+        message = "이메일 주소 양식을 확인해주세요"
+    )
     @Size(max = 255, message = "총동아리연합회 이메일은 최대 255자 입니다.")
     @Schema(description = "총동아리연합회 이메일", example = "council@example.com", requiredMode = REQUIRED)
     String email,

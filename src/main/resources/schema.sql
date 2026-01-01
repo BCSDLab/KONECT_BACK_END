@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users
     id                     INT AUTO_INCREMENT PRIMARY KEY,
     university_id          INT                                 NOT NULL,
     email                  VARCHAR(100)                        NOT NULL,
-    name                   VARCHAR(50)                         NOT NULL,
+    name                   VARCHAR(30)                         NOT NULL,
     phone_number           VARCHAR(20),
     student_number         VARCHAR(20)                         NOT NULL,
     provider               ENUM ('GOOGLE', 'KAKAO', 'NAVER')   NOT NULL,
@@ -224,11 +224,13 @@ CREATE TABLE IF NOT EXISTS university_schedule
 
 CREATE TABLE IF NOT EXISTS chat_room
 (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    sender_id   INT                                 NOT NULL,
-    receiver_id INT                                 NOT NULL,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id                   INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id            INT,
+    receiver_id          INT,
+    last_message_content TEXT NULL,
+    last_message_sent_at TIMESTAMP NULL,
+    created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
     FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE
