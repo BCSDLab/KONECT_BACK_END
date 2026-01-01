@@ -104,16 +104,6 @@
         <!-- 3. 코드 포맷팅 -->
         <!-- ========================================== -->
 
-        <!-- 들여쓰기: 4칸 -->
-        <module name="Indentation">
-            <property name="basicOffset" value="4"/>
-            <property name="braceAdjustment" value="0"/>
-            <property name="caseIndent" value="4"/>
-            <property name="throwsIndent" value="4"/>
-            <property name="lineWrappingIndentation" value="4"/>
-            <property name="arrayInitIndent" value="4"/>
-        </module>
-
         <!-- 빈 줄 관리 -->
         <module name="EmptyLineSeparator">
             <!-- 필드 사이에 빈 줄 없어도 허용 -->

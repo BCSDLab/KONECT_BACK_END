@@ -13,6 +13,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +22,15 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Table(
+    name = "club_recruitment",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_club_recruitment_club_id",
+            columnNames = {"club_id"}
+        )
+    }
+)
 @NoArgsConstructor(access = PROTECTED)
 public class ClubRecruitment extends BaseEntity {
 
