@@ -15,8 +15,11 @@ public interface ScheduleRepository extends Repository<Schedule, Integer> {
     @Query("""
         SELECT s
         FROM Schedule s
-        JOIN UniversitySchedule us ON s.id = us.id
-        WHERE us.university.id = :universityId
+        LEFT JOIN UniversitySchedule us ON s.id = us.id
+        WHERE 1 = CASE
+            WHEN us.id IS NOT NULL AND us.university.id = :universityId THEN 1
+            ELSE 0
+        END
         AND s.endedAt >= :today
         ORDER BY s.startedAt ASC
         """)
@@ -29,8 +32,11 @@ public interface ScheduleRepository extends Repository<Schedule, Integer> {
     @Query("""
         SELECT s
         FROM Schedule s
-        JOIN UniversitySchedule us ON s.id = us.id
-        WHERE us.university.id = :universityId
+        LEFT JOIN UniversitySchedule us ON s.id = us.id
+        WHERE 1 = CASE
+            WHEN us.id IS NOT NULL AND us.university.id = :universityId THEN 1
+            ELSE 0
+        END
         AND (
             (s.startedAt >= :monthStart AND s.startedAt < :monthEnd)
             OR (s.endedAt >= :monthStart AND s.endedAt < :monthEnd)

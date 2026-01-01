@@ -7,10 +7,13 @@ import static lombok.AccessLevel.PROTECTED;
 import java.time.LocalDateTime;
 
 import gg.agit.konect.domain.university.model.University;
-import jakarta.persistence.DiscriminatorValue;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,9 +22,16 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(name = "university_schedule")
-@DiscriminatorValue(value = UNIVERSITY)
 @NoArgsConstructor(access = PROTECTED)
-public class UniversitySchedule extends Schedule {
+public class UniversitySchedule extends BaseEntity {
+
+    @Id
+    private Integer id;
+
+    @MapsId
+    @OneToOne(fetch = LAZY)
+    @JoinColumn(name = "id", nullable = false, updatable = false, unique = true)
+    private Schedule schedule;
 
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "university_id", nullable = false)
@@ -29,13 +39,10 @@ public class UniversitySchedule extends Schedule {
 
     @Builder
     private UniversitySchedule(
-        Integer id,
-        String title,
-        LocalDateTime startedAt,
-        LocalDateTime endedAt,
+        Schedule schedule,
         University university
     ) {
-        super(id, title, startedAt, endedAt);
+        this.schedule = schedule;
         this.university = university;
     }
 }

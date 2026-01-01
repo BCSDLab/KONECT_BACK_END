@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.schedule.model;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
-import static jakarta.persistence.InheritanceType.JOINED;
 import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDate;
@@ -10,23 +9,20 @@ import java.time.temporal.ChronoUnit;
 
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
 @Table(name = "schedule")
-@Inheritance(strategy = JOINED)
-@DiscriminatorColumn(name = "schedule_type")
 @NoArgsConstructor(access = PROTECTED)
-public abstract class Schedule extends BaseEntity {
+public class Schedule extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -45,14 +41,17 @@ public abstract class Schedule extends BaseEntity {
     @Column(name = "ended_at", nullable = false)
     private LocalDateTime endedAt;
 
-    @Column(name = "schedule_type", insertable = false, updatable = false)
+    @NotNull
+    @Column(name = "schedule_type", nullable = false)
     private String scheduleType;
 
-    protected Schedule(Integer id, String title, LocalDateTime startedAt, LocalDateTime endedAt) {
+    @Builder
+    private Schedule(Integer id, String title, LocalDateTime startedAt, LocalDateTime endedAt, String scheduleType) {
         this.id = id;
         this.title = title;
         this.startedAt = startedAt;
         this.endedAt = endedAt;
+        this.scheduleType = scheduleType;
     }
 
     public Integer calculateDDay(LocalDate today) {
