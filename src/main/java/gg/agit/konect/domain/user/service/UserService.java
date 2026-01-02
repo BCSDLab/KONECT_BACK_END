@@ -4,6 +4,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRES
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,6 +21,7 @@ import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.event.UserWithdrawEvent;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
@@ -41,6 +43,7 @@ public class UserService {
     private final ClubApplyRepository clubApplyRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public Integer signup(String email, Provider provider, SignupRequest request) {
@@ -146,5 +149,7 @@ public class UserService {
         clubApplyRepository.deleteByUserId(userId);
         clubMemberRepository.deleteByUserId(userId);
         userRepository.delete(user);
+
+        applicationEventPublisher.publishEvent(UserWithdrawEvent.from(user.getEmail()));
     }
 }
