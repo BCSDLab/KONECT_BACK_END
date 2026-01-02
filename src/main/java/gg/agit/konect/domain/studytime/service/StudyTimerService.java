@@ -66,7 +66,7 @@ public class StudyTimerService {
         LocalDateTime endedAt = LocalDateTime.now();
         LocalDateTime startedAt = studyTimer.getStartedAt();
         long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
-        long clientSeconds = request.toTotalSeconds();
+        long clientSeconds = request.totalSeconds();
 
         if (isElapsedTimeInvalid(serverSeconds, clientSeconds)) {
             studyTimerRepository.delete(studyTimer);
