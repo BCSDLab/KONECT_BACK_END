@@ -26,7 +26,10 @@ public record StudyTimerStopRequest(
     Integer second
 ) {
 
+    private static final long SECONDS_PER_MINUTE = 60L;
+    private static final long SECONDS_PER_HOUR = 3600L;
+
     public long toTotalSeconds() {
-        return hour * 3600L + minute * 60L + second;
+        return hour * SECONDS_PER_HOUR + minute * SECONDS_PER_MINUTE + second;
     }
 }
