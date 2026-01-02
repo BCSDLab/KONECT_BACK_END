@@ -1,5 +1,6 @@
 package gg.agit.konect.infrastructure.slack.service;
 
+import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_REGISTER;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_WITHDRAWAL;
 
 import org.springframework.stereotype.Service;
@@ -17,6 +18,11 @@ public class SlackNotificationService {
 
     public void notifyUserWithdrawal(String email) {
         String message = USER_WITHDRAWAL.format(email);
+        slackClient.sendMessage(message, slackProperties.webhooks().event());
+    }
+
+    public void notifyUserRegister(String email) {
+        String message = USER_REGISTER.format(email);
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }
 }
