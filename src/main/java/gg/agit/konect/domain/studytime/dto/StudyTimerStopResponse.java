@@ -2,6 +2,7 @@ package gg.agit.konect.domain.studytime.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import gg.agit.konect.domain.studytime.model.StudyTimeSummary;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record StudyTimerStopResponse(
@@ -17,12 +18,12 @@ public record StudyTimerStopResponse(
     @Schema(description = "총 누적 공부 시간(초)", example = "360000", requiredMode = REQUIRED)
     Long totalSeconds
 ) {
-    public static StudyTimerStopResponse of(
-        long sessionSeconds,
-        long dailySeconds,
-        long monthlySeconds,
-        long totalSeconds
-    ) {
-        return new StudyTimerStopResponse(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
+    public static StudyTimerStopResponse from(StudyTimeSummary summary) {
+        return new StudyTimerStopResponse(
+            summary.sessionSeconds(),
+            summary.dailySeconds(),
+            summary.monthlySeconds(),
+            summary.totalSeconds()
+        );
     }
 }

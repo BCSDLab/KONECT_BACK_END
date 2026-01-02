@@ -76,24 +76,18 @@ public class StudyTimerService {
             throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
         }
 
-        StudyTimeSummary summary = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
-
+        long sessionSeconds = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
         studyTimerRepository.delete(studyTimer);
+        StudyTimeSummary summary = buildSummary(userId, endedAt.toLocalDate(), sessionSeconds);
 
-        return StudyTimerStopResponse.of(
-            summary.sessionSeconds(),
-            summary.dailySeconds(),
-            summary.monthlySeconds(),
-            summary.totalSeconds()
-        );
+        return StudyTimerStopResponse.from(summary);
     }
 
-    private StudyTimeSummary accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
+    private long accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
         long sessionSeconds = accumulateDailyAndMonthlySeconds(user, startedAt, endedAt);
         updateTotalSecondsIfNeeded(user, sessionSeconds);
-        LocalDate endDate = endedAt.toLocalDate();
 
-        return buildAggregate(user.getId(), endDate, sessionSeconds);
+        return sessionSeconds;
     }
 
     private long accumulateDailyAndMonthlySeconds(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
@@ -180,7 +174,7 @@ public class StudyTimerService {
         studyTimeTotalRepository.save(total);
     }
 
-    private StudyTimeSummary buildAggregate(Integer userId, LocalDate endDate, long sessionSeconds) {
+    private StudyTimeSummary buildSummary(Integer userId, LocalDate endDate, long sessionSeconds) {
         LocalDate month = endDate.withDayOfMonth(1);
 
         long dailySeconds = studyTimeDailyRepository.findByUserIdAndStudyDate(userId, endDate)
