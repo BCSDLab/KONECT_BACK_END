@@ -19,7 +19,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/studytimes")
 public interface StudyTimeApi {
 
-    @Operation(summary = "순공 시간 요약을 조회한다.")
+    @Operation(summary = "순공 시간(일간, 월간, 통합)을 조회한다.")
     @GetMapping("/summary")
     ResponseEntity<StudyTimeSummaryResponse> getSummary(@UserId Integer userId);
 
