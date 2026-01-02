@@ -28,8 +28,8 @@ public record UserInfoResponse(
     @Schema(description = "가입 동아리 개수", example = "1", requiredMode = REQUIRED)
     Integer joinedClubCount,
 
-    @Schema(description = "순공 시간(H+:mm:ss)", example = "120:10:05", requiredMode = REQUIRED)
-    String studyTime,
+    @Schema(description = "순공 시간(누적 초)", example = "45296", requiredMode = REQUIRED)
+    Long studyTime,
 
     @Schema(description = "읽지 않은 총 동아리 연합회 공지", example = "1", requiredMode = REQUIRED)
     Long unreadCouncilNoticeCount
@@ -38,7 +38,7 @@ public record UserInfoResponse(
     public static UserInfoResponse from(
         User user,
         Integer joinedClubCount,
-        String studyTime,
+        Long studyTime,
         Long unreadCouncilNoticeCount
     ) {
         return new UserInfoResponse(

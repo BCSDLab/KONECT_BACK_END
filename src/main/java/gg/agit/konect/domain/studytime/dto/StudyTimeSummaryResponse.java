@@ -5,13 +5,13 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record StudyTimeSummaryResponse(
-    @Schema(description = "오늘 누적 공부 시간(HH:mm:ss)", example = "03:30:15", requiredMode = REQUIRED)
-    String todayStudyTime,
+    @Schema(description = "오늘 누적 공부 시간(누적 초)", example = "45296", requiredMode = REQUIRED)
+    Long todayStudyTime,
 
-    @Schema(description = "총 누적 공부 시간(H+:mm:ss)", example = "120:10:05", requiredMode = REQUIRED)
-    String totalStudyTime
+    @Schema(description = "총 누적 공부 시간(누적 초)", example = "564325", requiredMode = REQUIRED)
+    Long totalStudyTime
 ) {
-    public static StudyTimeSummaryResponse of(String todayStudyTime, String totalStudyTime) {
+    public static StudyTimeSummaryResponse of(Long todayStudyTime, Long totalStudyTime) {
         return new StudyTimeSummaryResponse(todayStudyTime, totalStudyTime);
     }
 }

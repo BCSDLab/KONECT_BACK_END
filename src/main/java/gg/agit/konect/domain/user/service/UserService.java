@@ -81,7 +81,7 @@ public class UserService {
         User user = userRepository.getById(userId);
         int joinedClubCount = clubMemberRepository.findAllByUserId(user.getId()).size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
-        String studyTime = studyTimeQueryService.getTotalStudyTime(userId);
+        Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);
 
         return UserInfoResponse.from(user, joinedClubCount, studyTime, unreadCouncilNoticeCount);
     }
