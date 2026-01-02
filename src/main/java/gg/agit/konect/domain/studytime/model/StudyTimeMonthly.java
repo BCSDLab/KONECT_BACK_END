@@ -56,6 +56,14 @@ public class StudyTimeMonthly extends BaseEntity {
         this.totalSeconds = totalSeconds;
     }
 
+    public static StudyTimeMonthly of(User user, LocalDate studyMonth, Long totalSeconds) {
+        return StudyTimeMonthly.builder()
+            .user(user)
+            .studyMonth(studyMonth)
+            .totalSeconds(totalSeconds)
+            .build();
+    }
+
     public void addSeconds(long seconds) {
         this.totalSeconds += seconds;
     }

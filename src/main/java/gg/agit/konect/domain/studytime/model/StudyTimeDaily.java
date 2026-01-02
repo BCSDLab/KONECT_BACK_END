@@ -56,6 +56,14 @@ public class StudyTimeDaily extends BaseEntity {
         this.totalSeconds = totalSeconds;
     }
 
+    public static StudyTimeDaily of(User user, LocalDate studyDate, Long totalSeconds) {
+        return StudyTimeDaily.builder()
+            .user(user)
+            .studyDate(studyDate)
+            .totalSeconds(totalSeconds)
+            .build();
+    }
+
     public void addSeconds(long seconds) {
         this.totalSeconds += seconds;
     }

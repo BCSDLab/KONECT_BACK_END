@@ -52,10 +52,7 @@ public class StudyTimerService {
         LocalDateTime startedAt = LocalDateTime.now();
 
         try {
-            studyTimerRepository.save(StudyTimer.builder()
-                .user(user)
-                .startedAt(startedAt)
-                .build());
+            studyTimerRepository.save(StudyTimer.of(user, startedAt));
             entityManager.flush();
         } catch (DataIntegrityViolationException e) {
             throw CustomException.of(ALREADY_RUNNING_STUDY_TIMER);
@@ -132,11 +129,7 @@ public class StudyTimerService {
     private void addDailySegment(User user, LocalDate date, long seconds) {
         StudyTimeDaily daily = studyTimeDailyRepository
             .findByUserIdAndStudyDate(user.getId(), date)
-            .orElseGet(() -> StudyTimeDaily.builder()
-                .user(user)
-                .studyDate(date)
-                .totalSeconds(0L)
-                .build());
+            .orElseGet(() -> StudyTimeDaily.of(user, date, 0L));
 
         daily.addSeconds(seconds);
         studyTimeDailyRepository.save(daily);
@@ -147,11 +140,7 @@ public class StudyTimerService {
 
         StudyTimeMonthly monthly = studyTimeMonthlyRepository
             .findByUserIdAndStudyMonth(user.getId(), month)
-            .orElseGet(() -> StudyTimeMonthly.builder()
-                .user(user)
-                .studyMonth(month)
-                .totalSeconds(0L)
-                .build());
+            .orElseGet(() -> StudyTimeMonthly.of(user, month, 0L));
 
         monthly.addSeconds(seconds);
         studyTimeMonthlyRepository.save(monthly);
@@ -165,10 +154,7 @@ public class StudyTimerService {
 
     private void addTotalSeconds(User user, long seconds) {
         StudyTimeTotal total = studyTimeTotalRepository.findByUserId(user.getId())
-            .orElseGet(() -> StudyTimeTotal.builder()
-                .user(user)
-                .totalSeconds(0L)
-                .build());
+            .orElseGet(() -> StudyTimeTotal.of(user, 0L));
 
         total.addSeconds(seconds);
         studyTimeTotalRepository.save(total);

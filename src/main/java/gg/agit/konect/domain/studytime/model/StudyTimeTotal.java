@@ -49,6 +49,13 @@ public class StudyTimeTotal extends BaseEntity {
         this.totalSeconds = totalSeconds;
     }
 
+    public static StudyTimeTotal of(User user, Long totalSeconds) {
+        return StudyTimeTotal.builder()
+            .user(user)
+            .totalSeconds(totalSeconds)
+            .build();
+    }
+
     public void addSeconds(long seconds) {
         this.totalSeconds += seconds;
     }

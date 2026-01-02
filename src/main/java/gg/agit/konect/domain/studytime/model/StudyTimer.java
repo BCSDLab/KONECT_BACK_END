@@ -44,4 +44,11 @@ public class StudyTimer extends BaseEntity {
         this.user = user;
         this.startedAt = startedAt;
     }
+
+    public static StudyTimer of(User user, LocalDateTime startedAt) {
+        return StudyTimer.builder()
+            .user(user)
+            .startedAt(startedAt)
+            .build();
+    }
 }
