@@ -13,9 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
-import gg.agit.konect.domain.studytime.model.StudyTimeSummary;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
 import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
+import gg.agit.konect.domain.studytime.model.StudyTimeSummary;
 import gg.agit.konect.domain.studytime.model.StudyTimeTotal;
 import gg.agit.konect.domain.studytime.model.StudyTimer;
 import gg.agit.konect.domain.studytime.repository.StudyTimeDailyRepository;
