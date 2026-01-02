@@ -21,6 +21,7 @@ import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.event.UserRegisterEvent;
 import gg.agit.konect.domain.user.event.UserWithdrawEvent;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
@@ -75,6 +76,7 @@ public class UserService {
 
         unRegisteredUserRepository.delete(tempUser);
 
+        applicationEventPublisher.publishEvent(UserRegisterEvent.from(savedUser.getEmail()));
         return savedUser.getId();
     }
 
