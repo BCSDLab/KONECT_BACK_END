@@ -7,8 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
+import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
 import gg.agit.konect.domain.studytime.model.StudyTimeTotal;
 import gg.agit.konect.domain.studytime.repository.StudyTimeDailyRepository;
+import gg.agit.konect.domain.studytime.repository.StudyTimeMonthlyRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeTotalRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -18,13 +20,15 @@ import lombok.RequiredArgsConstructor;
 public class StudyTimeQueryService {
 
     private final StudyTimeDailyRepository studyTimeDailyRepository;
+    private final StudyTimeMonthlyRepository studyTimeMonthlyRepository;
     private final StudyTimeTotalRepository studyTimeTotalRepository;
 
     public StudyTimeSummaryResponse getSummary(Integer userId) {
         Long todayStudyTime = getTodayStudyTime(userId);
+        Long monthlyStudyTime = getMonthlyStudyTime(userId);
         Long totalStudyTime = getTotalStudyTime(userId);
 
-        return StudyTimeSummaryResponse.of(todayStudyTime, totalStudyTime);
+        return StudyTimeSummaryResponse.of(todayStudyTime, monthlyStudyTime, totalStudyTime);
     }
 
     public long getTotalStudyTime(Integer userId) {
@@ -39,6 +43,13 @@ public class StudyTimeQueryService {
         return studyTimeDailyRepository.findByUserIdAndStudyDate(userId, today)
             .map(StudyTimeDaily::getTotalSeconds)
             .orElse(0L);
+    }
 
+    public long getMonthlyStudyTime(Integer userId) {
+        LocalDate month = LocalDate.now().withDayOfMonth(1);
+
+        return studyTimeMonthlyRepository.findByUserIdAndStudyMonth(userId, month)
+            .map(StudyTimeMonthly::getTotalSeconds)
+            .orElse(0L);
     }
 }
