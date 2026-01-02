@@ -24,11 +24,11 @@ public class StudyTimeQueryService {
     private final StudyTimeTotalRepository studyTimeTotalRepository;
 
     public StudyTimeSummaryResponse getSummary(Integer userId) {
-        Long todayStudyTime = getTodayStudyTime(userId);
+        Long dailyStudyTime = getDailyStudyTime(userId);
         Long monthlyStudyTime = getMonthlyStudyTime(userId);
         Long totalStudyTime = getTotalStudyTime(userId);
 
-        return StudyTimeSummaryResponse.of(todayStudyTime, monthlyStudyTime, totalStudyTime);
+        return StudyTimeSummaryResponse.of(dailyStudyTime, monthlyStudyTime, totalStudyTime);
     }
 
     public long getTotalStudyTime(Integer userId) {
@@ -37,7 +37,7 @@ public class StudyTimeQueryService {
             .orElse(0L);
     }
 
-    public long getTodayStudyTime(Integer userId) {
+    public long getDailyStudyTime(Integer userId) {
         LocalDate today = LocalDate.now();
 
         return studyTimeDailyRepository.findByUserIdAndStudyDate(userId, today)

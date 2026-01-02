@@ -162,7 +162,7 @@ public class StudyTimerService {
     }
 
     private StudyTimeSummary buildSummary(Integer userId, long sessionSeconds) {
-        long dailySeconds = studyTimeQueryService.getTodayStudyTime(userId);
+        long dailySeconds = studyTimeQueryService.getDailyStudyTime(userId);
         long monthlySeconds = studyTimeQueryService.getMonthlyStudyTime(userId);
         long totalSeconds = studyTimeQueryService.getTotalStudyTime(userId);
 
