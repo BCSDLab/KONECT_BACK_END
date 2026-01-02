@@ -2,10 +2,12 @@ package gg.agit.konect.domain.studytime.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -16,6 +18,10 @@ import jakarta.validation.Valid;
 @Tag(name = "(Normal) Study Time: 순공 시간", description = "순공 시간 API")
 @RequestMapping("/studytimes")
 public interface StudyTimeApi {
+
+    @Operation(summary = "순공 시간(일간, 월간, 통합)을 조회한다.")
+    @GetMapping("/summary")
+    ResponseEntity<StudyTimeSummaryResponse> getSummary(@UserId Integer userId);
 
     @Operation(summary = "스터디 타이머를 시작한다.", description = """
         ## 설명

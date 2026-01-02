@@ -15,6 +15,7 @@ import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
+import gg.agit.konect.domain.studytime.service.StudyTimeQueryService;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.university.repository.UniversityRepository;
 import gg.agit.konect.domain.user.dto.SignupRequest;
@@ -44,6 +45,7 @@ public class UserService {
     private final ClubApplyRepository clubApplyRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final StudyTimeQueryService studyTimeQueryService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
@@ -84,8 +86,9 @@ public class UserService {
         User user = userRepository.getById(userId);
         int joinedClubCount = clubMemberRepository.findAllByUserId(user.getId()).size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
+        Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);
 
-        return UserInfoResponse.from(user, joinedClubCount, unreadCouncilNoticeCount);
+        return UserInfoResponse.from(user, joinedClubCount, studyTime, unreadCouncilNoticeCount);
     }
 
     @Transactional

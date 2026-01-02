@@ -35,6 +35,7 @@ public class StudyTimerService {
 
     private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 60L;
 
+    private final StudyTimeQueryService studyTimeQueryService;
     private final StudyTimerRepository studyTimerRepository;
     private final StudyTimeDailyRepository studyTimeDailyRepository;
     private final StudyTimeMonthlyRepository studyTimeMonthlyRepository;
@@ -66,7 +67,7 @@ public class StudyTimerService {
         LocalDateTime endedAt = LocalDateTime.now();
         LocalDateTime startedAt = studyTimer.getStartedAt();
         long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
-        long clientSeconds = request.toTotalSeconds();
+        long clientSeconds = request.totalSeconds();
 
         if (isElapsedTimeInvalid(serverSeconds, clientSeconds)) {
             studyTimerRepository.delete(studyTimer);
@@ -75,7 +76,7 @@ public class StudyTimerService {
 
         long sessionSeconds = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
         studyTimerRepository.delete(studyTimer);
-        StudyTimeSummary summary = buildSummary(userId, endedAt.toLocalDate(), sessionSeconds);
+        StudyTimeSummary summary = buildSummary(userId, sessionSeconds);
 
         return StudyTimerStopResponse.from(summary);
     }
@@ -160,20 +161,10 @@ public class StudyTimerService {
         studyTimeTotalRepository.save(total);
     }
 
-    private StudyTimeSummary buildSummary(Integer userId, LocalDate endDate, long sessionSeconds) {
-        LocalDate month = endDate.withDayOfMonth(1);
-
-        long dailySeconds = studyTimeDailyRepository.findByUserIdAndStudyDate(userId, endDate)
-            .map(StudyTimeDaily::getTotalSeconds)
-            .orElse(0L);
-
-        long monthlySeconds = studyTimeMonthlyRepository.findByUserIdAndStudyMonth(userId, month)
-            .map(StudyTimeMonthly::getTotalSeconds)
-            .orElse(0L);
-
-        long totalSeconds = studyTimeTotalRepository.findByUserId(userId)
-            .map(StudyTimeTotal::getTotalSeconds)
-            .orElse(0L);
+    private StudyTimeSummary buildSummary(Integer userId, long sessionSeconds) {
+        long dailySeconds = studyTimeQueryService.getDailyStudyTime(userId);
+        long monthlySeconds = studyTimeQueryService.getMonthlyStudyTime(userId);
+        long totalSeconds = studyTimeQueryService.getTotalStudyTime(userId);
 
         return new StudyTimeSummary(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
     }
