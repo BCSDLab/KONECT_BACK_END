@@ -76,49 +76,68 @@ public class StudyTimerService {
             throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
         }
 
-        StudyTimeSummary aggregate = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
+        StudyTimeSummary summary = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
 
         studyTimerRepository.delete(studyTimer);
 
         return StudyTimerStopResponse.of(
-            aggregate.sessionSeconds(),
-            aggregate.dailySeconds(),
-            aggregate.monthlySeconds(),
-            aggregate.totalSeconds()
+            summary.sessionSeconds(),
+            summary.dailySeconds(),
+            summary.monthlySeconds(),
+            summary.totalSeconds()
         );
     }
 
     private StudyTimeSummary accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
-        LocalDateTime cursor = startedAt;
-        long sessionSeconds = 0L;
-
-        while (cursor.toLocalDate().isBefore(endedAt.toLocalDate())) {
-            LocalDateTime nextDayStart = cursor.toLocalDate().plusDays(1).atStartOfDay();
-            long seconds = Duration.between(cursor, nextDayStart).getSeconds();
-            sessionSeconds += addSegment(user, cursor.toLocalDate(), seconds);
-            cursor = nextDayStart;
-        }
-
-        if (cursor.isBefore(endedAt)) {
-            long seconds = Duration.between(cursor, endedAt).getSeconds();
-            sessionSeconds += addSegment(user, cursor.toLocalDate(), seconds);
-        }
-
-        if (sessionSeconds > 0) {
-            addTotalSeconds(user, sessionSeconds);
-        }
-
+        long sessionSeconds = accumulateDailyAndMonthlySeconds(user, startedAt, endedAt);
+        updateTotalSecondsIfNeeded(user, sessionSeconds);
         LocalDate endDate = endedAt.toLocalDate();
 
         return buildAggregate(user.getId(), endDate, sessionSeconds);
     }
 
-    private long addSegment(User user, LocalDate date, long seconds) {
+    private long accumulateDailyAndMonthlySeconds(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
+        LocalDateTime cursor = startedAt;
+        long sessionSeconds = 0L;
+        LocalDate endDate = endedAt.toLocalDate();
+
+        while (cursor.isBefore(endedAt)) {
+            LocalDateTime segmentEnd;
+
+            if (cursor.toLocalDate().isBefore(endDate)) {
+                segmentEnd = cursor.toLocalDate().plusDays(1).atStartOfDay();
+            } else {
+                segmentEnd = endedAt;
+            }
+
+            sessionSeconds += accumulateDailyAndMonthlySegment(user, cursor, segmentEnd);
+            cursor = segmentEnd;
+        }
+
+        return sessionSeconds;
+    }
+
+    private long accumulateDailyAndMonthlySegment(User user, LocalDateTime segmentStart, LocalDateTime segmentEnd) {
+        if (!segmentStart.isBefore(segmentEnd)) {
+            return 0L;
+        }
+
+        long seconds = Duration.between(segmentStart, segmentEnd).getSeconds();
+
         if (seconds <= 0) {
             return 0L;
         }
 
-        StudyTimeDaily daily = studyTimeDailyRepository.findByUserIdAndStudyDate(user.getId(), date)
+        LocalDate date = segmentStart.toLocalDate();
+        addDailySegment(user, date, seconds);
+        addMonthlySegment(user, date, seconds);
+
+        return seconds;
+    }
+
+    private void addDailySegment(User user, LocalDate date, long seconds) {
+        StudyTimeDaily daily = studyTimeDailyRepository
+            .findByUserIdAndStudyDate(user.getId(), date)
             .orElseGet(() -> StudyTimeDaily.builder()
                 .user(user)
                 .studyDate(date)
@@ -127,9 +146,13 @@ public class StudyTimerService {
 
         daily.addSeconds(seconds);
         studyTimeDailyRepository.save(daily);
+    }
 
+    private void addMonthlySegment(User user, LocalDate date, long seconds) {
         LocalDate month = date.withDayOfMonth(1);
-        StudyTimeMonthly monthly = studyTimeMonthlyRepository.findByUserIdAndStudyMonth(user.getId(), month)
+
+        StudyTimeMonthly monthly = studyTimeMonthlyRepository
+            .findByUserIdAndStudyMonth(user.getId(), month)
             .orElseGet(() -> StudyTimeMonthly.builder()
                 .user(user)
                 .studyMonth(month)
@@ -138,8 +161,12 @@ public class StudyTimerService {
 
         monthly.addSeconds(seconds);
         studyTimeMonthlyRepository.save(monthly);
+    }
 
-        return seconds;
+    private void updateTotalSecondsIfNeeded(User user, long sessionSeconds) {
+        if (sessionSeconds > 0) {
+            addTotalSeconds(user, sessionSeconds);
+        }
     }
 
     private void addTotalSeconds(User user, long seconds) {
@@ -148,6 +175,7 @@ public class StudyTimerService {
                 .user(user)
                 .totalSeconds(0L)
                 .build());
+
         total.addSeconds(seconds);
         studyTimeTotalRepository.save(total);
     }
