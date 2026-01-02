@@ -28,12 +28,15 @@ public record UserInfoResponse(
     @Schema(description = "가입 동아리 개수", example = "1", requiredMode = REQUIRED)
     Integer joinedClubCount,
 
-    @Schema(description = "순공 시간(누적 초)", example = "45296", requiredMode = REQUIRED)
-    Long studyTime,
+    @Schema(description = "순공 시간(HH:mm)", example = "12:34", requiredMode = REQUIRED)
+    String studyTime,
 
     @Schema(description = "읽지 않은 총 동아리 연합회 공지", example = "1", requiredMode = REQUIRED)
     Long unreadCouncilNoticeCount
 ) {
+
+    private static final long SECONDS_PER_HOUR = 3600;
+    private static final long SECONDS_PER_MINUTE = 60;
 
     public static UserInfoResponse from(
         User user,
@@ -49,8 +52,15 @@ public record UserInfoResponse(
             user.getEmail(),
             user.getImageUrl(),
             joinedClubCount,
-            studyTime,
+            formatSecondsToHHmm(studyTime),
             unreadCouncilNoticeCount
         );
+    }
+
+    private static String formatSecondsToHHmm(Long seconds) {
+        long h = seconds / SECONDS_PER_HOUR;
+        long m = (seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+
+        return String.format("%02d:%02d", h, m);
     }
 }
