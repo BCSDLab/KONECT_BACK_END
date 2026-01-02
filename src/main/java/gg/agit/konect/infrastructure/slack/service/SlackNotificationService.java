@@ -16,7 +16,7 @@ public class SlackNotificationService {
     private final SlackProperties slackProperties;
     private final SlackClient slackClient;
 
-    public void notifyUserWithdrawal(String email) {
+    public void notifyUserWithdraw(String email) {
         String message = USER_WITHDRAWAL.format(email);
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }

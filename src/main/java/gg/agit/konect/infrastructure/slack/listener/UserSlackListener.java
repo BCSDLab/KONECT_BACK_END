@@ -19,13 +19,13 @@ public class UserSlackListener {
 
     @Async
     @TransactionalEventListener(phase = AFTER_COMMIT)
-    public void handleUserWithdrawn(UserWithdrawEvent event) {
-        slackNotificationService.notifyUserWithdrawal(event.email());
+    public void handleUserWithdraw(UserWithdrawEvent event) {
+        slackNotificationService.notifyUserWithdraw(event.email());
     }
 
     @Async
     @TransactionalEventListener(phase = AFTER_COMMIT)
-    public void handleUserRegistered(UserRegisterEvent event) {
+    public void handleUserRegister(UserRegisterEvent event) {
         slackNotificationService.notifyUserRegister(event.email());
     }
 }
