@@ -7,6 +7,8 @@ import java.util.Map;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,22 +22,24 @@ public class SlackClient {
 
     private final RestTemplate restTemplate;
 
+    @Retryable
     public void sendMessage(String message, String url) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(APPLICATION_JSON);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(APPLICATION_JSON);
 
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("text", message);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("text", message);
 
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-            restTemplate.postForEntity(
-                url,
-                request,
-                String.class
-            );
-        } catch (Exception e) {
-            log.error("Slack 메시지 전송 중 오류 발생", e);
-        }
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+        restTemplate.postForEntity(
+            url,
+            request,
+            String.class
+        );
+    }
+
+    @Recover
+    public void sendMessageRecover(Exception e, String message, String url) {
+        log.error("Slack 메시지 전송 실패 : message={}, url={}", message, url, e);
     }
 }
