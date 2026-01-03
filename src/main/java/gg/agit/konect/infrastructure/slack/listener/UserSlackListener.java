@@ -6,8 +6,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import gg.agit.konect.domain.user.event.UserRegisterEvent;
-import gg.agit.konect.domain.user.event.UserWithdrawEvent;
+import gg.agit.konect.domain.user.event.UserRegisteredEvent;
+import gg.agit.konect.domain.user.event.UserWithdrawnEvent;
 import gg.agit.konect.infrastructure.slack.service.SlackNotificationService;
 import lombok.RequiredArgsConstructor;
 
@@ -19,13 +19,13 @@ public class UserSlackListener {
 
     @Async
     @TransactionalEventListener(phase = AFTER_COMMIT)
-    public void handleUserWithdraw(UserWithdrawEvent event) {
+    public void handleUserWithdrawn(UserWithdrawnEvent event) {
         slackNotificationService.notifyUserWithdraw(event.email());
     }
 
     @Async
     @TransactionalEventListener(phase = AFTER_COMMIT)
-    public void handleUserRegister(UserRegisterEvent event) {
+    public void handleUserRegistered(UserRegisteredEvent event) {
         slackNotificationService.notifyUserRegister(event.email());
     }
 }

@@ -22,8 +22,8 @@ import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.domain.user.enums.Provider;
-import gg.agit.konect.domain.user.event.UserRegisterEvent;
-import gg.agit.konect.domain.user.event.UserWithdrawEvent;
+import gg.agit.konect.domain.user.event.UserRegisteredEvent;
+import gg.agit.konect.domain.user.event.UserWithdrawnEvent;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
@@ -78,7 +78,7 @@ public class UserService {
 
         unRegisteredUserRepository.delete(tempUser);
 
-        applicationEventPublisher.publishEvent(UserRegisterEvent.from(savedUser.getEmail()));
+        applicationEventPublisher.publishEvent(UserRegisteredEvent.from(savedUser.getEmail()));
         return savedUser.getId();
     }
 
@@ -155,6 +155,6 @@ public class UserService {
         clubMemberRepository.deleteByUserId(userId);
         userRepository.delete(user);
 
-        applicationEventPublisher.publishEvent(UserWithdrawEvent.from(user.getEmail()));
+        applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
     }
 }
