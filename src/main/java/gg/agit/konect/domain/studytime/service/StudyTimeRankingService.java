@@ -12,6 +12,7 @@ import gg.agit.konect.domain.studytime.dto.StudyTimeRankingCondition;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse.InnerStudyTimeRanking;
 import gg.agit.konect.domain.studytime.enums.StudyTimeRankingSort;
+import gg.agit.konect.domain.studytime.enums.StudyTimeRankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,11 @@ public class StudyTimeRankingService {
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<StudyTimeRanking> rankingPage = fetchRankings(condition, pageable);
 
-        List<InnerStudyTimeRanking> rankings = toResponse(rankingsBaseRank(page, limit), rankingPage.getContent());
+        List<InnerStudyTimeRanking> rankings = toResponse(
+            rankingsBaseRank(page, limit),
+            rankingPage.getContent(),
+            condition.type()
+        );
 
         return StudyTimeRankingsResponse.of(
             rankingPage.getTotalElements(),
@@ -55,16 +60,44 @@ public class StudyTimeRankingService {
         return (page - 1) * limit + 1;
     }
 
-    private List<InnerStudyTimeRanking> toResponse(int baseRank, List<StudyTimeRanking> rankings) {
+    private List<InnerStudyTimeRanking> toResponse(
+        int baseRank,
+        List<StudyTimeRanking> rankings,
+        StudyTimeRankingType type
+    ) {
         AtomicInteger currentRank = new AtomicInteger(baseRank);
 
         return rankings.stream()
             .map(ranking -> new InnerStudyTimeRanking(
                 currentRank.getAndIncrement(),
-                ranking.getTargetName(),
+                resolveName(ranking, type),
                 ranking.getMonthlySeconds(),
                 ranking.getDailySeconds()
             ))
             .toList();
+    }
+
+    private String resolveName(StudyTimeRanking ranking, StudyTimeRankingType type) {
+        String name = ranking.getTargetName();
+
+        if (type == StudyTimeRankingType.PERSONAL) {
+            return maskPersonalName(name);
+        }
+
+        return name;
+    }
+
+    private String maskPersonalName(String name) {
+        if (name.length() == 1) {
+            return name;
+        }
+
+        if (name.length() == 2) {
+            return name.charAt(0) + "*";
+        }
+
+        return name.charAt(0)
+            + "*".repeat(name.length() - 2)
+            + name.substring(name.length() - 1);
     }
 }
