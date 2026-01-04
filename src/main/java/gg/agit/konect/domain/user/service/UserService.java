@@ -138,12 +138,6 @@ public class UserService {
 
         validateNotClubPresident(userId);
         validateNoUnpaidFees(userId);
-
-        // DB CASCADE가 자동으로 연관 데이터 삭제:
-        // - club_member, club_apply
-        // - council_notice_read_history
-        // - chat_room, chat_message
-        // - study_timer, study_time_*
         userRepository.delete(user);
 
         applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
