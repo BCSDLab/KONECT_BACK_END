@@ -26,7 +26,7 @@ public record StudyTimeRankingsResponse(
         @Schema(description = "순위", example = "1", requiredMode = REQUIRED)
         Integer rank,
 
-        @Schema(description = "이름(동아리 / 학번 두 자리 / 개인 - 개인 정보 보호를 위해 가운데 글자는 마스킹 처리)", example = "BCSD / 21 / 김*수", requiredMode = REQUIRED)
+        @Schema(description = "이름(동아리 / 학번 두 자리 / 개인)", example = "BCSD", requiredMode = REQUIRED)
         String name,
 
         @Schema(description = "이번 달 공부 시간(누적 초)", example = "120000", requiredMode = REQUIRED)
