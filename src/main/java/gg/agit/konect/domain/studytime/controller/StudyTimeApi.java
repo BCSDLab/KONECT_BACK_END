@@ -1,12 +1,16 @@
 package gg.agit.konect.domain.studytime.controller;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimeRankingCondition;
+import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
@@ -22,6 +26,28 @@ public interface StudyTimeApi {
     @Operation(summary = "순공 시간(일간, 월간, 통합)을 조회한다.")
     @GetMapping("/summary")
     ResponseEntity<StudyTimeSummaryResponse> getSummary(@UserId Integer userId);
+
+    @Operation(summary = "공부 시간 랭킹을 조회한다.", description = """
+        ## 설명
+        - 페이지네이션으로 랭킹을 조회합니다.
+        - sort는 월간(MONTHLY) 또는 일간(DAILY) 기준으로 정렬됩니다.
+        - 시간이 같은 경우 다른 기간의 시간을 기준으로 추가 정렬됩니다.
+        - name은 type에 따라 동아리명/학번(두 자리 숫자)/개인 이름으로 반환됩니다.
+
+        ## type (랭킹 기준)
+        - `CLUB`: 동아리 랭킹
+        - `STUDENT_NUMBER`: 학번 랭킹
+        - `PERSONAL`: 개인 랭킹
+
+        ## sort (정렬 기준)
+        - `MONTHLY`: 이번 달 기준 정렬
+        - `DAILY`: 오늘 기준 정렬
+        """)
+    @GetMapping("/rankings")
+    ResponseEntity<StudyTimeRankingsResponse> getRankings(
+        @Valid @ParameterObject @ModelAttribute StudyTimeRankingCondition condition,
+        @UserId Integer userId
+    );
 
     @Operation(summary = "스터디 타이머를 시작한다.", description = """
         ## 설명
