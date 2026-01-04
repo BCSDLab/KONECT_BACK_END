@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.user.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
+import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
 import java.util.List;
 
@@ -28,6 +29,8 @@ import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.repository.WithdrawnUserRepository;
+import gg.agit.konect.domain.user.model.WithdrawnUser;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +50,7 @@ public class UserService {
     private final ChatRoomRepository chatRoomRepository;
     private final StudyTimeQueryService studyTimeQueryService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final WithdrawnUserRepository withdrawnUserRepository;
 
     @Transactional
     public Integer signup(String email, Provider provider, SignupRequest request) {
@@ -141,20 +145,44 @@ public class UserService {
     public void deleteUser(Integer userId) {
         User user = userRepository.getById(userId);
 
+        validateNotClubPresident(userId);
+        validateNoUnpaidFees(userId);
+        archiveUserAsWithdrawn(user);
+        deleteUserRelatedData(userId);
+
+        userRepository.delete(user);
+
+        applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
+    }
+
+    private void validateNotClubPresident(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
         boolean isPresident = clubMembers.stream().anyMatch(ClubMember::isPresident);
         if (isPresident) {
             throw CustomException.of(CANNOT_DELETE_CLUB_PRESIDENT);
         }
+    }
 
-        // TODO. 메시지 데이터 히스토리 테이블로 이관 로직 추가
+    private void validateNoUnpaidFees(Integer userId) {
+        List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
+        boolean hasUnpaidFee = clubMembers.stream()
+            .anyMatch(member -> Boolean.FALSE.equals(member.getIsFeePaid()));
+
+        if (hasUnpaidFee) {
+            throw CustomException.of(CANNOT_DELETE_USER_WITH_UNPAID_FEE);
+        }
+    }
+
+    private void archiveUserAsWithdrawn(User user) {
+        WithdrawnUser withdrawnUser = WithdrawnUser.from(user);
+        withdrawnUserRepository.save(withdrawnUser);
+    }
+
+    private void deleteUserRelatedData(Integer userId) {
         chatMessageRepository.deleteByUserId(userId);
         chatRoomRepository.deleteByUserId(userId);
         councilNoticeReadRepository.deleteByUserId(userId);
         clubApplyRepository.deleteByUserId(userId);
         clubMemberRepository.deleteByUserId(userId);
-        userRepository.delete(user);
-
-        applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
     }
 }
