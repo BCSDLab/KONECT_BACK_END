@@ -10,10 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
-import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
 import gg.agit.konect.domain.studytime.service.StudyTimeQueryService;
@@ -29,8 +26,6 @@ import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
-import gg.agit.konect.domain.user.repository.WithdrawnUserRepository;
-import gg.agit.konect.domain.user.model.WithdrawnUser;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -45,12 +40,8 @@ public class UserService {
     private final UniversityRepository universityRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final CouncilNoticeReadRepository councilNoticeReadRepository;
-    private final ClubApplyRepository clubApplyRepository;
-    private final ChatMessageRepository chatMessageRepository;
-    private final ChatRoomRepository chatRoomRepository;
     private final StudyTimeQueryService studyTimeQueryService;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final WithdrawnUserRepository withdrawnUserRepository;
 
     @Transactional
     public Integer signup(String email, Provider provider, SignupRequest request) {
@@ -147,9 +138,12 @@ public class UserService {
 
         validateNotClubPresident(userId);
         validateNoUnpaidFees(userId);
-        archiveUserAsWithdrawn(user);
-        deleteUserRelatedData(userId);
 
+        // DB CASCADE가 자동으로 연관 데이터 삭제:
+        // - club_member, club_apply
+        // - council_notice_read_history
+        // - chat_room, chat_message
+        // - study_timer, study_time_*
         userRepository.delete(user);
 
         applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
@@ -171,18 +165,5 @@ public class UserService {
         if (hasUnpaidFee) {
             throw CustomException.of(CANNOT_DELETE_USER_WITH_UNPAID_FEE);
         }
-    }
-
-    private void archiveUserAsWithdrawn(User user) {
-        WithdrawnUser withdrawnUser = WithdrawnUser.from(user);
-        withdrawnUserRepository.save(withdrawnUser);
-    }
-
-    private void deleteUserRelatedData(Integer userId) {
-        chatMessageRepository.deleteByUserId(userId);
-        chatRoomRepository.deleteByUserId(userId);
-        councilNoticeReadRepository.deleteByUserId(userId);
-        clubApplyRepository.deleteByUserId(userId);
-        clubMemberRepository.deleteByUserId(userId);
     }
 }
