@@ -22,6 +22,7 @@ public enum ApiResponseCode {
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
     REQUIRED_CLUB_APPLY_ANSWER_MISSING(HttpStatus.BAD_REQUEST, "필수 가입 답변이 누락되었습니다."),
     CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
+    CANNOT_DELETE_USER_WITH_UNPAID_FEE(HttpStatus.BAD_REQUEST, "미납 회비가 있는 경우 탈퇴할 수 없습니다."),
     STUDY_TIMER_NOT_RUNNING(HttpStatus.BAD_REQUEST, "실행 중인 스터디 타이머가 없습니다."),
     STUDY_TIMER_TIME_MISMATCH(HttpStatus.BAD_REQUEST, "스터디 타이머 시간이 유효하지 않습니다."),
 
