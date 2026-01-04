@@ -22,6 +22,16 @@ public record StudyTimeRankingsResponse(
     @Schema(description = "공부 시간 랭킹 리스트", requiredMode = REQUIRED)
     List<InnerStudyTimeRanking> rankings
 ) {
+    public static StudyTimeRankingsResponse of(
+        Long totalCount,
+        Integer currentCount,
+        Integer totalPage,
+        Integer currentPage,
+        List<InnerStudyTimeRanking> rankings
+    ) {
+        return new StudyTimeRankingsResponse(totalCount, currentCount, totalPage, currentPage, rankings);
+    }
+
     public record InnerStudyTimeRanking(
         @Schema(description = "순위", example = "1", requiredMode = REQUIRED)
         Integer rank,
@@ -35,15 +45,5 @@ public record StudyTimeRankingsResponse(
         @Schema(description = "오늘 공부 시간(누적 초)", example = "5400", requiredMode = REQUIRED)
         Long dailyStudyTime
     ) {
-    }
-
-    public static StudyTimeRankingsResponse of(
-        Long totalCount,
-        Integer currentCount,
-        Integer totalPage,
-        Integer currentPage,
-        List<InnerStudyTimeRanking> rankings
-    ) {
-        return new StudyTimeRankingsResponse(totalCount, currentCount, totalPage, currentPage, rankings);
     }
 }
