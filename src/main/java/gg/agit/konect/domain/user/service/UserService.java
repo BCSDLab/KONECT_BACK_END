@@ -166,7 +166,7 @@ public class UserService {
     private void validateNoUnpaidFees(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
         boolean hasUnpaidFee = clubMembers.stream()
-            .anyMatch(member -> Boolean.FALSE.equals(member.getIsFeePaid()));
+            .anyMatch(ClubMember::hasUnpaidFee);
 
         if (hasUnpaidFee) {
             throw CustomException.of(CANNOT_DELETE_USER_WITH_UNPAID_FEE);
