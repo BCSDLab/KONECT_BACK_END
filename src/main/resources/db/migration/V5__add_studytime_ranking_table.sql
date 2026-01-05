@@ -1,12 +1,21 @@
+CREATE TABLE ranking_type
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(100)                        NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+);
+
 CREATE TABLE study_time_ranking
 (
-    ranking_type    ENUM('PERSONAL','STUDENT_NUMBER','CLUB') NOT NULL,
-    target_id       VARCHAR(20) NOT NULL,
-    target_name     VARCHAR(100),
-    daily_seconds   BIGINT      NOT NULL,
-    monthly_seconds BIGINT      NOT NULL,
-    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
-    updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    ranking_type_id INT                                 NOT NULL,
+    target_id       INT                                 NOT NULL,
+    target_name     VARCHAR(100)                        NOT NULL,
+    daily_seconds   BIGINT                              NOT NULL,
+    monthly_seconds BIGINT                              NOT NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    PRIMARY KEY (ranking_type, target_id)
+    PRIMARY KEY (ranking_type_id, target_id),
+    FOREIGN KEY (ranking_type_id) REFERENCES ranking_type (id) ON DELETE CASCADE
 );
