@@ -12,8 +12,6 @@ import gg.agit.konect.domain.studytime.model.RankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import gg.agit.konect.domain.studytime.repository.RankingTypeRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
-import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -29,8 +27,10 @@ public class StudyTimeRankingService {
         int limit = condition.limit();
         String rankingTypeName = condition.type().trim();
 
+        RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(rankingTypeName);
+
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<StudyTimeRanking> rankingPage = fetchRankings(condition, pageable, rankingTypeName);
+        Page<StudyTimeRanking> rankingPage = fetchRankings(condition, pageable, rankingType);
 
         return StudyTimeRankingsResponse.from(
             rankingPage,
@@ -42,11 +42,9 @@ public class StudyTimeRankingService {
     private Page<StudyTimeRanking> fetchRankings(
         StudyTimeRankingCondition condition,
         PageRequest pageable,
-        String rankingTypeName
+        RankingType rankingType
     ) {
         StudyTimeRankingSort sort = condition.sort();
-        RankingType rankingType = rankingTypeRepository.findByNameIgnoreCase(rankingTypeName)
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.INVALID_TYPE_VALUE));
         Integer rankingTypeId = rankingType.getId();
 
         if (sort == StudyTimeRankingSort.DAILY) {
