@@ -35,6 +35,7 @@ public interface StudyTimeApi {
         - 그 마저 같다면 id를 기준으로 정렬됩니다.
         - name은 type에 따라 동아리명/학번(두 자리 숫자)/개인 이름으로 반환됩니다.
         - 개인 이름의 경우 개인 정보 보호를 위해 첫번째와 마지막 글자만 표시됩니다.
+        - 랭킹은 로그인한 사용자의 대학교 기준으로 조회됩니다.
 
         ## type (랭킹 기준)
         - `CLUB`: 동아리 랭킹
@@ -44,6 +45,10 @@ public interface StudyTimeApi {
         ## sort (정렬 기준)
         - `MONTHLY`: 이번 달 기준 정렬
         - `DAILY`: 오늘 기준 정렬
+
+        ## 에러
+        - `INVALID_REQUEST_BODY` (400): type 값이 허용 범위를 벗어난 경우
+        - `NOT_FOUND_RANKING_TYPE` (404): 랭킹 타입이 존재하지 않는 경우
         """)
     @GetMapping("/rankings")
     ResponseEntity<StudyTimeRankingsResponse> getRankings(
