@@ -137,7 +137,7 @@ public class UserService {
         User user = userRepository.getById(userId);
 
         validateNotClubPresident(userId);
-        validateNoUnpaidFees(userId);
+        validatePaidFees(userId);
         userRepository.delete(user);
 
         applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
@@ -151,7 +151,7 @@ public class UserService {
         }
     }
 
-    private void validateNoUnpaidFees(Integer userId) {
+    private void validatePaidFees(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
         boolean hasUnpaidFee = clubMembers.stream()
             .anyMatch(ClubMember::hasUnpaidFee);
