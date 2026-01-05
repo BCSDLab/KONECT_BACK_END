@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-import gg.agit.konect.domain.studytime.enums.StudyTimeRankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import gg.agit.konect.domain.studytime.model.StudyTimeRankingId;
 
@@ -15,22 +14,22 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
     @Query("""
         SELECT r
         FROM StudyTimeRanking r
-        WHERE r.id.rankingType = :rankingType
+        WHERE r.id.rankingTypeId = :rankingTypeId
         ORDER BY r.dailySeconds DESC, r.monthlySeconds DESC, r.id.targetId ASC
         """)
     Page<StudyTimeRanking> findDailyRankings(
-        @Param("rankingType") StudyTimeRankingType rankingType,
+        @Param("rankingTypeId") Integer rankingTypeId,
         Pageable pageable
     );
 
     @Query("""
         SELECT r
         FROM StudyTimeRanking r
-        WHERE r.id.rankingType = :rankingType
+        WHERE r.id.rankingTypeId = :rankingTypeId
         ORDER BY r.monthlySeconds DESC, r.dailySeconds DESC, r.id.targetId ASC
         """)
     Page<StudyTimeRanking> findMonthlyRankings(
-        @Param("rankingType") StudyTimeRankingType rankingType,
+        @Param("rankingTypeId") Integer rankingTypeId,
         Pageable pageable
     );
 }

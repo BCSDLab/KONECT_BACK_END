@@ -1,4 +1,4 @@
-CREATE TABLE ranking_type
+CREATE TABLE IF NOT EXISTS ranking_type
 (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     name       VARCHAR(100)                        NOT NULL,
@@ -6,7 +6,12 @@ CREATE TABLE ranking_type
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE study_time_ranking
+INSERT INTO ranking_type (id, name)
+VALUES (1, 'CLUB'),
+       (2, 'STUDENT_NUMBER'),
+       (3, 'PERSONAL');
+
+CREATE TABLE IF NOT EXISTS study_time_ranking
 (
     ranking_type_id INT                                 NOT NULL,
     target_id       INT                                 NOT NULL,

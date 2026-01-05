@@ -3,11 +3,11 @@ package gg.agit.konect.domain.studytime.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import gg.agit.konect.domain.studytime.enums.StudyTimeRankingSort;
-import gg.agit.konect.domain.studytime.enums.StudyTimeRankingType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public record StudyTimeRankingCondition(
     @Schema(description = "페이지 번호", example = "1", defaultValue = "1")
@@ -20,8 +20,12 @@ public record StudyTimeRankingCondition(
     Integer limit,
 
     @Schema(description = "랭킹 기준", example = "CLUB", requiredMode = REQUIRED)
-    @NotNull(message = "랭킹 기준은 필수입니다.")
-    StudyTimeRankingType type,
+    @NotBlank(message = "랭킹 기준은 필수입니다.")
+    @Pattern(
+        regexp = "(?i)^(CLUB|STUDENT_NUMBER|PERSONAL)$",
+        message = "랭킹 기준은 CLUB, STUDENT_NUMBER, PERSONAL 중 하나여야 합니다."
+    )
+    String type,
 
     @Schema(description = "정렬 기준", example = "MONTHLY", defaultValue = "MONTHLY")
     StudyTimeRankingSort sort

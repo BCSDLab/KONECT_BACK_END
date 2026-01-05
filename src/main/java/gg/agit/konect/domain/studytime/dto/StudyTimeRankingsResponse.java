@@ -7,7 +7,6 @@ import java.util.stream.IntStream;
 
 import org.springframework.data.domain.Page;
 
-import gg.agit.konect.domain.studytime.enums.StudyTimeRankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -40,7 +39,7 @@ public record StudyTimeRankingsResponse(
     public static StudyTimeRankingsResponse from(
         Page<StudyTimeRanking> rankingPage,
         int baseRank,
-        StudyTimeRankingType type
+        String type
     ) {
         return new StudyTimeRankingsResponse(
             rankingPage.getTotalElements(),
@@ -54,7 +53,7 @@ public record StudyTimeRankingsResponse(
     public static List<InnerStudyTimeRanking> toRankings(
         int baseRank,
         List<StudyTimeRanking> rankings,
-        StudyTimeRankingType type
+        String type
     ) {
         return IntStream.range(0, rankings.size())
             .mapToObj(index -> {
@@ -69,10 +68,10 @@ public record StudyTimeRankingsResponse(
             .toList();
     }
 
-    private static String resolveName(StudyTimeRanking ranking, StudyTimeRankingType type) {
+    private static String resolveName(StudyTimeRanking ranking, String type) {
         String name = ranking.getTargetName();
 
-        if (type == StudyTimeRankingType.PERSONAL) {
+        if ("PERSONAL".equalsIgnoreCase(type)) {
             return maskPersonalName(name);
         }
 
@@ -88,7 +87,7 @@ public record StudyTimeRankingsResponse(
             return name.charAt(0) + "*";
         }
 
-        return name.substring(0, 1)
+        return name.charAt(0)
             + "*".repeat(name.length() - 2)
             + name.substring(name.length() - 1);
     }

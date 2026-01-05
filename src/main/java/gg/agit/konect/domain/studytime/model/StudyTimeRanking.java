@@ -21,7 +21,8 @@ public class StudyTimeRanking extends BaseEntity {
     @EmbeddedId
     private StudyTimeRankingId id;
 
-    @Column(name = "target_name", length = 100)
+    @NotNull
+    @Column(name = "target_name", nullable = false, length = 100)
     private String targetName;
 
     @NotNull

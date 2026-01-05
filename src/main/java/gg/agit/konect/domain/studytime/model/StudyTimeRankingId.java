@@ -4,11 +4,8 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.io.Serializable;
 
-import gg.agit.konect.domain.studytime.enums.StudyTimeRankingType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -20,16 +17,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = PROTECTED)
 public class StudyTimeRankingId implements Serializable {
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "ranking_type", nullable = false, length = 20)
-    private StudyTimeRankingType rankingType;
+    @Column(name = "ranking_type_id", nullable = false)
+    private Integer rankingTypeId;
 
-    @Column(name = "target_id", nullable = false, length = 20)
-    private String targetId;
+    @Column(name = "target_id", nullable = false)
+    private Integer targetId;
 
     @Builder
-    private StudyTimeRankingId(StudyTimeRankingType rankingType, String targetId) {
-        this.rankingType = rankingType;
+    private StudyTimeRankingId(Integer rankingTypeId, Integer targetId) {
+        this.rankingTypeId = rankingTypeId;
         this.targetId = targetId;
     }
 }
