@@ -8,8 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingCondition;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.enums.StudyTimeRankingSort;
+import gg.agit.konect.domain.studytime.model.RankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
+import gg.agit.konect.domain.studytime.repository.RankingTypeRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -18,29 +22,38 @@ import lombok.RequiredArgsConstructor;
 public class StudyTimeRankingService {
 
     private final StudyTimeRankingRepository studyTimeRankingRepository;
+    private final RankingTypeRepository rankingTypeRepository;
 
     public StudyTimeRankingsResponse getRankings(StudyTimeRankingCondition condition) {
         int page = condition.page();
         int limit = condition.limit();
+        String rankingTypeName = condition.type().trim();
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<StudyTimeRanking> rankingPage = fetchRankings(condition, pageable);
+        Page<StudyTimeRanking> rankingPage = fetchRankings(condition, pageable, rankingTypeName);
 
         return StudyTimeRankingsResponse.from(
             rankingPage,
             rankingsBaseRank(page, limit),
-            condition.type()
+            rankingTypeName
         );
     }
 
-    private Page<StudyTimeRanking> fetchRankings(StudyTimeRankingCondition condition, PageRequest pageable) {
+    private Page<StudyTimeRanking> fetchRankings(
+        StudyTimeRankingCondition condition,
+        PageRequest pageable,
+        String rankingTypeName
+    ) {
         StudyTimeRankingSort sort = condition.sort();
+        RankingType rankingType = rankingTypeRepository.findByNameIgnoreCase(rankingTypeName)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.INVALID_TYPE_VALUE));
+        Integer rankingTypeId = rankingType.getId();
 
         if (sort == StudyTimeRankingSort.DAILY) {
-            return studyTimeRankingRepository.findDailyRankings(condition.type(), pageable);
+            return studyTimeRankingRepository.findDailyRankings(rankingTypeId, pageable);
         }
 
-        return studyTimeRankingRepository.findMonthlyRankings(condition.type(), pageable);
+        return studyTimeRankingRepository.findMonthlyRankings(rankingTypeId, pageable);
     }
 
     private int rankingsBaseRank(int page, int limit) {
