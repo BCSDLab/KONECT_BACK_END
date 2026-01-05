@@ -20,12 +20,16 @@ public class StudyTimeRankingId implements Serializable {
     @Column(name = "ranking_type_id", nullable = false)
     private Integer rankingTypeId;
 
+    @Column(name = "university_id", nullable = false)
+    private Integer universityId;
+
     @Column(name = "target_id", nullable = false)
     private Integer targetId;
 
     @Builder
-    private StudyTimeRankingId(Integer rankingTypeId, Integer targetId) {
+    private StudyTimeRankingId(Integer rankingTypeId, Integer universityId, Integer targetId) {
         this.rankingTypeId = rankingTypeId;
+        this.universityId = universityId;
         this.targetId = targetId;
     }
 }

@@ -12,6 +12,8 @@ import gg.agit.konect.domain.studytime.model.RankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import gg.agit.konect.domain.studytime.repository.RankingTypeRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
+import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -21,16 +23,23 @@ public class StudyTimeRankingService {
 
     private final StudyTimeRankingRepository studyTimeRankingRepository;
     private final RankingTypeRepository rankingTypeRepository;
+    private final UserRepository userRepository;
 
-    public StudyTimeRankingsResponse getRankings(StudyTimeRankingCondition condition) {
+    public StudyTimeRankingsResponse getRankings(StudyTimeRankingCondition condition, Integer userId) {
         int page = condition.page();
         int limit = condition.limit();
         String rankingTypeName = condition.type().trim();
 
+        User user = userRepository.getById(userId);
         RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(rankingTypeName);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<StudyTimeRanking> rankingPage = fetchRankings(condition, pageable, rankingType);
+        Page<StudyTimeRanking> rankingPage = fetchRankings(
+            condition,
+            pageable,
+            rankingType,
+            user.getUniversity().getId()
+        );
 
         return StudyTimeRankingsResponse.from(
             rankingPage,
@@ -42,16 +51,17 @@ public class StudyTimeRankingService {
     private Page<StudyTimeRanking> fetchRankings(
         StudyTimeRankingCondition condition,
         PageRequest pageable,
-        RankingType rankingType
+        RankingType rankingType,
+        Integer universityId
     ) {
         StudyTimeRankingSort sort = condition.sort();
         Integer rankingTypeId = rankingType.getId();
 
         if (sort == StudyTimeRankingSort.DAILY) {
-            return studyTimeRankingRepository.findDailyRankings(rankingTypeId, pageable);
+            return studyTimeRankingRepository.findDailyRankings(rankingTypeId, universityId, pageable);
         }
 
-        return studyTimeRankingRepository.findMonthlyRankings(rankingTypeId, pageable);
+        return studyTimeRankingRepository.findMonthlyRankings(rankingTypeId, universityId, pageable);
     }
 
     private int rankingsBaseRank(int page, int limit) {

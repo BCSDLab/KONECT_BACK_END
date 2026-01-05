@@ -15,10 +15,12 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         SELECT r
         FROM StudyTimeRanking r
         WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
         ORDER BY r.dailySeconds DESC, r.monthlySeconds DESC, r.id.targetId ASC
         """)
     Page<StudyTimeRanking> findDailyRankings(
         @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId,
         Pageable pageable
     );
 
@@ -26,10 +28,12 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         SELECT r
         FROM StudyTimeRanking r
         WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
         ORDER BY r.monthlySeconds DESC, r.dailySeconds DESC, r.id.targetId ASC
         """)
     Page<StudyTimeRanking> findMonthlyRankings(
         @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId,
         Pageable pageable
     );
 }

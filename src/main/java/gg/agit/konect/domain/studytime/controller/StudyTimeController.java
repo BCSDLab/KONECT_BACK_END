@@ -40,7 +40,7 @@ public class StudyTimeController implements StudyTimeApi {
         @Valid @ParameterObject @ModelAttribute StudyTimeRankingCondition condition,
         @UserId Integer userId
     ) {
-        StudyTimeRankingsResponse response = studyTimeRankingService.getRankings(condition);
+        StudyTimeRankingsResponse response = studyTimeRankingService.getRankings(condition, userId);
 
         return ResponseEntity.ok(response);
     }
