@@ -3,7 +3,12 @@ package gg.agit.konect.domain.studytime.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
+import org.springframework.data.domain.Page;
+
+import gg.agit.konect.domain.studytime.enums.StudyTimeRankingType;
+import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record StudyTimeRankingsResponse(
@@ -30,6 +35,62 @@ public record StudyTimeRankingsResponse(
         List<InnerStudyTimeRanking> rankings
     ) {
         return new StudyTimeRankingsResponse(totalCount, currentCount, totalPage, currentPage, rankings);
+    }
+
+    public static StudyTimeRankingsResponse from(
+        Page<StudyTimeRanking> rankingPage,
+        int baseRank,
+        StudyTimeRankingType type
+    ) {
+        return new StudyTimeRankingsResponse(
+            rankingPage.getTotalElements(),
+            rankingPage.getNumberOfElements(),
+            rankingPage.getTotalPages(),
+            rankingPage.getNumber() + 1,
+            toRankings(baseRank, rankingPage.getContent(), type)
+        );
+    }
+
+    public static List<InnerStudyTimeRanking> toRankings(
+        int baseRank,
+        List<StudyTimeRanking> rankings,
+        StudyTimeRankingType type
+    ) {
+        return IntStream.range(0, rankings.size())
+            .mapToObj(index -> {
+                StudyTimeRanking ranking = rankings.get(index);
+                return new InnerStudyTimeRanking(
+                    baseRank + index,
+                    resolveName(ranking, type),
+                    ranking.getMonthlySeconds(),
+                    ranking.getDailySeconds()
+                );
+            })
+            .toList();
+    }
+
+    private static String resolveName(StudyTimeRanking ranking, StudyTimeRankingType type) {
+        String name = ranking.getTargetName();
+
+        if (type == StudyTimeRankingType.PERSONAL) {
+            return maskPersonalName(name);
+        }
+
+        return name;
+    }
+
+    private static String maskPersonalName(String name) {
+        if (name.length() == 1) {
+            return name;
+        }
+
+        if (name.length() == 2) {
+            return name.charAt(0) + "*";
+        }
+
+        return name.substring(0, 1)
+            + "*".repeat(name.length() - 2)
+            + name.substring(name.length() - 1);
     }
 
     public record InnerStudyTimeRanking(
