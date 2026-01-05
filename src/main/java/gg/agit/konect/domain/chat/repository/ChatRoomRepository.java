@@ -40,11 +40,4 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
            OR (cr.sender.id = :userId2 AND cr.receiver.id = :userId1)
         """)
     Optional<ChatRoom> findByTwoUsers(@Param("userId1") Integer userId1, @Param("userId2") Integer userId2);
-
-    @Modifying
-    @Query("""
-        DELETE FROM ChatRoom cr
-        WHERE cr.sender.id = :userId OR cr.receiver.id = :userId
-        """)
-    void deleteByUserId(@Param("userId") Integer userId);
 }

@@ -58,4 +58,8 @@ public class ClubMember extends BaseEntity {
     public boolean isSameUser(Integer userId) {
         return this.user.getId().equals(userId);
     }
+
+    public boolean hasUnpaidFee() {
+        return Boolean.FALSE.equals(this.isFeePaid);
+    }
 }

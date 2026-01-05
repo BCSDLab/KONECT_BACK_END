@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.user.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
+import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
 import java.util.List;
 
@@ -9,10 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
-import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
 import gg.agit.konect.domain.studytime.service.StudyTimeQueryService;
@@ -42,9 +40,6 @@ public class UserService {
     private final UniversityRepository universityRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final CouncilNoticeReadRepository councilNoticeReadRepository;
-    private final ClubApplyRepository clubApplyRepository;
-    private final ChatMessageRepository chatMessageRepository;
-    private final ChatRoomRepository chatRoomRepository;
     private final StudyTimeQueryService studyTimeQueryService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -141,20 +136,28 @@ public class UserService {
     public void deleteUser(Integer userId) {
         User user = userRepository.getById(userId);
 
+        validateNotClubPresident(userId);
+        validatePaidFees(userId);
+        userRepository.delete(user);
+
+        applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
+    }
+
+    private void validateNotClubPresident(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
         boolean isPresident = clubMembers.stream().anyMatch(ClubMember::isPresident);
         if (isPresident) {
             throw CustomException.of(CANNOT_DELETE_CLUB_PRESIDENT);
         }
+    }
 
-        // TODO. 메시지 데이터 히스토리 테이블로 이관 로직 추가
-        chatMessageRepository.deleteByUserId(userId);
-        chatRoomRepository.deleteByUserId(userId);
-        councilNoticeReadRepository.deleteByUserId(userId);
-        clubApplyRepository.deleteByUserId(userId);
-        clubMemberRepository.deleteByUserId(userId);
-        userRepository.delete(user);
+    private void validatePaidFees(Integer userId) {
+        List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
+        boolean hasUnpaidFee = clubMembers.stream()
+            .anyMatch(ClubMember::hasUnpaidFee);
 
-        applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
+        if (hasUnpaidFee) {
+            throw CustomException.of(CANNOT_DELETE_USER_WITH_UNPAID_FEE);
+        }
     }
 }
