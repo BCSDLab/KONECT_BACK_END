@@ -10,9 +10,3 @@ CREATE TABLE study_time_ranking
 
     PRIMARY KEY (ranking_type, target_id)
 );
-
-CREATE INDEX idx_daily
-    ON study_time_ranking (ranking_type, daily_seconds DESC, monthly_seconds DESC);
-
-CREATE INDEX idx_monthly
-    ON study_time_ranking (ranking_type, monthly_seconds DESC, daily_seconds DESC);
