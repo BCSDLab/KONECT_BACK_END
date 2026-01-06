@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingCondition;
 import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingCondition;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
@@ -61,13 +62,17 @@ public interface StudyTimeApi {
         ## 설명
         - 사용자의 동아리, 학번, 개인 랭킹을 조회합니다.
         - 랭킹은 로그인한 사용자의 대학교 기준으로 조회됩니다.
+        - 학번 랭킹은 입학 연도 기준으로 집계됩니다.
 
         ## 에러
         - `NOT_FOUND_RANKING_TYPE` (404): 랭킹 타입이 존재하지 않는 경우
         - `NOT_FOUND_USER` (404): 사용자 정보를 찾을 수 없는 경우
         """)
     @GetMapping("/rankings/me")
-    ResponseEntity<StudyTimeMyRankingsResponse> getMyRankings(@UserId Integer userId);
+    ResponseEntity<StudyTimeMyRankingsResponse> getMyRankings(
+        @Valid @ParameterObject @ModelAttribute StudyTimeMyRankingCondition condition,
+        @UserId Integer userId
+    );
 
     @Operation(summary = "스터디 타이머를 시작한다.", description = """
         ## 설명
