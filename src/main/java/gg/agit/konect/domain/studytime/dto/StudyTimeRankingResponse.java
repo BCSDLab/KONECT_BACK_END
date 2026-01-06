@@ -2,6 +2,7 @@ package gg.agit.konect.domain.studytime.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record StudyTimeRankingResponse(
@@ -17,4 +18,12 @@ public record StudyTimeRankingResponse(
     @Schema(description = "오늘 공부 시간(누적 초)", example = "5400", requiredMode = REQUIRED)
     Long dailyStudyTime
 ) {
+    public static StudyTimeRankingResponse from(StudyTimeRanking ranking, Integer rank) {
+        return new StudyTimeRankingResponse(
+            rank,
+            ranking.getTargetName(),
+            ranking.getMonthlySeconds(),
+            ranking.getDailySeconds()
+        );
+    }
 }

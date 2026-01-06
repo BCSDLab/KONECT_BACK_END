@@ -153,12 +153,7 @@ public class StudyTimeRankingService {
         Integer targetId
     ) {
         return studyTimeRankingRepository.findRanking(rankingTypeId, universityId, targetId)
-            .map(ranking -> new StudyTimeRankingResponse(
-                calculateRank(ranking, sort),
-                ranking.getTargetName(),
-                ranking.getMonthlySeconds(),
-                ranking.getDailySeconds()
-            ))
+            .map(ranking -> StudyTimeRankingResponse.from(ranking, calculateRank(ranking, sort)))
             .orElse(null);
     }
 
@@ -169,12 +164,7 @@ public class StudyTimeRankingService {
         String targetName
     ) {
         return studyTimeRankingRepository.findRankingByName(rankingTypeId, universityId, targetName)
-            .map(ranking -> new StudyTimeRankingResponse(
-                calculateRank(ranking, sort),
-                ranking.getTargetName(),
-                ranking.getMonthlySeconds(),
-                ranking.getDailySeconds()
-            ))
+            .map(ranking -> StudyTimeRankingResponse.from(ranking, calculateRank(ranking, sort)))
             .orElse(null);
     }
 
@@ -204,6 +194,6 @@ public class StudyTimeRankingService {
     }
 
     private String resolveStudentNumber(String studentNumber) {
-            return String.valueOf(Integer.parseInt(studentNumber.substring(0, 4)));
+        return String.valueOf(Integer.parseInt(studentNumber.substring(0, 4)));
     }
 }
