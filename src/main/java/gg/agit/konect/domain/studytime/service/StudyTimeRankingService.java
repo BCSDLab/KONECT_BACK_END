@@ -141,13 +141,7 @@ public class StudyTimeRankingService {
         StudyTimeRankingSort sort,
         String studentNumber
     ) {
-        Integer admissionYear = resolveAdmissionYear(studentNumber);
-
-        if (admissionYear == null) {
-            return null;
-        }
-
-        String targetName = formatStudentNumberName(admissionYear);
+        String targetName = resolveStudentNumber(studentNumber);
 
         return resolveRankingByName(rankingTypeId, universityId, sort, targetName);
     }
@@ -209,19 +203,7 @@ public class StudyTimeRankingService {
         return (int) higherCount + 1;
     }
 
-    private Integer resolveAdmissionYear(String studentNumber) {
-        if (studentNumber == null || studentNumber.length() < 4) {
-            return null;
-        }
-
-        try {
-            return Integer.parseInt(studentNumber.substring(0, 4));
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private String formatStudentNumberName(Integer admissionYear) {
-        return String.valueOf(admissionYear);
+    private String resolveStudentNumber(String studentNumber) {
+            return String.valueOf(Integer.parseInt(studentNumber.substring(0, 4)));
     }
 }
