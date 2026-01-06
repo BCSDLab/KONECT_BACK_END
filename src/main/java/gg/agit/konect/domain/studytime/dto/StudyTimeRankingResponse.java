@@ -9,7 +9,7 @@ public record StudyTimeRankingResponse(
     @Schema(description = "순위", example = "1", requiredMode = REQUIRED)
     Integer rank,
 
-    @Schema(description = "이름(동아리 / 학번 두 자리 / 개인)", example = "BCSD", requiredMode = REQUIRED)
+    @Schema(description = "이름(동아리 / 학번 앞 네 자리 / 개인)", example = "BCSD", requiredMode = REQUIRED)
     String name,
 
     @Schema(description = "이번 달 공부 시간(누적 초)", example = "120000", requiredMode = REQUIRED)
