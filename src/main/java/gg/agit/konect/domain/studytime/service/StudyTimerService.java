@@ -34,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class StudyTimerService {
 
-    private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 60L;
+    private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 3L;
 
     private final StudyTimeQueryService studyTimeQueryService;
     private final StudyTimerRepository studyTimerRepository;
