@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.studytime.service;
 
 import static gg.agit.konect.domain.studytime.model.RankingType.RANKING_TYPE_CLUB;
+import static gg.agit.konect.domain.studytime.model.RankingType.RANKING_TYPE_PERSONAL;
 import static java.util.stream.Collectors.*;
 
 import java.time.LocalDate;
@@ -78,6 +79,40 @@ public class StudyTimeSchedulerService {
             ranking.updateSeconds(
                 clubDailySecondsMap.getOrDefault(clubId, 0L),
                 clubMonthlySecondsMap.getOrDefault(clubId, 0L)
+            );
+        });
+    }
+
+    @Transactional
+    public void updatePersonalStudyTimeRanking() {
+        RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_PERSONAL);
+        List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findByRankingTypeId(rankingType.getId());
+
+        if (studyTimeRankings.isEmpty()) {
+            return;
+        }
+
+        List<Integer> userIds = studyTimeRankings.stream()
+            .map(StudyTimeRanking::getId)
+            .map(StudyTimeRankingId::getTargetId)
+            .toList();
+
+        LocalDate today = LocalDate.now();
+        LocalDate thisMonth = today.withDayOfMonth(1);
+
+        Map<Integer, Long> userDailySecondsMap = studyTimeDailyRepository.findByUserIds(userIds, today).stream()
+            .collect(toMap(studyTimeDaily -> studyTimeDaily.getUser().getId(), StudyTimeDaily::getTotalSeconds,
+                (existing, replacement) -> existing));
+
+        Map<Integer, Long> userMonthlySecondsMap = studyTimeMonthlyRepository.findByUserIds(userIds, thisMonth).stream()
+            .collect(toMap(studyTimeMonthly -> studyTimeMonthly.getUser().getId(), StudyTimeMonthly::getTotalSeconds,
+                (existing, replacement) -> existing));
+
+        studyTimeRankings.forEach(ranking -> {
+            Integer userId = ranking.getId().getTargetId();
+            ranking.updateSeconds(
+                userDailySecondsMap.getOrDefault(userId, 0L),
+                userMonthlySecondsMap.getOrDefault(userId, 0L)
             );
         });
     }
