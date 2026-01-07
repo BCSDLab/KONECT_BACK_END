@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingCondition;
+import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingCondition;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
@@ -33,7 +35,7 @@ public interface StudyTimeApi {
         - sort는 월간(MONTHLY) 또는 일간(DAILY) 기준으로 정렬됩니다.
         - 시간이 같은 경우 다른 기간의 시간을 기준으로 추가 정렬됩니다.
         - 그 마저 같다면 id를 기준으로 정렬됩니다.
-        - name은 type에 따라 동아리명/학번(두 자리 숫자)/개인 이름으로 반환됩니다.
+        - name은 type에 따라 동아리명/학번(앞 네 자리 숫자)/개인 이름으로 반환됩니다.
         - 개인 이름의 경우 개인 정보 보호를 위해 첫번째와 마지막 글자만 표시됩니다.
         - 랭킹은 로그인한 사용자의 대학교 기준으로 조회됩니다.
 
@@ -53,6 +55,22 @@ public interface StudyTimeApi {
     @GetMapping("/rankings")
     ResponseEntity<StudyTimeRankingsResponse> getRankings(
         @Valid @ParameterObject @ModelAttribute StudyTimeRankingCondition condition,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "내 공부 시간 랭킹을 조회한다.", description = """
+        ## 설명
+        - 사용자의 동아리, 학번, 개인 랭킹을 조회합니다.
+        - 랭킹은 로그인한 사용자의 대학교 기준으로 조회됩니다.
+        - 학번 랭킹은 입학 연도 기준으로 집계됩니다.
+
+        ## 에러
+        - `NOT_FOUND_RANKING_TYPE` (404): 랭킹 타입이 존재하지 않는 경우
+        - `NOT_FOUND_USER` (404): 사용자 정보를 찾을 수 없는 경우
+        """)
+    @GetMapping("/rankings/me")
+    ResponseEntity<StudyTimeMyRankingsResponse> getMyRankings(
+        @Valid @ParameterObject @ModelAttribute StudyTimeMyRankingCondition condition,
         @UserId Integer userId
     );
 

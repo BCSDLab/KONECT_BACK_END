@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.studytime.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,84 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         @Param("rankingTypeId") Integer rankingTypeId,
         @Param("universityId") Integer universityId,
         Pageable pageable
+    );
+
+    @Query("""
+        SELECT r
+        FROM StudyTimeRanking r
+        WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
+          AND r.id.targetId = :targetId
+        """)
+    Optional<StudyTimeRanking> findRanking(
+        @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId,
+        @Param("targetId") Integer targetId
+    );
+
+    @Query("""
+        SELECT r
+        FROM StudyTimeRanking r
+        WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
+          AND r.targetName = :targetName
+        """)
+    Optional<StudyTimeRanking> findRankingByName(
+        @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId,
+        @Param("targetName") String targetName
+    );
+
+    @Query("""
+        SELECT COUNT(r)
+        FROM StudyTimeRanking r
+        WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
+          AND (
+            r.dailySeconds > :dailySeconds
+            OR (
+                r.dailySeconds = :dailySeconds
+                AND r.monthlySeconds > :monthlySeconds
+            )
+            OR (
+                r.dailySeconds = :dailySeconds
+                AND r.monthlySeconds = :monthlySeconds
+                AND r.id.targetId < :targetId
+            )
+          )
+        """)
+    long countDailyHigherRankings(
+        @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId,
+        @Param("dailySeconds") Long dailySeconds,
+        @Param("monthlySeconds") Long monthlySeconds,
+        @Param("targetId") Integer targetId
+    );
+
+    @Query("""
+        SELECT COUNT(r)
+        FROM StudyTimeRanking r
+        WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
+          AND (
+            r.monthlySeconds > :monthlySeconds
+            OR (
+                r.monthlySeconds = :monthlySeconds
+                AND r.dailySeconds > :dailySeconds
+            )
+            OR (
+                r.monthlySeconds = :monthlySeconds
+                AND r.dailySeconds = :dailySeconds
+                AND r.id.targetId < :targetId
+            )
+          )
+        """)
+    long countMonthlyHigherRankings(
+        @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId,
+        @Param("monthlySeconds") Long monthlySeconds,
+        @Param("dailySeconds") Long dailySeconds,
+        @Param("targetId") Integer targetId
     );
 
     List<StudyTimeRanking> findByRankingTypeId(Integer rankingTypeId);
