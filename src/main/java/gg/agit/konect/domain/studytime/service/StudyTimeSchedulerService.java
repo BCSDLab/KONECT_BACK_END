@@ -39,6 +39,9 @@ public class StudyTimeSchedulerService {
     public void updateClubStudyTimeRanking() {
         RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_CLUB);
         List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findByRankingTypeId(rankingType.getId());
+        if (studyTimeRankings.isEmpty()) {
+            return ;
+        }
 
         List<Integer> clubIds = studyTimeRankings.stream()
             .map(StudyTimeRanking::getId)
