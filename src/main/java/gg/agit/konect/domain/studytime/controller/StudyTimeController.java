@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingCondition;
+import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingCondition;
 import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
@@ -41,6 +43,16 @@ public class StudyTimeController implements StudyTimeApi {
         @UserId Integer userId
     ) {
         StudyTimeRankingsResponse response = studyTimeRankingService.getRankings(condition, userId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<StudyTimeMyRankingsResponse> getMyRankings(
+        @Valid @ParameterObject @ModelAttribute StudyTimeMyRankingCondition condition,
+        @UserId Integer userId
+    ) {
+        StudyTimeMyRankingsResponse response = studyTimeRankingService.getMyRankings(condition, userId);
 
         return ResponseEntity.ok(response);
     }
