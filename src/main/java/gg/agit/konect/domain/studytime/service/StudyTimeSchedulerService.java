@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.studytime.service;
 
-import static gg.agit.konect.domain.studytime.model.RankingType.RANKING_TYPE_CLUB;
-import static gg.agit.konect.domain.studytime.model.RankingType.RANKING_TYPE_PERSONAL;
+import static gg.agit.konect.domain.studytime.model.RankingType.*;
 import static java.util.stream.Collectors.*;
 
 import java.time.LocalDate;
@@ -23,6 +22,8 @@ import gg.agit.konect.domain.studytime.repository.RankingTypeRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeDailyRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeMonthlyRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
+import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -31,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class StudyTimeSchedulerService {
 
     private final ClubMemberRepository clubMemberRepository;
+    private final UserRepository userRepository;
     private final StudyTimeDailyRepository studyTimeDailyRepository;
     private final StudyTimeMonthlyRepository studyTimeMonthlyRepository;
     private final StudyTimeRankingRepository studyTimeRankingRepository;
@@ -41,7 +43,7 @@ public class StudyTimeSchedulerService {
         RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_CLUB);
         List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findByRankingTypeId(rankingType.getId());
         if (studyTimeRankings.isEmpty()) {
-            return ;
+            return;
         }
 
         List<Integer> clubIds = studyTimeRankings.stream()
@@ -113,6 +115,80 @@ public class StudyTimeSchedulerService {
             ranking.updateSeconds(
                 userDailySecondsMap.getOrDefault(userId, 0L),
                 userMonthlySecondsMap.getOrDefault(userId, 0L)
+            );
+        });
+    }
+
+    @Transactional
+    public void updateStudentNumberStudyTimeRanking() {
+        record UniversityYear(Integer universityId, String year) {
+        }
+
+        RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_STUDENT_NUMBER);
+        List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findByRankingTypeId(rankingType.getId());
+
+        if (studyTimeRankings.isEmpty()) {
+            return;
+        }
+
+        List<UniversityYear> universityYears = studyTimeRankings.stream()
+            .map(ranking -> new UniversityYear(
+                ranking.getId().getUniversityId(),
+                ranking.getTargetName()
+            ))
+            .distinct()
+            .toList();
+
+        LocalDate today = LocalDate.now();
+        LocalDate thisMonth = today.withDayOfMonth(1);
+
+        Map<UniversityYear, List<Integer>> universityYearToUserIdsMap = universityYears.stream()
+            .collect(toMap(
+                universityYear -> universityYear,
+                universityYear -> userRepository.findUserIdsByUniversityAndStudentYear(
+                    universityYear.universityId(),
+                    universityYear.year()
+                ).stream()
+                    .map(User::getId)
+                    .toList()
+            ));
+
+        List<Integer> userIds = universityYearToUserIdsMap.values().stream()
+            .flatMap(List::stream)
+            .distinct()
+            .toList();
+
+        Map<Integer, Long> userDailySecondsMap = studyTimeDailyRepository.findByUserIds(userIds, today).stream()
+            .collect(toMap(studyTimeDaily -> studyTimeDaily.getUser().getId(), StudyTimeDaily::getTotalSeconds,
+                (existing, replacement) -> existing));
+        Map<Integer, Long> userMonthlySecondsMap = studyTimeMonthlyRepository.findByUserIds(userIds, thisMonth)
+            .stream()
+            .collect(toMap(studyTimeMonthly -> studyTimeMonthly.getUser().getId(), StudyTimeMonthly::getTotalSeconds,
+                (existing, replacement) -> existing));
+
+        Map<UniversityYear, Long> universityYearDailySecondsMap = universityYearToUserIdsMap.entrySet().stream()
+            .collect(toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue().stream()
+                    .mapToLong(userId -> userDailySecondsMap.getOrDefault(userId, 0L))
+                    .sum()
+            ));
+        Map<UniversityYear, Long> universityYearMonthlySecondsMap = universityYearToUserIdsMap.entrySet().stream()
+            .collect(toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue().stream()
+                    .mapToLong(userId -> userMonthlySecondsMap.getOrDefault(userId, 0L))
+                    .sum()
+            ));
+
+        studyTimeRankings.forEach(ranking -> {
+            UniversityYear key = new UniversityYear(
+                ranking.getId().getUniversityId(),
+                ranking.getTargetName()
+            );
+            ranking.updateSeconds(
+                universityYearDailySecondsMap.getOrDefault(key, 0L),
+                universityYearMonthlySecondsMap.getOrDefault(key, 0L)
             );
         });
     }
