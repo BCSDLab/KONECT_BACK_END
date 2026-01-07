@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,7 @@ import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
+import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -66,6 +68,21 @@ public interface StudyTimeApi {
         """)
     @PostMapping("/timers")
     ResponseEntity<Void> start(@UserId Integer userId);
+
+    @Operation(summary = "스터디 타이머 누적 시간을 동기화한다.", description = """
+        ## 설명
+        - 실행 중인 타이머 누적 시간을 서버에 반영합니다.
+        - 서버 시간과 클라이언트 누적 시간 차이가 1분 이상이면 실패합니다.
+
+        ## 에러
+        - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 1분 이상인 경우
+        - `STUDY_TIMER_NOT_RUNNING` (400): 실행 중인 타이머가 없는 경우
+        """)
+    @PatchMapping
+    ResponseEntity<Void> sync(
+        @UserId Integer userId,
+        @RequestBody @Valid StudyTimerSyncRequest request
+    );
 
     @Operation(summary = "스터디 타이머를 종료한다.", description = """
         ## 설명
