@@ -72,10 +72,10 @@ public interface StudyTimeApi {
     @Operation(summary = "스터디 타이머 누적 시간을 동기화한다.", description = """
         ## 설명
         - 실행 중인 타이머 누적 시간을 서버에 반영합니다.
-        - 서버 시간과 클라이언트 누적 시간 차이가 1분 이상이면 실패합니다.
+        - 서버 시간과 클라이언트 누적 시간 차이가 3초 이상이면 실패합니다.
 
         ## 에러
-        - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 1분 이상인 경우
+        - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 3초 이상인 경우
         - `STUDY_TIMER_NOT_RUNNING` (400): 실행 중인 타이머가 없는 경우
         """)
     @PatchMapping
@@ -91,7 +91,7 @@ public interface StudyTimeApi {
         - 일간, 월간, 총 누적 시간을 함께 갱신합니다.
 
         ## 에러
-        - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 1분 이상인 경우
+        - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 3초 이상인 경우
         - `STUDY_TIMER_NOT_RUNNING` (400): 실행 중인 타이머가 없는 경우
         """)
     @DeleteMapping("/timers")
