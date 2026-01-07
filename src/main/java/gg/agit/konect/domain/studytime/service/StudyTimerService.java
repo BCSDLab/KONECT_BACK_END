@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
+import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
 import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
 import gg.agit.konect.domain.studytime.model.StudyTimeSummary;
@@ -79,6 +80,25 @@ public class StudyTimerService {
         StudyTimeSummary summary = buildSummary(userId, sessionSeconds);
 
         return StudyTimerStopResponse.from(summary);
+    }
+
+    @Transactional(noRollbackFor = CustomException.class)
+    public void sync(Integer userId, StudyTimerSyncRequest request) {
+        StudyTimer studyTimer = studyTimerRepository.getByUserId(userId);
+
+        LocalDateTime syncedAt = LocalDateTime.now();
+        LocalDateTime sessionStartedAt = studyTimer.getStartedAt();
+
+        long serverSeconds = Duration.between(sessionStartedAt, syncedAt).getSeconds();
+        long clientSeconds = request.totalSeconds();
+
+        if (isElapsedTimeInvalid(serverSeconds, clientSeconds)) {
+            studyTimerRepository.delete(studyTimer);
+            throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
+        }
+
+        accumulateStudyTime(studyTimer.getUser(), studyTimer.getStartedAt(), syncedAt);
+        studyTimer.updateStartedAt(syncedAt);
     }
 
     private long accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {

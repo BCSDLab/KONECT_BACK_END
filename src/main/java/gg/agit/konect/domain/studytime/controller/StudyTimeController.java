@@ -12,6 +12,7 @@ import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
+import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
 import gg.agit.konect.domain.studytime.service.StudyTimeQueryService;
 import gg.agit.konect.domain.studytime.service.StudyTimeRankingService;
 import gg.agit.konect.domain.studytime.service.StudyTimerService;
@@ -48,6 +49,16 @@ public class StudyTimeController implements StudyTimeApi {
     @Override
     public ResponseEntity<Void> start(@UserId Integer userId) {
         studyTimerService.start(userId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> sync(
+        @UserId Integer userId,
+        @RequestBody @Valid StudyTimerSyncRequest request
+    ) {
+        studyTimerService.sync(userId, request);
 
         return ResponseEntity.ok().build();
     }
