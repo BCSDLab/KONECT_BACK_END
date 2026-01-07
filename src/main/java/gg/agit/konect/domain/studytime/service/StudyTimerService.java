@@ -70,10 +70,7 @@ public class StudyTimerService {
         long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
         long clientSeconds = request.totalSeconds();
 
-        if (isElapsedTimeInvalid(serverSeconds, clientSeconds)) {
-            studyTimerRepository.delete(studyTimer);
-            throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
-        }
+        validateElapsedTime(studyTimer, serverSeconds, clientSeconds);
 
         long sessionSeconds = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
         studyTimerRepository.delete(studyTimer);
@@ -92,10 +89,7 @@ public class StudyTimerService {
         long serverSeconds = Duration.between(sessionStartedAt, syncedAt).getSeconds();
         long clientSeconds = request.totalSeconds();
 
-        if (isElapsedTimeInvalid(serverSeconds, clientSeconds)) {
-            studyTimerRepository.delete(studyTimer);
-            throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
-        }
+        validateElapsedTime(studyTimer, serverSeconds, clientSeconds);
 
         accumulateStudyTime(studyTimer.getUser(), studyTimer.getStartedAt(), syncedAt);
         studyTimer.updateStartedAt(syncedAt);
@@ -189,7 +183,10 @@ public class StudyTimerService {
         return new StudyTimeSummary(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
     }
 
-    private boolean isElapsedTimeInvalid(long serverSeconds, long clientSeconds) {
-        return Math.abs(serverSeconds - clientSeconds) >= TIMER_MISMATCH_THRESHOLD_SECONDS;
+    private void validateElapsedTime(StudyTimer studyTimer, long serverSeconds, long clientSeconds) {
+        if (Math.abs(serverSeconds - clientSeconds) >= TIMER_MISMATCH_THRESHOLD_SECONDS) {
+            studyTimerRepository.delete(studyTimer);
+            throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
+        }
     }
 }
