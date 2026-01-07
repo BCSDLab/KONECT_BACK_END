@@ -45,4 +45,9 @@ public class StudyTimeRanking extends BaseEntity {
         this.dailySeconds = dailySeconds;
         this.monthlySeconds = monthlySeconds;
     }
+
+    public void updateSeconds(Long dailySeconds, Long monthlySeconds) {
+        this.dailySeconds = dailySeconds;
+        this.monthlySeconds = monthlySeconds;
+    }
 }

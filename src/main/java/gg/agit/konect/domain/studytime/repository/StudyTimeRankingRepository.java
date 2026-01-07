@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.studytime.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -36,4 +38,6 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         @Param("universityId") Integer universityId,
         Pageable pageable
     );
+
+    List<StudyTimeRanking> findByRankingTypeId(Integer rankingTypeId);
 }
