@@ -78,7 +78,7 @@ public interface StudyTimeApi {
         - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 3초 이상인 경우
         - `STUDY_TIMER_NOT_RUNNING` (400): 실행 중인 타이머가 없는 경우
         """)
-    @PatchMapping
+    @PatchMapping("/timers")
     ResponseEntity<Void> sync(
         @UserId Integer userId,
         @RequestBody @Valid StudyTimerSyncRequest request
