@@ -66,15 +66,21 @@ public class StudyTimerService {
         StudyTimer studyTimer = studyTimerRepository.getByUserId(userId);
 
         LocalDateTime endedAt = LocalDateTime.now();
-        LocalDateTime startedAt = studyTimer.getStartedAt();
-        long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
+        LocalDateTime lastSyncedAt = studyTimer.getStartedAt();
+        LocalDateTime sessionStartedAt = studyTimer.getCreatedAt();
+
+        if (sessionStartedAt == null) {
+            sessionStartedAt = lastSyncedAt;
+        }
+
+        long serverSeconds = Duration.between(sessionStartedAt, endedAt).getSeconds();
         long clientSeconds = request.totalSeconds();
 
         deleteTimerIfElapsedTimeInvalid(studyTimer, serverSeconds, clientSeconds);
 
-        long sessionSeconds = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
+        accumulateStudyTime(studyTimer.getUser(), lastSyncedAt, endedAt);
         studyTimerRepository.delete(studyTimer);
-        StudyTimeSummary summary = buildSummary(userId, sessionSeconds);
+        StudyTimeSummary summary = buildSummary(userId, serverSeconds);
 
         return StudyTimerStopResponse.from(summary);
     }
@@ -84,14 +90,18 @@ public class StudyTimerService {
         StudyTimer studyTimer = studyTimerRepository.getByUserId(userId);
 
         LocalDateTime syncedAt = LocalDateTime.now();
-        LocalDateTime sessionStartedAt = studyTimer.getStartedAt();
+        LocalDateTime lastSyncedAt = studyTimer.getStartedAt();
+        LocalDateTime sessionStartedAt = studyTimer.getCreatedAt();
+        if (sessionStartedAt == null) {
+            sessionStartedAt = lastSyncedAt;
+        }
 
         long serverSeconds = Duration.between(sessionStartedAt, syncedAt).getSeconds();
         long clientSeconds = request.totalSeconds();
 
         deleteTimerIfElapsedTimeInvalid(studyTimer, serverSeconds, clientSeconds);
 
-        accumulateStudyTime(studyTimer.getUser(), studyTimer.getStartedAt(), syncedAt);
+        accumulateStudyTime(studyTimer.getUser(), lastSyncedAt, syncedAt);
         studyTimer.updateStartedAt(syncedAt);
     }
 
