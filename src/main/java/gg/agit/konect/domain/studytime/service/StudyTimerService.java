@@ -101,7 +101,6 @@ public class StudyTimerService {
     private void accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
         long sessionSeconds = accumulateDailyAndMonthlySeconds(user, startedAt, endedAt);
         updateTotalSecondsIfNeeded(user, sessionSeconds);
-
     }
 
     private long accumulateDailyAndMonthlySeconds(User user, LocalDateTime startedAt, LocalDateTime endedAt) {

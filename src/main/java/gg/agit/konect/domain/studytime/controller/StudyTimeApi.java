@@ -38,16 +38,16 @@ public interface StudyTimeApi {
         - name은 type에 따라 동아리명/학번(두 자리 숫자)/개인 이름으로 반환됩니다.
         - 개인 이름의 경우 개인 정보 보호를 위해 첫번째와 마지막 글자만 표시됩니다.
         - 랭킹은 로그인한 사용자의 대학교 기준으로 조회됩니다.
-
+        
         ## type (랭킹 기준)
         - `CLUB`: 동아리 랭킹
         - `STUDENT_NUMBER`: 학번 랭킹
         - `PERSONAL`: 개인 랭킹
-
+        
         ## sort (정렬 기준)
         - `MONTHLY`: 이번 달 기준 정렬
         - `DAILY`: 오늘 기준 정렬
-
+        
         ## 에러
         - `INVALID_REQUEST_BODY` (400): type 값이 허용 범위를 벗어난 경우
         - `NOT_FOUND_RANKING_TYPE` (404): 랭킹 타입이 존재하지 않는 경우
@@ -62,7 +62,7 @@ public interface StudyTimeApi {
         ## 설명
         - 스터디 타이머를 시작합니다.
         - 사용자당 동시에 1개의 타이머만 허용됩니다.
-
+        
         ## 에러
         - `ALREADY_RUNNING_STUDY_TIMER` (409): 이미 실행 중인 타이머가 있는 경우
         """)
@@ -73,7 +73,7 @@ public interface StudyTimeApi {
         ## 설명
         - 실행 중인 타이머 누적 시간을 서버에 반영합니다.
         - 서버 시간과 클라이언트 누적 시간 차이가 3초 이상이면 실패합니다.
-
+        
         ## 에러
         - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 3초 이상인 경우
         - `STUDY_TIMER_NOT_RUNNING` (400): 실행 중인 타이머가 없는 경우
@@ -89,7 +89,7 @@ public interface StudyTimeApi {
         - 실행 중인 타이머를 종료하고 공부 시간을 집계합니다.
         - 시간이 자정을 넘기면 날짜별로 분할 집계합니다.
         - 일간, 월간, 총 누적 시간을 함께 갱신합니다.
-
+        
         ## 에러
         - `STUDY_TIMER_TIME_MISMATCH` (400): 클라이언트 누적 시간과 서버 시간 차이가 3초 이상인 경우
         - `STUDY_TIMER_NOT_RUNNING` (400): 실행 중인 타이머가 없는 경우
