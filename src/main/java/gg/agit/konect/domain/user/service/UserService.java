@@ -79,11 +79,14 @@ public class UserService {
 
     public UserInfoResponse getUserInfo(Integer userId) {
         User user = userRepository.getById(userId);
-        int joinedClubCount = clubMemberRepository.findAllByUserId(user.getId()).size();
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(user.getId());
+        boolean isClubManager = clubMembers.stream()
+            .anyMatch(ClubMember::isPresident);
+        int joinedClubCount = clubMembers.size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
         Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);
 
-        return UserInfoResponse.from(user, joinedClubCount, studyTime, unreadCouncilNoticeCount);
+        return UserInfoResponse.from(user, joinedClubCount, studyTime, unreadCouncilNoticeCount, isClubManager);
     }
 
     @Transactional
