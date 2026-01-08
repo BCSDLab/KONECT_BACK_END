@@ -32,7 +32,10 @@ public record UserInfoResponse(
     String studyTime,
 
     @Schema(description = "읽지 않은 총 동아리 연합회 공지", example = "1", requiredMode = REQUIRED)
-    Long unreadCouncilNoticeCount
+    Long unreadCouncilNoticeCount,
+
+    @Schema(description = "동아리 관리자 여부", example = "true", requiredMode = REQUIRED)
+    Boolean isClubManager
 ) {
 
     private static final long SECONDS_PER_HOUR = 3600;
@@ -42,7 +45,8 @@ public record UserInfoResponse(
         User user,
         Integer joinedClubCount,
         Long studyTime,
-        Long unreadCouncilNoticeCount
+        Long unreadCouncilNoticeCount,
+        Boolean isClubManager
     ) {
         return new UserInfoResponse(
             user.getName(),
@@ -53,7 +57,8 @@ public record UserInfoResponse(
             user.getImageUrl(),
             joinedClubCount,
             formatSecondsToHHmm(studyTime),
-            unreadCouncilNoticeCount
+            unreadCouncilNoticeCount,
+            isClubManager
         );
     }
 
