@@ -17,7 +17,7 @@ public class StudyTimeScheduler {
     private final StudyTimeSchedulerService studyTimeSchedulerService;
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
-    public void UpdateClubStudyTimeRanking() {
+    public void updateClubStudyTimeRanking() {
         try {
             studyTimeSchedulerService.updateClubStudyTimeRanking();
         } catch (Exception e) {
@@ -26,7 +26,7 @@ public class StudyTimeScheduler {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
-    public void UpdatePersonalStudyTimeRanking() {
+    public void updatePersonalStudyTimeRanking() {
         try {
             studyTimeSchedulerService.updatePersonalStudyTimeRanking();
         } catch (Exception e) {
@@ -35,7 +35,7 @@ public class StudyTimeScheduler {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
-    public void UpdateStudentNumberStudyTimeRanking() {
+    public void ipdateStudentNumberStudyTimeRanking() {
         try {
             studyTimeSchedulerService.updateStudentNumberStudyTimeRanking();
         } catch (Exception e) {
