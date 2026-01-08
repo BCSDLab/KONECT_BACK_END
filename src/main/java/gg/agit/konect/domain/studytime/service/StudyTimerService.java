@@ -98,11 +98,10 @@ public class StudyTimerService {
         studyTimer.updateStartedAt(syncedAt);
     }
 
-    private long accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
+    private void accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
         long sessionSeconds = accumulateDailyAndMonthlySeconds(user, startedAt, endedAt);
         updateTotalSecondsIfNeeded(user, sessionSeconds);
 
-        return sessionSeconds;
     }
 
     private long accumulateDailyAndMonthlySeconds(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
