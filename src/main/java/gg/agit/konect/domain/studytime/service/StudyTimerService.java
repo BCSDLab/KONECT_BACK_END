@@ -92,9 +92,6 @@ public class StudyTimerService {
         LocalDateTime syncedAt = LocalDateTime.now();
         LocalDateTime lastSyncedAt = studyTimer.getStartedAt();
         LocalDateTime sessionStartedAt = studyTimer.getCreatedAt();
-        if (sessionStartedAt == null) {
-            sessionStartedAt = lastSyncedAt;
-        }
 
         long serverSeconds = Duration.between(sessionStartedAt, syncedAt).getSeconds();
         long clientSeconds = request.totalSeconds();
