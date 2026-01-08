@@ -29,7 +29,7 @@ public class ClubRecruitmentImage extends BaseEntity {
     private Integer id;
 
     @NotNull
-    @Column(name = "url", nullable = false, length = 255)
+    @Column(name = "url", nullable = false)
     private String url;
 
     @NotNull
