@@ -33,4 +33,13 @@ public class StudyTimeScheduler {
             log.error("개인 공부 시간 랭킹 업데이트 과정에서 오류가 발생했습니다.", e);
         }
     }
+
+    @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    public void studentNumberStudyTimeRankingUpdate() {
+        try {
+            studyTimeSchedulerService.updateStudentNumberStudyTimeRanking();
+        } catch (Exception e) {
+            log.error("학번별 공부 시간 랭킹 업데이트 과정에서 오류가 발생했습니다.", e);
+        }
+    }
 }
