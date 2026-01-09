@@ -64,6 +64,15 @@ public class ClubApplyQuestion extends BaseEntity {
         this.questionOrder = questionOrder;
     }
 
+    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired, Integer questionOrder) {
+        return ClubApplyQuestion.builder()
+            .club(club)
+            .question(question)
+            .isRequired(isRequired)
+            .questionOrder(questionOrder)
+            .build();
+    }
+
     public void validateAnswer(String answer) {
         validateRequiredAnswer(answer);
     }

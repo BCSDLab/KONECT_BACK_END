@@ -124,46 +124,14 @@ public class ClubService {
         Map<Integer, ClubApplyQuestion> existingQuestionMap = existingQuestions.stream()
             .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
 
+        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests = request.questions();
         Set<Integer> requestedQuestionIds = new HashSet<>();
-        List<ClubApplyQuestion> questionsToCreate = new ArrayList<>();
 
-        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : request.questions()) {
-            Integer questionId = questionRequest.questionId();
+        updateQuestions(existingQuestionMap, questionRequests, requestedQuestionIds);
 
-            if (questionId == null) {
-                questionsToCreate.add(ClubApplyQuestion.builder()
-                    .club(club)
-                    .question(questionRequest.question())
-                    .isRequired(questionRequest.isRequired())
-                    .questionOrder(questionRequest.order())
-                    .build());
+        List<ClubApplyQuestion> questionsToCreate = createQuestions(club, questionRequests);
 
-                continue;
-            }
-
-            if (!requestedQuestionIds.add(questionId)) {
-                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION);
-            }
-
-            ClubApplyQuestion existingQuestion = existingQuestionMap.get(questionId);
-            if (existingQuestion == null) {
-                throw CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION);
-            }
-
-            existingQuestion.update(
-                questionRequest.question(),
-                questionRequest.isRequired(),
-                questionRequest.order()
-            );
-        }
-
-        List<ClubApplyQuestion> questionsToDelete = existingQuestions.stream()
-            .filter(question -> !requestedQuestionIds.contains(question.getId()))
-            .toList();
-
-        if (!questionsToDelete.isEmpty()) {
-            clubApplyQuestionRepository.deleteAll(questionsToDelete);
-        }
+        deleteQuestions(existingQuestions, requestedQuestionIds);
 
         if (!questionsToCreate.isEmpty()) {
             clubApplyQuestionRepository.saveAll(questionsToCreate);
@@ -189,18 +157,82 @@ public class ClubService {
             throw CustomException.of(ALREADY_APPLIED_CLUB);
         }
 
-        List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(
-            clubId
-        );
+        List<ClubApplyQuestion> questions =
+            clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);
         ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
         ClubApply apply = clubApplyRepository.save(ClubApply.of(club, user));
 
         List<ClubApplyAnswer> applyAnswers = answers.toEntities(apply);
+
         if (!applyAnswers.isEmpty()) {
             clubApplyAnswerRepository.saveAll(applyAnswers);
         }
 
         return ClubFeeInfoResponse.from(club);
+    }
+
+    private List<ClubApplyQuestion> createQuestions(
+        Club club,
+        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests
+    ) {
+        List<ClubApplyQuestion> questionsToCreate = new ArrayList<>();
+
+        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : questionRequests) {
+            if (questionRequest.questionId() != null) {
+                continue;
+            }
+
+            questionsToCreate.add(ClubApplyQuestion.of(
+                club,
+                questionRequest.question(),
+                questionRequest.isRequired(),
+                questionRequest.order())
+            );
+        }
+        return questionsToCreate;
+    }
+
+    private void updateQuestions(
+        Map<Integer, ClubApplyQuestion> existingQuestionMap,
+        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests,
+        Set<Integer> requestedQuestionIds
+    ) {
+        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : questionRequests) {
+            Integer questionId = questionRequest.questionId();
+
+            if (questionId == null) {
+                continue;
+            }
+
+            if (!requestedQuestionIds.add(questionId)) {
+                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION);
+            }
+
+            ClubApplyQuestion existingQuestion = existingQuestionMap.get(questionId);
+
+            if (existingQuestion == null) {
+                throw CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION);
+            }
+
+            existingQuestion.update(
+                questionRequest.question(),
+                questionRequest.isRequired(),
+                questionRequest.order()
+            );
+        }
+    }
+
+    private void deleteQuestions(
+        List<ClubApplyQuestion> existingQuestions,
+        Set<Integer> requestedQuestionIds
+    ) {
+        List<ClubApplyQuestion> questionsToDelete = existingQuestions.stream()
+            .filter(question -> !requestedQuestionIds.contains(question.getId()))
+            .toList();
+
+        if (!questionsToDelete.isEmpty()) {
+            clubApplyQuestionRepository.deleteAll(questionsToDelete);
+        }
     }
 }
