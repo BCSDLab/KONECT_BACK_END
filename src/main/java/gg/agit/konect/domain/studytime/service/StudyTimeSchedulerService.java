@@ -162,24 +162,24 @@ public class StudyTimeSchedulerService {
 
         RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_STUDENT_NUMBER);
 
-        Map<UniversityYear, Long> universityYearDailySecondsMap = studyTimeDailies.stream()
+        Map<UniversityYear, Long> universityYearDailyMap = studyTimeDailies.stream()
             .collect(groupingBy(
                 studyTimeDaily -> UniversityYear.of(studyTimeDaily.getUser()),
                 summingLong(StudyTimeDaily::getTotalSeconds)
             ));
-        Map<UniversityYear, Long> universityYearMonthlySecondsMap = studyTimeMonthlies.stream()
+        Map<UniversityYear, Long> universityYearMonthlyMap = studyTimeMonthlies.stream()
             .collect(groupingBy(
                 studyTimeMonthly -> UniversityYear.of(studyTimeMonthly.getUser()),
                 summingLong(StudyTimeMonthly::getTotalSeconds)
             ));
 
         Set<UniversityYear> universityYears = new HashSet<>();
-        universityYears.addAll(universityYearDailySecondsMap.keySet());
-        universityYears.addAll(universityYearMonthlySecondsMap.keySet());
+        universityYears.addAll(universityYearDailyMap.keySet());
+        universityYears.addAll(universityYearMonthlyMap.keySet());
 
         for (UniversityYear universityYear : universityYears) {
-            Long dailySeconds = universityYearDailySecondsMap.getOrDefault(universityYear, 0L);
-            Long monthlySeconds = universityYearMonthlySecondsMap.getOrDefault(universityYear, 0L);
+            Long dailySeconds = universityYearDailyMap.getOrDefault(universityYear, 0L);
+            Long monthlySeconds = universityYearMonthlyMap.getOrDefault(universityYear, 0L);
 
             Optional<StudyTimeRanking> studyTimeRanking = studyTimeRankingRepository.findRankingByName(
                 rankingType.getId(), universityYear.university().getId(), universityYear.year()
