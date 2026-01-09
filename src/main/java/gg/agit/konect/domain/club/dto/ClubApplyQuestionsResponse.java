@@ -19,10 +19,18 @@ public record ClubApplyQuestionsResponse(
         String question,
 
         @Schema(description = "필수 여부", example = "true", requiredMode = REQUIRED)
-        Boolean isRequired
+        Boolean isRequired,
+
+        @Schema(description = "문항 순서", example = "1", requiredMode = REQUIRED)
+        Integer order
     ) {
         public static ApplyQuestion from(ClubApplyQuestion question) {
-            return new ApplyQuestion(question.getId(), question.getQuestion(), question.getIsRequired());
+            return new ApplyQuestion(
+                question.getId(),
+                question.getQuestion(),
+                question.getIsRequired(),
+                question.getQuestionOrder()
+            );
         }
     }
 
