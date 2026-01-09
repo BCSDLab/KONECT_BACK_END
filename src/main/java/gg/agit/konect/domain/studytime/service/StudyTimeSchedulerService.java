@@ -259,4 +259,10 @@ public class StudyTimeSchedulerService {
         List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findAll();
         studyTimeRankings.forEach(ranking -> ranking.updateSeconds(0L, ranking.getMonthlySeconds()));
     }
+
+    @Transactional
+    public void resetStudyTimeRankingMonthly() {
+        List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findAll();
+        studyTimeRankings.forEach(ranking -> ranking.updateSeconds(ranking.getDailySeconds(), 0L));
+    }
 }
