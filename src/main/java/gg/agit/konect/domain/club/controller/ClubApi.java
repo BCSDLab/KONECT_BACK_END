@@ -55,6 +55,12 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "관리자 권한을 가지고 있는 동아리 리스트를 조회한다.")
+    @GetMapping("/managed")
+    ResponseEntity<ClubMembershipsResponse> getManagedClubs(
+        @UserId Integer userId
+    );
+
     @Operation(summary = "동아리 멤버 리스트를 조회한다.")
     @GetMapping("/{clubId}/members")
     ResponseEntity<ClubMembersResponse> getClubMembers(
