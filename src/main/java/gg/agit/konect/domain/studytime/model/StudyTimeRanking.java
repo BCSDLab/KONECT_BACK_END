@@ -63,8 +63,8 @@ public class StudyTimeRanking extends BaseEntity {
         return StudyTimeRanking.builder()
             .id(StudyTimeRankingId.of(rankingType, university, targetId))
             .targetName(targetName)
-            .dailySeconds(dailySeconds == null ? 0L : dailySeconds)
-            .monthlySeconds(monthlySeconds == null ? 0L : monthlySeconds)
+            .dailySeconds(dailySeconds)
+            .monthlySeconds(monthlySeconds)
             .build();
     }
 }
