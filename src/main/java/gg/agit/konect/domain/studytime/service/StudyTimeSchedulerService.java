@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,12 +101,33 @@ public class StudyTimeSchedulerService {
 
         RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_PERSONAL);
 
-        for (StudyTimeDaily studyTimeDaily : studyTimeDailies) {
-            User user = studyTimeDaily.getUser();
+        Map<Integer, Long> userDailySecondsMap = studyTimeDailies.stream()
+            .collect(toMap(
+                studyTimeDaily -> studyTimeDaily.getUser().getId(),
+                StudyTimeDaily::getTotalSeconds
+            ));
+        Map<Integer, Long> userMonthlySecondsMap = studyTimeMonthlies.stream()
+            .collect(toMap(
+                studyTimeMonthly -> studyTimeMonthly.getUser().getId(),
+                StudyTimeMonthly::getTotalSeconds
+            ));
+
+        List<User> users = Stream.concat(
+                studyTimeDailies.stream().map(StudyTimeDaily::getUser),
+                studyTimeMonthlies.stream().map(StudyTimeMonthly::getUser)
+            )
+            .distinct()
+            .toList();
+
+        for (User user : users) {
+            Integer userId = user.getId();
             University university = user.getUniversity();
 
+            Long dailySeconds = userDailySecondsMap.getOrDefault(userId, 0L);
+            Long monthlySeconds = userMonthlySecondsMap.getOrDefault(userId, 0L);
+
             Optional<StudyTimeRanking> studyTimeRanking = studyTimeRankingRepository.findRanking(
-                rankingType.getId(), university.getId(), user.getId()
+                rankingType.getId(), university.getId(), userId
             );
 
             if (studyTimeRanking.isEmpty()) {
@@ -113,38 +135,14 @@ public class StudyTimeSchedulerService {
                     StudyTimeRanking.of(
                         rankingType,
                         university,
-                        user.getId(),
+                        userId,
                         user.getName(),
-                        studyTimeDaily.getTotalSeconds(),
-                        null
+                        dailySeconds,
+                        monthlySeconds
                     )
                 );
             } else {
-                studyTimeRanking.get().updateDailySeconds(studyTimeDaily.getTotalSeconds());
-            }
-        }
-
-        for (StudyTimeMonthly studyTimeMonthly : studyTimeMonthlies) {
-            User user = studyTimeMonthly.getUser();
-            University university = user.getUniversity();
-
-            Optional<StudyTimeRanking> studyTimeRanking = studyTimeRankingRepository.findRanking(
-                rankingType.getId(), university.getId(), user.getId()
-            );
-
-            if (studyTimeRanking.isEmpty()) {
-                studyTimeRankingRepository.save(
-                    StudyTimeRanking.of(
-                        rankingType,
-                        university,
-                        user.getId(),
-                        user.getName(),
-                        null,
-                        studyTimeMonthly.getTotalSeconds()
-                    )
-                );
-            } else {
-                studyTimeRanking.get().updateMonthlySeconds(studyTimeMonthly.getTotalSeconds());
+                studyTimeRanking.get().updateSeconds(dailySeconds, monthlySeconds);
             }
         }
     }

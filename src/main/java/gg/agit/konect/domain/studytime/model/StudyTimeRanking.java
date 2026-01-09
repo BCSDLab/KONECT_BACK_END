@@ -52,28 +52,6 @@ public class StudyTimeRanking extends BaseEntity {
         this.monthlySeconds = monthlySeconds;
     }
 
-    public void updateDailySeconds(Long dailySeconds) {
-        this.dailySeconds = dailySeconds;
-    }
-
-    public void updateMonthlySeconds(Long monthlySeconds) {
-        this.monthlySeconds = monthlySeconds;
-    }
-
-    public static StudyTimeRanking of(
-        RankingType rankingType,
-        University university,
-        Integer targetId,
-        String targetName
-    ) {
-        return StudyTimeRanking.builder()
-            .id(StudyTimeRankingId.of(rankingType, university, targetId))
-            .targetName(targetName)
-            .dailySeconds(0L)
-            .monthlySeconds(0L)
-            .build();
-    }
-
     public static StudyTimeRanking of(
         RankingType rankingType,
         University university,
