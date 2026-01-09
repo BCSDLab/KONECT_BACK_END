@@ -130,6 +130,8 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         @Param("rankingTypeId") Integer rankingTypeId,
         @Param("universityId") Integer universityId
     );
+    
+    List<StudyTimeRanking> findAll();
 
     void save(StudyTimeRanking studyTimeRanking);
 }

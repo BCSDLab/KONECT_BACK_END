@@ -253,4 +253,10 @@ public class StudyTimeSchedulerService {
             );
         }
     }
+
+    @Transactional
+    public void resetStudyTimeRankingDaily() {
+        List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findAll();
+        studyTimeRankings.forEach(ranking -> ranking.updateSeconds(0L, ranking.getMonthlySeconds()));
+    }
 }
