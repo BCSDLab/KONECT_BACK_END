@@ -68,6 +68,12 @@ public class ClubApplyQuestion extends BaseEntity {
         validateRequiredAnswer(answer);
     }
 
+    public void update(String question, Boolean isRequired, Integer questionOrder) {
+        this.question = question;
+        this.isRequired = isRequired;
+        this.questionOrder = questionOrder;
+    }
+
     private void validateRequiredAnswer(String answer) {
         if (this.isRequired.equals(TRUE) && !StringUtils.hasText(answer)) {
             throw CustomException.of(REQUIRED_CLUB_APPLY_ANSWER_MISSING);

@@ -2,7 +2,12 @@ package gg.agit.konect.domain.club.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
@@ -108,6 +114,60 @@ public class ClubService {
             clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
+    }
+
+    @Transactional
+    public void updateApplyQuestions(Integer clubId, Integer userId, ClubApplyQuestionsUpdateRequest request) {
+        Club club = clubRepository.getById(clubId);
+        List<ClubApplyQuestion> existingQuestions =
+            clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);
+        Map<Integer, ClubApplyQuestion> existingQuestionMap = existingQuestions.stream()
+            .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
+
+        Set<Integer> requestedQuestionIds = new HashSet<>();
+        List<ClubApplyQuestion> questionsToCreate = new ArrayList<>();
+
+        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : request.questions()) {
+            Integer questionId = questionRequest.questionId();
+
+            if (questionId == null) {
+                questionsToCreate.add(ClubApplyQuestion.builder()
+                    .club(club)
+                    .question(questionRequest.question())
+                    .isRequired(questionRequest.isRequired())
+                    .questionOrder(questionRequest.order())
+                    .build());
+
+                continue;
+            }
+
+            if (!requestedQuestionIds.add(questionId)) {
+                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION);
+            }
+
+            ClubApplyQuestion existingQuestion = existingQuestionMap.get(questionId);
+            if (existingQuestion == null) {
+                throw CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION);
+            }
+
+            existingQuestion.update(
+                questionRequest.question(),
+                questionRequest.isRequired(),
+                questionRequest.order()
+            );
+        }
+
+        List<ClubApplyQuestion> questionsToDelete = existingQuestions.stream()
+            .filter(question -> !requestedQuestionIds.contains(question.getId()))
+            .toList();
+
+        if (!questionsToDelete.isEmpty()) {
+            clubApplyQuestionRepository.deleteAll(questionsToDelete);
+        }
+
+        if (!questionsToCreate.isEmpty()) {
+            clubApplyQuestionRepository.saveAll(questionsToCreate);
+        }
     }
 
     public ClubRecruitmentResponse getRecruitment(Integer clubId, Integer userId) {
