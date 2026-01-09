@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record ClubApplyQuestionsUpdateRequest(
+public record ClubApplyQuestionsReplaceRequest(
     @NotNull(message = "문항 목록은 필수 입력입니다.")
     @Valid
     @Schema(description = "설문 문항 목록", requiredMode = REQUIRED)

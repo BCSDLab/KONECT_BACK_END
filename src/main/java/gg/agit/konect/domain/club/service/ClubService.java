@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
-import gg.agit.konect.domain.club.dto.ClubApplyQuestionsUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
@@ -117,9 +117,9 @@ public class ClubService {
     }
 
     @Transactional
-    public void replaceApplyQuestions(Integer clubId, Integer userId, ClubApplyQuestionsUpdateRequest request) {
+    public void replaceApplyQuestions(Integer clubId, Integer userId, ClubApplyQuestionsReplaceRequest request) {
         Club club = clubRepository.getById(clubId);
-        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests = request.questions();
+        List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests = request.questions();
         Set<Integer> requestedQuestionIds = new HashSet<>();
 
         List<ClubApplyQuestion> existingQuestions =
@@ -174,11 +174,11 @@ public class ClubService {
 
     private List<ClubApplyQuestion> createQuestions(
         Club club,
-        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests
+        List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests
     ) {
         List<ClubApplyQuestion> questionsToCreate = new ArrayList<>();
 
-        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : questionRequests) {
+        for (ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest questionRequest : questionRequests) {
             if (questionRequest.questionId() != null) {
                 continue;
             }
@@ -194,10 +194,10 @@ public class ClubService {
 
     private void updateQuestions(
         Map<Integer, ClubApplyQuestion> existingQuestionMap,
-        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests,
+        List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests,
         Set<Integer> requestedQuestionIds
     ) {
-        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : questionRequests) {
+        for (ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest questionRequest : questionRequests) {
             Integer questionId = questionRequest.questionId();
 
             if (questionId == null) {

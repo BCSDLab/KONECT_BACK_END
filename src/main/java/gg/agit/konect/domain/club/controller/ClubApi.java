@@ -14,7 +14,7 @@ import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
-import gg.agit.konect.domain.club.dto.ClubApplyQuestionsUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
@@ -115,7 +115,7 @@ public interface ClubApi {
     @PutMapping("/{clubId}/questions")
     ResponseEntity<Void> replaceApplyQuestions(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubApplyQuestionsUpdateRequest request,
+        @Valid @RequestBody ClubApplyQuestionsReplaceRequest request,
         @UserId Integer userId
     );
 
