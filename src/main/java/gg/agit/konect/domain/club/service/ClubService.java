@@ -161,6 +161,7 @@ public class ClubService {
         ClubRecruitment clubRecruitment = ClubRecruitment.of(
             request.startDate(),
             request.endDate(),
+            request.isAlwaysRecruiting(),
             request.content(),
             club
         );
