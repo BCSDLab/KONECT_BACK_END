@@ -101,7 +101,7 @@ public interface ClubApi {
     );
 
     @ClubManagerOnly
-    @Operation(summary = "동아리 가입 문항을 덮어써서 수정한다.", description = """
+    @Operation(summary = "동아리 가입 문항을 덮어써서 대체한다.", description = """
         요청에 포함된 문항 목록이 최종 상태가 됩니다.
         - questionId가 있으면 수정
         - questionId가 없으면 생성
@@ -114,7 +114,7 @@ public interface ClubApi {
         - DUPLICATE_CLUB_APPLY_QUESTION_ORDER (409): 중복된 가입 문항 순서가 포함되어 있습니다.
         """)
     @PutMapping("/{clubId}/questions")
-    ResponseEntity<Void> updateApplyQuestions(
+    ResponseEntity<Void> replaceApplyQuestions(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubApplyQuestionsUpdateRequest request,
         @UserId Integer userId

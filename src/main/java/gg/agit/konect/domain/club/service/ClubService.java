@@ -117,7 +117,7 @@ public class ClubService {
     }
 
     @Transactional
-    public void updateApplyQuestions(Integer clubId, Integer userId, ClubApplyQuestionsUpdateRequest request) {
+    public void replaceApplyQuestions(Integer clubId, Integer userId, ClubApplyQuestionsUpdateRequest request) {
         Club club = clubRepository.getById(clubId);
         List<ClubApplyQuestion> existingQuestions =
             clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);

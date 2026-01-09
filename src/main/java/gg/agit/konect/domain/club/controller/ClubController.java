@@ -92,12 +92,12 @@ public class ClubController implements ClubApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateApplyQuestions(
+    public ResponseEntity<Void> replaceApplyQuestions(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubApplyQuestionsUpdateRequest request,
         @UserId Integer userId
     ) {
-        clubService.updateApplyQuestions(clubId, userId, request);
+        clubService.replaceApplyQuestions(clubId, userId, request);
         return ResponseEntity.noContent().build();
     }
 
