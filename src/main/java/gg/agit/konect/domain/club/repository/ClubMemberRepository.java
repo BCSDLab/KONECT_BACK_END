@@ -43,6 +43,4 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
 
     List<ClubMember> findByUserId(Integer userId);
-
-    void deleteByUserId(Integer userId);
 }
