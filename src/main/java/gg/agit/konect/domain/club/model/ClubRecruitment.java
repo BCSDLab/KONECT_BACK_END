@@ -75,4 +75,17 @@ public class ClubRecruitment extends BaseEntity {
         this.content = content;
         this.club = club;
     }
+
+    public static ClubRecruitment of(LocalDate startDate, LocalDate endDate, String content, Club club) {
+        return ClubRecruitment.builder()
+            .startDate(startDate)
+            .endDate(endDate)
+            .content(content)
+            .club(club)
+            .build();
+    }
+
+    public void addImage(ClubRecruitmentImage image) {
+        this.images.add(image);
+    }
 }

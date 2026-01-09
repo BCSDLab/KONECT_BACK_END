@@ -13,6 +13,10 @@ import gg.agit.konect.global.exception.CustomException;
 
 public interface ClubRecruitmentRepository extends Repository<ClubRecruitment, Integer> {
 
+    ClubRecruitment save(ClubRecruitment clubRecruitment);
+
+    boolean existsByClubId(Integer clubId);
+
     @Query("""
         SELECT c
         FROM ClubRecruitment c

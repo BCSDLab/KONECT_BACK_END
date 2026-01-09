@@ -48,4 +48,12 @@ public class ClubRecruitmentImage extends BaseEntity {
         this.displayOrder = displayOrder;
         this.clubRecruitment = clubRecruitment;
     }
+
+    public static ClubRecruitmentImage of(String url, Integer displayOrder, ClubRecruitment clubRecruitment) {
+        return ClubRecruitmentImage.builder()
+            .url(url)
+            .displayOrder(displayOrder)
+            .clubRecruitment(clubRecruitment)
+            .build();
+    }
 }

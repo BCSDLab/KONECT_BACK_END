@@ -43,4 +43,10 @@ public record ClubRecruitmentCreateRequest(
     ) {
 
     }
+
+    public List<String> getImageUrls() {
+        return images.stream()
+            .map(InnerClubRecruitmentImageRequest::url)
+            .toList();
+    }
 }

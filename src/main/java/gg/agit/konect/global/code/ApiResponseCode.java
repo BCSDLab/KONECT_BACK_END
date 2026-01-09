@@ -33,6 +33,7 @@ public enum ApiResponseCode {
     FORBIDDEN_CLUB_FEE_INFO(HttpStatus.FORBIDDEN, "회비 정보 조회 권한이 없습니다."),
     FORBIDDEN_CLUB_MEMBER_ACCESS(HttpStatus.FORBIDDEN, "동아리 멤버 조회 권한이 없습니다."),
     FORBIDDEN_COUNCIL_NOTICE_ACCESS(HttpStatus.FORBIDDEN, "총동아리연합회 공지사항 조회 권한이 없습니다."),
+    FORBIDDEN_CLUB_RECRUITMENT_CREATE(HttpStatus.FORBIDDEN, "동아리 모집 공고를 생성할 권한이 없습니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),
@@ -60,6 +61,7 @@ public enum ApiResponseCode {
     ALREADY_APPLIED_CLUB(HttpStatus.CONFLICT, "이미 동아리에 가입 신청을 완료했습니다."),
     DUPLICATE_CLUB_APPLY_QUESTION(HttpStatus.CONFLICT, "중복된 가입 문항이 포함되어 있습니다."),
     ALREADY_RUNNING_STUDY_TIMER(HttpStatus.CONFLICT, "이미 실행 중인 스터디 타이머가 있습니다."),
+    ALREADY_EXIST_CLUB_RECRUITMENT(HttpStatus.CONFLICT, "이미 동아리 모집 공고가 존재합니다."),
 
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
