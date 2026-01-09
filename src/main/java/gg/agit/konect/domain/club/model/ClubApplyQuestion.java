@@ -45,12 +45,23 @@ public class ClubApplyQuestion extends BaseEntity {
     @Column(name = "is_required", nullable = false)
     private Boolean isRequired;
 
+    @NotNull
+    @Column(name = "question_order", nullable = false)
+    private Integer questionOrder;
+
     @Builder
-    private ClubApplyQuestion(Integer id, Club club, String question, Boolean isRequired) {
+    private ClubApplyQuestion(
+        Integer id,
+        Club club,
+        String question,
+        Boolean isRequired,
+        Integer questionOrder
+    ) {
         this.id = id;
         this.club = club;
         this.question = question;
         this.isRequired = isRequired;
+        this.questionOrder = questionOrder;
     }
 
     public void validateAnswer(String answer) {
