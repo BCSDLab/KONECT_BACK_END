@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
@@ -88,6 +89,16 @@ public class ClubController implements ClubApi {
     ) {
         ClubApplyQuestionsResponse response = clubService.getApplyQuestions(clubId, userId);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> updateApplyQuestions(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubApplyQuestionsUpdateRequest request,
+        @UserId Integer userId
+    ) {
+        clubService.updateApplyQuestions(clubId, userId, request);
+        return ResponseEntity.noContent().build();
     }
 
     @Override

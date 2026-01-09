@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,12 +14,14 @@ import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
+import gg.agit.konect.global.auth.annotation.ClubManagerOnly;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -94,6 +97,26 @@ public interface ClubApi {
     @GetMapping("/{clubId}/questions")
     ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
         @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    );
+
+    @ClubManagerOnly
+    @Operation(summary = "동아리 가입 문항을 덮어써서 수정한다.", description = """
+        요청에 포함된 문항 목록이 최종 상태가 됩니다.
+        - questionId가 있으면 수정
+        - questionId가 없으면 생성
+        - 요청에 없는 기존 문항은 삭제됩니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB_APPLY_QUESTION (404): 존재하지 않는 가입 문항입니다.
+        - DUPLICATE_CLUB_APPLY_QUESTION (409): 중복된 id의 가입 문항이 포함되어 있습니다.
+        - DUPLICATE_CLUB_APPLY_QUESTION_ORDER (409): 중복된 가입 문항 순서가 포함되어 있습니다.
+        """)
+    @PutMapping("/{clubId}/questions")
+    ResponseEntity<Void> updateApplyQuestions(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubApplyQuestionsUpdateRequest request,
         @UserId Integer userId
     );
 
