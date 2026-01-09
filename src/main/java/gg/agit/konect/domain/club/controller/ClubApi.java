@@ -114,7 +114,16 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 모집 정보를 생성한다.")
+    @Operation(summary = "동아리 모집 정보를 생성한다.", description = """
+        동아리 회장만 모집 공고를 생성할 수 있습니다.
+        한 동아리당 하나의 모집 공고만 생성 가능합니다.
+
+        ## 에러
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
+        - FORBIDDEN_CLUB_RECRUITMENT_CREATE (403): 동아리 모집 공고를 생성할 권한이 없습니다.
+        - ALREADY_EXIST_CLUB_RECRUITMENT (409): 이미 동아리 모집 공고가 존재합니다.
+        """)
     @PostMapping("/{clubId}/recruitments")
     ResponseEntity<Void> createRecruitment(
         @RequestBody @Valid ClubRecruitmentCreateRequest request,
