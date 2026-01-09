@@ -4,11 +4,13 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIR
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
+import gg.agit.konect.domain.club.model.ClubRecruitmentImage;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubRecruitmentResponse(
@@ -32,12 +34,21 @@ public record ClubRecruitmentResponse(
     @Schema(description = "모집 공고 내용", example = "BCSD 2025학년도 2학기 신입 부원 모집...", requiredMode = REQUIRED)
     String content,
 
-    @Schema(description = "모집 공고 이미지 URL", example = "https://example.com/image.png", requiredMode = NOT_REQUIRED)
-    String imageUrl,
+    @Schema(description = "모집 공고 이미지 리스트", requiredMode = REQUIRED)
+    List<InnerRecruitmentImage> images,
 
     @Schema(description = "지원 여부", example = "false", requiredMode = REQUIRED)
     Boolean isApplied
 ) {
+    public record InnerRecruitmentImage(
+        @Schema(description = "모집 공고 이미지 URL", example = "https://example.com/image.png", requiredMode = NOT_REQUIRED)
+        String url
+    ) {
+        public static InnerRecruitmentImage from(ClubRecruitmentImage clubRecruitmentImage) {
+            return new InnerRecruitmentImage(clubRecruitmentImage.getUrl());
+        }
+    }
+
     public static ClubRecruitmentResponse of(ClubRecruitment recruitment, Boolean isApplied) {
         return new ClubRecruitmentResponse(
             recruitment.getId(),
@@ -46,7 +57,9 @@ public record ClubRecruitmentResponse(
             recruitment.getStartDate(),
             recruitment.getEndDate(),
             recruitment.getContent(),
-            recruitment.getImageUrl(),
+            recruitment.getImages().stream()
+                .map(InnerRecruitmentImage::from)
+                .toList(),
             isApplied
         );
     }

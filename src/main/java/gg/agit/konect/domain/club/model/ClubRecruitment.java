@@ -1,9 +1,12 @@
 package gg.agit.konect.domain.club.model;
 
+import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
@@ -12,6 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -50,12 +54,12 @@ public class ClubRecruitment extends BaseEntity {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "image_url", length = 255)
-    private String imageUrl;
-
     @OneToOne(fetch = LAZY)
     @JoinColumn(name = "club_id", nullable = false, updatable = false)
     private Club club;
+
+    @OneToMany(mappedBy = "clubRecruitment", fetch = LAZY, cascade = ALL, orphanRemoval = true)
+    private List<ClubRecruitmentImage> images = new ArrayList<>();
 
     @Builder
     private ClubRecruitment(
@@ -63,14 +67,12 @@ public class ClubRecruitment extends BaseEntity {
         LocalDate startDate,
         LocalDate endDate,
         String content,
-        String imageUrl,
         Club club
     ) {
         this.id = id;
         this.startDate = startDate;
         this.endDate = endDate;
         this.content = content;
-        this.imageUrl = imageUrl;
         this.club = club;
     }
 }
