@@ -120,5 +120,16 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
 
     List<StudyTimeRanking> findByRankingTypeId(Integer rankingTypeId);
 
+    @Query("""
+        SELECT COALESCE(MAX(r.id.targetId), 0)
+        FROM StudyTimeRanking r
+        WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
+        """)
+    Integer findMaxTargetId(
+        @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId
+    );
+
     void save(StudyTimeRanking studyTimeRanking);
 }
