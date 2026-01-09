@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.util.List;
@@ -78,6 +79,11 @@ public class ClubService {
 
     public ClubMembershipsResponse getJoinedClubs(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(userId);
+        return ClubMembershipsResponse.from(clubMembers);
+    }
+
+    public ClubMembershipsResponse getManagedClubs(Integer userId) {
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPosition(userId, PRESIDENT);
         return ClubMembershipsResponse.from(clubMembers);
     }
 

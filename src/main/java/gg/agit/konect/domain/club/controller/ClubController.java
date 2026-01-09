@@ -2,6 +2,7 @@ package gg.agit.konect.domain.club.controller;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,6 +51,14 @@ public class ClubController implements ClubApi {
     @Override
     public ResponseEntity<ClubMembershipsResponse> getJoinedClubs(@UserId Integer userId) {
         ClubMembershipsResponse response = clubService.getJoinedClubs(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ClubMembershipsResponse> getManagedClubs(
+        @UserId Integer userId
+    ) {
+        ClubMembershipsResponse response = clubService.getManagedClubs(userId);
         return ResponseEntity.ok(response);
     }
 
