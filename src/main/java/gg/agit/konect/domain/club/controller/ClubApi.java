@@ -106,6 +106,7 @@ public interface ClubApi {
         - questionId가 있으면 수정
         - questionId가 없으면 생성
         - 요청에 없는 기존 문항은 삭제됩니다.
+        - 저장된 문항 목록을 반환합니다.
 
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
@@ -113,7 +114,7 @@ public interface ClubApi {
         - DUPLICATE_CLUB_APPLY_QUESTION (409): 중복된 id의 가입 문항이 포함되어 있습니다.
         """)
     @PutMapping("/{clubId}/questions")
-    ResponseEntity<Void> replaceApplyQuestions(
+    ResponseEntity<ClubApplyQuestionsResponse> replaceApplyQuestions(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubApplyQuestionsReplaceRequest request,
         @UserId Integer userId

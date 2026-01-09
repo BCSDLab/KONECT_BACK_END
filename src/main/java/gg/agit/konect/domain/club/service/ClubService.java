@@ -117,7 +117,11 @@ public class ClubService {
     }
 
     @Transactional
-    public void replaceApplyQuestions(Integer clubId, Integer userId, ClubApplyQuestionsReplaceRequest request) {
+    public ClubApplyQuestionsResponse replaceApplyQuestions(
+        Integer clubId,
+        Integer userId,
+        ClubApplyQuestionsReplaceRequest request
+    ) {
         Club club = clubRepository.getById(clubId);
         List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests = request.questions();
         Set<Integer> requestedQuestionIds = new HashSet<>();
@@ -136,6 +140,11 @@ public class ClubService {
         if (!questionsToCreate.isEmpty()) {
             clubApplyQuestionRepository.saveAll(questionsToCreate);
         }
+
+        List<ClubApplyQuestion> questions =
+            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+
+        return ClubApplyQuestionsResponse.from(questions);
     }
 
     public ClubRecruitmentResponse getRecruitment(Integer clubId, Integer userId) {
