@@ -35,7 +35,7 @@ public class StudyTimeScheduler {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
-    public void ipdateStudentNumberStudyTimeRanking() {
+    public void updateStudentNumberStudyTimeRanking() {
         try {
             studyTimeSchedulerService.updateStudentNumberStudyTimeRanking();
         } catch (Exception e) {
