@@ -45,31 +45,24 @@ public class ClubApplyQuestion extends BaseEntity {
     @Column(name = "is_required", nullable = false)
     private Boolean isRequired;
 
-    @NotNull
-    @Column(name = "question_order", nullable = false)
-    private Integer questionOrder;
-
     @Builder
     private ClubApplyQuestion(
         Integer id,
         Club club,
         String question,
-        Boolean isRequired,
-        Integer questionOrder
+        Boolean isRequired
     ) {
         this.id = id;
         this.club = club;
         this.question = question;
         this.isRequired = isRequired;
-        this.questionOrder = questionOrder;
     }
 
-    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired, Integer questionOrder) {
+    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired) {
         return ClubApplyQuestion.builder()
             .club(club)
             .question(question)
             .isRequired(isRequired)
-            .questionOrder(questionOrder)
             .build();
     }
 
@@ -77,10 +70,9 @@ public class ClubApplyQuestion extends BaseEntity {
         validateRequiredAnswer(answer);
     }
 
-    public void update(String question, Boolean isRequired, Integer questionOrder) {
+    public void update(String question, Boolean isRequired) {
         this.question = question;
         this.isRequired = isRequired;
-        this.questionOrder = questionOrder;
     }
 
     private void validateRequiredAnswer(String answer) {

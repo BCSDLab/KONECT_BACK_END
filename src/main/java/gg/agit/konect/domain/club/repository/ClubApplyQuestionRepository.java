@@ -8,7 +8,7 @@ import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 
 public interface ClubApplyQuestionRepository extends Repository<ClubApplyQuestion, Integer> {
 
-    List<ClubApplyQuestion> findAllByClubIdOrderByQuestionOrderAsc(Integer clubId);
+    List<ClubApplyQuestion> findAllByClubIdOrderByIdAsc(Integer clubId);
 
     ClubApplyQuestion save(ClubApplyQuestion question);
 

@@ -111,7 +111,6 @@ public interface ClubApi {
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB_APPLY_QUESTION (404): 존재하지 않는 가입 문항입니다.
         - DUPLICATE_CLUB_APPLY_QUESTION (409): 중복된 id의 가입 문항이 포함되어 있습니다.
-        - DUPLICATE_CLUB_APPLY_QUESTION_ORDER (409): 중복된 가입 문항 순서가 포함되어 있습니다.
         """)
     @PutMapping("/{clubId}/questions")
     ResponseEntity<Void> replaceApplyQuestions(

@@ -111,7 +111,7 @@ public class ClubService {
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
         User user = userRepository.getById(userId);
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
     }
@@ -119,15 +119,13 @@ public class ClubService {
     @Transactional
     public void replaceApplyQuestions(Integer clubId, Integer userId, ClubApplyQuestionsUpdateRequest request) {
         Club club = clubRepository.getById(clubId);
-        List<ClubApplyQuestion> existingQuestions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);
-        Map<Integer, ClubApplyQuestion> existingQuestionMap = existingQuestions.stream()
-            .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
-
         List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests = request.questions();
         Set<Integer> requestedQuestionIds = new HashSet<>();
 
-        validateQuestionOrders(questionRequests);
+        List<ClubApplyQuestion> existingQuestions =
+            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+        Map<Integer, ClubApplyQuestion> existingQuestionMap = existingQuestions.stream()
+            .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
 
         updateQuestions(existingQuestionMap, questionRequests, requestedQuestionIds);
 
@@ -160,7 +158,7 @@ public class ClubService {
         }
 
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
         ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
         ClubApply apply = clubApplyRepository.save(ClubApply.of(club, user));
@@ -188,8 +186,7 @@ public class ClubService {
             questionsToCreate.add(ClubApplyQuestion.of(
                 club,
                 questionRequest.question(),
-                questionRequest.isRequired(),
-                questionRequest.order())
+                questionRequest.isRequired())
             );
         }
         return questionsToCreate;
@@ -219,23 +216,8 @@ public class ClubService {
 
             existingQuestion.update(
                 questionRequest.question(),
-                questionRequest.isRequired(),
-                questionRequest.order()
+                questionRequest.isRequired()
             );
-        }
-    }
-
-    private void validateQuestionOrders(
-        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests
-    ) {
-        Set<Integer> questionOrders = new HashSet<>();
-
-        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : questionRequests) {
-            Integer order = questionRequest.order();
-
-            if (!questionOrders.add(order)) {
-                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION_ORDER);
-            }
         }
     }
 
@@ -251,4 +233,5 @@ public class ClubService {
             clubApplyQuestionRepository.deleteAll(questionsToDelete);
         }
     }
+
 }
