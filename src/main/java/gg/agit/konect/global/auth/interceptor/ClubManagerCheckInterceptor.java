@@ -77,7 +77,7 @@ public class ClubManagerCheckInterceptor implements HandlerInterceptor {
             throw CustomException.of(INVALID_SESSION);
         }
 
-        return (Integer) userId;
+        return (Integer)userId;
     }
 
     private Integer getClubId(HttpServletRequest request) {
