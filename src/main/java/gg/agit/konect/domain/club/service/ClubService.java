@@ -104,7 +104,9 @@ public class ClubService {
 
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
         User user = userRepository.getById(userId);
-        List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
+        List<ClubApplyQuestion> questions =
+            clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(clubId);
+
         return ClubApplyQuestionsResponse.from(questions);
     }
 
@@ -127,7 +129,9 @@ public class ClubService {
             throw CustomException.of(ALREADY_APPLIED_CLUB);
         }
 
-        List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubId(clubId);
+        List<ClubApplyQuestion> questions = clubApplyQuestionRepository.findAllByClubIdOrderByQuestionOrderAsc(
+            clubId
+        );
         ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
         ClubApply apply = clubApplyRepository.save(ClubApply.of(club, user));
