@@ -127,6 +127,8 @@ public class ClubService {
         List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests = request.questions();
         Set<Integer> requestedQuestionIds = new HashSet<>();
 
+        validateQuestionOrders(questionRequests);
+
         updateQuestions(existingQuestionMap, questionRequests, requestedQuestionIds);
 
         List<ClubApplyQuestion> questionsToCreate = createQuestions(club, questionRequests);
@@ -220,6 +222,20 @@ public class ClubService {
                 questionRequest.isRequired(),
                 questionRequest.order()
             );
+        }
+    }
+
+    private void validateQuestionOrders(
+        List<ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest> questionRequests
+    ) {
+        Set<Integer> questionOrders = new HashSet<>();
+
+        for (ClubApplyQuestionsUpdateRequest.ApplyQuestionRequest questionRequest : questionRequests) {
+            Integer order = questionRequest.order();
+
+            if (!questionOrders.add(order)) {
+                throw CustomException.of(DUPLICATE_CLUB_APPLY_QUESTION_ORDER);
+            }
         }
     }
 
