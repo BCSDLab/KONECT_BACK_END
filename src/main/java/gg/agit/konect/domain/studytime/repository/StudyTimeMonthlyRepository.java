@@ -26,4 +26,6 @@ public interface StudyTimeMonthlyRepository extends Repository<StudyTimeMonthly,
     );
 
     StudyTimeMonthly save(StudyTimeMonthly studyTimeMonthly);
+
+    List<StudyTimeMonthly> findAllByStudyMonth(LocalDate studyMonth);
 }

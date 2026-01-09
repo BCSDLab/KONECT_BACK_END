@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import gg.agit.konect.domain.studytime.repository.RankingTypeRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeDailyRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeMonthlyRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
+import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -87,36 +89,64 @@ public class StudyTimeSchedulerService {
 
     @Transactional
     public void updatePersonalStudyTimeRanking() {
-        RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_PERSONAL);
-        List<StudyTimeRanking> studyTimeRankings = studyTimeRankingRepository.findByRankingTypeId(rankingType.getId());
+        LocalDate today = LocalDate.now();
+        LocalDate currentMonth = today.withDayOfMonth(1);
 
-        if (studyTimeRankings.isEmpty()) {
+        List<StudyTimeDaily> studyTimeDailies = studyTimeDailyRepository.findAllByStudyDate(today);
+        List<StudyTimeMonthly> studyTimeMonthlies = studyTimeMonthlyRepository.findAllByStudyMonth(currentMonth);
+        if (studyTimeDailies.isEmpty() && studyTimeMonthlies.isEmpty()) {
             return;
         }
 
-        List<Integer> userIds = studyTimeRankings.stream()
-            .map(StudyTimeRanking::getId)
-            .map(StudyTimeRankingId::getTargetId)
-            .toList();
+        RankingType rankingType = rankingTypeRepository.getByNameIgnoreCase(RANKING_TYPE_PERSONAL);
 
-        LocalDate today = LocalDate.now();
-        LocalDate thisMonth = today.withDayOfMonth(1);
+        for (StudyTimeDaily studyTimeDaily : studyTimeDailies) {
+            User user = studyTimeDaily.getUser();
+            University university = user.getUniversity();
 
-        Map<Integer, Long> userDailySecondsMap = studyTimeDailyRepository.findByUserIds(userIds, today).stream()
-            .collect(toMap(studyTimeDaily -> studyTimeDaily.getUser().getId(), StudyTimeDaily::getTotalSeconds,
-                (existing, replacement) -> existing));
-
-        Map<Integer, Long> userMonthlySecondsMap = studyTimeMonthlyRepository.findByUserIds(userIds, thisMonth).stream()
-            .collect(toMap(studyTimeMonthly -> studyTimeMonthly.getUser().getId(), StudyTimeMonthly::getTotalSeconds,
-                (existing, replacement) -> existing));
-
-        studyTimeRankings.forEach(ranking -> {
-            Integer userId = ranking.getId().getTargetId();
-            ranking.updateSeconds(
-                userDailySecondsMap.getOrDefault(userId, 0L),
-                userMonthlySecondsMap.getOrDefault(userId, 0L)
+            Optional<StudyTimeRanking> studyTimeRanking = studyTimeRankingRepository.findRanking(
+                rankingType.getId(), university.getId(), user.getId()
             );
-        });
+
+            if (studyTimeRanking.isEmpty()) {
+                studyTimeRankingRepository.save(
+                    StudyTimeRanking.of(
+                        rankingType,
+                        university,
+                        user.getId(),
+                        user.getName(),
+                        studyTimeDaily.getTotalSeconds(),
+                        null
+                    )
+                );
+            } else {
+                studyTimeRanking.get().updateDailySeconds(studyTimeDaily.getTotalSeconds());
+            }
+        }
+
+        for (StudyTimeMonthly studyTimeMonthly : studyTimeMonthlies) {
+            User user = studyTimeMonthly.getUser();
+            University university = user.getUniversity();
+
+            Optional<StudyTimeRanking> studyTimeRanking = studyTimeRankingRepository.findRanking(
+                rankingType.getId(), university.getId(), user.getId()
+            );
+
+            if (studyTimeRanking.isEmpty()) {
+                studyTimeRankingRepository.save(
+                    StudyTimeRanking.of(
+                        rankingType,
+                        university,
+                        user.getId(),
+                        user.getName(),
+                        null,
+                        studyTimeMonthly.getTotalSeconds()
+                    )
+                );
+            } else {
+                studyTimeRanking.get().updateMonthlySeconds(studyTimeMonthly.getTotalSeconds());
+            }
+        }
     }
 
     @Transactional
@@ -146,9 +176,9 @@ public class StudyTimeSchedulerService {
             .collect(toMap(
                 universityYear -> universityYear,
                 universityYear -> userRepository.findUserIdsByUniversityAndStudentYear(
-                    universityYear.universityId(),
-                    universityYear.year()
-                ).stream()
+                        universityYear.universityId(),
+                        universityYear.year()
+                    ).stream()
                     .map(User::getId)
                     .toList()
             ));

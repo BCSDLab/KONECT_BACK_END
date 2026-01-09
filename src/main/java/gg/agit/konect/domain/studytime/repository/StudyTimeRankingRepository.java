@@ -119,4 +119,6 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
     );
 
     List<StudyTimeRanking> findByRankingTypeId(Integer rankingTypeId);
+
+    void save(StudyTimeRanking studyTimeRanking);
 }

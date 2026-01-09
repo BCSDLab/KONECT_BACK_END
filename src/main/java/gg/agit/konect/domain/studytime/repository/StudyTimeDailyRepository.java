@@ -26,4 +26,6 @@ public interface StudyTimeDailyRepository extends Repository<StudyTimeDaily, Int
         @Param("userIds") List<Integer> userIds,
         @Param("studyDate") LocalDate studyDate
     );
+
+    List<StudyTimeDaily> findAllByStudyDate(LocalDate studyDate);
 }
