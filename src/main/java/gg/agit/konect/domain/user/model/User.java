@@ -42,7 +42,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = PROTECTED)
 public class User extends BaseEntity {
 
-    private final Integer STUDENT_NUMBER_YEAR_MAX_LENGTH = 4;
+    private static final Integer STUDENT_NUMBER_YEAR_MAX_LENGTH = 4;
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
