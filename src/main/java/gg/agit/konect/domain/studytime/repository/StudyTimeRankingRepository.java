@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.studytime.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -116,4 +117,19 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         @Param("dailySeconds") Long dailySeconds,
         @Param("targetId") Integer targetId
     );
+
+    @Query("""
+        SELECT COALESCE(MAX(r.id.targetId), 0)
+        FROM StudyTimeRanking r
+        WHERE r.id.rankingTypeId = :rankingTypeId
+          AND r.id.universityId = :universityId
+        """)
+    Integer findMaxTargetId(
+        @Param("rankingTypeId") Integer rankingTypeId,
+        @Param("universityId") Integer universityId
+    );
+
+    List<StudyTimeRanking> findAll();
+
+    void save(StudyTimeRanking studyTimeRanking);
 }

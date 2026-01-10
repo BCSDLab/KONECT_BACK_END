@@ -8,6 +8,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import gg.agit.konect.global.auth.interceptor.ClubManagerCheckInterceptor;
 import gg.agit.konect.global.auth.interceptor.LoginCheckInterceptor;
 import gg.agit.konect.global.auth.resolver.LoginUserArgumentResolver;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final CorsProperties corsProperties;
     private final LoginCheckInterceptor loginCheckInterceptor;
+    private final ClubManagerCheckInterceptor clubManagerCheckInterceptor;
     private final LoginUserArgumentResolver loginUserArgumentResolver;
 
     @Override
@@ -40,6 +42,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginCheckInterceptor)
+            .addPathPatterns("/**")
+            .excludePathPatterns(SecurityPaths.PUBLIC_PATHS);
+        registry.addInterceptor(clubManagerCheckInterceptor)
             .addPathPatterns("/**")
             .excludePathPatterns(SecurityPaths.PUBLIC_PATHS);
     }

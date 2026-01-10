@@ -34,6 +34,7 @@ public enum ApiResponseCode {
     // 403 Forbidden (접근 권한 없음)
     FORBIDDEN_CHAT_ROOM_ACCESS(HttpStatus.FORBIDDEN, "채팅방에 접근할 권한이 없습니다."),
     FORBIDDEN_CLUB_FEE_INFO(HttpStatus.FORBIDDEN, "회비 정보 조회 권한이 없습니다."),
+    FORBIDDEN_CLUB_MANAGER_ACCESS(HttpStatus.FORBIDDEN, "동아리 매니저 권한이 없습니다."),
     FORBIDDEN_CLUB_MEMBER_ACCESS(HttpStatus.FORBIDDEN, "동아리 멤버 조회 권한이 없습니다."),
     FORBIDDEN_COUNCIL_NOTICE_ACCESS(HttpStatus.FORBIDDEN, "총동아리연합회 공지사항 조회 권한이 없습니다."),
     FORBIDDEN_CLUB_RECRUITMENT_CREATE(HttpStatus.FORBIDDEN, "동아리 모집 공고를 생성할 권한이 없습니다."),
