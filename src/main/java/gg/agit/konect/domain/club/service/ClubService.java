@@ -25,6 +25,7 @@ import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
+import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -288,6 +289,32 @@ public class ClubService {
     private void validateClubManager(ClubMember clubMember) {
         if (!clubMember.isPresident()) {
             throw CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE);
+        }
+    }
+
+    @Transactional
+    public void updateRecruitment(Integer clubId, Integer userId, ClubRecruitmentUpdateRequest request) {
+        Club club = clubRepository.getById(clubId);
+        User user = userRepository.getById(userId);
+        ClubRecruitment clubRecruitment = clubRecruitmentRepository.getByClubId(clubId);
+
+        clubRecruitment.update(
+            request.startDate(),
+            request.endDate(),
+            request.isAlwaysRecruiting(),
+            request.content()
+        );
+
+        clubRecruitment.getImages().clear();
+
+        List<String> imageUrls = request.getImageUrls();
+        for (int index = 0; index < imageUrls.size(); index++) {
+            ClubRecruitmentImage newImage = ClubRecruitmentImage.of(
+                imageUrls.get(index),
+                index,
+                clubRecruitment
+            );
+            clubRecruitment.addImage(newImage);
         }
     }
 }

@@ -126,4 +126,23 @@ public class ClubRecruitment extends BaseEntity {
     public void addImage(ClubRecruitmentImage image) {
         this.images.add(image);
     }
+
+    public void update(
+        LocalDate startDate,
+        LocalDate endDate,
+        Boolean isAlwaysRecruiting,
+        String content
+    ) {
+        if (isAlwaysRecruiting) {
+            validateAlwaysRecruitingDates(startDate, endDate);
+        } else {
+            validateRequiredDates(startDate, endDate);
+            validateStartDateBeforeEndDate(startDate, endDate);
+        }
+
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.isAlwaysRecruiting = isAlwaysRecruiting;
+        this.content = content;
+    }
 }
