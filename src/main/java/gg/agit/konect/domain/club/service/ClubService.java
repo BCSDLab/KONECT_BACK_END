@@ -296,8 +296,13 @@ public class ClubService {
     public void updateRecruitment(Integer clubId, Integer userId, ClubRecruitmentUpdateRequest request) {
         Club club = clubRepository.getById(clubId);
         User user = userRepository.getById(userId);
-        ClubRecruitment clubRecruitment = clubRecruitmentRepository.getByClubId(clubId);
 
+        ClubMember clubMember = clubMemberRepository.findByClubIdAndUserId(club.getId(), user.getId())
+            .orElseThrow(() -> CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE));
+
+        validateClubManager(clubMember);
+
+        ClubRecruitment clubRecruitment = clubRecruitmentRepository.getByClubId(clubId);
         clubRecruitment.update(
             request.startDate(),
             request.endDate(),
@@ -306,7 +311,6 @@ public class ClubService {
         );
 
         clubRecruitment.getImages().clear();
-
         List<String> imageUrls = request.getImageUrls();
         for (int index = 0; index < imageUrls.size(); index++) {
             ClubRecruitmentImage newImage = ClubRecruitmentImage.of(
