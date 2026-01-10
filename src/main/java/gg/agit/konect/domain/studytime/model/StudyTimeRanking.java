@@ -2,6 +2,7 @@ package gg.agit.konect.domain.studytime.model;
 
 import static lombok.AccessLevel.PROTECTED;
 
+import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
@@ -44,5 +45,26 @@ public class StudyTimeRanking extends BaseEntity {
         this.targetName = targetName;
         this.dailySeconds = dailySeconds;
         this.monthlySeconds = monthlySeconds;
+    }
+
+    public void updateSeconds(Long dailySeconds, Long monthlySeconds) {
+        this.dailySeconds = dailySeconds;
+        this.monthlySeconds = monthlySeconds;
+    }
+
+    public static StudyTimeRanking of(
+        RankingType rankingType,
+        University university,
+        Integer targetId,
+        String targetName,
+        Long dailySeconds,
+        Long monthlySeconds
+    ) {
+        return StudyTimeRanking.builder()
+            .id(StudyTimeRankingId.of(rankingType, university, targetId))
+            .targetName(targetName)
+            .dailySeconds(dailySeconds)
+            .monthlySeconds(monthlySeconds)
+            .build();
     }
 }

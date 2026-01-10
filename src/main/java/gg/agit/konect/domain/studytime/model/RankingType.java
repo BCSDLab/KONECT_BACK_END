@@ -24,4 +24,8 @@ public class RankingType extends BaseEntity {
 
     @Column(nullable = false, length = 100)
     private String name;
+
+    public static final String RANKING_TYPE_CLUB = "CLUB";
+    public static final String RANKING_TYPE_STUDENT_NUMBER = "STUDENT_NUMBER";
+    public static final String RANKING_TYPE_PERSONAL = "PERSONAL";
 }

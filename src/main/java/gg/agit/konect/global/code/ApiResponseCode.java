@@ -24,6 +24,9 @@ public enum ApiResponseCode {
     CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
     STUDY_TIMER_NOT_RUNNING(HttpStatus.BAD_REQUEST, "실행 중인 스터디 타이머가 없습니다."),
     STUDY_TIMER_TIME_MISMATCH(HttpStatus.BAD_REQUEST, "스터디 타이머 시간이 유효하지 않습니다."),
+    INVALID_RECRUITMENT_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "상시 모집인 경우 모집 시작일과 마감일을 지정할 수 없습니다."),
+    INVALID_RECRUITMENT_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "상시 모집이 아닐 경우 모집 시작일과 마감일이 필수입니다."),
+    INVALID_RECRUITMENT_PERIOD(HttpStatus.BAD_REQUEST, "모집 시작일은 모집 마감일보다 이전이어야 합니다."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
@@ -31,8 +34,10 @@ public enum ApiResponseCode {
     // 403 Forbidden (접근 권한 없음)
     FORBIDDEN_CHAT_ROOM_ACCESS(HttpStatus.FORBIDDEN, "채팅방에 접근할 권한이 없습니다."),
     FORBIDDEN_CLUB_FEE_INFO(HttpStatus.FORBIDDEN, "회비 정보 조회 권한이 없습니다."),
+    FORBIDDEN_CLUB_MANAGER_ACCESS(HttpStatus.FORBIDDEN, "동아리 매니저 권한이 없습니다."),
     FORBIDDEN_CLUB_MEMBER_ACCESS(HttpStatus.FORBIDDEN, "동아리 멤버 조회 권한이 없습니다."),
     FORBIDDEN_COUNCIL_NOTICE_ACCESS(HttpStatus.FORBIDDEN, "총동아리연합회 공지사항 조회 권한이 없습니다."),
+    FORBIDDEN_CLUB_RECRUITMENT_CREATE(HttpStatus.FORBIDDEN, "동아리 모집 공고를 생성할 권한이 없습니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),
@@ -60,6 +65,7 @@ public enum ApiResponseCode {
     ALREADY_APPLIED_CLUB(HttpStatus.CONFLICT, "이미 동아리에 가입 신청을 완료했습니다."),
     DUPLICATE_CLUB_APPLY_QUESTION(HttpStatus.CONFLICT, "중복된 가입 문항이 포함되어 있습니다."),
     ALREADY_RUNNING_STUDY_TIMER(HttpStatus.CONFLICT, "이미 실행 중인 스터디 타이머가 있습니다."),
+    ALREADY_EXIST_CLUB_RECRUITMENT(HttpStatus.CONFLICT, "이미 동아리 모집 공고가 존재합니다."),
 
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),

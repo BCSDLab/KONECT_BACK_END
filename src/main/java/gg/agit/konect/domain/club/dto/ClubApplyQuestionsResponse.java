@@ -22,7 +22,11 @@ public record ClubApplyQuestionsResponse(
         Boolean isRequired
     ) {
         public static ApplyQuestion from(ClubApplyQuestion question) {
-            return new ApplyQuestion(question.getId(), question.getQuestion(), question.getIsRequired());
+            return new ApplyQuestion(
+                question.getId(),
+                question.getQuestion(),
+                question.getIsRequired()
+            );
         }
     }
 

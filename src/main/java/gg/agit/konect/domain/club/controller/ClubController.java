@@ -9,12 +9,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
+import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
@@ -99,11 +101,31 @@ public class ClubController implements ClubApi {
     }
 
     @Override
+    public ResponseEntity<ClubApplyQuestionsResponse> replaceApplyQuestions(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubApplyQuestionsReplaceRequest request,
+        @UserId Integer userId
+    ) {
+        ClubApplyQuestionsResponse response = clubService.replaceApplyQuestions(clubId, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<ClubRecruitmentResponse> getRecruitments(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     ) {
         ClubRecruitmentResponse response = clubService.getRecruitment(clubId, userId);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> createRecruitment(
+        @RequestBody @Valid ClubRecruitmentCreateRequest request,
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    ) {
+        clubService.createRecruitment(clubId, userId, request);
+        return ResponseEntity.ok().build();
     }
 }
