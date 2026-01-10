@@ -4,6 +4,7 @@ import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
@@ -53,6 +55,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ClubService {
+
+    private static final Set<ClubPositionGroup> MANAGER_ALLOWED_GROUPS =
+        EnumSet.of(ClubPositionGroup.PRESIDENT, ClubPositionGroup.MANAGER);
 
     private final ClubQueryRepository clubQueryRepository;
     private final ClubRepository clubRepository;
@@ -108,9 +113,16 @@ public class ClubService {
 
     public ClubFeeInfoResponse getFeeInfo(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
-        User user = userRepository.getById(userId);
+        userRepository.getById(userId);
 
-        if (!clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
+        boolean isApplied = clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
+        boolean isManager = clubMemberRepository.existsByClubIdAndUserIdAndPositionGroupIn(
+            clubId,
+            userId,
+            MANAGER_ALLOWED_GROUPS
+        );
+
+        if (!isApplied && !isManager) {
             throw CustomException.of(FORBIDDEN_CLUB_FEE_INFO);
         }
 
