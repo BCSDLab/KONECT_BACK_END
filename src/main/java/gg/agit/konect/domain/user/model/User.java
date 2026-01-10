@@ -42,6 +42,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = PROTECTED)
 public class User extends BaseEntity {
 
+    private final Integer STUDENT_NUMBER_YEAR_MAX_LENGTH = 4;
+
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id", nullable = false, updatable = false, unique = true)
@@ -108,5 +110,9 @@ public class User extends BaseEntity {
 
     public boolean hasSamePhoneNumber(String phoneNumber) {
         return phoneNumber != null && phoneNumber.equals(this.phoneNumber);
+    }
+
+    public String getStudentNumberYear() {
+        return studentNumber.substring(0, STUDENT_NUMBER_YEAR_MAX_LENGTH);
     }
 }

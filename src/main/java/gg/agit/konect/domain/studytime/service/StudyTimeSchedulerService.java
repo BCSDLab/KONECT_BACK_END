@@ -59,7 +59,8 @@ public class StudyTimeSchedulerService {
             )
             .collect(toSet());
 
-        Map<Integer, List<ClubMember>> userToClubMembersMap = clubMemberRepository.findByUserIdIn(new ArrayList<>(userIds)).stream()
+        Map<Integer, List<ClubMember>> userToClubMembersMap = clubMemberRepository.findByUserIdIn(
+                new ArrayList<>(userIds)).stream()
             .collect(groupingBy(clubMember -> clubMember.getId().getUserId()));
 
         Map<UniversityClub, Long> clubDailyMap = studyTimeDailies.stream()
@@ -249,7 +250,7 @@ public class StudyTimeSchedulerService {
         public static UniversityYear of(User user) {
             return new UniversityYear(
                 user.getUniversity(),
-                user.getStudentNumber().substring(0, 4)
+                user.getStudentNumberYear()
             );
         }
     }
