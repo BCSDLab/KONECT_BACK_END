@@ -118,8 +118,6 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         @Param("targetId") Integer targetId
     );
 
-    List<StudyTimeRanking> findByRankingTypeId(Integer rankingTypeId);
-
     @Query("""
         SELECT COALESCE(MAX(r.id.targetId), 0)
         FROM StudyTimeRanking r
@@ -130,7 +128,7 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
         @Param("rankingTypeId") Integer rankingTypeId,
         @Param("universityId") Integer universityId
     );
-    
+
     List<StudyTimeRanking> findAll();
 
     void save(StudyTimeRanking studyTimeRanking);
