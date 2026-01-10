@@ -35,11 +35,29 @@ public class StudyTimeScheduler {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
-    public void ipdateStudentNumberStudyTimeRanking() {
+    public void updateStudentNumberStudyTimeRanking() {
         try {
             studyTimeSchedulerService.updateStudentNumberStudyTimeRanking();
         } catch (Exception e) {
             log.error("학번별 공부 시간 랭킹 업데이트 과정에서 오류가 발생했습니다.", e);
+        }
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    public void resetStudyTimeRankingDaily() {
+        try {
+            studyTimeSchedulerService.resetStudyTimeRankingDaily();
+        } catch (Exception e) {
+            log.error("일일 공부 시간 랭킹 초기화 과정에서 오류가 발생했습니다.", e);
+        }
+    }
+
+    @Scheduled(cron = "0 0 0 1 * *")
+    public void resetStudyTimeRankingMonthly() {
+        try {
+            studyTimeSchedulerService.resetStudyTimeRankingMonthly();
+        } catch (Exception e) {
+            log.error("월간 공부 시간 랭킹 초기화 과정에서 오류가 발생했습니다.", e);
         }
     }
 }

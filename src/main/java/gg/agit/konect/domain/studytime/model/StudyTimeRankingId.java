@@ -4,6 +4,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.io.Serializable;
 
+import gg.agit.konect.domain.university.model.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Builder;
@@ -31,5 +32,13 @@ public class StudyTimeRankingId implements Serializable {
         this.rankingTypeId = rankingTypeId;
         this.universityId = universityId;
         this.targetId = targetId;
+    }
+
+    public static StudyTimeRankingId of(RankingType rankingType, University university, Integer targetId) {
+        return StudyTimeRankingId.builder()
+            .rankingTypeId(rankingType.getId())
+            .universityId(university.getId())
+            .targetId(targetId)
+            .build();
     }
 }

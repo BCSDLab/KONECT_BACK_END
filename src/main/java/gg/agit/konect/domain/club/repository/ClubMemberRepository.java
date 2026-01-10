@@ -52,5 +52,14 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         """)
     List<ClubMember> findByClubIdIn(@Param("clubIds") List<Integer> clubIds);
 
+    @Query("""
+        SELECT cm
+        FROM ClubMember cm
+        JOIN FETCH cm.club c
+        JOIN FETCH c.university
+        WHERE cm.id.userId IN :userIds
+        """)
+    List<ClubMember> findByUserIdIn(@Param("userIds") List<Integer> userIds);
+
     void deleteByUserId(Integer userId);
 }
