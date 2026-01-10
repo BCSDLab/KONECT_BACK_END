@@ -253,9 +253,7 @@ public class ClubService {
         ClubMember clubMember = clubMemberRepository.findByClubIdAndUserId(club.getId(), user.getId())
             .orElseThrow(() -> CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE));
 
-        if (!clubMember.isPresident()) {
-            throw CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE);
-        }
+        validateClubManager(clubMember);
 
         if (clubRecruitmentRepository.existsByClubId(clubId)) {
             throw CustomException.of(ALREADY_EXIST_CLUB_RECRUITMENT);
@@ -279,5 +277,11 @@ public class ClubService {
         }
 
         clubRecruitmentRepository.save(clubRecruitment);
+    }
+
+    private void validateClubManager(ClubMember clubMember) {
+        if (!clubMember.isPresident()) {
+            throw CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE);
+        }
     }
 }
