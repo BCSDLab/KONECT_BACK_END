@@ -23,7 +23,6 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.global.auth.annotation.ClubManagerOnly;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -101,7 +100,6 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @ClubManagerOnly
     @Operation(summary = "동아리 회비 정보를 덮어써서 대체한다.", description = """
         요청 본문이 최종 상태가 됩니다.
         - 모든 필드를 전달하면 생성/수정합니다.
@@ -126,7 +124,6 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @ClubManagerOnly
     @Operation(summary = "동아리 가입 문항을 덮어써서 대체한다.", description = """
         요청에 포함된 문항 목록이 최종 상태가 됩니다.
         - questionId가 있으면 수정
@@ -183,7 +180,6 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @ClubManagerOnly
     @Operation(summary = "동아리 모집 정보를 수정한다.", description = """
         동아리 회장 또는 매니저만 모집 공고를 수정할 수 있습니다.
 
