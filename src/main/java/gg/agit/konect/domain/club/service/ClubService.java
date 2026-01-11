@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
@@ -68,6 +69,7 @@ public class ClubService {
     private final ClubApplyQuestionRepository clubApplyQuestionRepository;
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final UserRepository userRepository;
+    private final BankRepository bankRepository;
 
     public ClubsResponse getClubs(ClubCondition condition, Integer userId) {
         User user = userRepository.getById(userId);
@@ -140,6 +142,8 @@ public class ClubService {
             club.clearFeeInfo();
             return ClubFeeInfoResponse.from(club);
         }
+
+        bankRepository.getByName(request.bank());
 
         club.updateFeeInfo(
             request.amount(),
