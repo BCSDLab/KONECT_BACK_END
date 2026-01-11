@@ -110,4 +110,26 @@ public class Club extends BaseEntity {
         this.feeDeadline = feeDeadline;
         this.clubRecruitment = clubRecruitment;
     }
+
+    public void updateFeeInfo(
+        Integer feeAmount,
+        String feeBank,
+        String feeAccountNumber,
+        String feeAccountHolder,
+        LocalDate feeDeadline
+    ) {
+        this.feeAmount = feeAmount;
+        this.feeBank = feeBank;
+        this.feeAccountNumber = feeAccountNumber;
+        this.feeAccountHolder = feeAccountHolder;
+        this.feeDeadline = feeDeadline;
+    }
+
+    public void clearFeeInfo() {
+        this.feeAmount = null;
+        this.feeBank = null;
+        this.feeAccountNumber = null;
+        this.feeAccountHolder = null;
+        this.feeDeadline = null;
+    }
 }
