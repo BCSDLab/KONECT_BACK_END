@@ -21,6 +21,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
+import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
@@ -125,6 +126,28 @@ public class ClubService {
         if (!isApplied && !isManager) {
             throw CustomException.of(FORBIDDEN_CLUB_FEE_INFO);
         }
+
+        return ClubFeeInfoResponse.from(club);
+    }
+
+    @Transactional
+    public ClubFeeInfoResponse replaceFeeInfo(Integer clubId, Integer userId, ClubFeeInfoReplaceRequest request) {
+        Club club = clubRepository.getById(clubId);
+
+        userRepository.getById(userId);
+
+        if (request.isDeleteRequest()) {
+            club.clearFeeInfo();
+            return ClubFeeInfoResponse.from(club);
+        }
+
+        club.updateFeeInfo(
+            request.amount(),
+            request.bank(),
+            request.accountNumber(),
+            request.accountHolder(),
+            request.deadLine()
+        );
 
         return ClubFeeInfoResponse.from(club);
     }
