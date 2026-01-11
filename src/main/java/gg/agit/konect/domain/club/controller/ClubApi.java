@@ -15,6 +15,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
+import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
@@ -97,6 +98,24 @@ public interface ClubApi {
     @GetMapping("/{clubId}/fee")
     ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
         @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    );
+
+    @ClubManagerOnly
+    @Operation(summary = "동아리 회비 정보를 덮어써서 대체한다.", description = """
+        요청 본문이 최종 상태가 됩니다.
+        - 모든 필드를 전달하면 생성/수정합니다.
+        - 모든 필드가 null이면 회비 정보를 삭제합니다.
+        - 일부 필드가 누락된 경우 에러가 발생합니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - INVALID_REQUEST_BODY (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
+        """)
+    @PutMapping("/{clubId}/fee")
+    ResponseEntity<ClubFeeInfoResponse> replaceFeeInfo(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubFeeInfoReplaceRequest request,
         @UserId Integer userId
     );
 
