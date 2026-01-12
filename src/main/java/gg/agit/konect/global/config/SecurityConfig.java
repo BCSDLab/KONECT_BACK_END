@@ -5,6 +5,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,6 +21,9 @@ import gg.agit.konect.global.auth.oauth.SocialOAuthService;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
+
     @Autowired
     private Map<String, SocialOAuthService> oAuthServices;
 
@@ -30,6 +34,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(SecurityPaths.DENY_PATHS).denyAll()
@@ -49,6 +54,9 @@ public class SecurityConfig {
                     })
                 )
                 .successHandler(oAuth2LoginSuccessHandler)
+                .failureHandler((request, response, exception) -> {
+                    response.sendRedirect(frontendBaseUrl);
+                })
             );
 
         return http.build();
