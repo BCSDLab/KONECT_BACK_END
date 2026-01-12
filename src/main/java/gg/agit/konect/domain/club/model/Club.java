@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.model;
 
+import static gg.agit.konect.global.code.ApiResponseCode.INVALID_REQUEST_BODY;
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
@@ -8,8 +9,11 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDate;
 
+import org.springframework.util.StringUtils;
+
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -111,7 +115,54 @@ public class Club extends BaseEntity {
         this.clubRecruitment = clubRecruitment;
     }
 
-    public void updateFeeInfo(
+    public void replaceFeeInfo(
+        Integer feeAmount,
+        String feeBank,
+        String feeAccountNumber,
+        String feeAccountHolder,
+        LocalDate feeDeadline
+    ) {
+        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
+            clearFeeInfo();
+            return;
+        }
+
+        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
+            throw CustomException.of(INVALID_REQUEST_BODY);
+        }
+
+        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline);
+    }
+
+    private boolean isFeeInfoEmpty(
+        Integer feeAmount,
+        String feeBank,
+        String feeAccountNumber,
+        String feeAccountHolder,
+        LocalDate feeDeadline
+    ) {
+        return feeAmount == null
+            && feeBank == null
+            && feeAccountNumber == null
+            && feeAccountHolder == null
+            && feeDeadline == null;
+    }
+
+    private boolean isFeeInfoComplete(
+        Integer feeAmount,
+        String feeBank,
+        String feeAccountNumber,
+        String feeAccountHolder,
+        LocalDate feeDeadline
+    ) {
+        return feeAmount != null
+            && StringUtils.hasText(feeBank)
+            && StringUtils.hasText(feeAccountNumber)
+            && StringUtils.hasText(feeAccountHolder)
+            && feeDeadline != null;
+    }
+
+    private void updateFeeInfo(
         Integer feeAmount,
         String feeBank,
         String feeAccountNumber,
@@ -125,7 +176,7 @@ public class Club extends BaseEntity {
         this.feeDeadline = feeDeadline;
     }
 
-    public void clearFeeInfo() {
+    private void clearFeeInfo() {
         this.feeAmount = null;
         this.feeBank = null;
         this.feeAccountNumber = null;
