@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.bank.model.Bank;
 import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -148,11 +149,11 @@ public class ClubService {
             return ClubFeeInfoResponse.from(club);
         }
 
-        bankRepository.getByName(request.bank());
+        Bank bank = bankRepository.getById(request.bankId());
 
         club.updateFeeInfo(
             request.amount(),
-            request.bank(),
+            bank.getName(),
             request.accountNumber(),
             request.accountHolder(),
             request.deadLine()

@@ -19,9 +19,8 @@ public record ClubFeeInfoReplaceRequest(
     @Schema(description = "회비 금액", example = "10000", requiredMode = NOT_REQUIRED)
     Integer amount,
 
-    @Size(max = 100, message = "은행명은 최대 100자 입니다.")
-    @Schema(description = "은행명", example = "국민은행", requiredMode = NOT_REQUIRED)
-    String bank,
+    @Schema(description = "은행 고유 ID", example = "1", requiredMode = NOT_REQUIRED)
+    Integer bankId,
 
     @Size(max = 100, message = "계좌번호는 최대 100자 입니다.")
     @Schema(description = "계좌번호", example = "123-456-7890", requiredMode = NOT_REQUIRED)
@@ -40,7 +39,7 @@ public record ClubFeeInfoReplaceRequest(
     @AssertTrue(message = "회비 정보를 삭제하려면 모든 필드를 비우거나, 모두 입력해야 합니다.")
     public boolean isReplaceRequestValid() {
         boolean allNull = amount == null
-            && bank == null
+            && bankId == null
             && accountNumber == null
             && accountHolder == null
             && deadLine == null;
@@ -50,7 +49,7 @@ public record ClubFeeInfoReplaceRequest(
         }
 
         return amount != null
-            && StringUtils.hasText(bank)
+            && bankId != null
             && StringUtils.hasText(accountNumber)
             && StringUtils.hasText(accountHolder)
             && deadLine != null;
@@ -60,7 +59,7 @@ public record ClubFeeInfoReplaceRequest(
     @Schema(hidden = true)
     public boolean isDeleteRequest() {
         return amount == null
-            && bank == null
+            && bankId == null
             && accountNumber == null
             && accountHolder == null
             && deadLine == null;

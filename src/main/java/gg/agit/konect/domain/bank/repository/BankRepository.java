@@ -13,7 +13,14 @@ public interface BankRepository extends Repository<Bank, Integer> {
 
     List<Bank> findAll();
 
+    Optional<Bank> findById(Integer id);
+
     Optional<Bank> findByName(String name);
+
+    default Bank getById(Integer id) {
+        return findById(id).orElseThrow(() ->
+            CustomException.of(ApiResponseCode.NOT_FOUND_BANK));
+    }
 
     default Bank getByName(String name) {
         return findByName(name).orElseThrow(() ->
