@@ -15,7 +15,6 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
@@ -23,6 +22,7 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.global.auth.annotation.ClubManagerOnly;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -89,31 +89,14 @@ public interface ClubApi {
     );
 
     @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
-        동아리 가입 신청을 완료했거나 동아리 관리자 권한이 있는 사용자만 회비 계좌 정보를 조회할 수 있습니다.
-
+        동아리 가입 신청을 완료한 사용자만 회비 계좌 정보를 조회할 수 있습니다.
+        
         ## 에러
         - FORBIDDEN_CLUB_FEE_INFO (403): 회비 정보 조회 권한이 없습니다.
         """)
     @GetMapping("/{clubId}/fee")
     ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
         @PathVariable(name = "clubId") Integer clubId,
-        @UserId Integer userId
-    );
-
-    @Operation(summary = "동아리 회비 정보를 덮어써서 대체한다.", description = """
-        요청 본문이 최종 상태가 됩니다.
-        - 모든 필드를 전달하면 생성/수정합니다.
-        - 모든 필드가 null이면 회비 정보를 삭제합니다.
-        - 일부 필드가 누락된 경우 에러가 발생합니다.
-
-        ## 에러
-        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
-        - INVALID_REQUEST_BODY (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
-        """)
-    @PutMapping("/{clubId}/fee")
-    ResponseEntity<ClubFeeInfoResponse> replaceFeeInfo(
-        @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubFeeInfoReplaceRequest request,
         @UserId Integer userId
     );
 
@@ -124,6 +107,7 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
+    @ClubManagerOnly
     @Operation(summary = "동아리 가입 문항을 덮어써서 대체한다.", description = """
         요청에 포함된 문항 목록이 최종 상태가 됩니다.
         - questionId가 있으면 수정
@@ -180,6 +164,7 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
+    @ClubManagerOnly
     @Operation(summary = "동아리 모집 정보를 수정한다.", description = """
         동아리 회장 또는 매니저만 모집 공고를 수정할 수 있습니다.
 

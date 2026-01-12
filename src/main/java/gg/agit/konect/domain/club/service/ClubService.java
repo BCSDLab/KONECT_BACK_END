@@ -4,7 +4,6 @@ import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -16,13 +15,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
@@ -30,7 +27,6 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
@@ -58,11 +54,6 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ClubService {
 
-    private static final Set<ClubPositionGroup> PRESIDENT_ALLOWED_GROUPS =
-        EnumSet.of(PRESIDENT);
-    private static final Set<ClubPositionGroup> MANAGER_ALLOWED_GROUPS =
-        EnumSet.of(PRESIDENT, ClubPositionGroup.MANAGER);
-
     private final ClubQueryRepository clubQueryRepository;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
@@ -71,7 +62,6 @@ public class ClubService {
     private final ClubApplyQuestionRepository clubApplyQuestionRepository;
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final UserRepository userRepository;
-    private final BankRepository bankRepository;
 
     public ClubsResponse getClubs(ClubCondition condition, Integer userId) {
         User user = userRepository.getById(userId);
@@ -118,40 +108,11 @@ public class ClubService {
 
     public ClubFeeInfoResponse getFeeInfo(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
-        userRepository.getById(userId);
+        User user = userRepository.getById(userId);
 
-        boolean isApplied = clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
-        boolean isManager = clubMemberRepository.existsByClubIdAndUserIdAndPositionGroupIn(
-            clubId,
-            userId,
-            MANAGER_ALLOWED_GROUPS
-        );
-
-        if (!isApplied && !isManager) {
+        if (!clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
             throw CustomException.of(FORBIDDEN_CLUB_FEE_INFO);
         }
-
-        return ClubFeeInfoResponse.from(club);
-    }
-
-    @Transactional
-    public ClubFeeInfoResponse replaceFeeInfo(Integer clubId, Integer userId, ClubFeeInfoReplaceRequest request) {
-        userRepository.getById(userId);
-        Club club = clubRepository.getById(clubId);
-
-        if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
-            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
-        }
-
-        String bankName = bankRepository.getById(request.bankId()).getName();
-
-        club.replaceFeeInfo(
-            request.amount(),
-            bankName,
-            request.accountNumber(),
-            request.accountHolder(),
-            request.deadLine()
-        );
 
         return ClubFeeInfoResponse.from(club);
     }
@@ -171,11 +132,6 @@ public class ClubService {
         ClubApplyQuestionsReplaceRequest request
     ) {
         Club club = clubRepository.getById(clubId);
-
-        if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
-            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
-        }
-
         List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests = request.questions();
         Set<Integer> requestedQuestionIds = new HashSet<>();
 
@@ -301,9 +257,10 @@ public class ClubService {
         Club club = clubRepository.getById(clubId);
         User user = userRepository.getById(userId);
 
-        if (!hasClubManageAccess(clubId, userId, PRESIDENT_ALLOWED_GROUPS)) {
-            throw CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE);
-        }
+        ClubMember clubMember = clubMemberRepository.findByClubIdAndUserId(club.getId(), user.getId())
+            .orElseThrow(() -> CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE));
+
+        validateClubManager(clubMember);
 
         if (clubRecruitmentRepository.existsByClubId(clubId)) {
             throw CustomException.of(ALREADY_EXIST_CLUB_RECRUITMENT);
@@ -329,14 +286,21 @@ public class ClubService {
         clubRecruitmentRepository.save(clubRecruitment);
     }
 
+    private void validateClubManager(ClubMember clubMember) {
+        if (!clubMember.isPresident()) {
+            throw CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE);
+        }
+    }
+
     @Transactional
     public void updateRecruitment(Integer clubId, Integer userId, ClubRecruitmentUpdateRequest request) {
-        clubRepository.getById(clubId);
-        userRepository.getById(userId);
+        Club club = clubRepository.getById(clubId);
+        User user = userRepository.getById(userId);
 
-        if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
-            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
-        }
+        ClubMember clubMember = clubMemberRepository.findByClubIdAndUserId(club.getId(), user.getId())
+            .orElseThrow(() -> CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE));
+
+        validateClubManager(clubMember);
 
         ClubRecruitment clubRecruitment = clubRecruitmentRepository.getByClubId(clubId);
         clubRecruitment.update(
@@ -356,17 +320,5 @@ public class ClubService {
             );
             clubRecruitment.addImage(newImage);
         }
-    }
-
-    private boolean hasClubManageAccess(
-        Integer clubId,
-        Integer userId,
-        Set<ClubPositionGroup> allowedGroups
-    ) {
-        return clubMemberRepository.existsByClubIdAndUserIdAndPositionGroupIn(
-            clubId,
-            userId,
-            allowedGroups
-        );
     }
 }

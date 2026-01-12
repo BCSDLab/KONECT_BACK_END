@@ -13,7 +13,6 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
@@ -90,16 +89,6 @@ public class ClubController implements ClubApi {
         @UserId Integer userId
     ) {
         ClubFeeInfoResponse response = clubService.getFeeInfo(clubId, userId);
-        return ResponseEntity.ok(response);
-    }
-
-    @Override
-    public ResponseEntity<ClubFeeInfoResponse> replaceFeeInfo(
-        @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubFeeInfoReplaceRequest request,
-        @UserId Integer userId
-    ) {
-        ClubFeeInfoResponse response = clubService.replaceFeeInfo(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 
