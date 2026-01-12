@@ -4,13 +4,10 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIR
 
 import java.time.LocalDate;
 
-import org.springframework.util.StringUtils;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
@@ -19,6 +16,7 @@ public record ClubFeeInfoReplaceRequest(
     @Schema(description = "회비 금액", example = "10000", requiredMode = NOT_REQUIRED)
     Integer amount,
 
+    @NotNull
     @Schema(description = "은행 고유 ID", example = "1", requiredMode = NOT_REQUIRED)
     Integer bankId,
 
@@ -34,34 +32,4 @@ public record ClubFeeInfoReplaceRequest(
     @JsonFormat(pattern = "yyyy.MM.dd")
     LocalDate deadLine
 ) {
-    @JsonIgnore
-    @Schema(hidden = true)
-    @AssertTrue(message = "회비 정보를 삭제하려면 모든 필드를 비우거나, 모두 입력해야 합니다.")
-    public boolean isReplaceRequestValid() {
-        boolean allNull = amount == null
-            && bankId == null
-            && accountNumber == null
-            && accountHolder == null
-            && deadLine == null;
-
-        if (allNull) {
-            return true;
-        }
-
-        return amount != null
-            && bankId != null
-            && StringUtils.hasText(accountNumber)
-            && StringUtils.hasText(accountHolder)
-            && deadLine != null;
-    }
-
-    @JsonIgnore
-    @Schema(hidden = true)
-    public boolean isDeleteRequest() {
-        return amount == null
-            && bankId == null
-            && accountNumber == null
-            && accountHolder == null
-            && deadLine == null;
-    }
 }
