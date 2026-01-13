@@ -127,13 +127,13 @@ public class ClubService {
         ClubRecruitment recruitment
     ) {
         if (recruitment.getIsAlwaysRecruiting()) {
-            return clubApplyRepository.findAllByClubId(clubId);
+            return clubApplyRepository.findAllByClubIdWithUser(clubId);
         }
 
         LocalDateTime startDateTime = recruitment.getStartDate().atStartOfDay();
         LocalDateTime endDateTime = recruitment.getEndDate().atTime(LocalTime.MAX);
 
-        return clubApplyRepository.findAllByClubIdAndCreatedAtBetween(
+        return clubApplyRepository.findAllByClubIdAndCreatedAtBetweenWithUser(
             clubId,
             startDateTime,
             endDateTime
