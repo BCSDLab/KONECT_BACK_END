@@ -1,8 +1,6 @@
 package gg.agit.konect.domain.club.model;
 
-import static gg.agit.konect.global.code.ApiResponseCode.INVALID_RECRUITMENT_DATE_NOT_ALLOWED;
-import static gg.agit.konect.global.code.ApiResponseCode.INVALID_RECRUITMENT_DATE_REQUIRED;
-import static gg.agit.konect.global.code.ApiResponseCode.INVALID_RECRUITMENT_PERIOD;
+import static gg.agit.konect.global.code.ApiResponseCode.*;
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
@@ -63,7 +61,7 @@ public class ClubRecruitment extends BaseEntity {
     private Club club;
 
     @OneToMany(mappedBy = "clubRecruitment", fetch = LAZY, cascade = ALL, orphanRemoval = true)
-    private List<ClubRecruitmentImage> images = new ArrayList<>();
+    private final List<ClubRecruitmentImage> images = new ArrayList<>();
 
     @Builder
     private ClubRecruitment(

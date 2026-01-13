@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
+import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
@@ -21,7 +22,6 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
-import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;

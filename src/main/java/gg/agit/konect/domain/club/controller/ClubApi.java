@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
-import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
@@ -107,7 +107,7 @@ public interface ClubApi {
 
     @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
         동아리 가입 신청을 완료했거나 동아리 관리자 권한이 있는 사용자만 회비 계좌 정보를 조회할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_FEE_INFO (403): 회비 정보 조회 권한이 없습니다.
         """)
@@ -122,7 +122,7 @@ public interface ClubApi {
         - 모든 필드를 전달하면 생성/수정합니다.
         - 모든 필드가 null이면 회비 정보를 삭제합니다.
         - 일부 필드가 누락된 경우 에러가 발생합니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - INVALID_REQUEST_BODY (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
@@ -199,7 +199,7 @@ public interface ClubApi {
 
     @Operation(summary = "동아리 모집 정보를 수정한다.", description = """
         동아리 회장 또는 매니저만 모집 공고를 수정할 수 있습니다.
-
+        
         ## 에러
         - INVALID_RECRUITMENT_DATE_NOT_ALLOWED (400): 상시 모집인 경우 모집 시작일과 마감일을 지정할 수 없습니다.
         - INVALID_RECRUITMENT_DATE_REQUIRED (400): 상시 모집이 아닐 경우 모집 시작일과 마감일이 필수입니다.

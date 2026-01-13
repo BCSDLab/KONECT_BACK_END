@@ -8,7 +8,6 @@ import org.springframework.data.domain.Page;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubsResponse(
