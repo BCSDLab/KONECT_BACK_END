@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
+import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
@@ -62,6 +63,21 @@ public interface ClubApi {
     @Operation(summary = "관리자 권한을 가지고 있는 동아리 리스트를 조회한다.")
     @GetMapping("/managed")
     ResponseEntity<ClubMembershipsResponse> getManagedClubs(
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 지원 내역을 조회한다.", description = """
+         - 동아리 관리자만 해당 동아리의 지원 내역을 조회할 수 있습니다.
+         - 현재 지정된 모집 일정 범위에 지원한 내역만 볼 수 있습니다.
+         - 상시 모집의 경우 모든 내역을 봅니다.
+        
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        """)
+    @GetMapping("/{clubId}/applications")
+    ResponseEntity<ClubApplicationsResponse> getClubApplications(
+        @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     );
 
