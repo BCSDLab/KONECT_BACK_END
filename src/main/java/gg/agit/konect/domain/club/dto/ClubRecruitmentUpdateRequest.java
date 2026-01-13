@@ -2,15 +2,15 @@ package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-
-import java.time.LocalDate;
-import java.util.List;
 
 public record ClubRecruitmentUpdateRequest(
     @Schema(description = "모집 시작일", example = "2025.11.30", requiredMode = REQUIRED)

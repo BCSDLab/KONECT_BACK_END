@@ -3,6 +3,8 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.bank.repository.BankRepository;
+import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
@@ -104,6 +107,37 @@ public class ClubService {
     public ClubMembershipsResponse getManagedClubs(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPosition(userId, PRESIDENT);
         return ClubMembershipsResponse.from(clubMembers);
+    }
+
+    public ClubApplicationsResponse getClubApplications(Integer clubId, Integer userId) {
+        clubRepository.getById(clubId);
+
+        if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
+            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
+        }
+
+        ClubRecruitment recruitment = clubRecruitmentRepository.getByClubId(clubId);
+        List<ClubApply> clubApplies = findApplicationsByRecruitmentPeriod(clubId, recruitment);
+
+        return ClubApplicationsResponse.from(clubApplies);
+    }
+
+    private List<ClubApply> findApplicationsByRecruitmentPeriod(
+        Integer clubId,
+        ClubRecruitment recruitment
+    ) {
+        if (recruitment.getIsAlwaysRecruiting()) {
+            return clubApplyRepository.findAllByClubIdWithUser(clubId);
+        }
+
+        LocalDateTime startDateTime = recruitment.getStartDate().atStartOfDay();
+        LocalDateTime endDateTime = recruitment.getEndDate().atTime(LocalTime.MAX);
+
+        return clubApplyRepository.findAllByClubIdAndCreatedAtBetweenWithUser(
+            clubId,
+            startDateTime,
+            endDateTime
+        );
     }
 
     public ClubMembersResponse getClubMembers(Integer clubId, Integer userId) {
