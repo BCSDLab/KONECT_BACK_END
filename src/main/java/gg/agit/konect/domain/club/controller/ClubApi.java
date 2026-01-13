@@ -74,6 +74,7 @@ public interface ClubApi {
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_RECRUITMENT (404): 동아리 모집 공고를 찾을 수 없습니다.
         """)
     @GetMapping("/{clubId}/applications")
     ResponseEntity<ClubApplicationsResponse> getClubApplications(
