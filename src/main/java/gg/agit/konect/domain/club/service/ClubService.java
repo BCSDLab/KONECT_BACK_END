@@ -136,9 +136,11 @@ public class ClubService {
         }
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        List<ClubApplyQuestion> questions =
+            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
         List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(applicationId);
 
-        return ClubApplicationAnswersResponse.of(clubApply, answers);
+        return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
     }
 
     private List<ClubApply> findApplicationsByRecruitmentPeriod(

@@ -4,9 +4,12 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
+import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubApplicationAnswersResponse(
@@ -36,28 +39,45 @@ public record ClubApplicationAnswersResponse(
         @Schema(description = "필수 여부", example = "true", requiredMode = REQUIRED)
         Boolean isRequired,
 
-        @Schema(description = "답변 내용", example = "동아리 활동을 통해 성장하고 싶습니다.", requiredMode = REQUIRED)
+        @Schema(
+            description = "답변 내용(미작성 시 null)",
+            example = "동아리 활동을 통해 성장하고 싶습니다.",
+            requiredMode = REQUIRED
+        )
         String answer
     ) {
 
-        public static ClubApplicationAnswerResponse from(ClubApplyAnswer applyAnswer) {
+        public static ClubApplicationAnswerResponse of(
+            ClubApplyQuestion question,
+            ClubApplyAnswer applyAnswer
+        ) {
             return new ClubApplicationAnswerResponse(
-                applyAnswer.getQuestion().getId(),
-                applyAnswer.getQuestion().getQuestion(),
-                applyAnswer.getQuestion().getIsRequired(),
-                applyAnswer.getAnswer()
+                question.getId(),
+                question.getQuestion(),
+                question.getIsRequired(),
+                applyAnswer == null ? null : applyAnswer.getAnswer()
             );
         }
     }
 
-    public static ClubApplicationAnswersResponse of(ClubApply apply, List<ClubApplyAnswer> answers) {
+    public static ClubApplicationAnswersResponse of(
+        ClubApply apply,
+        List<ClubApplyQuestion> questions,
+        List<ClubApplyAnswer> answers
+    ) {
+        Map<Integer, ClubApplyAnswer> answerMap = answers.stream()
+            .collect(Collectors.toMap(answer -> answer.getQuestion().getId(), answer -> answer));
+
         return new ClubApplicationAnswersResponse(
             apply.getId(),
             apply.getUser().getStudentNumber(),
             apply.getUser().getName(),
             apply.getCreatedAt(),
-            answers.stream()
-                .map(ClubApplicationAnswerResponse::from)
+            questions.stream()
+                .map(question -> ClubApplicationAnswerResponse.of(
+                    question,
+                    answerMap.get(question.getId())
+                ))
                 .toList()
         );
     }
