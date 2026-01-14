@@ -1,6 +1,7 @@
 package gg.agit.konect.global.auth.filter;
 
 import java.io.IOException;
+import java.net.URI;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -25,12 +26,37 @@ public class OAuth2RedirectUriSaveFilter extends OncePerRequestFilter {
 
         if (request.getRequestURI().startsWith("/oauth2/authorization/")) {
             String redirectUri = request.getParameter("redirect_uri");
-            if (redirectUri != null && !redirectUri.isBlank()) {
+
+            if (isValidOriginOnlyRedirect(redirectUri)) {
                 HttpSession session = request.getSession(true);
                 session.setAttribute(REDIRECT_URI_SESSION_KEY, redirectUri);
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isValidOriginOnlyRedirect(String redirectUri) {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            return false;
+        }
+
+        try {
+            URI uri = URI.create(redirectUri);
+
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return false;
+            }
+
+            if ((uri.getPath() != null && !uri.getPath().isEmpty())
+                || uri.getQuery() != null
+                || uri.getFragment() != null) {
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
