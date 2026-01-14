@@ -48,13 +48,9 @@ public class OAuth2RedirectUriSaveFilter extends OncePerRequestFilter {
                 return false;
             }
 
-            if ((uri.getPath() != null && !uri.getPath().isEmpty())
-                || uri.getQuery() != null
-                || uri.getFragment() != null) {
-                return false;
-            }
-
-            return true;
+            return (uri.getPath() == null || uri.getPath().isEmpty())
+                && uri.getQuery() == null
+                && uri.getFragment() == null;
         } catch (Exception e) {
             return false;
         }
