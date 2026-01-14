@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -79,6 +80,21 @@ public interface ClubApi {
     @GetMapping("/{clubId}/applications")
     ResponseEntity<ClubApplicationsResponse> getClubApplications(
         @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 지원 답변을 조회한다.", description = """
+        - 동아리 관리자만 해당 동아리의 지원 답변을 조회할 수 있습니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
+        """)
+    @GetMapping("/{clubId}/applications/{applicationId}")
+    ResponseEntity<ClubApplicationAnswersResponse> getClubApplicationAnswers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "applicationId") Integer applicationId,
         @UserId Integer userId
     );
 
