@@ -85,7 +85,7 @@ public interface ClubApi {
 
     @Operation(summary = "동아리 지원 답변을 조회한다.", description = """
         - 동아리 관리자만 해당 동아리의 지원 답변을 조회할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
