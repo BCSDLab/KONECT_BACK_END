@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGER;
 import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.bank.repository.BankRepository;
+import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -64,7 +66,7 @@ public class ClubService {
     private static final Set<ClubPositionGroup> PRESIDENT_ALLOWED_GROUPS =
         EnumSet.of(PRESIDENT);
     private static final Set<ClubPositionGroup> MANAGER_ALLOWED_GROUPS =
-        EnumSet.of(PRESIDENT, ClubPositionGroup.MANAGER);
+        EnumSet.of(PRESIDENT, MANAGER);
 
     private final ClubQueryRepository clubQueryRepository;
     private final ClubRepository clubRepository;
@@ -120,6 +122,23 @@ public class ClubService {
         List<ClubApply> clubApplies = findApplicationsByRecruitmentPeriod(clubId, recruitment);
 
         return ClubApplicationsResponse.from(clubApplies);
+    }
+
+    public ClubApplicationAnswersResponse getClubApplicationAnswers(
+        Integer clubId,
+        Integer applicationId,
+        Integer userId
+    ) {
+        clubRepository.getById(clubId);
+
+        if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
+            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
+        }
+
+        ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(applicationId);
+
+        return ClubApplicationAnswersResponse.of(clubApply, answers);
     }
 
     private List<ClubApply> findApplicationsByRecruitmentPeriod(

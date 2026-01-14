@@ -2,12 +2,15 @@ package gg.agit.konect.domain.club.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import gg.agit.konect.domain.club.model.ClubApply;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 
 public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
 
@@ -16,6 +19,23 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
     ClubApply save(ClubApply clubApply);
 
     void deleteByUserId(Integer userId);
+
+    @Query("""
+        SELECT clubApply
+        FROM ClubApply clubApply
+        JOIN FETCH clubApply.user user
+        WHERE clubApply.id = :id
+          AND clubApply.club.id = :clubId
+        """)
+    Optional<ClubApply> findByIdAndClubId(
+        @Param("id") Integer id,
+        @Param("clubId") Integer clubId
+    );
+
+    default ClubApply getByIdAndClubId(Integer id, Integer clubId) {
+        return findByIdAndClubId(id, clubId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
+    }
 
     @Query("""
         SELECT clubApply
