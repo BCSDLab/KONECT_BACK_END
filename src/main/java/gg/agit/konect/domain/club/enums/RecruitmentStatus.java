@@ -21,13 +21,24 @@ public enum RecruitmentStatus {
             return CLOSED;
         }
 
+        if (Boolean.TRUE.equals(clubRecruitment.getIsAlwaysRecruiting())) {
+            return ONGOING;
+        }
+
+        LocalDate startDate = clubRecruitment.getStartDate();
+        LocalDate endDate = clubRecruitment.getEndDate();
+
+        if (startDate == null || endDate == null) {
+            return CLOSED;
+        }
+
         LocalDate now = LocalDate.now();
 
-        if (now.isBefore(clubRecruitment.getStartDate())) {
+        if (now.isBefore(startDate)) {
             return BEFORE;
         }
 
-        if (now.isAfter(clubRecruitment.getEndDate())) {
+        if (now.isAfter(endDate)) {
             return CLOSED;
         }
 
