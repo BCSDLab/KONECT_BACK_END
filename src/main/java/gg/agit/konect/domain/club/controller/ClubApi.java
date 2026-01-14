@@ -62,7 +62,7 @@ public interface ClubApi {
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
     @PostMapping
-    ResponseEntity<ClubDetailResponse> createDetail(
+    ResponseEntity<ClubDetailResponse> createClubAndDetail(
         @Valid @RequestBody ClubDetailCreateRequest request,
         @UserId Integer userId
     );
@@ -76,7 +76,7 @@ public interface ClubApi {
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
     @PutMapping("/{clubId}")
-    ResponseEntity<ClubDetailResponse> updateDetail(
+    ResponseEntity<ClubDetailResponse> updateClubDetail(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubDetailUpdateRequest request,
         @UserId Integer userId

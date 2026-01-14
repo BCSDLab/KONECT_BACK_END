@@ -102,7 +102,7 @@ public class ClubService {
     }
 
     @Transactional
-    public ClubDetailResponse createDetail(Integer userId, ClubDetailCreateRequest request) {
+    public ClubDetailResponse createClubAndDetail(Integer userId, ClubDetailCreateRequest request) {
         User user = userRepository.getById(userId);
         Club club = request.toEntity(user.getUniversity());
 
@@ -129,7 +129,7 @@ public class ClubService {
     }
 
     @Transactional
-    public ClubDetailResponse updateDetail(Integer clubId, Integer userId, ClubDetailUpdateRequest request) {
+    public ClubDetailResponse updateClubDetail(Integer clubId, Integer userId, ClubDetailUpdateRequest request) {
         userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
 

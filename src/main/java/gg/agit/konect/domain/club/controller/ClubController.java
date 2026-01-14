@@ -54,21 +54,21 @@ public class ClubController implements ClubApi {
     }
 
     @Override
-    public ResponseEntity<ClubDetailResponse> createDetail(
+    public ResponseEntity<ClubDetailResponse> createClubAndDetail(
         @Valid @RequestBody ClubDetailCreateRequest request,
         @UserId Integer userId
     ) {
-        ClubDetailResponse response = clubService.createDetail(userId, request);
+        ClubDetailResponse response = clubService.createClubAndDetail(userId, request);
         return ResponseEntity.ok(response);
     }
 
     @Override
-    public ResponseEntity<ClubDetailResponse> updateDetail(
+    public ResponseEntity<ClubDetailResponse> updateClubDetail(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubDetailUpdateRequest request,
         @UserId Integer userId
     ) {
-        ClubDetailResponse response = clubService.updateDetail(clubId, userId, request);
+        ClubDetailResponse response = clubService.updateClubDetail(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 
