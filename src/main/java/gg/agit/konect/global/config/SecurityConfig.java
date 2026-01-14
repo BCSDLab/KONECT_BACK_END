@@ -12,13 +12,17 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import gg.agit.konect.global.auth.filter.OAuth2RedirectUriSaveFilter;
 import gg.agit.konect.global.auth.handler.OAuth2LoginSuccessHandler;
 import gg.agit.konect.global.auth.oauth.SocialOAuthService;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     @Value("${app.frontend.base-url}")
@@ -29,6 +33,9 @@ public class SecurityConfig {
 
     @Autowired
     private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
+    @Autowired
+    private OAuth2RedirectUriSaveFilter redirectUriSaveFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,6 +65,8 @@ public class SecurityConfig {
                     response.sendRedirect(frontendBaseUrl);
                 })
             );
+
+        http.addFilterBefore(redirectUriSaveFilter, OAuth2AuthorizationRequestRedirectFilter.class);
 
         return http.build();
     }

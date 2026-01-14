@@ -1,8 +1,10 @@
 package gg.agit.konect.global.auth.handler;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -11,11 +13,12 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.config.SecurityProperties;
+import gg.agit.konect.global.exception.CustomException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -31,6 +34,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private static final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
 
     private final UserRepository userRepository;
+    private final SecurityProperties securityProperties;
 
     @Override
     public void onAuthenticationSuccess(
@@ -76,7 +80,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
-        response.sendRedirect(frontendBaseUrl + "/home");
+        String redirectUri = (String) session.getAttribute("redirect_uri");
+        session.removeAttribute("redirect_uri");
+
+        response.sendRedirect(resolveSafeRedirect(redirectUri));
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
@@ -91,5 +98,33 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return (String)current;
+    }
+
+    private String resolveSafeRedirect(String redirectUri) {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            return frontendBaseUrl + "/home";
+        }
+
+        Set<String> allowedOrigins = securityProperties.getAllowedRedirectOrigins();
+
+        try {
+            URI uri = URI.create(redirectUri);
+
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return frontendBaseUrl + "/home";
+            }
+
+            String origin = uri.getScheme() + "://" + uri.getHost() + portPart(uri);
+
+            if (allowedOrigins.contains(origin)) {
+                return redirectUri;
+            }
+        } catch (Exception ignored) {}
+
+        return frontendBaseUrl + "/home";
+    }
+
+    private String portPart(URI uri) {
+        return (uri.getPort() == -1) ? "" : ":" + uri.getPort();
     }
 }
