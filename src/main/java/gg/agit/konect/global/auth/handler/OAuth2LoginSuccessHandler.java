@@ -80,7 +80,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpSession session = request.getSession(true);
         session.setAttribute("userId", user.getId());
 
-        String redirectUri = (String) session.getAttribute("redirect_uri");
+        String redirectUri = (String)session.getAttribute("redirect_uri");
         session.removeAttribute("redirect_uri");
 
         response.sendRedirect(resolveSafeRedirect(redirectUri));
@@ -119,7 +119,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             if (allowedOrigins.contains(origin)) {
                 return redirectUri;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         return frontendBaseUrl + "/home";
     }
