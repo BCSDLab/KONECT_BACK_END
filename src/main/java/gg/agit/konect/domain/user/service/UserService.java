@@ -69,16 +69,14 @@ public class UserService {
 
         validateStudentNumberDuplicationOnSignup(university.getId(), request.studentNumber());
 
-        User newUser = User.builder()
-            .university(university)
-            .email(tempUser.getEmail())
-            .name(request.name())
-            .studentNumber(request.studentNumber())
-            .provider(tempUser.getProvider())
-            .providerId(tempUser.getProviderId())
-            .isMarketingAgreement(request.isMarketingAgreement())
-            .imageUrl("https://stage-static.koreatech.in/konect/User_02.png")
-            .build();
+        User newUser = User.of(
+            university,
+            tempUser,
+            request.name(),
+            request.studentNumber(),
+            request.isMarketingAgreement(),
+            "https://stage-static.koreatech.in/konect/User_02.png"
+        );
 
         User savedUser = userRepository.save(newUser);
 
