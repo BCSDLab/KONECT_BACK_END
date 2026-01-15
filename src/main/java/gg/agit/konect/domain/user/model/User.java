@@ -36,6 +36,10 @@ import lombok.NoArgsConstructor;
         @UniqueConstraint(
             name = "uq_users_university_id_student_number",
             columnNames = {"university_id", "student_number"}
+        ),
+        @UniqueConstraint(
+            name = "uq_users_provider_provider_id",
+            columnNames = {"provider", "provider_id"}
         )
     }
 )
@@ -69,6 +73,9 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Provider provider;
 
+    @Column(name = "provider_id", length = 255)
+    private String providerId;
+
     @Column(name = "is_marketing_agreement", nullable = false)
     private Boolean isMarketingAgreement;
 
@@ -84,6 +91,7 @@ public class User extends BaseEntity {
         String phoneNumber,
         String studentNumber,
         Provider provider,
+        String providerId,
         Boolean isMarketingAgreement,
         String imageUrl
     ) {
@@ -94,6 +102,7 @@ public class User extends BaseEntity {
         this.phoneNumber = phoneNumber;
         this.studentNumber = studentNumber;
         this.provider = provider;
+        this.providerId = providerId;
         this.isMarketingAgreement = isMarketingAgreement;
         this.imageUrl = imageUrl;
     }
