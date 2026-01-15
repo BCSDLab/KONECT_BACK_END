@@ -4,11 +4,8 @@ import java.util.Optional;
 
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -25,22 +22,15 @@ import lombok.RequiredArgsConstructor;
 @Service("apple")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AppleOAuthServiceImpl implements SocialOAuthService {
-
-    private static final String OIDC_REQUEST_REQUIRED = "invalid_user_request";
+public class AppleOAuthServiceImpl extends OidcUserService {
 
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
-    private final OidcUserService oidcUserService = new OidcUserService();
 
     @Transactional
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        if (!(userRequest instanceof OidcUserRequest oidcUserRequest)) {
-            throw new OAuth2AuthenticationException(new OAuth2Error(OIDC_REQUEST_REQUIRED));
-        }
-
-        OidcUser oidcUser = oidcUserService.loadUser(oidcUserRequest);
+    public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+        OidcUser oidcUser = super.loadUser(userRequest);
 
         String email = oidcUser.getAttribute("email");
         String providerId = oidcUser.getSubject();
