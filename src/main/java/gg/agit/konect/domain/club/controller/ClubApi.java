@@ -21,6 +21,7 @@ import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
+import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
@@ -67,15 +68,32 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 상세 정보를 수정한다.", description = """
-        동아리 회장 또는 매니저만 동아리 정보를 수정할 수 있습니다.
+    @Operation(summary = "동아리 프로필 정보를 수정한다.", description = """
+        동아리 회장 또는 매니저만 동아리 프로필을 수정할 수 있습니다.
+        프로필 정보: 동아리명, 한 줄 소개, 로고 이미지, 위치, 분과
                 
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
-    @PutMapping("/{clubId}")
+    @PutMapping("/{clubId}/profile")
+    ResponseEntity<ClubDetailResponse> updateClubProfile(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubProfileUpdateRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 상세 정보를 수정한다.", description = """
+        동아리 회장 또는 매니저만 동아리 상세 정보를 수정할 수 있습니다.
+        상세 정보: 상세 소개, 대표 임원진 정보(성명, 전화번호, 이메일)
+                
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
+        """)
+    @PutMapping("/{clubId}/detail")
     ResponseEntity<ClubDetailResponse> updateClubDetail(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubDetailUpdateRequest request,

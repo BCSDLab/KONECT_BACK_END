@@ -28,6 +28,7 @@ import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubDetailUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
@@ -129,7 +130,7 @@ public class ClubService {
     }
 
     @Transactional
-    public ClubDetailResponse updateClubDetail(Integer clubId, Integer userId, ClubDetailUpdateRequest request) {
+    public ClubDetailResponse updateClubProfile(Integer clubId, Integer userId, ClubProfileUpdateRequest request) {
         userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
 
@@ -140,11 +141,34 @@ public class ClubService {
         club.updateProfile(
             request.name(),
             request.description(),
-            request.introduce(),
             request.imageUrl(),
             request.location(),
             request.clubCategory()
         );
+
+        return getClubDetail(clubId, userId);
+    }
+
+    @Transactional
+    public ClubDetailResponse updateClubDetail(Integer clubId, Integer userId, ClubDetailUpdateRequest request) {
+        userRepository.getById(userId);
+        Club club = clubRepository.getById(clubId);
+
+        if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
+            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
+        }
+
+        club.updateDetail(request.introduce());
+
+        ClubMembers clubMembers = ClubMembers.from(clubMemberRepository.findAllByClubId(clubId));
+        List<ClubMember> presidents = clubMembers.getPresidents();
+
+        if (!presidents.isEmpty()) {
+            ClubMember president = presidents.get(0);
+            User presidentUser = president.getUser();
+            ClubDetailUpdateRequest.Representative rep = request.representative();
+            presidentUser.updateRepresentativeInfo(rep.name(), rep.phoneNumber(), rep.email());
+        }
 
         return getClubDetail(clubId, userId);
     }

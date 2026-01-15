@@ -104,6 +104,12 @@ public class User extends BaseEntity {
         this.phoneNumber = phoneNumber;
     }
 
+    public void updateRepresentativeInfo(String name, String phoneNumber, String email) {
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+    }
+
     public boolean hasSameStudentNumber(String studentNumber) {
         return this.studentNumber.equals(studentNumber);
     }

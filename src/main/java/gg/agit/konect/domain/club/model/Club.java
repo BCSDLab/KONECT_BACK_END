@@ -137,17 +137,19 @@ public class Club extends BaseEntity {
     public void updateProfile(
         String name,
         String description,
-        String introduce,
         String imageUrl,
         String location,
         ClubCategory clubCategory
     ) {
         this.name = name;
         this.description = description;
-        this.introduce = introduce;
         this.imageUrl = imageUrl;
         this.location = location;
         this.clubCategory = clubCategory;
+    }
+
+    public void updateDetail(String introduce) {
+        this.introduce = introduce;
     }
 
     private boolean isFeeInfoEmpty(
