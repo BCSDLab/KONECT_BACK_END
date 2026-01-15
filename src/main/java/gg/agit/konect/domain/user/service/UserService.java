@@ -45,15 +45,24 @@ public class UserService {
     private final StudyTimeQueryService studyTimeQueryService;
 
     @Transactional
-    public Integer signup(String email, Provider provider, SignupRequest request) {
+    public Integer signup(String email, String providerId, Provider provider, SignupRequest request) {
+        if (provider == Provider.APPLE && !StringUtils.hasText(providerId)) {
+            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+        }
+
+        if (StringUtils.hasText(providerId)) {
+            userRepository.findByProviderIdAndProvider(providerId, provider)
+                .ifPresent(u -> {
+                    throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
+                });
+        }
+
         userRepository.findByEmailAndProvider(email, provider)
             .ifPresent(u -> {
                 throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
             });
 
-        UnRegisteredUser tempUser = unRegisteredUserRepository
-            .findByEmailAndProvider(email, provider)
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_UNREGISTERED_USER));
+        UnRegisteredUser tempUser = findUnregisteredUser(email, providerId, provider);
 
         University university = universityRepository.findById(request.universityId())
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
@@ -66,6 +75,7 @@ public class UserService {
             .name(request.name())
             .studentNumber(request.studentNumber())
             .provider(tempUser.getProvider())
+            .providerId(tempUser.getProviderId())
             .isMarketingAgreement(request.isMarketingAgreement())
             .imageUrl("https://stage-static.koreatech.in/konect/User_02.png")
             .build();
@@ -77,11 +87,20 @@ public class UserService {
         return savedUser.getId();
     }
 
+    private UnRegisteredUser findUnregisteredUser(String email, String providerId, Provider provider) {
+        if (StringUtils.hasText(providerId)) {
+            if (unRegisteredUserRepository.existsByProviderIdAndProvider(providerId, provider)) {
+                return unRegisteredUserRepository.getByProviderIdAndProvider(providerId, provider);
+            }
+        }
+
+        return unRegisteredUserRepository.getByEmailAndProvider(email, provider);
+    }
+
     public UserInfoResponse getUserInfo(Integer userId) {
         User user = userRepository.getById(userId);
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(user.getId());
-        boolean isClubManager = clubMembers.stream()
-            .anyMatch(ClubMember::isPresident);
+        boolean isClubManager = clubMembers.stream().anyMatch(ClubMember::isPresident);
         int joinedClubCount = clubMembers.size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
         Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);

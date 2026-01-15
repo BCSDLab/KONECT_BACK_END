@@ -16,11 +16,20 @@ public interface UserRepository extends Repository<User, Integer> {
 
     Optional<User> findByEmailAndProvider(String email, Provider provider);
 
+    Optional<User> findByProviderIdAndProvider(String providerId, Provider provider);
+
+    boolean existsByProviderIdAndProvider(String providerId, Provider provider);
+
     Optional<User> findById(Integer id);
 
     default User getById(Integer id) {
         return findById(id).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));
+    }
+
+    default User getByProviderIdAndProvider(String providerId, Provider provider) {
+        return findByProviderIdAndProvider(providerId, provider)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
     boolean existsByUniversityIdAndStudentNumberAndIdNot(Integer universityId, String studentNumber, Integer id);
