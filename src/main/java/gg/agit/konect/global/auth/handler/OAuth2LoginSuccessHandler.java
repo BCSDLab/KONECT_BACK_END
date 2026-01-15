@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
@@ -35,6 +36,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private static final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
 
     private final UserRepository userRepository;
+    private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
 
     @Override
@@ -63,7 +65,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         if (user.isEmpty()) {
             if (provider == Provider.APPLE && !StringUtils.hasText(email)) {
-                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
+                email = resolveAppleEmail(providerId);
+
+                if (!StringUtils.hasText(email)) {
+                    throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
+                }
             }
 
             sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId);
@@ -146,6 +152,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return userRepository.findByEmailAndProvider(email, provider);
+    }
+
+    private String resolveAppleEmail(String providerId) {
+        if (!StringUtils.hasText(providerId)) {
+            return null;
+        }
+
+        return unRegisteredUserRepository.findByProviderIdAndProvider(providerId, Provider.APPLE)
+            .map(unRegisteredUser -> unRegisteredUser.getEmail())
+            .orElse(null);
     }
 
     private String resolveSafeRedirect(String redirectUri) {
