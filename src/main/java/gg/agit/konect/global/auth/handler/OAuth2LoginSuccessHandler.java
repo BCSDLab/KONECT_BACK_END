@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
@@ -44,14 +45,28 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     ) throws IOException {
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken)authentication;
         Provider provider = Provider.valueOf(oauthToken.getAuthorizedClientRegistrationId().toUpperCase());
-
         OAuth2User oauthUser = (OAuth2User)authentication.getPrincipal();
-        String email = extractEmail(oauthUser, provider);
 
-        Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
+        String providerId = null;
+        String email = extractEmail(oauthUser, provider);
+        Optional<User> user;
+
+        if (provider == Provider.APPLE) {
+            providerId = extractProviderId(oauthUser);
+
+            if (!StringUtils.hasText(providerId)) {
+                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_PROVIDER_ID);
+            }
+        }
+
+        user = findUserByProvider(provider, email, providerId);
 
         if (user.isEmpty()) {
-            sendAdditionalInfoRequiredResponse(request, response, email, provider);
+            if (provider == Provider.APPLE && !StringUtils.hasText(email)) {
+                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
+            }
+
+            sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId);
             return;
         }
 
@@ -62,11 +77,17 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletRequest request,
         HttpServletResponse response,
         String email,
-        Provider provider
+        Provider provider,
+        String providerId
     ) throws IOException {
         HttpSession session = request.getSession(true);
         session.setAttribute("email", email);
         session.setAttribute("provider", provider);
+
+        if (StringUtils.hasText(providerId)) {
+            session.setAttribute("providerId", providerId);
+        }
+
         session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
 
         response.sendRedirect(frontendBaseUrl + "/signup");
@@ -88,16 +109,43 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
         Object current = oauthUser.getAttributes();
+        boolean allowMissing = provider == Provider.APPLE;
 
         for (String key : provider.getEmailPath().split("\\.")) {
             if (!(current instanceof Map<?, ?> map)) {
+                if (allowMissing) {
+                    return null;
+                }
+
                 throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
             }
 
             current = map.get(key);
         }
 
+        if (current == null && allowMissing) {
+            return null;
+        }
+
         return (String)current;
+    }
+
+    private String extractProviderId(OAuth2User oauthUser) {
+        String providerId = oauthUser.getAttribute("sub");
+
+        if (!StringUtils.hasText(providerId)) {
+            providerId = oauthUser.getName();
+        }
+
+        return providerId;
+    }
+
+    private Optional<User> findUserByProvider(Provider provider, String email, String providerId) {
+        if (provider == Provider.APPLE) {
+            return userRepository.findByProviderIdAndProvider(providerId, provider);
+        }
+
+        return userRepository.findByEmailAndProvider(email, provider);
     }
 
     private String resolveSafeRedirect(String redirectUri) {
