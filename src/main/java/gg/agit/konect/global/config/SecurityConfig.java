@@ -4,8 +4,6 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,8 +20,8 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import gg.agit.konect.global.auth.filter.OAuth2RedirectUriSaveFilter;
 import gg.agit.konect.global.auth.handler.OAuth2LoginSuccessHandler;
-import gg.agit.konect.global.auth.oauth.AppleOAuthServiceImpl;
 import gg.agit.konect.global.auth.oauth.AppleClientSecretProvider;
+import gg.agit.konect.global.auth.oauth.AppleOAuthServiceImpl;
 import gg.agit.konect.global.auth.oauth.CustomRequestEntityConverter;
 import gg.agit.konect.global.auth.oauth.SocialOAuthService;
 import lombok.RequiredArgsConstructor;
