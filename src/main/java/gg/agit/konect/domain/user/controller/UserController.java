@@ -33,12 +33,13 @@ public class UserController implements UserApi {
     ) {
         String email = (String)session.getAttribute("email");
         Provider provider = (Provider)session.getAttribute("provider");
+        String providerId = (String)session.getAttribute("providerId");
 
         if (email == null || provider == null) {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
         }
 
-        Integer userId = userService.signup(email, provider, request);
+        Integer userId = userService.signup(email, providerId, provider, request);
 
         session.invalidate();
 

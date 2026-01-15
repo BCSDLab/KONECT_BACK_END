@@ -25,6 +25,10 @@ import lombok.NoArgsConstructor;
         @UniqueConstraint(
             name = "uq_unregistered_user_email_provider",
             columnNames = {"email", "provider"}
+        ),
+        @UniqueConstraint(
+            name = "uq_unregistered_user_provider_provider_id",
+            columnNames = {"provider", "provider_id"}
         )
     }
 )
@@ -43,10 +47,14 @@ public class UnRegisteredUser extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Provider provider;
 
+    @Column(name = "provider_id", length = 255)
+    private String providerId;
+
     @Builder
-    private UnRegisteredUser(Integer id, String email, Provider provider) {
+    private UnRegisteredUser(Integer id, String email, Provider provider, String providerId) {
         this.id = id;
         this.email = email;
         this.provider = provider;
+        this.providerId = providerId;
     }
 }
