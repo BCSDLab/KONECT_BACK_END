@@ -99,5 +99,7 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         """)
     List<ClubMember> findByUserIdIn(@Param("userIds") List<Integer> userIds);
 
+    ClubMember save(ClubMember clubMember);
+
     void deleteByUserId(Integer userId);
 }
