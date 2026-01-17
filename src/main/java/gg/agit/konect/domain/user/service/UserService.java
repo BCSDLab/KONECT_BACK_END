@@ -123,7 +123,11 @@ public class UserService {
         Map<Integer, ClubPosition> memberPositions = clubPreMemberRepository
             .findAllByClubIdInAndClubPositionGroup(clubIds, ClubPositionGroup.MEMBER)
             .stream()
-            .collect(Collectors.toMap(position -> position.getClub().getId(), position -> position));
+            .collect(Collectors.toMap(
+                position -> position.getClub().getId(),
+                position -> position,
+                (existing, ignored) -> existing
+            ));
 
         for (ClubPreMember preMember : preMembers) {
             ClubPosition clubPosition = memberPositions.get(preMember.getClub().getId());

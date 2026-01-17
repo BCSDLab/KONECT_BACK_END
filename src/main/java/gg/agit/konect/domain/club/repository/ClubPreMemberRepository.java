@@ -32,6 +32,7 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
         FROM ClubPosition cp
         WHERE cp.club.id IN :clubIds
         AND cp.clubPositionGroup = :clubPositionGroup
+        ORDER BY cp.id ASC
         """)
     List<ClubPosition> findAllByClubIdInAndClubPositionGroup(
         @Param("clubIds") List<Integer> clubIds,
