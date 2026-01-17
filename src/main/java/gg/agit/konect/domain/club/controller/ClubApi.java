@@ -16,15 +16,15 @@ import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubDetailUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
-import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubRepresentativeUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,35 +68,38 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 프로필 정보를 수정한다.", description = """
-        동아리 회장 또는 매니저만 동아리 프로필을 수정할 수 있습니다.
-        프로필 정보: 동아리명, 한 줄 소개, 로고 이미지, 위치, 분과
-                
+    @Operation(summary = "동아리 정보를 수정한다.", description = """
+        동아리 회장 또는 매니저만 동아리 정보를 수정할 수 있습니다.
+        수정 가능 항목: 동아리명, 한 줄 소개, 로고 이미지, 위치, 분과, 상세 소개
+
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
-    @PutMapping("/{clubId}/profile")
-    ResponseEntity<ClubDetailResponse> updateClubProfile(
+    @PutMapping("/{clubId}")
+    ResponseEntity<ClubDetailResponse> updateClub(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubProfileUpdateRequest request,
+        @Valid @RequestBody ClubUpdateRequest request,
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 상세 정보를 수정한다.", description = """
-        동아리 회장 또는 매니저만 동아리 상세 정보를 수정할 수 있습니다.
-        상세 정보: 상세 소개, 대표 임원진 정보(성명, 전화번호, 이메일)
+    @Operation(summary = "동아리 대표 임원진(회장)을 변경한다.", description = """
+        동아리 회장만 대표 임원진을 변경할 수 있습니다.
+        새로운 회장은 해당 동아리에 가입된 회원 중에서 선택해야 합니다.
+        기존 회장은 자동으로 일반 회원으로 변경됩니다.
                 
         ## 에러
-        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - FORBIDDEN_CLUB_PRESIDENT_ACCESS (403): 동아리 회장 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_MEMBER (404): 해당 동아리에 가입되지 않은 사용자입니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
         """)
-    @PutMapping("/{clubId}/detail")
-    ResponseEntity<ClubDetailResponse> updateClubDetail(
+    @PutMapping("/{clubId}/president")
+    ResponseEntity<ClubDetailResponse> changePresident(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubDetailUpdateRequest request,
+        @Valid @RequestBody ClubRepresentativeUpdateRequest request,
         @UserId Integer userId
     );
 

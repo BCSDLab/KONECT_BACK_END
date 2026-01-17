@@ -134,6 +134,22 @@ public class Club extends BaseEntity {
         updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline);
     }
 
+    public void update(
+        String name,
+        String description,
+        String imageUrl,
+        String location,
+        ClubCategory clubCategory,
+        String introduce
+    ) {
+        this.name = name;
+        this.description = description;
+        this.imageUrl = imageUrl;
+        this.location = location;
+        this.clubCategory = clubCategory;
+        this.introduce = introduce;
+    }
+
     public void updateProfile(
         String name,
         String description,

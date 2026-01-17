@@ -14,15 +14,15 @@ import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubDetailUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
-import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubRepresentativeUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -64,22 +64,26 @@ public class ClubController implements ClubApi {
     }
 
     @Override
-    public ResponseEntity<ClubDetailResponse> updateClubProfile(
+    public ResponseEntity<ClubDetailResponse> updateClub(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubProfileUpdateRequest request,
+        @Valid @RequestBody ClubUpdateRequest request,
         @UserId Integer userId
     ) {
-        ClubDetailResponse response = clubService.updateClubProfile(clubId, userId, request);
+        ClubDetailResponse response = clubService.updateClub(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 
     @Override
-    public ResponseEntity<ClubDetailResponse> updateClubDetail(
+    public ResponseEntity<ClubDetailResponse> changePresident(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubDetailUpdateRequest request,
+        @Valid @RequestBody ClubRepresentativeUpdateRequest request,
         @UserId Integer userId
     ) {
-        ClubDetailResponse response = clubService.updateClubDetail(clubId, userId, request);
+        ClubDetailResponse response = clubService.changePresident(
+            clubId,
+            userId,
+            request.userId()
+        );
         return ResponseEntity.ok(response);
     }
 

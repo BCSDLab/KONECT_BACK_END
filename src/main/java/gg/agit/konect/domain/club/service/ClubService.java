@@ -27,11 +27,10 @@ import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
-import gg.agit.konect.domain.club.dto.ClubDetailUpdateRequest;
-import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.club.model.Club;
@@ -130,7 +129,7 @@ public class ClubService {
     }
 
     @Transactional
-    public ClubDetailResponse updateClubProfile(Integer clubId, Integer userId, ClubProfileUpdateRequest request) {
+    public ClubDetailResponse updateClub(Integer clubId, Integer userId, ClubUpdateRequest request) {
         userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
 
@@ -138,36 +137,31 @@ public class ClubService {
             throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
         }
 
-        club.updateProfile(
+        club.update(
             request.name(),
             request.description(),
             request.imageUrl(),
             request.location(),
-            request.clubCategory()
+            request.clubCategory(),
+            request.introduce()
         );
 
         return getClubDetail(clubId, userId);
     }
 
     @Transactional
-    public ClubDetailResponse updateClubDetail(Integer clubId, Integer userId, ClubDetailUpdateRequest request) {
+    public ClubDetailResponse changePresident(Integer clubId, Integer userId, Integer newPresidentUserId) {
         userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
+        User newPresident = userRepository.getById(newPresidentUserId);
 
-        if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
+        if (!hasClubManageAccess(clubId, userId, PRESIDENT_ALLOWED_GROUPS)) {
             throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
         }
 
-        club.updateDetail(request.introduce());
-
-        ClubMembers clubMembers = ClubMembers.from(clubMemberRepository.findAllByClubId(clubId));
-        List<ClubMember> presidents = clubMembers.getPresidents();
-
-        if (!presidents.isEmpty()) {
-            ClubMember president = presidents.get(0);
-            User presidentUser = president.getUser();
-            ClubDetailUpdateRequest.Representative rep = request.representative();
-            presidentUser.updateRepresentativeInfo(rep.name(), rep.phoneNumber(), rep.email());
+        boolean isNewPresidentMember = clubMemberRepository.existsByClubIdAndUserId(clubId, newPresidentUserId);
+        if (!isNewPresidentMember) {
+            throw CustomException.of(NOT_FOUND_CLUB_MEMBER);
         }
 
         return getClubDetail(clubId, userId);

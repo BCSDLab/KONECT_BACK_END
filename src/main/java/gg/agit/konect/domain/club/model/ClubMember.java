@@ -58,4 +58,8 @@ public class ClubMember extends BaseEntity {
     public boolean isSameUser(Integer userId) {
         return this.user.getId().equals(userId);
     }
+
+    public void updatePosition(ClubPosition clubPosition) {
+        this.clubPosition = clubPosition;
+    }
 }
