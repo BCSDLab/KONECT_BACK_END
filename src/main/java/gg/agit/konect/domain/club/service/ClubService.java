@@ -21,7 +21,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
-import gg.agit.konect.domain.club.dto.ClubDetailCreateRequest;
+import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
@@ -102,7 +102,7 @@ public class ClubService {
     }
 
     @Transactional
-    public ClubDetailResponse createClubAndDetail(Integer userId, ClubDetailCreateRequest request) {
+    public ClubDetailResponse createClub(Integer userId, ClubCreateRequest request) {
         User user = userRepository.getById(userId);
         Club club = request.toEntity(user.getUniversity());
 

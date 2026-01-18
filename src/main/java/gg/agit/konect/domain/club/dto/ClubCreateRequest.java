@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record ClubDetailCreateRequest(
+public record ClubCreateRequest(
     @Schema(description = "동아리 이름", example = "BCSD Lab", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "동아리 이름은 필수 입력입니다.")
     @Size(max = 50, message = "동아리 이름은 50자 이하여야 합니다.")

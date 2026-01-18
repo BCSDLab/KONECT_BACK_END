@@ -14,7 +14,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
-import gg.agit.konect.domain.club.dto.ClubDetailCreateRequest;
+import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
@@ -23,6 +23,7 @@ import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubRepresentativeUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -57,13 +58,13 @@ public interface ClubApi {
 
     @Operation(summary = "새로운 동아리를 생성한다.", description = """
         새로운 동아리를 생성하고, 생성한 사용자를 회장으로 등록합니다.
-                
+
         ## 에러
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
     @PostMapping
-    ResponseEntity<ClubDetailResponse> createClubAndDetail(
-        @Valid @RequestBody ClubDetailCreateRequest request,
+    ResponseEntity<ClubDetailResponse> createClub(
+        @Valid @RequestBody ClubCreateRequest request,
         @UserId Integer userId
     );
 

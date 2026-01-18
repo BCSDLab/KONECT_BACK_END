@@ -12,7 +12,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
-import gg.agit.konect.domain.club.dto.ClubDetailCreateRequest;
+import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
@@ -21,6 +21,7 @@ import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubRepresentativeUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.service.ClubService;
@@ -54,11 +55,11 @@ public class ClubController implements ClubApi {
     }
 
     @Override
-    public ResponseEntity<ClubDetailResponse> createClubAndDetail(
-        @Valid @RequestBody ClubDetailCreateRequest request,
+    public ResponseEntity<ClubDetailResponse> createClub(
+        @Valid @RequestBody ClubCreateRequest request,
         @UserId Integer userId
     ) {
-        ClubDetailResponse response = clubService.createClubAndDetail(userId, request);
+        ClubDetailResponse response = clubService.createClub(userId, request);
         return ResponseEntity.ok(response);
     }
 
