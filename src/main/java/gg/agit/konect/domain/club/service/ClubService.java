@@ -84,6 +84,7 @@ public class ClubService {
         Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(
             pageable, condition.query(), condition.isRecruiting(), user.getUniversity().getId()
         );
+
         return ClubsResponse.of(clubSummaryInfoPage);
     }
 
