@@ -29,6 +29,7 @@ import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
+import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
@@ -43,6 +44,7 @@ import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubApplyQuestionAnswers;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubMembers;
+import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubRecruitmentImage;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
@@ -50,6 +52,7 @@ import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.club.repository.ClubPositionRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
@@ -71,6 +74,7 @@ public class ClubService {
     private final ClubQueryRepository clubQueryRepository;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
+    private final ClubPositionRepository clubPositionRepository;
     private final ClubRecruitmentRepository clubRecruitmentRepository;
     private final ClubApplyRepository clubApplyRepository;
     private final ClubApplyQuestionRepository clubApplyQuestionRepository;
@@ -162,13 +166,19 @@ public class ClubService {
         );
     }
 
-    public ClubMembersResponse getClubMembers(Integer clubId, Integer userId) {
+    public ClubMembersResponse getClubMembers(Integer clubId, Integer userId, ClubMemberCondition condition) {
         boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
         if (!isMember) {
             throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
         }
 
-        List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(clubId);
+        List<ClubMember> clubMembers;
+        if (condition != null && condition.positionGroup() != null) {
+            clubMembers = clubMemberRepository.findAllByClubIdAndPositionGroup(clubId, condition.positionGroup());
+        } else {
+            clubMembers = clubMemberRepository.findAllByClubId(clubId);
+        }
+
         return ClubMembersResponse.from(clubMembers);
     }
 

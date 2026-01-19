@@ -64,4 +64,34 @@ public class ClubPosition extends BaseEntity {
     public boolean isPresident() {
         return clubPositionGroup == ClubPositionGroup.PRESIDENT;
     }
+
+    public boolean isVicePresident() {
+        return clubPositionGroup == ClubPositionGroup.VICE_PRESIDENT;
+    }
+
+    public boolean isManager() {
+        return clubPositionGroup == ClubPositionGroup.MANAGER;
+    }
+
+    public boolean isMember() {
+        return clubPositionGroup == ClubPositionGroup.MEMBER;
+    }
+
+    public boolean canRename() {
+        return clubPositionGroup == ClubPositionGroup.MANAGER
+            || clubPositionGroup == ClubPositionGroup.MEMBER;
+    }
+
+    public boolean canDelete() {
+        return clubPositionGroup == ClubPositionGroup.MANAGER
+            || clubPositionGroup == ClubPositionGroup.MEMBER;
+    }
+
+    public void updateName(String newName) {
+        this.name = newName;
+    }
+
+    public int getPriority() {
+        return clubPositionGroup.getPriority();
+    }
 }

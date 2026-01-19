@@ -17,12 +17,21 @@ import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
+import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
+import gg.agit.konect.domain.club.dto.ClubPositionCreateRequest;
+import gg.agit.konect.domain.club.dto.ClubPositionUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubPositionsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
+import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
+import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
+import gg.agit.konect.domain.club.service.ClubMemberManagementService;
+import gg.agit.konect.domain.club.service.ClubPositionService;
 import gg.agit.konect.domain.club.service.ClubService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -34,6 +43,8 @@ import lombok.RequiredArgsConstructor;
 public class ClubController implements ClubApi {
 
     private final ClubService clubService;
+    private final ClubPositionService clubPositionService;
+    private final ClubMemberManagementService clubMemberManagementService;
 
     @Override
     public ResponseEntity<ClubsResponse> getClubs(
@@ -94,9 +105,10 @@ public class ClubController implements ClubApi {
     @Override
     public ResponseEntity<ClubMembersResponse> getClubMembers(
         @PathVariable(name = "clubId") Integer clubId,
+        @Valid @ParameterObject @ModelAttribute ClubMemberCondition condition,
         @UserId Integer userId
     ) {
-        ClubMembersResponse response = clubService.getClubMembers(clubId, userId);
+        ClubMembersResponse response = clubService.getClubMembers(clubId, userId, condition);
         return ResponseEntity.ok(response);
     }
 
@@ -174,6 +186,89 @@ public class ClubController implements ClubApi {
         @UserId Integer userId
     ) {
         clubService.updateRecruitment(clubId, userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<ClubPositionsResponse> getClubPositions(
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    ) {
+        ClubPositionsResponse response = clubPositionService.getClubPositions(clubId, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ClubPositionsResponse> createClubPosition(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubPositionCreateRequest request,
+        @UserId Integer userId
+    ) {
+        ClubPositionsResponse response = clubPositionService.createClubPosition(clubId, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ClubPositionsResponse> updateClubPositionName(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "positionId") Integer positionId,
+        @Valid @RequestBody ClubPositionUpdateRequest request,
+        @UserId Integer userId
+    ) {
+        ClubPositionsResponse response = clubPositionService.updateClubPositionName(
+            clubId, positionId, userId, request
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteClubPosition(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "positionId") Integer positionId,
+        @UserId Integer userId
+    ) {
+        clubPositionService.deleteClubPosition(clubId, positionId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> changeMemberPosition(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "memberId") Integer memberId,
+        @Valid @RequestBody MemberPositionChangeRequest request,
+        @UserId Integer userId
+    ) {
+        clubMemberManagementService.changeMemberPosition(clubId, memberId, userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> transferPresident(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody PresidentTransferRequest request,
+        @UserId Integer userId
+    ) {
+        clubMemberManagementService.transferPresident(clubId, userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> changeVicePresident(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody VicePresidentChangeRequest request,
+        @UserId Integer userId
+    ) {
+        clubMemberManagementService.changeVicePresident(clubId, userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> removeMember(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "memberId") Integer memberId,
+        @UserId Integer userId
+    ) {
+        clubMemberManagementService.removeMember(clubId, memberId, userId);
         return ResponseEntity.noContent().build();
     }
 }

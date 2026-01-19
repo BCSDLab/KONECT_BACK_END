@@ -2,8 +2,10 @@ package gg.agit.konect.domain.club.controller;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,12 +21,19 @@ import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
+import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
+import gg.agit.konect.domain.club.dto.ClubPositionCreateRequest;
+import gg.agit.konect.domain.club.dto.ClubPositionUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubPositionsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
+import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
+import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -98,10 +107,17 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 멤버 리스트를 조회한다.")
+    @Operation(summary = "동아리 멤버 리스트를 조회한다.", description = """
+        동아리 회원만 멤버 리스트를 조회할 수 있습니다.
+        positionGroup 파라미터로 특정 직책 그룹의 회원만 필터링할 수 있습니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MEMBER_ACCESS (403): 동아리 멤버 조회 권한이 없습니다.
+        """)
     @GetMapping("/{clubId}/members")
     ResponseEntity<ClubMembersResponse> getClubMembers(
         @PathVariable(name = "clubId") Integer clubId,
+        @Valid @ParameterObject @ModelAttribute ClubMemberCondition condition,
         @UserId Integer userId
     );
 
@@ -229,6 +245,152 @@ public interface ClubApi {
     ResponseEntity<Void> updateRecruitment(
         @Valid @RequestBody ClubRecruitmentUpdateRequest request,
         @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 직책 목록을 조회한다.", description = """
+        동아리의 모든 직책을 우선순위 순으로 조회합니다.
+        각 직책의 회원 수, 수정/삭제 가능 여부도 함께 반환됩니다.
+
+        ## 에러
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        """)
+    @GetMapping("/{clubId}/positions")
+    ResponseEntity<ClubPositionsResponse> getClubPositions(
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 직책을 생성한다.", description = """
+        동아리 회장 또는 매니저만 직책을 생성할 수 있습니다.
+        PRESIDENT와 VICE_PRESIDENT 직책은 생성할 수 없으며, MANAGER 또는 MEMBER 그룹의 직책만 생성 가능합니다.
+
+        ## 에러
+        - POSITION_NAME_DUPLICATED (400): 동일한 직책 이름이 이미 존재합니다.
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        """)
+    @PostMapping("/{clubId}/positions")
+    ResponseEntity<ClubPositionsResponse> createClubPosition(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubPositionCreateRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 직책의 이름을 수정한다.", description = """
+        동아리 회장 또는 매니저만 직책 이름을 수정할 수 있습니다.
+        PRESIDENT와 VICE_PRESIDENT 직책의 이름은 변경할 수 없습니다.
+
+        ## 에러
+        - POSITION_NAME_DUPLICATED (400): 동일한 직책 이름이 이미 존재합니다.
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - FORBIDDEN_POSITION_NAME_CHANGE (403): 해당 직책의 이름은 변경할 수 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
+        """)
+    @PatchMapping("/{clubId}/positions/{positionId}")
+    ResponseEntity<ClubPositionsResponse> updateClubPositionName(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "positionId") Integer positionId,
+        @Valid @RequestBody ClubPositionUpdateRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 직책을 삭제한다.", description = """
+        동아리 회장 또는 매니저만 직책을 삭제할 수 있습니다.
+        PRESIDENT와 VICE_PRESIDENT 직책은 삭제할 수 없습니다.
+        해당 직책을 사용 중인 회원이 없어야 하며, 해당 그룹에 최소 2개의 직책이 있어야 삭제 가능합니다.
+
+        ## 에러
+        - CANNOT_DELETE_ESSENTIAL_POSITION (400): 필수 직책은 삭제할 수 없습니다.
+        - POSITION_IN_USE (400): 해당 직책을 사용 중인 회원이 있어 삭제할 수 없습니다.
+        - INSUFFICIENT_POSITION_COUNT (400): 해당 그룹에 최소 2개의 직책이 있어야 삭제 가능합니다.
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
+        """)
+    @DeleteMapping("/{clubId}/positions/{positionId}")
+    ResponseEntity<Void> deleteClubPosition(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "positionId") Integer positionId,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 회원의 직책을 변경한다.", description = """
+        동아리 회장 또는 매니저만 회원의 직책을 변경할 수 있습니다.
+        자기 자신의 직책은 변경할 수 없으며, 상위 직급만 하위 직급의 회원을 관리할 수 있습니다.
+
+        ## 에러
+        - CANNOT_CHANGE_OWN_POSITION (400): 자기 자신의 직책은 변경할 수 없습니다.
+        - CANNOT_MANAGE_HIGHER_POSITION (400): 자신보다 높은 직급의 회원은 관리할 수 없습니다.
+        - VICE_PRESIDENT_ALREADY_EXISTS (409): 부회장은 이미 존재합니다.
+        - MANAGER_LIMIT_EXCEEDED (400): 운영진은 최대 20명까지 임명 가능합니다.
+        - FORBIDDEN_MEMBER_POSITION_CHANGE (403): 회원 직책 변경 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_MEMBER (404): 동아리 회원을 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
+        """)
+    @PatchMapping("/{clubId}/members/{memberId}/position")
+    ResponseEntity<Void> changeMemberPosition(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "memberId") Integer memberId,
+        @Valid @RequestBody MemberPositionChangeRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 회장 권한을 위임한다.", description = """
+        현재 회장만 회장 권한을 다른 회원에게 위임할 수 있습니다.
+        회장 위임 시 현재 회장은 일반회원으로 강등됩니다.
+
+        ## 에러
+        - ILLEGAL_ARGUMENT (400): 자기 자신에게는 위임할 수 없습니다.
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 회장 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_MEMBER (404): 동아리 회원을 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_PRESIDENT (404): 동아리 회장을 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
+        """)
+    @PostMapping("/{clubId}/president/transfer")
+    ResponseEntity<Void> transferPresident(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody PresidentTransferRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 부회장을 변경한다.", description = """
+        동아리 회장만 부회장을 임명하거나 해제할 수 있습니다.
+        vicePresidentUserId가 null이면 부회장을 해제하고, 값이 있으면 해당 회원을 부회장으로 임명합니다.
+
+        ## 에러
+        - CANNOT_CHANGE_OWN_POSITION (400): 자기 자신을 부회장으로 임명할 수 없습니다.
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 회장 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_MEMBER (404): 동아리 회원을 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
+        """)
+    @PatchMapping("/{clubId}/vice-president")
+    ResponseEntity<Void> changeVicePresident(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody VicePresidentChangeRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 회원을 강제 탈퇴시킨다.", description = """
+        동아리 회장 또는 매니저만 회원을 강제 탈퇴시킬 수 있습니다.
+        자기 자신은 강제 탈퇴시킬 수 없으며, 회장은 강제 탈퇴시킬 수 없습니다.
+        상위 직급만 하위 직급의 회원을 강제 탈퇴시킬 수 있습니다.
+
+        ## 에러
+        - CANNOT_REMOVE_SELF (400): 자기 자신을 강제 탈퇴시킬 수 없습니다.
+        - CANNOT_DELETE_CLUB_PRESIDENT (400): 회장은 강제 탈퇴시킬 수 없습니다.
+        - CANNOT_MANAGE_HIGHER_POSITION (400): 자신보다 높은 직급의 회원은 관리할 수 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_MEMBER (404): 동아리 회원을 찾을 수 없습니다.
+        """)
+    @DeleteMapping("/{clubId}/members/{memberId}")
+    ResponseEntity<Void> removeMember(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "memberId") Integer memberId,
         @UserId Integer userId
     );
 }
