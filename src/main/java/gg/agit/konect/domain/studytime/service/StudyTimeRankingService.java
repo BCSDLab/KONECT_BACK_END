@@ -34,7 +34,6 @@ public class StudyTimeRankingService {
     private static final String RANKING_TYPE_CLUB = "CLUB";
     private static final String RANKING_TYPE_STUDENT_NUMBER = "STUDENT_NUMBER";
     private static final String RANKING_TYPE_PERSONAL = "PERSONAL";
-    private static final int STUDENT_NUMBER_PREFIX_LENGTH = 4;
 
     private final StudyTimeRankingRepository studyTimeRankingRepository;
     private final RankingTypeRepository rankingTypeRepository;
@@ -195,6 +194,6 @@ public class StudyTimeRankingService {
     }
 
     private String resolveStudentNumber(String studentNumber) {
-        return String.valueOf(Integer.parseInt(studentNumber.substring(0, STUDENT_NUMBER_PREFIX_LENGTH)));
+        return String.valueOf(Integer.parseInt(studentNumber.substring(2, 4)));
     }
 }
