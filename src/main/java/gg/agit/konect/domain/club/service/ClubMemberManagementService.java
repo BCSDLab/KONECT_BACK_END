@@ -1,8 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGER;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.VICE_PRESIDENT;
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.*;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.util.Optional;
@@ -20,7 +18,6 @@ import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPositionRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ClubMemberManagementService {
 
+    public static final int MAX_MANAGER_COUNT = 20;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubPositionRepository clubPositionRepository;
@@ -79,7 +77,7 @@ public class ClubMemberManagementService {
 
         if (newPositionGroup == MANAGER) {
             long managerCount = clubMemberRepository.countByClubIdAndPositionGroup(clubId, MANAGER);
-            if (managerCount >= 20) {
+            if (managerCount >= MAX_MANAGER_COUNT) {
                 throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
             }
         }
@@ -114,7 +112,8 @@ public class ClubMemberManagementService {
         ClubPosition presidentPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId, PRESIDENT)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_POSITION));
 
-        ClubPosition memberPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId, ClubPositionGroup.MEMBER)
+        ClubPosition memberPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId,
+                ClubPositionGroup.MEMBER)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_POSITION));
 
         currentPresident.changePosition(memberPosition);
@@ -136,10 +135,12 @@ public class ClubMemberManagementService {
             throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
         }
 
-        ClubPosition vicePresidentPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId, VICE_PRESIDENT)
+        ClubPosition vicePresidentPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId,
+                VICE_PRESIDENT)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_POSITION));
 
-        Optional<ClubMember> currentVicePresidentOpt = clubMemberRepository.findAllByClubIdAndPositionGroup(clubId, VICE_PRESIDENT)
+        Optional<ClubMember> currentVicePresidentOpt = clubMemberRepository.findAllByClubIdAndPositionGroup(clubId,
+                VICE_PRESIDENT)
             .stream()
             .findFirst();
 
@@ -148,7 +149,8 @@ public class ClubMemberManagementService {
         if (newVicePresidentUserId == null) {
             if (currentVicePresidentOpt.isPresent()) {
                 ClubMember currentVicePresident = currentVicePresidentOpt.get();
-                ClubPosition memberPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId, ClubPositionGroup.MEMBER)
+                ClubPosition memberPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId,
+                        ClubPositionGroup.MEMBER)
                     .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_POSITION));
                 currentVicePresident.changePosition(memberPosition);
             }
@@ -165,7 +167,8 @@ public class ClubMemberManagementService {
         if (currentVicePresidentOpt.isPresent()) {
             ClubMember currentVicePresident = currentVicePresidentOpt.get();
             if (!currentVicePresident.getId().getUserId().equals(newVicePresidentUserId)) {
-                ClubPosition memberPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId, ClubPositionGroup.MEMBER)
+                ClubPosition memberPosition = clubPositionRepository.findFirstByClubIdAndPositionGroup(clubId,
+                        ClubPositionGroup.MEMBER)
                     .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_POSITION));
                 currentVicePresident.changePosition(memberPosition);
             }
