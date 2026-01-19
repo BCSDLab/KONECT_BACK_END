@@ -116,7 +116,7 @@ public class Club extends BaseEntity {
         this.clubRecruitment = clubRecruitment;
     }
 
-    public static Club from(ClubCreateRequest request, University university) {
+    public static Club of(ClubCreateRequest request, University university) {
         return Club.builder()
             .name(request.name())
             .description(request.description())
