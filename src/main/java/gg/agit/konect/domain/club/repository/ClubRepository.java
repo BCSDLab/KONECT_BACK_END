@@ -24,4 +24,6 @@ public interface ClubRepository extends Repository<Club, Integer> {
         return findById(id).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
     }
+
+    Club save(Club club);
 }

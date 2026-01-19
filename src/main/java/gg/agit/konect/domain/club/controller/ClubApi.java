@@ -18,6 +18,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
+import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
@@ -61,6 +62,21 @@ public interface ClubApi {
     @GetMapping("/{clubId}")
     ResponseEntity<ClubDetailResponse> getClubDetail(
         @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리를 생성한다.", description = """
+        새로운 동아리를 생성합니다.
+        동아리 생성 시 기본 직책 4개(회장, 부회장, 운영진, 일반회원)가 자동으로 생성되며,
+        생성자는 자동으로 회장으로 등록됩니다.
+
+        ## 에러
+        - INVALID_REQUEST_BODY (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
+        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
+        """)
+    @PostMapping
+    ResponseEntity<ClubDetailResponse> createClub(
+        @Valid @RequestBody ClubCreateRequest request,
         @UserId Integer userId
     );
 
