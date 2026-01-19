@@ -3,6 +3,8 @@ package gg.agit.konect.domain.user.service;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,9 +12,13 @@ import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.model.ClubPosition;
+import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
 import gg.agit.konect.domain.studytime.service.StudyTimeQueryService;
 import gg.agit.konect.domain.university.model.University;
@@ -38,6 +44,7 @@ public class UserService {
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final UniversityRepository universityRepository;
     private final ClubMemberRepository clubMemberRepository;
+    private final ClubPreMemberRepository clubPreMemberRepository;
     private final CouncilNoticeReadRepository councilNoticeReadRepository;
     private final ClubApplyRepository clubApplyRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -80,6 +87,8 @@ public class UserService {
 
         User savedUser = userRepository.save(newUser);
 
+        joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
+
         unRegisteredUserRepository.delete(tempUser);
 
         return savedUser.getId();
@@ -93,6 +102,51 @@ public class UserService {
         }
 
         return unRegisteredUserRepository.getByEmailAndProvider(email, provider);
+    }
+
+    // TODO. 초기 회원 처리 완료 후 제거
+    private void joinPreMembers(User user, Integer universityId, String studentNumber, String name) {
+        List<ClubPreMember> preMembers =
+            clubPreMemberRepository.findAllByUniversityIdAndStudentNumberAndName(
+                universityId, studentNumber, name
+            );
+
+        if (preMembers.isEmpty()) {
+            return;
+        }
+
+        List<Integer> clubIds = preMembers.stream()
+            .map(preMember -> preMember.getClub().getId())
+            .distinct()
+            .toList();
+
+        Map<Integer, ClubPosition> memberPositions = clubPreMemberRepository
+            .findAllByClubIdInAndClubPositionGroup(clubIds, ClubPositionGroup.MEMBER)
+            .stream()
+            .collect(Collectors.toMap(
+                position -> position.getClub().getId(),
+                position -> position,
+                (existing, ignored) -> existing
+            ));
+
+        for (ClubPreMember preMember : preMembers) {
+            ClubPosition clubPosition = memberPositions.get(preMember.getClub().getId());
+
+            if (clubPosition == null) {
+                throw CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_POSITION);
+            }
+
+            ClubMember clubMember = ClubMember.builder()
+                .club(preMember.getClub())
+                .user(user)
+                .clubPosition(clubPosition)
+                .isFeePaid(false)
+                .build();
+
+            clubMemberRepository.save(clubMember);
+        }
+
+        clubPreMemberRepository.deleteAll(preMembers);
     }
 
     public UserInfoResponse getUserInfo(Integer userId) {
