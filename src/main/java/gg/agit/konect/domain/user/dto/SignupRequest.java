@@ -21,7 +21,7 @@ public record SignupRequest(
 
     @NotEmpty(message = "학번은 필수 입력입니다.")
     @Size(min = 4, max = 20, message = "학번은 4자 이상 20자 이하입니다.")
-    @Pattern(regexp = "^[0-9-]+$", message = "학번은 숫자와 -만 입력할 수 있습니다.")
+    @Pattern(regexp = "^[0-9]+$", message = "학번은 숫자만 입력할 수 있습니다.")
     @Schema(description = "회원 학번", example = "20250001", requiredMode = REQUIRED)
     String studentNumber,
 
