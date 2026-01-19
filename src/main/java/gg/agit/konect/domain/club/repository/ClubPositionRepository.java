@@ -30,7 +30,7 @@ public interface ClubPositionRepository extends Repository<ClubPosition, Integer
         SELECT cp
         FROM ClubPosition cp
         WHERE cp.club.id = :clubId
-        ORDER BY cp.clubPositionGroup
+        ORDER BY cp.clubPositionGroup ASC, cp.name ASC
         """)
     List<ClubPosition> findAllByClubId(@Param(value = "clubId") Integer clubId);
 

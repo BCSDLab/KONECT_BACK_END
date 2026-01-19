@@ -18,8 +18,9 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
-        JOIN FETCH cm.clubPosition
+        JOIN FETCH cm.clubPosition cp
         WHERE cm.club.id = :clubId
+        ORDER BY cp.clubPositionGroup ASC, cp.name ASC
         """)
     List<ClubMember> findAllByClubId(@Param("clubId") Integer clubId);
 
@@ -30,6 +31,7 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         JOIN FETCH cm.clubPosition cp
         WHERE cm.club.id = :clubId
         AND cp.clubPositionGroup = :positionGroup
+        ORDER BY cp.name ASC
         """)
     List<ClubMember> findAllByClubIdAndPositionGroup(
         @Param("clubId") Integer clubId,
