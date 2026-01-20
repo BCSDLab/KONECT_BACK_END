@@ -1,5 +1,5 @@
 ALTER TABLE council
-    CHANGE instagram_url instagram_user_name VARCHAR(255) NOT NULL;
+    CHANGE instagram_url instagram_user_name VARCHAR(30) NOT NULL;
 
 UPDATE council
 SET instagram_user_name = CASE
