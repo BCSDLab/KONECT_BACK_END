@@ -4,8 +4,8 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-import gg.agit.konect.global.model.BaseEntity;
 import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -58,8 +58,8 @@ public class Council extends BaseEntity {
     private String email;
 
     @NotNull
-    @Column(name = "instagram_url", nullable = false)
-    private String instagramUrl;
+    @Column(name = "instagram_user_name", nullable = false)
+    private String instagramUserName;
 
     @NotNull
     @Column(name = "operating_hour", nullable = false)
@@ -79,7 +79,7 @@ public class Council extends BaseEntity {
         String personalColor,
         String phoneNumber,
         String email,
-        String instagramUrl,
+        String instagramUserName,
         String operatingHour,
         University university
     ) {
@@ -91,7 +91,7 @@ public class Council extends BaseEntity {
         this.personalColor = personalColor;
         this.phoneNumber = phoneNumber;
         this.email = email;
-        this.instagramUrl = instagramUrl;
+        this.instagramUserName = instagramUserName;
         this.operatingHour = operatingHour;
         this.university = university;
     }
@@ -102,7 +102,7 @@ public class Council extends BaseEntity {
         String introduce,
         String location,
         String personalColor,
-        String instagramUrl,
+        String instagramUserName,
         String operatingHour
     ) {
         this.name = name;
@@ -110,7 +110,7 @@ public class Council extends BaseEntity {
         this.introduce = introduce;
         this.location = location;
         this.personalColor = personalColor;
-        this.instagramUrl = instagramUrl;
+        this.instagramUserName = instagramUserName;
         this.operatingHour = operatingHour;
     }
 }
