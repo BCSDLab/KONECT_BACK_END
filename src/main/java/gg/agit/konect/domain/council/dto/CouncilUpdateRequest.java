@@ -52,7 +52,7 @@ public record CouncilUpdateRequest(
     String operatingHour,
 
     @NotEmpty(message = "총동아리연합회 인스타 아이디는 필수 입력입니다.")
-    @Size(max = 30, message = "총동아리연합회 인스타 아이디는 1자 이상 30자 이하여야 합니다.")
+    @Size(max = 30, message = "총동아리연합회 인스타 아이디는 최대 30자 입니다.")
     @Pattern(
         regexp = "^[A-Za-z0-9._]+$",
         message = "인스타 아이디는 영문/숫자/점(.)/밑줄(_)만 사용할 수 있으며 @ 는 포함할 수 없습니다."
