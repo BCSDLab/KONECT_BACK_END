@@ -53,11 +53,14 @@ public record CouncilCreateRequest(
     @Schema(description = "총동아리연합회 운영 시간", example = "평일 09:00 ~ 18:00", requiredMode = REQUIRED)
     String operatingHour,
 
-    @NotEmpty(message = "총동아리연합회 인스타 주소는 필수 입력입니다.")
-    @Size(max = 255, message = "총동아리연합회 인스타 주소는 최대 255자 입니다.")
-    @Pattern(regexp = "^https?://(www\\.)?instagram\\.com/[a-zA-Z0-9._]+/?$", message = "올바른 인스타그램 URL 형식이 아닙니다.")
-    @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
-    String instagramUrl
+    @NotEmpty(message = "총동아리연합회 인스타 아이디는 필수 입력입니다.")
+    @Size(max = 30, message = "총동아리연합회 인스타 아이디는 1자 이상 30자 이하여야 합니다.")
+    @Pattern(
+        regexp = "^[A-Za-z0-9._]+$",
+        message = "인스타 아이디는 영문/숫자/점(.)/밑줄(_)만 사용할 수 있으며 @ 는 포함할 수 없습니다."
+    )
+    @Schema(description = "총동아리연합회 인스타 아이디", example = "koreatechclub_flowers", requiredMode = REQUIRED)
+    String instagramUserName
 ) {
     public Council toEntity(University university) {
         return Council.builder()
@@ -68,7 +71,7 @@ public record CouncilCreateRequest(
             .personalColor(personalColor)
             .phoneNumber(phoneNumber)
             .email(email)
-            .instagramUrl(instagramUrl)
+            .instagramUserName(instagramUserName)
             .operatingHour(operatingHour)
             .university(university)
             .build();
