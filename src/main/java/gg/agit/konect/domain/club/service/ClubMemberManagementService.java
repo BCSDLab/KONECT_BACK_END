@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.club.dto.AddMemberRequest;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -80,6 +81,61 @@ public class ClubMemberManagementService {
         }
 
         target.changePosition(newPosition);
+    }
+
+    @Transactional
+    public void addMember(
+        Integer clubId,
+        Integer requesterId,
+        AddMemberRequest request
+    ) {
+        clubRepository.getById(clubId);
+
+        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
+        validateManagerPermission(requester);
+
+        Integer targetUserId = request.userId();
+
+        if (clubMemberRepository.existsByClubIdAndUserId(clubId, targetUserId)) {
+            throw CustomException.of(ALREADY_CLUB_MEMBER);
+        }
+
+        userRepository.getById(targetUserId);
+
+        ClubPosition position = clubPositionRepository.getById(request.positionId());
+
+        if (!position.getClub().getId().equals(clubId)) {
+            throw CustomException.of(NOT_FOUND_CLUB_POSITION);
+        }
+
+        ClubPositionGroup positionGroup = position.getClubPositionGroup();
+
+        if (positionGroup == PRESIDENT) {
+            throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
+        }
+
+        if (positionGroup == VICE_PRESIDENT) {
+            long vicePresidentCount = clubMemberRepository.countByClubIdAndPositionGroup(clubId, VICE_PRESIDENT);
+            if (vicePresidentCount >= 1) {
+                throw CustomException.of(VICE_PRESIDENT_ALREADY_EXISTS);
+            }
+        }
+
+        if (positionGroup == MANAGER) {
+            long managerCount = clubMemberRepository.countByClubIdAndPositionGroup(clubId, MANAGER);
+            if (managerCount >= MAX_MANAGER_COUNT) {
+                throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
+            }
+        }
+
+        ClubMember newMember = ClubMember.builder()
+            .club(clubRepository.getById(clubId))
+            .user(userRepository.getById(targetUserId))
+            .clubPosition(position)
+            .isFeePaid(false)
+            .build();
+
+        clubMemberRepository.save(newMember);
     }
 
     @Transactional

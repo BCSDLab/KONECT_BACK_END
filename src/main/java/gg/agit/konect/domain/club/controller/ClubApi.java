@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import gg.agit.konect.domain.club.dto.AddMemberRequest;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
@@ -405,15 +406,36 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "동아리에 회원을 직접 추가한다.", description = """
+        동아리 회장 또는 부회장만 회원을 직접 추가할 수 있습니다.
+        회장 직책으로는 추가할 수 없으며, 부회장과 운영진은 인원 제한이 있습니다.
+
+        ## 에러
+        - ALREADY_CLUB_MEMBER (409): 이미 동아리 회원입니다.
+        - VICE_PRESIDENT_ALREADY_EXISTS (409): 부회장은 이미 존재합니다.
+        - MANAGER_LIMIT_EXCEEDED (400): 운영진은 최대 20명까지 임명 가능합니다.
+        - FORBIDDEN_MEMBER_POSITION_CHANGE (403): 회원 추가 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
+        """)
+    @PostMapping("/{clubId}/members")
+    ResponseEntity<Void> addMember(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody AddMemberRequest request,
+        @UserId Integer userId
+    );
+
     @Operation(summary = "동아리 회원을 강제 탈퇴시킨다.", description = """
-        동아리 회장 또는 매니저만 회원을 강제 탈퇴시킬 수 있습니다.
-        자기 자신은 강제 탈퇴시킬 수 없으며, 회장은 강제 탈퇴시킬 수 없습니다.
-        상위 직급만 하위 직급의 회원을 강제 탈퇴시킬 수 있습니다.
+        동아리 회장 또는 부회장만 회원을 강제 탈퇴시킬 수 있습니다.
+        일반회원만 강제 탈퇴 가능하며, 부회장이나 운영진은 먼저 직책을 변경한 후 탈퇴시켜야 합니다.
 
         ## 에러
         - CANNOT_REMOVE_SELF (400): 자기 자신을 강제 탈퇴시킬 수 없습니다.
+        - CANNOT_REMOVE_NON_MEMBER (400): 일반회원만 강제 탈퇴할 수 있습니다.
         - CANNOT_DELETE_CLUB_PRESIDENT (400): 회장은 강제 탈퇴시킬 수 없습니다.
         - CANNOT_MANAGE_HIGHER_POSITION (400): 자신보다 높은 직급의 회원은 관리할 수 없습니다.
+        - FORBIDDEN_MEMBER_POSITION_CHANGE (403): 회원 관리 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_MEMBER (404): 동아리 회원을 찾을 수 없습니다.
         """)

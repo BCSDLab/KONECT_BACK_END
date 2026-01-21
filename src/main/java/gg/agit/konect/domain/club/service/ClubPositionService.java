@@ -87,7 +87,7 @@ public class ClubPositionService {
         Integer userId,
         ClubPositionUpdateRequest request
     ) {
-        Club club = clubRepository.getById(clubId);
+        clubRepository.getById(clubId);
 
         validateManagerPermission(clubId, userId);
 

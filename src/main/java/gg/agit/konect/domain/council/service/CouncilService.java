@@ -57,7 +57,7 @@ public class CouncilService {
             request.introduce(),
             request.location(),
             request.personalColor(),
-            request.instagramUrl(),
+            request.instagramUserName(),
             request.operatingHour()
         );
     }

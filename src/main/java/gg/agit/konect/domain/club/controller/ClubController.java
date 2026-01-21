@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gg.agit.konect.domain.club.dto.AddMemberRequest;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
@@ -281,6 +282,16 @@ public class ClubController implements ClubApi {
     ) {
         clubMemberManagementService.changeVicePresident(clubId, userId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> addMember(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody AddMemberRequest request,
+        @UserId Integer userId
+    ) {
+        clubMemberManagementService.addMember(clubId, userId, request);
+        return ResponseEntity.ok().build();
     }
 
     @Override

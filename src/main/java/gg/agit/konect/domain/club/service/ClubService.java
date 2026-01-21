@@ -6,6 +6,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.*;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -114,28 +115,13 @@ public class ClubService {
 
         Club savedClub = clubRepository.save(club);
 
-        List<ClubPosition> defaultPositions = List.of(
-            ClubPosition.builder()
-                .name("회장")
-                .clubPositionGroup(PRESIDENT)
+        List<ClubPosition> defaultPositions = Arrays.stream(ClubPositionGroup.values())
+            .map(group -> ClubPosition.builder()
+                .name(group.getDescription())
+                .clubPositionGroup(group)
                 .club(savedClub)
-                .build(),
-            ClubPosition.builder()
-                .name("부회장")
-                .clubPositionGroup(VICE_PRESIDENT)
-                .club(savedClub)
-                .build(),
-            ClubPosition.builder()
-                .name("운영진")
-                .clubPositionGroup(MANAGER)
-                .club(savedClub)
-                .build(),
-            ClubPosition.builder()
-                .name("일반회원")
-                .clubPositionGroup(MEMBER)
-                .club(savedClub)
-                .build()
-        );
+                .build())
+            .toList();
 
         defaultPositions.forEach(clubPositionRepository::save);
 

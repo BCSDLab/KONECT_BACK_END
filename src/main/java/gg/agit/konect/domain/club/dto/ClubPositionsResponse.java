@@ -26,13 +26,7 @@ public record ClubPositionsResponse(
         Integer priority,
 
         @Schema(description = "해당 직책의 회원 수", example = "1", requiredMode = REQUIRED)
-        Long memberCount,
-
-        @Schema(description = "이름 변경 가능 여부", example = "false", requiredMode = REQUIRED)
-        Boolean canRename,
-
-        @Schema(description = "삭제 가능 여부", example = "false", requiredMode = REQUIRED)
-        Boolean canDelete
+        Long memberCount
     ) {
         public static InnerClubPosition of(
             ClubPosition position,
@@ -43,9 +37,7 @@ public record ClubPositionsResponse(
                 position.getName(),
                 position.getClubPositionGroup(),
                 position.getPriority(),
-                memberCount,
-                position.canRename(),
-                position.canDelete()
+                memberCount
             );
         }
     }

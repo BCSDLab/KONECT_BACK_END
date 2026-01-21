@@ -55,7 +55,7 @@ public record CouncilUpdateRequest(
     @Size(max = 255, message = "총동아리연합회 인스타 주소는 최대 255자 입니다.")
     @Pattern(regexp = "^https?://(www\\.)?instagram\\.com/[a-zA-Z0-9._]+/?$", message = "올바른 인스타그램 URL 형식이 아닙니다.")
     @Schema(description = "총동아리연합회 인스타 주소", example = "https://www.instagram.com/koreatech_council", requiredMode = REQUIRED)
-    String instagramUrl
+    String instagramUserName
 ) {
 
 }
