@@ -58,38 +58,8 @@ public record StudyTimeRankingsResponse(
         return IntStream.range(0, rankings.size())
             .mapToObj(index -> {
                 StudyTimeRanking ranking = rankings.get(index);
-                return new StudyTimeRankingResponse(
-                    baseRank + index,
-                    resolveName(ranking, type),
-                    ranking.getMonthlySeconds(),
-                    ranking.getDailySeconds()
-                );
+                return StudyTimeRankingResponse.from(ranking, baseRank + index, type);
             })
             .toList();
     }
-
-    private static String resolveName(StudyTimeRanking ranking, String type) {
-        String name = ranking.getTargetName();
-
-        if ("PERSONAL".equalsIgnoreCase(type)) {
-            return maskPersonalName(name);
-        }
-
-        return name;
-    }
-
-    private static String maskPersonalName(String name) {
-        if (name.length() == 1) {
-            return name;
-        }
-
-        if (name.length() == 2) {
-            return name.charAt(0) + "*";
-        }
-
-        return name.charAt(0)
-            + "*".repeat(name.length() - 2)
-            + name.substring(name.length() - 1);
-    }
-
 }

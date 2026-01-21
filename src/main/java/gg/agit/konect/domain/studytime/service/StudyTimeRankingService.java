@@ -34,7 +34,6 @@ public class StudyTimeRankingService {
     private static final String RANKING_TYPE_CLUB = "CLUB";
     private static final String RANKING_TYPE_STUDENT_NUMBER = "STUDENT_NUMBER";
     private static final String RANKING_TYPE_PERSONAL = "PERSONAL";
-    private static final int STUDENT_NUMBER_PREFIX_LENGTH = 4;
 
     private final StudyTimeRankingRepository studyTimeRankingRepository;
     private final RankingTypeRepository rankingTypeRepository;
@@ -84,7 +83,7 @@ public class StudyTimeRankingService {
             studentRankingTypeId,
             universityId,
             sort,
-            user.getStudentNumber()
+            user.getStudentNumberYear()
         );
 
         StudyTimeRankingResponse personalRanking = resolveRanking(
@@ -140,11 +139,19 @@ public class StudyTimeRankingService {
         Integer rankingTypeId,
         Integer universityId,
         StudyTimeRankingSort sort,
-        String studentNumber
+        String studentNumberYear
     ) {
-        String targetName = resolveStudentNumber(studentNumber);
-
-        return resolveRankingByName(rankingTypeId, universityId, sort, targetName);
+        return studyTimeRankingRepository.findRankingByName(
+                rankingTypeId,
+                universityId,
+                studentNumberYear
+            )
+            .map(ranking -> StudyTimeRankingResponse.from(
+                ranking,
+                calculateRank(ranking, sort),
+                RANKING_TYPE_STUDENT_NUMBER
+            ))
+            .orElse(null);
     }
 
     private StudyTimeRankingResponse resolveRanking(
@@ -192,9 +199,5 @@ public class StudyTimeRankingService {
         }
 
         return (int)higherCount + 1;
-    }
-
-    private String resolveStudentNumber(String studentNumber) {
-        return String.valueOf(Integer.parseInt(studentNumber.substring(0, STUDENT_NUMBER_PREFIX_LENGTH)));
     }
 }
