@@ -53,7 +53,7 @@ public class Club extends BaseEntity {
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
-    @Column(name = "description", length = 100, nullable = false)
+    @Column(name = "description", length = 20, nullable = false)
     private String description;
 
     @Column(name = "introduce", columnDefinition = "TEXT", nullable = false)

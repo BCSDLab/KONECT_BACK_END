@@ -17,7 +17,7 @@ public record ClubCreateRequest(
     @Schema(description = "동아리 한 줄 소개", example = "즐겁게 일하고 열심히 노는 IT 특성화 동아리",
         requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "동아리 소개는 필수 입력입니다.")
-    @Size(max = 100, message = "동아리 소개는 100자 이하여야 합니다.")
+    @Size(max = 20, message = "동아리 소개는 20자 이하여야 합니다.")
     String description,
 
     @Schema(description = "동아리 상세 소개", example = "BCSD에서 얻을 수 있는 경험\n1. IT 실무 경험",
