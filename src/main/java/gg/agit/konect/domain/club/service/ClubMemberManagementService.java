@@ -8,7 +8,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.club.dto.AddMemberRequest;
+import gg.agit.konect.domain.club.dto.ClubMemberAddRequest;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -87,7 +87,7 @@ public class ClubMemberManagementService {
     public void addMember(
         Integer clubId,
         Integer requesterId,
-        AddMemberRequest request
+        ClubMemberAddRequest request
     ) {
         clubRepository.getById(clubId);
 
