@@ -1,0 +1,9 @@
+ALTER TABLE users
+    ADD COLUMN role VARCHAR(20) NULL AFTER provider_id;
+
+UPDATE users
+SET role = 'USER'
+WHERE role IS NULL;
+
+ALTER TABLE users
+    MODIFY COLUMN role VARCHAR(20) NOT NULL DEFAULT 'USER';
