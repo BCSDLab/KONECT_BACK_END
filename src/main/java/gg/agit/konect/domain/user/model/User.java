@@ -6,6 +6,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -76,6 +77,10 @@ public class User extends BaseEntity {
     @Column(name = "provider_id", length = 255)
     private String providerId;
 
+    @Column(name = "role", length = 20, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+
     @Column(name = "is_marketing_agreement", nullable = false)
     private Boolean isMarketingAgreement;
 
@@ -92,6 +97,7 @@ public class User extends BaseEntity {
         String studentNumber,
         Provider provider,
         String providerId,
+        UserRole role,
         Boolean isMarketingAgreement,
         String imageUrl
     ) {
@@ -103,6 +109,7 @@ public class User extends BaseEntity {
         this.studentNumber = studentNumber;
         this.provider = provider;
         this.providerId = providerId;
+        this.role = role == null ? UserRole.USER : role;
         this.isMarketingAgreement = isMarketingAgreement;
         this.imageUrl = imageUrl;
     }
