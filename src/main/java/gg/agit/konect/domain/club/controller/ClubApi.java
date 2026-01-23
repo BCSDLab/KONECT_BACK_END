@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
+import gg.agit.konect.domain.club.dto.ClubAppliedClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -104,6 +105,12 @@ public interface ClubApi {
     @Operation(summary = "관리자 권한을 가지고 있는 동아리 리스트를 조회한다.")
     @GetMapping("/managed")
     ResponseEntity<ClubMembershipsResponse> getManagedClubs(
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "가입 승인 대기 중인 동아리 리스트를 조회한다.")
+    @GetMapping("/applied")
+    ResponseEntity<ClubAppliedClubsResponse> getAppliedClubs(
         @UserId Integer userId
     );
 
