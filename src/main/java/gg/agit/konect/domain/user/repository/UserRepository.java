@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 
 public interface UserRepository extends Repository<User, Integer> {
@@ -21,6 +22,8 @@ public interface UserRepository extends Repository<User, Integer> {
     boolean existsByProviderIdAndProvider(String providerId, Provider provider);
 
     Optional<User> findById(Integer id);
+
+    Optional<User> findFirstByRoleOrderByIdAsc(UserRole role);
 
     default User getById(Integer id) {
         return findById(id).orElseThrow(() ->
