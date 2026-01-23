@@ -48,6 +48,21 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
     @Query("""
         SELECT clubApply
         FROM ClubApply clubApply
+        JOIN FETCH clubApply.club club
+        WHERE clubApply.user.id = :userId
+          AND NOT EXISTS (
+            SELECT 1
+            FROM ClubMember clubMember
+            WHERE clubMember.club.id = clubApply.club.id
+              AND clubMember.user.id = clubApply.user.id
+          )
+        ORDER BY clubApply.createdAt DESC
+        """)
+    List<ClubApply> findAllPendingByUserIdWithClub(@Param("userId") Integer userId);
+
+    @Query("""
+        SELECT clubApply
+        FROM ClubApply clubApply
         JOIN FETCH clubApply.user user
         WHERE clubApply.club.id = :clubId
           AND clubApply.createdAt BETWEEN :startDateTime AND :endDateTime

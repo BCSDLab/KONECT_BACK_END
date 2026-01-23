@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
+import gg.agit.konect.domain.club.dto.ClubAppliedClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -167,6 +168,11 @@ public class ClubService {
     public ClubMembershipsResponse getManagedClubs(Integer userId) {
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPosition(userId, PRESIDENT);
         return ClubMembershipsResponse.from(clubMembers);
+    }
+
+    public ClubAppliedClubsResponse getAppliedClubs(Integer userId) {
+        List<ClubApply> clubApplies = clubApplyRepository.findAllPendingByUserIdWithClub(userId);
+        return ClubAppliedClubsResponse.from(clubApplies);
     }
 
     public ClubApplicationsResponse getClubApplications(Integer clubId, Integer userId) {
