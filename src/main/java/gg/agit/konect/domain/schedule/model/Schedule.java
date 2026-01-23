@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import gg.agit.konect.global.model.BaseEntity;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
@@ -61,6 +63,8 @@ public class Schedule extends BaseEntity {
         this.startedAt = startedAt;
         this.endedAt = endedAt;
         this.scheduleType = scheduleType;
+
+        validateDateTimeRange(startedAt, endedAt);
     }
 
     public static Schedule of(
@@ -83,10 +87,22 @@ public class Schedule extends BaseEntity {
         LocalDateTime endedAt,
         ScheduleType scheduleType
     ) {
+        validateDateTimeRange(startedAt, endedAt);
+
         this.title = title;
         this.startedAt = startedAt;
         this.endedAt = endedAt;
         this.scheduleType = scheduleType;
+    }
+
+    private void validateDateTimeRange(LocalDateTime startedAt, LocalDateTime endedAt) {
+        if (startedAt == null || endedAt == null) {
+            return;
+        }
+
+        if (startedAt.isAfter(endedAt)) {
+            throw CustomException.of(ApiResponseCode.INVALID_DATE_TIME);
+        }
     }
 
     public Integer calculateDDay(LocalDate today) {
