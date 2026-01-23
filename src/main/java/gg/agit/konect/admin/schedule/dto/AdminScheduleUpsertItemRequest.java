@@ -20,12 +20,12 @@ public record AdminScheduleUpsertItemRequest(
     String title,
 
     @NotNull
-    @Schema(description = "일정 시작 일시", example = "2025-12-22 00:00:00", requiredMode = REQUIRED)
+    @Schema(description = "일정 시작 일시", example = "2025.12.22 00:00:00", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm:ss")
     LocalDateTime startedAt,
 
     @NotNull
-    @Schema(description = "일정 종료 일시", example = "2026-02-27 23:59:59", requiredMode = REQUIRED)
+    @Schema(description = "일정 종료 일시", example = "2026.02.27 23:59:59", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm:ss")
     LocalDateTime endedAt,
 

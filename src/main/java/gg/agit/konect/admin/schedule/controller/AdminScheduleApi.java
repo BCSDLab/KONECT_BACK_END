@@ -21,7 +21,13 @@ import jakarta.validation.Valid;
 @RequestMapping("/admin/schedule")
 public interface AdminScheduleApi {
 
-    @Operation(summary = "일정을 생성한다.")
+    @Operation(summary = "일정을 생성한다.", description = """
+        **scheduleType (일정 구분):**
+        - `UNIVERSITY`: 대학교 일정
+        - `CLUB`: 동아리 일정
+        - `COUNCIL`: 총동아리연합회 일정
+        - `DORM`: 기숙사 일정
+        """)
     @PostMapping
     @Auth(roles = {UserRole.ADMIN})
     ResponseEntity<Void> createSchedule(
@@ -31,6 +37,12 @@ public interface AdminScheduleApi {
 
     @Operation(summary = "일정을 일괄 생성/수정한다.", description = """
         scheduleId가 없으면 신규 생성, 있으면 해당 일정 수정입니다.
+
+        **scheduleType (일정 구분):**
+        - `UNIVERSITY`: 대학교 일정
+        - `CLUB`: 동아리 일정
+        - `COUNCIL`: 총동아리연합회 일정
+        - `DORM`: 기숙사 일정
         """)
     @PutMapping("/batch")
     @Auth(roles = {UserRole.ADMIN})
