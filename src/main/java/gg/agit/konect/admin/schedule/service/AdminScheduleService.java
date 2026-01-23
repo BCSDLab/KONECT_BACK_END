@@ -71,6 +71,20 @@ public class AdminScheduleService {
         }
     }
 
+    @Transactional
+    public void deleteSchedule(Integer scheduleId, Integer userId) {
+        User user = userRepository.getById(userId);
+        University university = user.getUniversity();
+
+        UniversitySchedule universitySchedule = universityScheduleRepository.getByIdAndUniversityId(
+            scheduleId,
+            university.getId()
+        );
+
+        universityScheduleRepository.delete(universitySchedule);
+        scheduleRepository.delete(universitySchedule.getSchedule());
+    }
+
     private void createUniversitySchedule(AdminScheduleUpsertItemRequest item, University university) {
         Schedule schedule = Schedule.of(
             item.title(),

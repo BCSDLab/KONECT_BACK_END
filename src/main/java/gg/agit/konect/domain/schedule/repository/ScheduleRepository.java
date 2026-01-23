@@ -17,6 +17,8 @@ public interface ScheduleRepository extends Repository<Schedule, Integer> {
 
     Schedule save(Schedule schedule);
 
+    void delete(Schedule schedule);
+
     @Query("""
         SELECT s
         FROM Schedule s

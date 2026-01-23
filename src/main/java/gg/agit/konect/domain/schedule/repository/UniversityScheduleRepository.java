@@ -14,6 +14,8 @@ public interface UniversityScheduleRepository extends Repository<UniversitySched
 
     void save(UniversitySchedule universitySchedule);
 
+    void delete(UniversitySchedule universitySchedule);
+
     @Query("""
         SELECT us
         FROM UniversitySchedule us

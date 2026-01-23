@@ -29,4 +29,11 @@ public class AdminScheduleController implements AdminScheduleApi {
 
         return ResponseEntity.ok().build();
     }
+
+    @Override
+    public ResponseEntity<Void> deleteSchedule(Integer scheduleId, Integer userId) {
+        adminScheduleService.deleteSchedule(scheduleId, userId);
+
+        return ResponseEntity.ok().build();
+    }
 }
