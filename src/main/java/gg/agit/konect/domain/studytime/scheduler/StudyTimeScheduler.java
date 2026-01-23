@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.studytime.scheduler;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,7 +16,7 @@ public class StudyTimeScheduler {
 
     private final StudyTimeSchedulerService studyTimeSchedulerService;
 
-    @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    @Scheduled(fixedDelay = 5, timeUnit = SECONDS)
     public void updateClubStudyTimeRanking() {
         try {
             log.info("동아리 공부 시간 랭킹 업데이트 시작");
@@ -27,7 +27,7 @@ public class StudyTimeScheduler {
         }
     }
 
-    @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    @Scheduled(fixedDelay = 5, timeUnit = SECONDS)
     public void updatePersonalStudyTimeRanking() {
         try {
             log.info("개인 공부 시간 랭킹 업데이트 시작");
@@ -38,7 +38,7 @@ public class StudyTimeScheduler {
         }
     }
 
-    @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    @Scheduled(fixedDelay = 5, timeUnit = SECONDS)
     public void updateStudentNumberStudyTimeRanking() {
         try {
             log.info("학번별 공부 시간 랭킹 업데이트 시작");
