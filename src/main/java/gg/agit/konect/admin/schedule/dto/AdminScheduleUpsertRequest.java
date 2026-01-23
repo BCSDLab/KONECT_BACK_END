@@ -7,13 +7,10 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 
 public record AdminScheduleUpsertRequest(
-    @NotNull
-    @NotEmpty
-    @Valid
+    @NotEmpty(message = "일정 목록은 필수 입력입니다.")
     @Schema(description = "생성/수정할 일정 목록", requiredMode = REQUIRED)
-    List<AdminScheduleUpsertItemRequest> schedules
+    List<@Valid AdminScheduleUpsertItemRequest> schedules
 ) {
 }
