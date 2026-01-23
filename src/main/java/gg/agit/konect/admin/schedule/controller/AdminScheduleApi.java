@@ -1,10 +1,12 @@
 package gg.agit.konect.admin.schedule.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import gg.agit.konect.admin.schedule.dto.AdminScheduleCreateRequest;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleUpsertRequest;
@@ -34,6 +36,14 @@ public interface AdminScheduleApi {
     @Auth(roles = {UserRole.ADMIN})
     ResponseEntity<Void> upsertSchedules(
         @Valid @RequestBody AdminScheduleUpsertRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "일정을 삭제한다.")
+    @DeleteMapping("/{scheduleId}")
+    @Auth(roles = {UserRole.ADMIN})
+    ResponseEntity<Void> deleteSchedule(
+        @PathVariable Integer scheduleId,
         @UserId Integer userId
     );
 }
