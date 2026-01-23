@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.domain.chat.model.ChatMessage;
+import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.enums.ClubPositionGroup;
@@ -27,6 +29,7 @@ import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
@@ -34,11 +37,15 @@ import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
+
+    private static final String DEFAULT_WELCOME_MESSAGE = "KONECT에 오신 것을 환영합니다. 궁금한 점이 있으면 언제든 문의해 주세요.";
 
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
@@ -89,9 +96,34 @@ public class UserService {
 
         joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
 
+        sendWelcomeMessage(savedUser);
+
         unRegisteredUserRepository.delete(tempUser);
 
         return savedUser.getId();
+    }
+
+    // TODO 추후에 슈퍼 어드민을 만들어 학교가 확장되는 것을 고려해야 함
+    private void sendWelcomeMessage(User newUser) {
+        try {
+            User operator = userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)
+                .orElse(null);
+
+            if (operator == null) {
+                return;
+            }
+
+            ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(operator.getId(), newUser.getId())
+                .orElseGet(() -> chatRoomRepository.save(ChatRoom.of(operator, newUser)));
+
+            ChatMessage chatMessage = chatMessageRepository.save(
+                ChatMessage.of(chatRoom, operator, newUser, DEFAULT_WELCOME_MESSAGE)
+            );
+
+            chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        } catch (Exception e) {
+            log.warn("회원가입 환영 메시지 전송 실패. userId={}", newUser.getId(), e);
+        }
     }
 
     private UnRegisteredUser findUnregisteredUser(String email, String providerId, Provider provider) {
