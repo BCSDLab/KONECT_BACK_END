@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/admin/schedule")
 public class AdminScheduleController implements AdminScheduleApi {
 
-
     private final AdminScheduleService adminScheduleService;
 
     @Override

@@ -53,6 +53,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
 
     private Auth findAuthAnnotation(HandlerMethod handlerMethod) {
         Auth methodAnnotation = handlerMethod.getMethodAnnotation(Auth.class);
+
         if (methodAnnotation != null) {
             return methodAnnotation;
         }
