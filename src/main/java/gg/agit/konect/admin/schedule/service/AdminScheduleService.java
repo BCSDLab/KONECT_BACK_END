@@ -1,5 +1,7 @@
 package gg.agit.konect.admin.schedule.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,6 +9,7 @@ import gg.agit.konect.admin.schedule.dto.AdminScheduleCreateRequest;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleUpsertItemRequest;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleUpsertRequest;
 import gg.agit.konect.domain.schedule.model.Schedule;
+import gg.agit.konect.domain.schedule.model.ScheduleType;
 import gg.agit.konect.domain.schedule.model.UniversitySchedule;
 import gg.agit.konect.domain.schedule.repository.ScheduleRepository;
 import gg.agit.konect.domain.schedule.repository.UniversityScheduleRepository;
@@ -29,21 +32,13 @@ public class AdminScheduleService {
         User user = userRepository.getById(userId);
         University university = user.getUniversity();
 
-        Schedule schedule = Schedule.of(
+        createUniversitySchedule(
+            university,
             request.title(),
             request.startedAt(),
             request.endedAt(),
             request.scheduleType()
         );
-
-        Schedule savedSchedule = scheduleRepository.save(schedule);
-
-        UniversitySchedule universitySchedule = UniversitySchedule.of(
-            savedSchedule,
-            university
-        );
-
-        universityScheduleRepository.save(universitySchedule);
     }
 
     @Transactional
@@ -53,7 +48,13 @@ public class AdminScheduleService {
 
         for (AdminScheduleUpsertItemRequest item : request.schedules()) {
             if (item.scheduleId() == null) {
-                createUniversitySchedule(item, university);
+                createUniversitySchedule(
+                    university,
+                    item.title(),
+                    item.startedAt(),
+                    item.endedAt(),
+                    item.scheduleType()
+                );
                 continue;
             }
 
@@ -85,12 +86,18 @@ public class AdminScheduleService {
         scheduleRepository.delete(universitySchedule.getSchedule());
     }
 
-    private void createUniversitySchedule(AdminScheduleUpsertItemRequest item, University university) {
+    private void createUniversitySchedule(
+        University university,
+        String title,
+        LocalDateTime startedAt,
+        LocalDateTime endedAt,
+        ScheduleType scheduleType
+    ) {
         Schedule schedule = Schedule.of(
-            item.title(),
-            item.startedAt(),
-            item.endedAt(),
-            item.scheduleType()
+            title,
+            startedAt,
+            endedAt,
+            scheduleType
         );
 
         Schedule savedSchedule = scheduleRepository.save(schedule);
