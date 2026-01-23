@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springdoc.core.models.GroupedOpenApi;
+
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
@@ -30,6 +32,23 @@ public class SwaggerConfig {
             .openapi("3.1.0")
             .info(apiInfo())
             .addServersItem(server);
+    }
+
+    @Bean
+    public GroupedOpenApi publicApi() {
+        return GroupedOpenApi.builder()
+            .group("Public API")
+            .pathsToMatch("/**")
+            .pathsToExclude("/admin/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi adminApi() {
+        return GroupedOpenApi.builder()
+            .group("Admin API")
+            .pathsToMatch("/admin/**")
+            .build();
     }
 
     private Info apiInfo() {
