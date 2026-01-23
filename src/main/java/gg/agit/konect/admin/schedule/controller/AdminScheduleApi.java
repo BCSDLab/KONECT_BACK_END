@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @Tag(name = "(Admin) Schedule: 일정", description = "어드민 일정 API")
-@RequestMapping("/admin/schedule")
+@RequestMapping("/admin/schedules")
 public interface AdminScheduleApi {
 
     @Operation(summary = "일정을 생성한다.", description = """
