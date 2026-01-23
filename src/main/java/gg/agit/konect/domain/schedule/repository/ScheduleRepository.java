@@ -2,6 +2,7 @@ package gg.agit.konect.domain.schedule.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 import gg.agit.konect.domain.schedule.model.Schedule;
 
 public interface ScheduleRepository extends Repository<Schedule, Integer> {
+
+    Optional<Schedule> findById(Integer id);
+
+    Schedule save(Schedule schedule);
 
     @Query("""
         SELECT s

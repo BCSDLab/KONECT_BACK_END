@@ -63,6 +63,32 @@ public class Schedule extends BaseEntity {
         this.scheduleType = scheduleType;
     }
 
+    public static Schedule of(
+        String title,
+        LocalDateTime startedAt,
+        LocalDateTime endedAt,
+        ScheduleType scheduleType
+    ) {
+        return Schedule.builder()
+            .title(title)
+            .startedAt(startedAt)
+            .endedAt(endedAt)
+            .scheduleType(scheduleType)
+            .build();
+    }
+
+    public void update(
+        String title,
+        LocalDateTime startedAt,
+        LocalDateTime endedAt,
+        ScheduleType scheduleType
+    ) {
+        this.title = title;
+        this.startedAt = startedAt;
+        this.endedAt = endedAt;
+        this.scheduleType = scheduleType;
+    }
+
     public Integer calculateDDay(LocalDate today) {
         if (today.isBefore(this.startedAt.toLocalDate())) {
             return (int)ChronoUnit.DAYS.between(today, this.startedAt.toLocalDate());

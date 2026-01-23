@@ -42,4 +42,14 @@ public class UniversitySchedule extends BaseEntity {
         this.schedule = schedule;
         this.university = university;
     }
+
+    public static UniversitySchedule of(
+        Schedule schedule,
+        University university
+    ) {
+        return UniversitySchedule.builder()
+            .schedule(schedule)
+            .university(university)
+            .build();
+    }
 }
