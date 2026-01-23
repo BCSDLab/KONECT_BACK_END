@@ -21,8 +21,17 @@ public enum ApiResponseCode {
     FAILED_EXTRACT_EMAIL(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 이메일 정보를 가져올 수 없습니다."),
     FAILED_EXTRACT_PROVIDER_ID(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 제공자 식별자를 가져올 수 없습니다."),
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
-    REQUIRED_CLUB_APPLY_ANSWER_MISSING(HttpStatus.BAD_REQUEST, "필수 가입 답변이 누락되었습니다."),
+    CANNOT_CHANGE_OWN_POSITION(HttpStatus.BAD_REQUEST, "자기 자신의 직책은 변경할 수 없습니다."),
     CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
+    CANNOT_DELETE_ESSENTIAL_POSITION(HttpStatus.BAD_REQUEST, "필수 직책은 삭제할 수 없습니다."),
+    CANNOT_MANAGE_HIGHER_POSITION(HttpStatus.BAD_REQUEST, "자신보다 높은 직급의 회원은 관리할 수 없습니다."),
+    CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "자기 자신을 강제 탈퇴시킬 수 없습니다."),
+    CANNOT_REMOVE_NON_MEMBER(HttpStatus.BAD_REQUEST, "일반회원만 강제 탈퇴할 수 있습니다. 먼저 직책을 변경한 후 탈퇴시켜주세요."),
+    INSUFFICIENT_POSITION_COUNT(HttpStatus.BAD_REQUEST, "해당 그룹에 최소 2개의 직책이 있어야 삭제 가능합니다."),
+    MANAGER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "운영진은 최대 20명까지 임명 가능합니다."),
+    POSITION_IN_USE(HttpStatus.BAD_REQUEST, "해당 직책을 사용 중인 회원이 있어 삭제할 수 없습니다."),
+    POSITION_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "동일한 직책 이름이 이미 존재합니다."),
+    REQUIRED_CLUB_APPLY_ANSWER_MISSING(HttpStatus.BAD_REQUEST, "필수 가입 답변이 누락되었습니다."),
     STUDY_TIMER_NOT_RUNNING(HttpStatus.BAD_REQUEST, "실행 중인 스터디 타이머가 없습니다."),
     STUDY_TIMER_TIME_MISMATCH(HttpStatus.BAD_REQUEST, "스터디 타이머 시간이 유효하지 않습니다."),
     INVALID_RECRUITMENT_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "상시 모집인 경우 모집 시작일과 마감일을 지정할 수 없습니다."),
@@ -37,8 +46,10 @@ public enum ApiResponseCode {
     FORBIDDEN_CLUB_FEE_INFO(HttpStatus.FORBIDDEN, "회비 정보 조회 권한이 없습니다."),
     FORBIDDEN_CLUB_MANAGER_ACCESS(HttpStatus.FORBIDDEN, "동아리 매니저 권한이 없습니다."),
     FORBIDDEN_CLUB_MEMBER_ACCESS(HttpStatus.FORBIDDEN, "동아리 멤버 조회 권한이 없습니다."),
-    FORBIDDEN_COUNCIL_NOTICE_ACCESS(HttpStatus.FORBIDDEN, "총동아리연합회 공지사항 조회 권한이 없습니다."),
     FORBIDDEN_CLUB_RECRUITMENT_CREATE(HttpStatus.FORBIDDEN, "동아리 모집 공고를 생성할 권한이 없습니다."),
+    FORBIDDEN_COUNCIL_NOTICE_ACCESS(HttpStatus.FORBIDDEN, "총동아리연합회 공지사항 조회 권한이 없습니다."),
+    FORBIDDEN_MEMBER_POSITION_CHANGE(HttpStatus.FORBIDDEN, "회원 직책 변경 권한이 없습니다."),
+    FORBIDDEN_POSITION_NAME_CHANGE(HttpStatus.FORBIDDEN, "해당 직책의 이름은 변경할 수 없습니다."),
     FORBIDDEN_ROLE_ACCESS(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)
@@ -69,14 +80,15 @@ public enum ApiResponseCode {
     DUPLICATE_STUDENT_NUMBER(HttpStatus.CONFLICT, "이미 사용 중인 학번입니다."),
     DUPLICATE_PHONE_NUMBER(HttpStatus.CONFLICT, "이미 사용 중인 전화번호입니다."),
     ALREADY_APPLIED_CLUB(HttpStatus.CONFLICT, "이미 동아리에 가입 신청을 완료했습니다."),
+    ALREADY_CLUB_MEMBER(HttpStatus.CONFLICT, "이미 동아리 회원입니다."),
     DUPLICATE_CLUB_APPLY_QUESTION(HttpStatus.CONFLICT, "중복된 가입 문항이 포함되어 있습니다."),
+    VICE_PRESIDENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "부회장은 이미 존재합니다."),
     ALREADY_RUNNING_STUDY_TIMER(HttpStatus.CONFLICT, "이미 실행 중인 스터디 타이머가 있습니다."),
     ALREADY_EXIST_CLUB_RECRUITMENT(HttpStatus.CONFLICT, "이미 동아리 모집 공고가 존재합니다."),
 
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
-    UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 예기치 못한 에러가 발생했습니다.")
-    ;
+    UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 예기치 못한 에러가 발생했습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

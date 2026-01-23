@@ -1,12 +1,12 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGER;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.*;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +30,7 @@ import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
+import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
@@ -114,14 +115,17 @@ public class ClubService {
 
         Club savedClub = clubRepository.save(club);
 
-        ClubPosition presidentPosition = ClubPosition.builder()
-            .name("회장")
-            .clubPositionGroup(PRESIDENT)
-            .club(savedClub)
-            .build();
+        List<ClubPosition> defaultPositions = Arrays.stream(ClubPositionGroup.values())
+            .map(group -> ClubPosition.builder()
+                .name(group.getDescription())
+                .clubPositionGroup(group)
+                .club(savedClub)
+                .build())
+            .toList();
 
-        clubPositionRepository.save(presidentPosition);
+        defaultPositions.forEach(clubPositionRepository::save);
 
+        ClubPosition presidentPosition = defaultPositions.get(0);
         ClubMember president = ClubMember.builder()
             .club(savedClub)
             .user(user)
@@ -215,13 +219,19 @@ public class ClubService {
         );
     }
 
-    public ClubMembersResponse getClubMembers(Integer clubId, Integer userId) {
+    public ClubMembersResponse getClubMembers(Integer clubId, Integer userId, ClubMemberCondition condition) {
         boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
         if (!isMember) {
             throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
         }
 
-        List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(clubId);
+        List<ClubMember> clubMembers;
+        if (condition != null && condition.positionGroup() != null) {
+            clubMembers = clubMemberRepository.findAllByClubIdAndPositionGroup(clubId, condition.positionGroup());
+        } else {
+            clubMembers = clubMemberRepository.findAllByClubId(clubId);
+        }
+
         return ClubMembersResponse.from(clubMembers);
     }
 
