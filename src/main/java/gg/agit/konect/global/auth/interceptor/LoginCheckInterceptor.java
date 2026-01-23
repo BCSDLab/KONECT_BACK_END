@@ -15,6 +15,9 @@ import jakarta.servlet.http.HttpSession;
 @Component
 public class LoginCheckInterceptor implements HandlerInterceptor {
 
+    public static final String AUTHENTICATED_USER_ID_ATTRIBUTE = "authenticatedUserId";
+    public static final String PUBLIC_ENDPOINT_ATTRIBUTE = "publicEndpoint";
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
@@ -26,6 +29,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
         }
 
         if (isPublicEndpoint(handlerMethod)) {
+            request.setAttribute(PUBLIC_ENDPOINT_ATTRIBUTE, true);
             return true;
         }
 
@@ -35,6 +39,8 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
         if (!(userId instanceof Integer)) {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
         }
+
+        request.setAttribute(AUTHENTICATED_USER_ID_ATTRIBUTE, userId);
 
         return true;
     }

@@ -10,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import gg.agit.konect.global.auth.interceptor.LoginCheckInterceptor;
+import gg.agit.konect.global.auth.interceptor.AuthorizationInterceptor;
 import gg.agit.konect.global.auth.resolver.LoginUserArgumentResolver;
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final CorsProperties corsProperties;
     private final LoginCheckInterceptor loginCheckInterceptor;
+    private final AuthorizationInterceptor authorizationInterceptor;
     private final LoginUserArgumentResolver loginUserArgumentResolver;
 
     @Override
@@ -41,6 +43,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginCheckInterceptor)
+            .addPathPatterns("/**")
+            .excludePathPatterns(SecurityPaths.PUBLIC_PATHS);
+
+        registry.addInterceptor(authorizationInterceptor)
             .addPathPatterns("/**")
             .excludePathPatterns(SecurityPaths.PUBLIC_PATHS);
     }
