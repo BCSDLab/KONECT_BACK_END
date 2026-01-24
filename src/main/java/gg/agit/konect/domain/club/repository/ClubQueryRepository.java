@@ -19,6 +19,8 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
@@ -138,10 +140,16 @@ public class ClubQueryRepository {
             return;
         }
 
+        condition.and(createOngoingRecruitmentCondition());
+    }
+
+    private BooleanExpression createOngoingRecruitmentCondition() {
         LocalDate today = LocalDate.now();
-        condition.and(clubRecruitment.id.isNotNull())
-            .and(clubRecruitment.startDate.loe(today))
-            .and(clubRecruitment.endDate.goe(today));
+        return clubRecruitment.id.isNotNull()
+            .and(
+                clubRecruitment.isAlwaysRecruiting.isTrue()
+                    .or(clubRecruitment.startDate.loe(today).and(clubRecruitment.endDate.goe(today)))
+            );
     }
 
     /*      정렬 조건       */
@@ -155,11 +163,33 @@ public class ClubQueryRepository {
     }
 
     private void addRecruitmentSortOrder(List<OrderSpecifier<?>> orders, Boolean isRecruiting) {
+        BooleanExpression isOngoingRecruitment = createOngoingRecruitmentCondition();
+
         if (!isRecruiting) {
-            return;
+            orders.add(
+                new CaseBuilder()
+                    .when(isOngoingRecruitment)
+                    .then(0)
+                    .otherwise(1)
+                    .asc()
+            );
         }
 
-        orders.add(clubRecruitment.endDate.asc());
+        orders.add(
+            new CaseBuilder()
+                .when(isOngoingRecruitment.and(clubRecruitment.endDate.isNull()))
+                .then(1)
+                .otherwise(0)
+                .asc()
+        );
+
+        orders.add(
+            new CaseBuilder()
+                .when(isOngoingRecruitment)
+                .then(clubRecruitment.endDate)
+                .otherwise((LocalDate)null)
+                .asc()
+        );
     }
 
     private void addDefaultSortOrder(List<OrderSpecifier<?>> orders) {

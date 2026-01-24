@@ -48,7 +48,8 @@ import jakarta.validation.Valid;
 public interface ClubApi {
 
     @Operation(summary = "페이지 네이션으로 동아리 리스트를 조회한다.", description = """
-        - isRecruiting가 true일 경우, 모집일이 빠른 순으로 정렬됩니다.
+        - isRecruiting가 true일 경우, 모집 중인 동아리만 조회하며 모집일(마감일)이 빠른 순으로 정렬됩니다.
+        - isRecruiting가 false일 경우, 전체 동아리를 조회하되 모집 중인 동아리를 먼저 보여줍니다.
         - status은 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         """)
     @GetMapping
