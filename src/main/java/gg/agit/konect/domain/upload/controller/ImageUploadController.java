@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import gg.agit.konect.domain.upload.dto.ImageUploadResponse;
 import gg.agit.konect.domain.upload.service.ImageUploadService;
+import gg.agit.konect.global.auth.annotation.UserId;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -15,7 +16,7 @@ public class ImageUploadController implements ImageUploadApi {
     private final ImageUploadService imageUploadService;
 
     @Override
-    public ResponseEntity<ImageUploadResponse> upload(Integer userId, MultipartFile file) {
+    public ResponseEntity<ImageUploadResponse> upload(@UserId Integer userId, MultipartFile file) {
         return ResponseEntity.ok(imageUploadService.upload(file));
     }
 }
