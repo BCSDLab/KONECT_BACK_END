@@ -12,7 +12,7 @@ public record ClubUpdateRequest(
     @Size(max = 50, message = "동아리 이름은 50자 이하여야 합니다.")
     String name,
 
-    @Schema(description = "동아리 한 줄 소개", example = "즐겁게 일하고 열심히 노는 IT 특성화 동아리",
+    @Schema(description = "동아리 한 줄 소개", example = "즐겁게 일하고 노는 IT 동아리",
         requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "동아리 소개는 필수 입력입니다.")
     @Size(max = 20, message = "동아리 소개는 20자 이하여야 합니다.")
