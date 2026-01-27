@@ -221,6 +221,22 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "동아리 가입 신청을 거절한다.", description = """
+        - 동아리 회장 또는 부회장만 가입 신청을 거절할 수 있습니다.
+        - 거절 시 지원 내역은 삭제됩니다.
+        
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
+        """)
+    @PostMapping("/{clubId}/applications/{applicationId}/reject")
+    ResponseEntity<Void> rejectClubApplication(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "applicationId") Integer applicationId,
+        @UserId Integer userId
+    );
+
     @Operation(summary = "동아리 멤버 리스트를 조회한다.", description = """
         동아리 회원만 멤버 리스트를 조회할 수 있습니다.
         positionGroup 파라미터로 특정 직책 그룹의 회원만 필터링할 수 있습니다.

@@ -324,6 +324,18 @@ public class ClubService {
         clubApplyRepository.delete(clubApply);
     }
 
+    @Transactional
+    public void rejectClubApplication(Integer clubId, Integer applicationId, Integer userId) {
+        clubRepository.getById(clubId);
+
+        if (!hasClubManageAccess(clubId, userId, LEADER_ALLOWED_GROUPS)) {
+            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
+        }
+
+        ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        clubApplyRepository.delete(clubApply);
+    }
+
     private List<ClubApply> findApplicationsByRecruitmentPeriod(
         Integer clubId,
         ClubRecruitment recruitment

@@ -183,6 +183,16 @@ public class ClubController implements ClubApi {
     }
 
     @Override
+    public ResponseEntity<Void> rejectClubApplication(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "applicationId") Integer applicationId,
+        @UserId Integer userId
+    ) {
+        clubService.rejectClubApplication(clubId, applicationId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Override
     public ResponseEntity<ClubMembersResponse> getClubMembers(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @ParameterObject @ModelAttribute ClubMemberCondition condition,
