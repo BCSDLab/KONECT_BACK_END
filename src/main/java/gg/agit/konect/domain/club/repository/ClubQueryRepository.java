@@ -203,6 +203,9 @@ public class ClubQueryRepository {
                 ClubRecruitment recruitment = club.getClubRecruitment();
                 RecruitmentStatus status = RecruitmentStatus.of(recruitment);
 
+                boolean isAlwaysRecruiting = recruitment != null
+                    && Boolean.TRUE.equals(recruitment.getIsAlwaysRecruiting());
+
                 return new ClubSummaryInfo(
                     club.getId(),
                     club.getName(),
@@ -210,6 +213,8 @@ public class ClubQueryRepository {
                     club.getClubCategory().getDescription(),
                     club.getDescription(),
                     status,
+                    isAlwaysRecruiting,
+                    (recruitment != null) ? recruitment.getEndDate() : null,
                     clubTagsMap.getOrDefault(club.getId(), List.of())
                 );
             })

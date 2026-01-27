@@ -109,6 +109,17 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
 
     boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
 
+    @Query("""
+        SELECT cm.id.clubId
+        FROM ClubMember cm
+        WHERE cm.id.userId = :userId
+          AND cm.id.clubId IN :clubIds
+        """)
+    List<Integer> findClubIdsByUserIdAndClubIdIn(
+        @Param("userId") Integer userId,
+        @Param("clubIds") List<Integer> clubIds
+    );
+
     List<ClubMember> findByUserId(Integer userId);
 
     @Query("""

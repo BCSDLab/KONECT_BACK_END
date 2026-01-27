@@ -2,9 +2,13 @@ package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
@@ -45,10 +49,20 @@ public record ClubsResponse(
         @Schema(description = "동아리 모집 상태", example = "ONGOING", requiredMode = REQUIRED)
         RecruitmentStatus status,
 
+        @Schema(description = "가입 승인 대기 중 여부", example = "false", requiredMode = REQUIRED)
+        Boolean isApplied,
+
+        @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)
+        Boolean isAlwaysRecruiting,
+
+        @Schema(description = "지원 마감일", example = "2025.12.31", requiredMode = REQUIRED)
+        @JsonFormat(pattern = "yyyy.MM.dd")
+        LocalDate applicationDeadline,
+
         @Schema(description = "동아리 태그 리스트", example = "[\"IT\", \"프로그래밍\"]", requiredMode = REQUIRED)
         List<String> tags
     ) {
-        public static InnerClubResponse from(ClubSummaryInfo clubSummaryInfo) {
+        public static InnerClubResponse from(ClubSummaryInfo clubSummaryInfo, boolean isApplied) {
             return new InnerClubResponse(
                 clubSummaryInfo.id(),
                 clubSummaryInfo.name(),
@@ -56,19 +70,26 @@ public record ClubsResponse(
                 clubSummaryInfo.categoryName(),
                 clubSummaryInfo.description(),
                 clubSummaryInfo.status(),
+                isApplied,
+                clubSummaryInfo.isAlwaysRecruiting(),
+                clubSummaryInfo.applicationDeadline(),
                 clubSummaryInfo.tags()
             );
         }
     }
 
     public static ClubsResponse of(Page<ClubSummaryInfo> page) {
+        return of(page, Set.of());
+    }
+
+    public static ClubsResponse of(Page<ClubSummaryInfo> page, Set<Integer> pendingAppliedClubIds) {
         return new ClubsResponse(
             page.getTotalElements(),
             page.getNumberOfElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
             page.stream()
-                .map(InnerClubResponse::from)
+                .map(club -> InnerClubResponse.from(club, pendingAppliedClubIds.contains(club.id())))
                 .toList()
         );
     }
