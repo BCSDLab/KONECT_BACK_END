@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -50,19 +51,19 @@ public record ClubsResponse(
         RecruitmentStatus status,
 
         @Schema(description = "가입 승인 대기 중 여부", example = "false", requiredMode = REQUIRED)
-        Boolean isApplied,
+        Boolean isPendingApproval,
 
         @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)
         Boolean isAlwaysRecruiting,
 
-        @Schema(description = "지원 마감일", example = "2025.12.31", requiredMode = REQUIRED)
+        @Schema(description = "지원 마감일(상시 모집이거나 모집 공고가 없으면 null)", example = "2025.12.31", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd")
         LocalDate applicationDeadline,
 
         @Schema(description = "동아리 태그 리스트", example = "[\"IT\", \"프로그래밍\"]", requiredMode = REQUIRED)
         List<String> tags
     ) {
-        public static InnerClubResponse from(ClubSummaryInfo clubSummaryInfo, boolean isApplied) {
+        public static InnerClubResponse from(ClubSummaryInfo clubSummaryInfo, boolean isPendingApproval) {
             return new InnerClubResponse(
                 clubSummaryInfo.id(),
                 clubSummaryInfo.name(),
@@ -70,7 +71,7 @@ public record ClubsResponse(
                 clubSummaryInfo.categoryName(),
                 clubSummaryInfo.description(),
                 clubSummaryInfo.status(),
-                isApplied,
+                isPendingApproval,
                 clubSummaryInfo.isAlwaysRecruiting(),
                 clubSummaryInfo.applicationDeadline(),
                 clubSummaryInfo.tags()
@@ -82,14 +83,14 @@ public record ClubsResponse(
         return of(page, Set.of());
     }
 
-    public static ClubsResponse of(Page<ClubSummaryInfo> page, Set<Integer> pendingAppliedClubIds) {
+    public static ClubsResponse of(Page<ClubSummaryInfo> page, Set<Integer> pendingApprovalClubIds) {
         return new ClubsResponse(
             page.getTotalElements(),
             page.getNumberOfElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
             page.stream()
-                .map(club -> InnerClubResponse.from(club, pendingAppliedClubIds.contains(club.id())))
+                .map(club -> InnerClubResponse.from(club, pendingApprovalClubIds.contains(club.id())))
                 .toList()
         );
     }

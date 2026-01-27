@@ -205,6 +205,9 @@ public class ClubQueryRepository {
 
                 boolean isAlwaysRecruiting = recruitment != null
                     && Boolean.TRUE.equals(recruitment.getIsAlwaysRecruiting());
+                LocalDate applicationDeadline = (recruitment != null && !isAlwaysRecruiting)
+                    ? recruitment.getEndDate()
+                    : null;
 
                 return new ClubSummaryInfo(
                     club.getId(),
@@ -214,7 +217,7 @@ public class ClubQueryRepository {
                     club.getDescription(),
                     status,
                     isAlwaysRecruiting,
-                    (recruitment != null) ? recruitment.getEndDate() : null,
+                    applicationDeadline,
                     clubTagsMap.getOrDefault(club.getId(), List.of())
                 );
             })

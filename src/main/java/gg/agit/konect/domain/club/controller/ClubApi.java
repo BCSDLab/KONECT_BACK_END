@@ -53,7 +53,7 @@ public interface ClubApi {
         - status은 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         - isAlwaysRecruiting는 상시 모집 여부입니다.
         - applicationDeadline는 모집 마감일(endDate)이며, 모집 공고가 없거나 상시 모집이면 null로 반환됩니다.
-        - isApplied는 가입 승인 대기 중 여부이며, 지원 내역이 존재하지만 아직 멤버가 아닌 경우 true로 반환됩니다.
+        - isPendingApproval은 가입 승인 대기 중 여부이며, 지원 내역이 존재하지만 아직 멤버가 아닌 경우 true로 반환됩니다.
         """)
     @GetMapping
     ResponseEntity<ClubsResponse> getClubs(

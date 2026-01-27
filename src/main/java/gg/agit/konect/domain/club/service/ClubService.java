@@ -93,11 +93,11 @@ public class ClubService {
             pageable, condition.query(), condition.isRecruiting(), user.getUniversity().getId()
         );
 
-        Set<Integer> pendingAppliedClubIds = findPendingAppliedClubIds(clubSummaryInfoPage, userId);
-        return ClubsResponse.of(clubSummaryInfoPage, pendingAppliedClubIds);
+        Set<Integer> pendingApprovalClubIds = findPendingApprovalClubIds(clubSummaryInfoPage, userId);
+        return ClubsResponse.of(clubSummaryInfoPage, pendingApprovalClubIds);
     }
 
-    private Set<Integer> findPendingAppliedClubIds(Page<ClubSummaryInfo> clubSummaryInfoPage, Integer userId) {
+    private Set<Integer> findPendingApprovalClubIds(Page<ClubSummaryInfo> clubSummaryInfoPage, Integer userId) {
         List<Integer> clubIds = clubSummaryInfoPage.getContent().stream()
             .map(ClubSummaryInfo::id)
             .filter(Objects::nonNull)
