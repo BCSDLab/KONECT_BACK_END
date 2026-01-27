@@ -13,10 +13,8 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "(Normal) Club - Recruitment: 모집 공고", description = "동아리 모집 공고 관리 API")
 @RequestMapping("/clubs")
 public interface ClubRecruitmentApi {
 
