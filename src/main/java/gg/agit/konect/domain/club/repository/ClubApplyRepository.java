@@ -29,6 +29,8 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
 
     ClubApply save(ClubApply clubApply);
 
+    void delete(ClubApply clubApply);
+
     void deleteByUserId(Integer userId);
 
     @Query("""
