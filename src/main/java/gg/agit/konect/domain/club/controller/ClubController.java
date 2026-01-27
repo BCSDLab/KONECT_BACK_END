@@ -34,6 +34,7 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubTagsResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -127,6 +128,15 @@ public class ClubController implements ClubApi {
         @UserId Integer userId
     ) {
         ClubMembershipsResponse response = clubService.getManagedClubs(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<MyManagedClubResponse> getManagedClubDetail(
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    ) {
+        MyManagedClubResponse response = clubService.getManagedClubDetail(clubId, userId);
         return ResponseEntity.ok(response);
     }
 

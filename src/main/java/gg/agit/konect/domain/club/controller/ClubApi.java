@@ -38,6 +38,7 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubTagsResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -150,6 +151,17 @@ public interface ClubApi {
     @Operation(summary = "관리자 권한을 가지고 있는 동아리 리스트를 조회한다.")
     @GetMapping("/managed")
     ResponseEntity<ClubMembershipsResponse> getManagedClubs(
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "관리자 권한을 가지고 있는 동아리 단건을 조회한다.", description = """
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        """)
+    @GetMapping("/managed/{clubId}")
+    ResponseEntity<MyManagedClubResponse> getManagedClubDetail(
+        @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     );
 

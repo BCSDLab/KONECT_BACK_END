@@ -43,6 +43,7 @@ import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubTagsResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
+import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -81,6 +82,8 @@ public class ClubService {
         EnumSet.of(PRESIDENT);
     private static final Set<ClubPositionGroup> MANAGER_ALLOWED_GROUPS =
         EnumSet.of(PRESIDENT, MANAGER);
+    private static final Set<ClubPositionGroup> MANAGER_OR_HIGHER_ALLOWED_GROUPS =
+        EnumSet.of(PRESIDENT, VICE_PRESIDENT, MANAGER);
     private static final Set<ClubPositionGroup> LEADER_ALLOWED_GROUPS =
         EnumSet.of(PRESIDENT, VICE_PRESIDENT);
 
@@ -238,8 +241,22 @@ public class ClubService {
     }
 
     public ClubMembershipsResponse getManagedClubs(Integer userId) {
-        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPosition(userId, PRESIDENT);
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPositionGroups(
+            userId,
+            MANAGER_OR_HIGHER_ALLOWED_GROUPS
+        );
         return ClubMembershipsResponse.from(clubMembers);
+    }
+
+    public MyManagedClubResponse getManagedClubDetail(Integer clubId, Integer userId) {
+        Club club = clubRepository.getById(clubId);
+
+        if (!hasClubManageAccess(clubId, userId, MANAGER_OR_HIGHER_ALLOWED_GROUPS)) {
+            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
+        }
+
+        ClubMember clubMember = clubMemberRepository.getByClubIdAndUserId(clubId, userId);
+        return MyManagedClubResponse.from(club, clubMember);
     }
 
     public ClubAppliedClubsResponse getAppliedClubs(Integer userId) {

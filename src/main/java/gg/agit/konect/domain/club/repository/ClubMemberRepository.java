@@ -80,6 +80,19 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     );
 
     @Query("""
+        SELECT cm
+        FROM ClubMember cm
+        JOIN FETCH cm.club c
+        JOIN FETCH cm.clubPosition cp
+        WHERE cm.id.userId = :userId
+        AND cp.clubPositionGroup IN :clubPositionGroups
+        """)
+    List<ClubMember> findAllByUserIdAndClubPositionGroups(
+        @Param("userId") Integer userId,
+        @Param("clubPositionGroups") Set<ClubPositionGroup> clubPositionGroups
+    );
+
+    @Query("""
         SELECT COUNT(cm) > 0
         FROM ClubMember cm
         JOIN cm.clubPosition cp
@@ -96,6 +109,7 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     @Query("""
         SELECT cm
         FROM ClubMember cm
+        JOIN FETCH cm.user
         JOIN FETCH cm.clubPosition
         WHERE cm.club.id = :clubId
         AND cm.user.id = :userId
