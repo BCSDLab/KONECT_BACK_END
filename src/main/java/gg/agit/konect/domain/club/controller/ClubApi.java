@@ -190,6 +190,25 @@ public interface ClubApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "동아리 가입 신청을 승인한다.", description = """
+        동아리 회장 또는 부회장만 가입 신청을 승인할 수 있습니다.
+        승인 시 지원자는 동아리 회원으로 등록되고, 지원 내역은 삭제됩니다.
+        승인 시 회비는 지원 절차에서 이미 낸 것으로 간주됩니다.
+    
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
+        - ALREADY_CLUB_MEMBER (409): 이미 동아리 회원입니다.
+        """)
+    @PostMapping("/{clubId}/applications/{applicationId}/approve")
+    ResponseEntity<Void> approveClubApplication(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "applicationId") Integer applicationId,
+        @UserId Integer userId
+    );
+
     @Operation(summary = "동아리 멤버 리스트를 조회한다.", description = """
         동아리 회원만 멤버 리스트를 조회할 수 있습니다.
         positionGroup 파라미터로 특정 직책 그룹의 회원만 필터링할 수 있습니다.
