@@ -31,7 +31,9 @@ import jakarta.validation.Valid;
 @RequestMapping("/clubs")
 public interface ClubBasicApi {
 
-    @Operation(summary = "페이지 네이션으로 동아리 리스트를 조회한다.", description = """
+    String TAG = "(Normal) Club - Basic: 기본 관리";
+
+    @Operation(summary = "페이지 네이션으로 동아리 리스트를 조회한다.", tags = TAG, description = """
         - isRecruiting가 true일 경우, 모집 중인 동아리만 조회하며 모집일(마감일)이 빠른 순으로 정렬됩니다.
         - isRecruiting가 false일 경우, 전체 동아리를 조회하되 모집 중인 동아리를 먼저 보여줍니다.
         - status은 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
@@ -42,7 +44,7 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리의 상세 정보를 조회한다.", description = """
+    @Operation(summary = "동아리의 상세 정보를 조회한다.", tags = TAG, description = """
         - recruitmentStatus는 모집 기간에 따라 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         - 모집 일정 데이터가 존재하지 않는다면 CLOSED(모집 마감)으로 간주되며, startDate, endDate는 null로 반환됩니다.
         - 동아리 멤버이거나 지원 이력이 존재할 경우 isApplied는 true로 반환됩니다.
@@ -53,7 +55,7 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "새로운 동아리를 생성한다.", description = """
+    @Operation(summary = "새로운 동아리를 생성한다.", tags = TAG, description = """
         새로운 동아리를 생성하고, 생성한 사용자를 회장으로 등록합니다.
 
         ## 에러
@@ -65,7 +67,7 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 프로필을 수정한다.", description = """
+    @Operation(summary = "동아리 프로필을 수정한다.", tags = TAG, description = """
         동아리 회장 또는 부회장만 동아리 프로필을 수정할 수 있습니다.
         수정 가능 항목: 한 줄 소개, 로고 이미지, 태그
         동아리명과 분과는 수정할 수 없으며, 변경이 필요한 경우 문의하기를 통해 어드민에게 요청하세요.
@@ -82,7 +84,7 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 상세정보를 수정한다.", description = """
+    @Operation(summary = "동아리 상세정보를 수정한다.", tags = TAG, description = """
         동아리 회장 또는 부회장만 동아리 상세정보를 수정할 수 있습니다.
         수정 가능 항목: 동방 위치, 상세 소개
 
@@ -98,7 +100,7 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 기본정보를 수정한다 (어드민 전용).", description = """
+    @Operation(summary = "동아리 기본정보를 수정한다 (어드민 전용).", tags = TAG, description = """
         어드민만 동아리 기본정보를 수정할 수 있습니다.
         수정 가능 항목: 동아리명, 분과
         일반 관리자는 이 API를 사용할 수 없으며, 변경이 필요한 경우 문의하기를 통해 어드민에게 요청하세요.
@@ -115,29 +117,29 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "사용 가능한 전체 태그 목록을 조회한다.")
+    @Operation(summary = "사용 가능한 전체 태그 목록을 조회한다.", tags = TAG)
     @GetMapping("/tags")
     ResponseEntity<ClubTagsResponse> getTags();
 
-    @Operation(summary = "가입한 동아리 리스트를 조회한다.")
+    @Operation(summary = "가입한 동아리 리스트를 조회한다.", tags = TAG)
     @GetMapping("/joined")
     ResponseEntity<ClubMembershipsResponse> getJoinedClubs(
         @UserId Integer userId
     );
 
-    @Operation(summary = "관리자 권한을 가지고 있는 동아리 리스트를 조회한다.")
+    @Operation(summary = "관리자 권한을 가지고 있는 동아리 리스트를 조회한다.", tags = TAG)
     @GetMapping("/managed")
     ResponseEntity<ClubMembershipsResponse> getManagedClubs(
         @UserId Integer userId
     );
 
-    @Operation(summary = "가입 승인 대기 중인 동아리 리스트를 조회한다.")
+    @Operation(summary = "가입 승인 대기 중인 동아리 리스트를 조회한다.", tags = TAG)
     @GetMapping("/applied")
     ResponseEntity<ClubAppliedClubsResponse> getAppliedClubs(
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 멤버 리스트를 조회한다.", description = """
+    @Operation(summary = "동아리 멤버 리스트를 조회한다.", tags = TAG, description = """
         동아리 회원만 멤버 리스트를 조회할 수 있습니다.
         positionGroup 파라미터로 특정 직책 그룹의 회원만 필터링할 수 있습니다.
 

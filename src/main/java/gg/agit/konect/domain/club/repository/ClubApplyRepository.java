@@ -16,6 +16,17 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
 
     boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
 
+    @Query("""
+        SELECT ca.club.id
+        FROM ClubApply ca
+        WHERE ca.user.id = :userId
+          AND ca.club.id IN :clubIds
+        """)
+    List<Integer> findClubIdsByUserIdAndClubIdIn(
+        @Param("userId") Integer userId,
+        @Param("clubIds") List<Integer> clubIds
+    );
+
     ClubApply save(ClubApply clubApply);
 
     void deleteByUserId(Integer userId);

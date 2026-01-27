@@ -24,7 +24,9 @@ import jakarta.validation.Valid;
 @RequestMapping("/clubs")
 public interface ClubApplicationApi {
 
-    @Operation(summary = "동아리 가입 신청을 한다.", description = """
+    String TAG = "(Normal) Club - Application: 지원 및 신청";
+
+    @Operation(summary = "동아리 가입 신청을 한다.", tags = TAG, description = """
         동아리 가입 신청서를 제출합니다.
         설문 질문이 없는 경우 answers는 빈 배열을 전달합니다.
 
@@ -40,7 +42,7 @@ public interface ClubApplicationApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 지원 내역을 조회한다.", description = """
+    @Operation(summary = "동아리 지원 내역을 조회한다.", tags = TAG, description = """
          - 동아리 관리자만 해당 동아리의 지원 내역을 조회할 수 있습니다.
          - 현재 지정된 모집 일정 범위에 지원한 내역만 볼 수 있습니다.
          - 상시 모집의 경우 모든 내역을 봅니다.
@@ -56,7 +58,7 @@ public interface ClubApplicationApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 지원 답변을 조회한다.", description = """
+    @Operation(summary = "동아리 지원 답변을 조회한다.", tags = TAG, description = """
         - 동아리 관리자만 해당 동아리의 지원 답변을 조회할 수 있습니다.
 
         ## 에러
@@ -71,14 +73,14 @@ public interface ClubApplicationApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 가입 문항을 조회한다.")
+    @Operation(summary = "동아리 가입 문항을 조회한다.", tags = TAG)
     @GetMapping("/{clubId}/questions")
     ResponseEntity<ClubApplyQuestionsResponse> getApplyQuestions(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 가입 문항을 덮어써서 대체한다.", description = """
+    @Operation(summary = "동아리 가입 문항을 덮어써서 대체한다.", tags = TAG, description = """
         요청에 포함된 문항 목록이 최종 상태가 됩니다.
         - questionId가 있으면 수정
         - questionId가 없으면 생성
@@ -97,7 +99,7 @@ public interface ClubApplicationApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
+    @Operation(summary = "동아리 회비 정보를 조회한다.", tags = TAG, description = """
         동아리 가입 신청을 완료했거나 동아리 관리자 권한이 있는 사용자만 회비 계좌 정보를 조회할 수 있습니다.
 
         ## 에러
@@ -109,7 +111,7 @@ public interface ClubApplicationApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 회비 정보를 덮어써서 대체한다.", description = """
+    @Operation(summary = "동아리 회비 정보를 덮어써서 대체한다.", tags = TAG, description = """
         요청 본문이 최종 상태가 됩니다.
         - 모든 필드를 전달하면 생성/수정합니다.
         - 모든 필드가 null이면 회비 정보를 삭제합니다.

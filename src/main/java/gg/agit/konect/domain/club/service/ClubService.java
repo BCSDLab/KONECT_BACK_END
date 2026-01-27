@@ -12,6 +12,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -102,7 +103,30 @@ public class ClubService {
             pageable, condition.query(), condition.isRecruiting(), user.getUniversity().getId()
         );
 
-        return ClubsResponse.of(clubSummaryInfoPage);
+        Set<Integer> pendingApprovalClubIds = findPendingApprovalClubIds(clubSummaryInfoPage, userId);
+        return ClubsResponse.of(clubSummaryInfoPage, pendingApprovalClubIds);
+    }
+
+    private Set<Integer> findPendingApprovalClubIds(Page<ClubSummaryInfo> clubSummaryInfoPage, Integer userId) {
+        List<Integer> clubIds = clubSummaryInfoPage.getContent().stream()
+            .map(ClubSummaryInfo::id)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (clubIds.isEmpty()) {
+            return Set.of();
+        }
+
+        List<Integer> appliedClubIds = clubApplyRepository.findClubIdsByUserIdAndClubIdIn(userId, clubIds);
+        if (appliedClubIds.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<Integer> pendingClubIds = new HashSet<>(appliedClubIds);
+        List<Integer> memberClubIds = clubMemberRepository.findClubIdsByUserIdAndClubIdIn(userId, clubIds);
+        pendingClubIds.removeAll(memberClubIds);
+
+        return pendingClubIds;
     }
 
     public ClubDetailResponse getClubDetail(Integer clubId, Integer userId) {

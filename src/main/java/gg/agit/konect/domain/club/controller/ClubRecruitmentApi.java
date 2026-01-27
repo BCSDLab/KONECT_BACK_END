@@ -20,7 +20,9 @@ import jakarta.validation.Valid;
 @RequestMapping("/clubs")
 public interface ClubRecruitmentApi {
 
-    @Operation(summary = "동아리 모집 정보를 조회한다.", description = """
+    String TAG = "(Normal) Club - Recruitment: 모집 공고";
+
+    @Operation(summary = "동아리 모집 정보를 조회한다.", tags = TAG, description = """
         동아리의 모집 공고 상세 정보를 조회합니다.
 
         - status는 모집 기간에 따라 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
@@ -37,7 +39,7 @@ public interface ClubRecruitmentApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 모집 정보를 생성한다.", description = """
+    @Operation(summary = "동아리 모집 정보를 생성한다.", tags = TAG, description = """
         동아리 회장만 모집 공고를 생성할 수 있습니다.
         한 동아리당 하나의 모집 공고만 생성 가능합니다.
 
@@ -57,7 +59,7 @@ public interface ClubRecruitmentApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 모집 정보를 수정한다.", description = """
+    @Operation(summary = "동아리 모집 정보를 수정한다.", tags = TAG, description = """
         동아리 회장 또는 부회장만 모집 공고를 수정할 수 있습니다.
 
         ## 에러
