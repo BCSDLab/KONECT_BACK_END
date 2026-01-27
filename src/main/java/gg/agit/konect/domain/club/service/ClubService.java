@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGER;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.*;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;

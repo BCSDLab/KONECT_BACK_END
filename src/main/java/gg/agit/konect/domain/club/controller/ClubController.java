@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
-import gg.agit.konect.domain.club.dto.ClubAppliedClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
+import gg.agit.konect.domain.club.dto.ClubAppliedClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
