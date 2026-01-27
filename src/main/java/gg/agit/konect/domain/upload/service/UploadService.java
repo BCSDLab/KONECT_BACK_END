@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 @Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ImageUploadService {
+public class UploadService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
         "image/png",
@@ -37,7 +37,7 @@ public class ImageUploadService {
     private final S3StorageProperties s3StorageProperties;
     private final StorageCdnProperties storageCdnProperties;
 
-    public ImageUploadResponse upload(MultipartFile file) {
+    public ImageUploadResponse uploadImage(MultipartFile file) {
         validateS3Configuration();
         validateFile(file);
 
