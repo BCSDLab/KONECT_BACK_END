@@ -40,6 +40,13 @@ public class SwaggerConfig {
             .group("Public API")
             .pathsToMatch("/**")
             .pathsToExclude("/admin/**")
+            .addOpenApiCustomizer(openApi -> openApi.setTags(
+                openApi.getTags() != null
+                    ? openApi.getTags().stream()
+                        .sorted((a, b) -> a.getName().compareTo(b.getName()))
+                        .toList()
+                    : null
+            ))
             .build();
     }
 
