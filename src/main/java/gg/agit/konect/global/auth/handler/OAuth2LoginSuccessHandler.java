@@ -174,6 +174,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         try {
             URI uri = URI.create(redirectUri);
 
+            if ("konect".equalsIgnoreCase(uri.getScheme()) && "oauth".equalsIgnoreCase(uri.getHost())) {
+                return redirectUri;
+            }
+
             if (uri.getScheme() == null || uri.getHost() == null) {
                 return frontendBaseUrl + "/home";
             }
