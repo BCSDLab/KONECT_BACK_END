@@ -5,44 +5,32 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class NativeSessionBridgeService {
 
     private static final int TOKEN_BYTES = 32;
     private static final String KEY_PREFIX = "native:session-bridge:";
-    private static final long MIN_TTL_SECONDS = 30L;
+    private static final Duration TTL = Duration.ofSeconds(30);
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Nullable
     private final StringRedisTemplate redis;
-
-    private final Duration ttl;
-
-    public NativeSessionBridgeService(
-        @Nullable StringRedisTemplate redis,
-        @Value("${app.native.session-bridge-token-ttl-seconds:120}") long ttlSeconds
-    ) {
-        this.redis = redis;
-        this.ttl = Duration.ofSeconds(Math.max(MIN_TTL_SECONDS, ttlSeconds));
-    }
 
     public String issue(Integer userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
 
-        if (redis == null) {
-            throw new IllegalStateException("Redis is required for native session bridge token storage.");
-        }
-
         String token = generateToken();
-        redis.opsForValue().set(KEY_PREFIX + token, userId.toString(), ttl);
+        redis.opsForValue().set(KEY_PREFIX + token, userId.toString(), TTL);
+
         return token;
     }
 
