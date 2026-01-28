@@ -54,7 +54,13 @@ public class UploadService {
         try (InputStream inputStream = file.getInputStream()) {
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, file.getSize()));
         } catch (IOException e) {
-            log.warn("파일 업로드중 문제가 발생했습니다. file: {} \n message: {}", file, e.getMessage());
+            log.warn(
+                "파일 업로드중 문제가 발생했습니다. fileName: {}, fileSize: {}, contentType: {} \n message: {}",
+                file.getOriginalFilename(),
+                file.getSize(),
+                file.getContentType(),
+                e.getMessage()
+            );
             throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
         }
 
