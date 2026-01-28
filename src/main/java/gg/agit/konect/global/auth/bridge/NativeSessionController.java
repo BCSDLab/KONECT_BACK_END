@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.controller;
+package gg.agit.konect.global.auth.bridge;
 
 import java.io.IOException;
 
@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.global.auth.annotation.PublicApi;
-import gg.agit.konect.global.auth.bridge.NativeSessionBridgeService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
