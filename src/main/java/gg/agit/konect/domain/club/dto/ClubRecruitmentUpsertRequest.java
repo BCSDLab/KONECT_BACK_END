@@ -6,14 +6,13 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-public record ClubRecruitmentCreateRequest(
+public record ClubRecruitmentUpsertRequest(
     @Schema(description = "모집 시작일", example = "2025.11.30", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd")
     LocalDate startDate,
@@ -43,7 +42,6 @@ public record ClubRecruitmentCreateRequest(
 
     }
 
-    @JsonIgnore
     public List<String> getImageUrls() {
         return images.stream()
             .map(InnerClubRecruitmentImageRequest::url)
