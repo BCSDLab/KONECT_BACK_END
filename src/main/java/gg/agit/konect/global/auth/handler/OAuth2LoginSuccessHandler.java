@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -18,6 +19,7 @@ import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.auth.bridge.NativeSessionBridgeService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
 import gg.agit.konect.global.exception.CustomException;
@@ -38,6 +40,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
+    private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
 
     @Override
     public void onAuthenticationSuccess(
@@ -110,7 +113,31 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String redirectUri = (String)session.getAttribute("redirect_uri");
         session.removeAttribute("redirect_uri");
 
-        response.sendRedirect(resolveSafeRedirect(redirectUri));
+        String safeRedirect = resolveSafeRedirect(redirectUri);
+
+        if (isAppleOauthCallback(safeRedirect)) {
+            NativeSessionBridgeService svc = nativeSessionBridgeService.getIfAvailable();
+
+            if (svc != null) {
+                String bridgeToken = svc.issue(user.getId());
+                safeRedirect = appendBridgeToken(safeRedirect, bridgeToken);
+            }
+        }
+
+        response.sendRedirect(safeRedirect);
+    }
+
+    private boolean isAppleOauthCallback(String redirectUri) {
+        return redirectUri != null && redirectUri.startsWith("konect://oauth/callback");
+    }
+
+    private String appendBridgeToken(String redirectUri, String bridgeToken) {
+        if (redirectUri.contains("bridge_token=")) {
+            return redirectUri;
+        }
+
+        char joiner = redirectUri.contains("?") ? '&' : '?';
+        return redirectUri + joiner + "bridge_token=" + bridgeToken;
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
