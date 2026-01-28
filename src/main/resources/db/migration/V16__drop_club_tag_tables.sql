@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS club_tag_map;
+DROP TABLE IF EXISTS club_tag;
