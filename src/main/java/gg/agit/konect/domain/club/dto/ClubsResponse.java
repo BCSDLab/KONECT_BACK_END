@@ -58,10 +58,7 @@ public record ClubsResponse(
 
         @Schema(description = "지원 마감일(상시 모집이거나 모집 공고가 없으면 null)", example = "2025.12.31", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd")
-        LocalDate applicationDeadline,
-
-        @Schema(description = "동아리 태그 리스트", example = "[\"IT\", \"프로그래밍\"]", requiredMode = REQUIRED)
-        List<String> tags
+        LocalDate applicationDeadline
     ) {
         public static InnerClubResponse from(ClubSummaryInfo clubSummaryInfo, boolean isPendingApproval) {
             return new InnerClubResponse(
@@ -73,8 +70,7 @@ public record ClubsResponse(
                 clubSummaryInfo.status(),
                 isPendingApproval,
                 clubSummaryInfo.isAlwaysRecruiting(),
-                clubSummaryInfo.applicationDeadline(),
-                clubSummaryInfo.tags()
+                clubSummaryInfo.applicationDeadline()
             );
         }
     }

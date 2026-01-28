@@ -41,7 +41,6 @@ import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
-import gg.agit.konect.domain.club.dto.ClubTagsResponse;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.enums.ClubPositionGroup;
@@ -56,8 +55,6 @@ import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubRecruitmentImage;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
-import gg.agit.konect.domain.club.model.ClubTag;
-import gg.agit.konect.domain.club.model.ClubTagMap;
 import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
@@ -66,8 +63,6 @@ import gg.agit.konect.domain.club.repository.ClubPositionRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.club.repository.ClubTagMapRepository;
-import gg.agit.konect.domain.club.repository.ClubTagRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -97,8 +92,6 @@ public class ClubService {
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final UserRepository userRepository;
     private final BankRepository bankRepository;
-    private final ClubTagRepository clubTagRepository;
-    private final ClubTagMapRepository clubTagMapRepository;
 
     public ClubsResponse getClubs(ClubCondition condition, Integer userId) {
         User user = userRepository.getById(userId);
@@ -140,12 +133,11 @@ public class ClubService {
         ClubMember president = clubMembers.getPresident();
         Integer memberCount = clubMembers.getCount();
         ClubRecruitment recruitment = club.getClubRecruitment();
-        List<ClubTagMap> clubTagMaps = clubTagMapRepository.findAllByClubId(clubId);
 
         boolean isMember = clubMembers.contains(userId);
         Boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
 
-        return ClubDetailResponse.of(club, memberCount, recruitment, president, clubTagMaps, isMember, isApplied);
+        return ClubDetailResponse.of(club, memberCount, recruitment, president, isMember, isApplied);
     }
 
     @Transactional
@@ -188,21 +180,6 @@ public class ClubService {
         }
 
         club.updateProfile(request.introduce(), request.imageUrl());
-
-        clubTagMapRepository.deleteByClubId(clubId);
-
-        List<ClubTag> tags = clubTagRepository.findAllByIdIn(request.tagIds());
-        if (tags.size() != request.tagIds().size()) {
-            throw CustomException.of(NOT_FOUND_CLUB_TAG);
-        }
-
-        tags.forEach(tag -> {
-            ClubTagMap tagMap = ClubTagMap.builder()
-                .club(club)
-                .tag(tag)
-                .build();
-            clubTagMapRepository.save(tagMap);
-        });
     }
 
     @Transactional
@@ -228,11 +205,6 @@ public class ClubService {
         // }
 
         club.updateBasicInfo(request.name(), request.clubCategory());
-    }
-
-    public ClubTagsResponse getTags() {
-        List<ClubTag> tags = clubTagRepository.findAll();
-        return ClubTagsResponse.from(tags);
     }
 
     public ClubMembershipsResponse getJoinedClubs(Integer userId) {

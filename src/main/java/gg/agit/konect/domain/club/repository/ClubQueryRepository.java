@@ -2,14 +2,10 @@ package gg.agit.konect.domain.club.repository;
 
 import static gg.agit.konect.domain.club.model.QClub.club;
 import static gg.agit.konect.domain.club.model.QClubRecruitment.clubRecruitment;
-import static gg.agit.konect.domain.club.model.QClubTag.clubTag;
-import static gg.agit.konect.domain.club.model.QClubTagMap.clubTagMap;
-import static java.util.stream.Collectors.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -17,7 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
@@ -44,8 +39,7 @@ public class ClubQueryRepository {
         List<OrderSpecifier<?>> orders = createClubSortOrders(isRecruiting);
 
         List<Club> clubs = fetchClubs(pageable, condition, orders);
-        Map<Integer, List<String>> clubTagsMap = fetchClubTags(clubs);
-        List<ClubSummaryInfo> content = convertToSummaryInfo(clubs, clubTagsMap);
+        List<ClubSummaryInfo> content = convertToSummaryInfo(clubs);
         Long total = countClubs(condition, isRecruiting);
 
         return new PageImpl<>(content, pageable, total);
@@ -75,38 +69,6 @@ public class ClubQueryRepository {
         return query.where(condition).fetchOne();
     }
 
-    private Map<Integer, List<String>> fetchClubTags(List<Club> clubs) {
-        List<Integer> clubIds = clubs.stream()
-            .map(Club::getId)
-            .toList();
-
-        if (clubIds.isEmpty()) {
-            return Map.of();
-        }
-
-        List<Tuple> tagResults = jpaQueryFactory
-            .select(clubTagMap.club.id, clubTag.name)
-            .from(clubTagMap)
-            .innerJoin(clubTagMap.tag, clubTag)
-            .where(clubTagMap.club.id.in(clubIds))
-            .fetch();
-
-        return tagResults.stream()
-            .collect(groupingBy(
-                tuple -> tuple.get(clubTagMap.club.id),
-                mapping(tuple -> tuple.get(clubTag.name), toList())
-            ));
-    }
-
-    /*      서브 쿼리       */
-    private JPAQuery<Integer> createClubIdsByTagNameSubquery(String normalizedQuery) {
-        return jpaQueryFactory
-            .select(clubTagMap.club.id)
-            .from(clubTagMap)
-            .innerJoin(clubTagMap.tag, clubTag)
-            .where(clubTag.name.lower().contains(normalizedQuery));
-    }
-
     /*      검색 조건       */
     private BooleanBuilder createClubSearchCondition(String query, Boolean isRecruiting, Integer universityId) {
         BooleanBuilder condition = new BooleanBuilder();
@@ -130,7 +92,6 @@ public class ClubQueryRepository {
         String normalizedQuery = query.trim().toLowerCase();
         BooleanBuilder searchCondition = new BooleanBuilder();
         searchCondition.or(club.name.lower().contains(normalizedQuery));
-        searchCondition.or(club.id.in(createClubIdsByTagNameSubquery(normalizedQuery)));
 
         condition.and(searchCondition);
     }
@@ -197,7 +158,7 @@ public class ClubQueryRepository {
     }
 
     /*      DTO 변환      */
-    private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs, Map<Integer, List<String>> clubTagsMap) {
+    private List<ClubSummaryInfo> convertToSummaryInfo(List<Club> clubs) {
         return clubs.stream()
             .map(club -> {
                 ClubRecruitment recruitment = club.getClubRecruitment();
@@ -217,8 +178,7 @@ public class ClubQueryRepository {
                     club.getDescription(),
                     status,
                     isAlwaysRecruiting,
-                    applicationDeadline,
-                    clubTagsMap.getOrDefault(club.getId(), List.of())
+                    applicationDeadline
                 );
             })
             .toList();

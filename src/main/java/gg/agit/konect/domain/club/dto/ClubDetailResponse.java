@@ -4,13 +4,11 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIR
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
-import gg.agit.konect.domain.club.model.ClubTagMap;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubDetailResponse(
@@ -54,9 +52,6 @@ public record ClubDetailResponse(
     @Schema(description = "동아리 회장 이름", example = "김철수", requiredMode = REQUIRED)
     String presidentName,
 
-    @Schema(description = "동아리 태그 목록", requiredMode = REQUIRED)
-    List<ClubTagResponse> tags,
-
     @Schema(description = "동아리 소속 여부", example = "true", requiredMode = REQUIRED)
     Boolean isMember,
 
@@ -88,14 +83,9 @@ public record ClubDetailResponse(
         Integer memberCount,
         ClubRecruitment clubRecruitment,
         ClubMember president,
-        List<ClubTagMap> clubTagMaps,
         Boolean isMember,
         Boolean isApplied
     ) {
-        List<ClubTagResponse> tags = clubTagMaps.stream()
-            .map(tagMap -> ClubTagResponse.from(tagMap.getTag()))
-            .toList();
-
         return new ClubDetailResponse(
             club.getId(),
             club.getName(),
@@ -107,7 +97,6 @@ public record ClubDetailResponse(
             memberCount,
             InnerRecruitment.from(clubRecruitment),
             president.getUser().getName(),
-            tags,
             isMember,
             isApplied
         );
