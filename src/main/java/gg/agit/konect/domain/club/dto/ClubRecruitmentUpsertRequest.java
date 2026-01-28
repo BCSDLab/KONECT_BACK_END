@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -42,6 +43,7 @@ public record ClubRecruitmentUpsertRequest(
 
     }
 
+    @JsonIgnore
     public List<String> getImageUrls() {
         return images.stream()
             .map(InnerClubRecruitmentImageRequest::url)
