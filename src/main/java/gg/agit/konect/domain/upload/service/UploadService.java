@@ -17,9 +17,11 @@ import gg.agit.konect.global.config.StorageCdnProperties;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 @Slf4j
@@ -53,13 +55,38 @@ public class UploadService {
 
         try (InputStream inputStream = file.getInputStream()) {
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, file.getSize()));
+        } catch (S3Exception e) {
+            String awsErrorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null;
+            String awsErrorMessage = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
+
+            log.error(
+                "S3 업로드 실패. bucket: {}, key: {}, statusCode: {}, errorCode: {}, requestId: {}, message: {}",
+                s3StorageProperties.bucket(),
+                key,
+                e.statusCode(),
+                awsErrorCode,
+                e.requestId(),
+                awsErrorMessage,
+                e
+            );
+            throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
+        } catch (SdkClientException e) {
+            log.error(
+                "S3 업로드 클라이언트 오류(네트워크/자격증명/설정). bucket: {}, key: {}, message: {}",
+                s3StorageProperties.bucket(),
+                key,
+                e.getMessage(),
+                e
+            );
+            throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
         } catch (IOException e) {
             log.warn(
-                "파일 업로드중 문제가 발생했습니다. fileName: {}, fileSize: {}, contentType: {} \n message: {}",
+                "파일 업로드 중 문제가 발생했습니다. fileName: {}, fileSize: {}, contentType: {}, message: {}",
                 file.getOriginalFilename(),
                 file.getSize(),
                 file.getContentType(),
-                e.getMessage()
+                e.getMessage(),
+                e
             );
             throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
         }
