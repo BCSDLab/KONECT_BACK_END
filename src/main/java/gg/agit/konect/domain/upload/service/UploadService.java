@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import gg.agit.konect.domain.upload.dto.ImageUploadResponse;
@@ -26,7 +25,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class UploadService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
