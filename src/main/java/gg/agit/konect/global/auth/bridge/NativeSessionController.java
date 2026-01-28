@@ -31,7 +31,7 @@ public class NativeSessionController {
         HttpServletRequest request,
         HttpServletResponse response
     ) throws IOException {
-        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
 
         if (!StringUtils.hasText(bridgeToken)) {
             response.sendError(HttpStatus.UNAUTHORIZED.value());
