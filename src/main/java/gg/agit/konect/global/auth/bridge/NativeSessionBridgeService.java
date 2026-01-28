@@ -44,12 +44,16 @@ public class NativeSessionBridgeService {
     }
 
     public Optional<Integer> consume(@Nullable String token) {
-        if (token == null || token.isBlank()) return Optional.empty();
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
 
         String key = KEY_PREFIX + token;
         String value = redis.execute(GET_DEL_SCRIPT, List.of(key));
 
-        if (value == null || value.isBlank()) return Optional.empty();
+        if (value == null || value.isBlank()) {
+            return Optional.empty();
+        }
 
         try {
             return Optional.of(Integer.parseInt(value));
@@ -57,7 +61,6 @@ public class NativeSessionBridgeService {
             return Optional.empty();
         }
     }
-
 
     private String generateToken() {
         byte[] bytes = new byte[TOKEN_BYTES];
