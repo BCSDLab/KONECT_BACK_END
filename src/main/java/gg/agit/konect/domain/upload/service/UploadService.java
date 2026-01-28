@@ -39,9 +39,7 @@ public class UploadService {
 
     public ImageUploadResponse uploadImage(MultipartFile file) {
         validateS3Configuration();
-        validateFile(file);
-
-        String contentType = requireContentType(file);
+        String contentType = validateFile(file);
         String extension = extensionFromContentType(contentType);
         String key = buildKey(extension);
 
@@ -93,13 +91,13 @@ public class UploadService {
         return new ImageUploadResponse(key, fileUrl);
     }
 
-    private void validateFile(MultipartFile file) {
+    private String validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw CustomException.of(ApiResponseCode.INVALID_REQUEST_BODY);
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+        if (contentType == null || contentType.isBlank() || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
             throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         }
 
@@ -107,13 +105,7 @@ public class UploadService {
         if (maxUploadBytes != null && file.getSize() > maxUploadBytes) {
             throw CustomException.of(ApiResponseCode.INVALID_FILE_SIZE);
         }
-    }
 
-    private String requireContentType(MultipartFile file) {
-        String contentType = file.getContentType();
-        if (contentType == null || contentType.isBlank()) {
-            throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
-        }
         return contentType;
     }
 
