@@ -1,10 +1,7 @@
 package gg.agit.konect.domain.club.dto;
 
-import java.util.List;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ClubProfileUpdateRequest(
@@ -18,11 +15,6 @@ public record ClubProfileUpdateRequest(
         requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "이미지 URL은 필수 입력입니다.")
     @Size(max = 255, message = "이미지 URL은 255자 이하여야 합니다.")
-    String imageUrl,
-
-    @Schema(description = "동아리 태그 ID 목록", example = "[1, 2, 3]",
-        requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "태그 목록은 필수 입력입니다.")
-    List<Integer> tagIds
+    String imageUrl
 ) {
 }
