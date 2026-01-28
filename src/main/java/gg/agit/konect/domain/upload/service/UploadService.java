@@ -76,7 +76,7 @@ public class UploadService {
             );
             throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
         } catch (IOException e) {
-            log.warn(
+            log.error(
                 "파일 업로드 중 문제가 발생했습니다. fileName: {}, fileSize: {}, contentType: {}, message: {}",
                 file.getOriginalFilename(),
                 file.getSize(),
