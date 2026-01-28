@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -39,7 +40,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
-    private final NativeSessionBridgeService nativeSessionBridgeService;
+    private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
 
     @Override
     public void onAuthenticationSuccess(
@@ -115,8 +116,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String safeRedirect = resolveSafeRedirect(redirectUri);
 
         if (isAppleOauthCallback(safeRedirect)) {
-            String bridgeToken = nativeSessionBridgeService.issue(user.getId());
-            safeRedirect = appendBridgeToken(safeRedirect, bridgeToken);
+            NativeSessionBridgeService svc = nativeSessionBridgeService.getIfAvailable();
+
+            if (svc != null) {
+                String bridgeToken = svc.issue(user.getId());
+                safeRedirect = appendBridgeToken(safeRedirect, bridgeToken);
+            }
         }
 
         response.sendRedirect(safeRedirect);
