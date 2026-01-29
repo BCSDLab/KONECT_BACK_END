@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.global.auth.annotation.PublicApi;
+import gg.agit.konect.domain.user.service.RefreshTokenService;
+import gg.agit.konect.global.auth.token.AuthCookieService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -25,6 +27,8 @@ public class NativeSessionController {
     private String frontendBaseUrl;
 
     private final NativeSessionBridgeService nativeSessionBridgeService;
+    private final RefreshTokenService refreshTokenService;
+    private final AuthCookieService authCookieService;
 
     @PublicApi
     @GetMapping("/native/session/bridge")
@@ -52,8 +56,10 @@ public class NativeSessionController {
             existing.invalidate();
         }
 
-        HttpSession session = request.getSession(true);
-        session.setAttribute("userId", userId);
+        authCookieService.clearSignupToken(request, response);
+
+        String refreshToken = refreshTokenService.issue(userId);
+        authCookieService.setRefreshToken(request, response, refreshToken, refreshTokenService.refreshTtl());
 
         response.sendRedirect(frontendBaseUrl + "/home");
     }
