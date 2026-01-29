@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.global.auth.annotation.PublicApi;
@@ -62,7 +63,7 @@ public interface UserApi {
     @Operation(summary = "리프레시 토큰으로 액세스 토큰을 재발급한다.")
     @PostMapping("/refresh")
     @PublicApi
-    ResponseEntity<Void> refresh(HttpServletRequest request, HttpServletResponse response);
+    ResponseEntity<UserAccessTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response);
 
     @Operation(summary = "회원탈퇴를 한다.")
     @DeleteMapping("/withdraw")

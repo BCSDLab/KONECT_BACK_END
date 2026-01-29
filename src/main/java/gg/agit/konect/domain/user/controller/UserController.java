@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.WebUtils;
 
 import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.domain.user.service.UserService;
@@ -87,15 +88,14 @@ public class UserController implements UserApi {
 
     @Override
     @PublicApi
-    public ResponseEntity<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<UserAccessTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         RefreshTokenService.Rotated rotated = refreshTokenService.rotate(refreshToken);
 
         String accessToken = jwtProvider.createToken(rotated.userId());
-        response.setHeader("Authorization", "Bearer " + accessToken);
         authCookieService.setRefreshToken(request, response, rotated.refreshToken(), refreshTokenService.refreshTtl());
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new UserAccessTokenResponse(accessToken));
     }
 
     @Override
