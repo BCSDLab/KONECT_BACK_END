@@ -59,43 +59,47 @@ public class JwtProvider {
 
     public Integer getUserId(String token) {
         if (!StringUtils.hasText(token)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.MISSING_ACCESS_TOKEN);
         }
 
         SignedJWT jwt;
         try {
             jwt = SignedJWT.parse(token);
         } catch (Exception e) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.MALFORMED_ACCESS_TOKEN);
         }
 
         try {
             if (!jwt.verify(new MACVerifier(resolveSecretBytes()))) {
-                throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+                throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_SIGNATURE);
             }
         } catch (JOSEException e) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_SIGNATURE);
         }
 
         JWTClaimsSet claims;
         try {
             claims = jwt.getJWTClaimsSet();
         } catch (Exception e) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_CLAIMS);
         }
 
         if (!resolveIssuer().equals(claims.getIssuer())) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_ISSUER);
         }
 
         Date exp = claims.getExpirationTime();
-        if (exp == null || Instant.now().isAfter(exp.toInstant())) {
+        if (exp == null) {
+            throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_CLAIMS);
+        }
+
+        if (Instant.now().isAfter(exp.toInstant())) {
             throw CustomException.of(ApiResponseCode.EXPIRED_TOKEN);
         }
 
         Object id = claims.getClaim(CLAIM_USER_ID);
         if (!(id instanceof Number number)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_CLAIMS);
         }
 
         return number.intValue();
