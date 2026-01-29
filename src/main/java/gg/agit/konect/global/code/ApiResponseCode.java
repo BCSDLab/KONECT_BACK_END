@@ -42,6 +42,13 @@ public enum ApiResponseCode {
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
+    MISSING_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "액세스 토큰이 필요합니다."),
+    MALFORMED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "액세스 토큰 형식이 올바르지 않습니다."),
+    INVALID_ACCESS_TOKEN_SIGNATURE(HttpStatus.UNAUTHORIZED, "액세스 토큰 서명이 올바르지 않습니다."),
+    INVALID_ACCESS_TOKEN_ISSUER(HttpStatus.UNAUTHORIZED, "액세스 토큰 발급자가 올바르지 않습니다."),
+    INVALID_ACCESS_TOKEN_CLAIMS(HttpStatus.UNAUTHORIZED, "액세스 토큰 정보가 올바르지 않습니다."),
+    BLACKLISTED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "폐기된 액세스 토큰입니다."),
 
     // 403 Forbidden (접근 권한 없음)
     FORBIDDEN_CHAT_ROOM_ACCESS(HttpStatus.FORBIDDEN, "채팅방에 접근할 권한이 없습니다."),
@@ -53,6 +60,7 @@ public enum ApiResponseCode {
     FORBIDDEN_MEMBER_POSITION_CHANGE(HttpStatus.FORBIDDEN, "회원 직책 변경 권한이 없습니다."),
     FORBIDDEN_POSITION_NAME_CHANGE(HttpStatus.FORBIDDEN, "해당 직책의 이름은 변경할 수 없습니다."),
     FORBIDDEN_ROLE_ACCESS(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    FORBIDDEN_ORIGIN_ACCESS(HttpStatus.FORBIDDEN, "허용되지 않은 Origin 입니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),

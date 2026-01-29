@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.global.auth.annotation.PublicApi;
@@ -16,7 +17,7 @@ import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @Tag(name = "(Normal) User: 유저", description = "유저 API")
@@ -38,9 +39,9 @@ public interface UserApi {
     @PostMapping("/signup")
     @PublicApi
     ResponseEntity<Void> signup(
-        HttpServletRequest httpServletRequest,
-        HttpSession session,
-        @RequestBody @Valid SignupRequest request
+        HttpServletRequest request,
+        HttpServletResponse response,
+        @RequestBody @Valid SignupRequest signupRequest
     );
 
     @Operation(summary = "로그인한 사용자의 정보를 조회한다.")
@@ -50,16 +51,21 @@ public interface UserApi {
     @Operation(summary = "로그인한 사용자의 정보를 수정한다.")
     @PutMapping("/me")
     ResponseEntity<Void> updateMyInfo(
-        HttpSession session,
+        @UserId Integer userId,
         @RequestBody @Valid UserUpdateRequest request
     );
 
     @Operation(summary = "로그아웃한다.")
     @PostMapping("/logout")
     @PublicApi
-    ResponseEntity<Void> logout(HttpServletRequest request);
+    ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response);
+
+    @Operation(summary = "리프레시 토큰으로 액세스 토큰을 재발급한다.")
+    @PostMapping("/refresh")
+    @PublicApi
+    ResponseEntity<UserAccessTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response);
 
     @Operation(summary = "회원탈퇴를 한다.")
     @DeleteMapping("/withdraw")
-    ResponseEntity<Void> withdraw(HttpServletRequest request, @UserId Integer userId);
+    ResponseEntity<Void> withdraw(HttpServletRequest request, HttpServletResponse response, @UserId Integer userId);
 }

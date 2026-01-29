@@ -8,10 +8,10 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import gg.agit.konect.global.auth.annotation.UserId;
+import gg.agit.konect.global.auth.interceptor.LoginCheckInterceptor;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 
 @Component
 public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
@@ -33,14 +33,8 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
         WebDataBinderFactory binderFactory
     ) {
         HttpServletRequest request = (HttpServletRequest)webRequest.getNativeRequest();
-        HttpSession session = request.getSession(false);
 
-        if (session == null) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
-        }
-
-        Object userId = session.getAttribute("userId");
-
+        Object userId = request.getAttribute(LoginCheckInterceptor.AUTHENTICATED_USER_ID_ATTRIBUTE);
         if (!(userId instanceof Integer id)) {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
         }

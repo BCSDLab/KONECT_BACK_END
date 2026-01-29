@@ -30,7 +30,7 @@ public class ClubRecruitmentController implements ClubRecruitmentApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateRecruitment(
+    public ResponseEntity<Void> upsertRecruitment(
         @Valid @RequestBody ClubRecruitmentUpsertRequest request,
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
