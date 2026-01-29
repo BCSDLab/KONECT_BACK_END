@@ -90,7 +90,7 @@ public class JwtProvider {
 
         Date exp = claims.getExpirationTime();
         if (exp == null || Instant.now().isAfter(exp.toInstant())) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.EXPIRED_TOKEN);
         }
 
         Object id = claims.getClaim(CLAIM_USER_ID);
