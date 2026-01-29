@@ -38,9 +38,8 @@ import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
-import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
-import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubRecruitmentUpsertRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.enums.ClubPositionGroup;
@@ -524,64 +523,46 @@ public class ClubService {
     }
 
     @Transactional
-    public void createRecruitment(Integer clubId, Integer userId, ClubRecruitmentCreateRequest request) {
+    public void upsertRecruitment(Integer clubId, Integer userId, ClubRecruitmentUpsertRequest request) {
         Club club = clubRepository.getById(clubId);
-        User user = userRepository.getById(userId);
-
-        if (!hasClubManageAccess(clubId, userId, PRESIDENT_ALLOWED_GROUPS)) {
-            throw CustomException.of(FORBIDDEN_CLUB_RECRUITMENT_CREATE);
-        }
-
-        if (clubRecruitmentRepository.existsByClubId(clubId)) {
-            throw CustomException.of(ALREADY_EXIST_CLUB_RECRUITMENT);
-        }
-
-        ClubRecruitment clubRecruitment = ClubRecruitment.of(
-            request.startDate(),
-            request.endDate(),
-            request.isAlwaysRecruiting(),
-            request.content(),
-            club
-        );
-        List<String> imageUrls = request.getImageUrls();
-        for (int index = 0; index < imageUrls.size(); index++) {
-            ClubRecruitmentImage clubRecruitmentImage = ClubRecruitmentImage.of(
-                imageUrls.get(index),
-                index,
-                clubRecruitment
-            );
-            clubRecruitment.addImage(clubRecruitmentImage);
-        }
-
-        clubRecruitmentRepository.save(clubRecruitment);
-    }
-
-    @Transactional
-    public void updateRecruitment(Integer clubId, Integer userId, ClubRecruitmentUpdateRequest request) {
-        clubRepository.getById(clubId);
         userRepository.getById(userId);
 
         if (!hasClubManageAccess(clubId, userId, MANAGER_ALLOWED_GROUPS)) {
             throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
         }
 
-        ClubRecruitment clubRecruitment = clubRecruitmentRepository.getByClubId(clubId);
-        clubRecruitment.update(
-            request.startDate(),
-            request.endDate(),
-            request.isAlwaysRecruiting(),
-            request.content()
-        );
+        ClubRecruitment clubRecruitment = clubRecruitmentRepository.findByClubId(clubId)
+            .orElseGet(() -> ClubRecruitment.of(
+                request.startDate(),
+                request.endDate(),
+                request.isAlwaysRecruiting(),
+                request.content(),
+                club
+            ));
 
-        clubRecruitment.getImages().clear();
+        if (clubRecruitment.getId() != null) {
+            clubRecruitment.update(
+                request.startDate(),
+                request.endDate(),
+                request.isAlwaysRecruiting(),
+                request.content()
+            );
+
+            clubRecruitment.getImages().clear();
+        }
+
         List<String> imageUrls = request.getImageUrls();
         for (int index = 0; index < imageUrls.size(); index++) {
-            ClubRecruitmentImage newImage = ClubRecruitmentImage.of(
+            ClubRecruitmentImage image = ClubRecruitmentImage.of(
                 imageUrls.get(index),
                 index,
                 clubRecruitment
             );
-            clubRecruitment.addImage(newImage);
+            clubRecruitment.addImage(image);
+        }
+
+        if (clubRecruitment.getId() == null) {
+            clubRecruitmentRepository.save(clubRecruitment);
         }
     }
 

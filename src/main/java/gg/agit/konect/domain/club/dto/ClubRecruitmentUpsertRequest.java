@@ -13,7 +13,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-public record ClubRecruitmentCreateRequest(
+public record ClubRecruitmentUpsertRequest(
     @Schema(description = "모집 시작일", example = "2025.11.30", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd")
     LocalDate startDate,

@@ -29,9 +29,8 @@ import gg.agit.konect.domain.club.dto.ClubPositionCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubPositionUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubPositionsResponse;
 import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
-import gg.agit.konect.domain.club.dto.ClubRecruitmentCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
-import gg.agit.konect.domain.club.dto.ClubRecruitmentUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubRecruitmentUpsertRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
@@ -253,22 +252,12 @@ public class ClubController implements ClubApi {
     }
 
     @Override
-    public ResponseEntity<Void> createRecruitment(
-        @RequestBody @Valid ClubRecruitmentCreateRequest request,
+    public ResponseEntity<Void> upsertRecruitment(
+        @Valid @RequestBody ClubRecruitmentUpsertRequest request,
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     ) {
-        clubService.createRecruitment(clubId, userId, request);
-        return ResponseEntity.ok().build();
-    }
-
-    @Override
-    public ResponseEntity<Void> updateRecruitment(
-        @Valid @RequestBody ClubRecruitmentUpdateRequest request,
-        @PathVariable(name = "clubId") Integer clubId,
-        @UserId Integer userId
-    ) {
-        clubService.updateRecruitment(clubId, userId, request);
+        clubService.upsertRecruitment(clubId, userId, request);
         return ResponseEntity.noContent().build();
     }
 
