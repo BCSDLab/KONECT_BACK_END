@@ -28,8 +28,6 @@ public class AuthCookieService {
             .build();
 
         response.addHeader("Set-Cookie", cookie.toString());
-        log.info("Refresh Token: {}", cookie.getValue());
-        log.info("token: {}", token);
     }
 
     public void clearRefreshToken(HttpServletRequest request, HttpServletResponse response) {

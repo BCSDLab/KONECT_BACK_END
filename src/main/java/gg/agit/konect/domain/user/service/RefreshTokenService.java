@@ -60,13 +60,11 @@ public class RefreshTokenService {
     }
 
     public Rotated rotate(String refreshToken) {
-        log.info("Redis refresh token: {}", refreshToken);
         if (!StringUtils.hasText(refreshToken)) {
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
         }
 
         Integer userId = consumeActive(refreshToken);
-        log.info("userId {}", userId);
         if (userId == null) {
             Integer revokedUserId = findRevokedUserId(refreshToken);
             if (revokedUserId != null) {
