@@ -6,17 +6,22 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import gg.agit.konect.global.auth.annotation.PublicApi;
-import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.exception.CustomException;
+import gg.agit.konect.global.auth.JwtProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class LoginCheckInterceptor implements HandlerInterceptor {
 
     public static final String AUTHENTICATED_USER_ID_ATTRIBUTE = "authenticatedUserId";
     public static final String PUBLIC_ENDPOINT_ATTRIBUTE = "publicEndpoint";
+
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    private final JwtProvider jwtProvider;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -33,13 +38,8 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        HttpSession session = request.getSession(false);
-        Object userId = session == null ? null : session.getAttribute("userId");
-
-        if (!(userId instanceof Integer)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
-        }
-
+        String accessToken = resolveBearerToken(request);
+        Integer userId = jwtProvider.getUserId(accessToken);
         request.setAttribute(AUTHENTICATED_USER_ID_ATTRIBUTE, userId);
 
         return true;
@@ -48,5 +48,13 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
     private boolean isPublicEndpoint(HandlerMethod handlerMethod) {
         return handlerMethod.hasMethodAnnotation(PublicApi.class)
             || handlerMethod.getBeanType().isAnnotationPresent(PublicApi.class);
+    }
+
+    private String resolveBearerToken(HttpServletRequest request) {
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+            return null;
+        }
+        return authorization.substring(BEARER_PREFIX.length());
     }
 }
