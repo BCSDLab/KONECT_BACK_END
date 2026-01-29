@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public class AuthCookieService {
 
@@ -26,6 +28,8 @@ public class AuthCookieService {
             .build();
 
         response.addHeader("Set-Cookie", cookie.toString());
+        log.info("Refresh Token: {}", cookie.getValue());
+        log.info("token: {}", token);
     }
 
     public void clearRefreshToken(HttpServletRequest request, HttpServletResponse response) {
