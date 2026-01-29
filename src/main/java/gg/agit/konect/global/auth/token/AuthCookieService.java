@@ -8,18 +8,17 @@ import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 
 @Component
-@RequiredArgsConstructor
 public class AuthCookieService {
 
     public static final String REFRESH_TOKEN_COOKIE = "refresh_token";
     public static final String SIGNUP_TOKEN_COOKIE = "signup_token";
+
     private static final String COOKIE_PATH = "/";
 
-    @Value("${app.cookie.domain}")
-    private String domain;
+    @Value("${app.cookie.domain:}")
+    private String cookieDomain;
 
     public void setRefreshToken(HttpServletRequest request, HttpServletResponse response, String token, Duration ttl) {
         ResponseCookie cookie = baseCookie(request, REFRESH_TOKEN_COOKIE, token)
@@ -54,12 +53,20 @@ public class AuthCookieService {
     }
 
     private ResponseCookie.ResponseCookieBuilder baseCookie(HttpServletRequest request, String name, String value) {
+        boolean secure = isSecureRequest(request);
+
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
             .httpOnly(true)
-            .secure(isSecureRequest(request))
-            .sameSite("None")
-            .path(COOKIE_PATH)
-            .domain(domain);
+            .secure(secure)
+            .path(COOKIE_PATH);
+
+        if (secure) {
+            builder.sameSite("None");
+        }
+
+        if (cookieDomain != null && !cookieDomain.isBlank()) {
+            builder.domain(cookieDomain);
+        }
 
         return builder;
     }
