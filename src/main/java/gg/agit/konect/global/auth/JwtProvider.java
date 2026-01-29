@@ -30,6 +30,7 @@ public class JwtProvider {
     private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(15);
 
     private final JwtProperties properties;
+    private final AccessTokenBlacklistService accessTokenBlacklistService;
 
     public String createToken(Integer userId) {
         if (userId == null) {
@@ -96,6 +97,15 @@ public class JwtProvider {
 
         if (Instant.now().isAfter(exp.toInstant())) {
             throw CustomException.of(ApiResponseCode.EXPIRED_TOKEN);
+        }
+
+        String jti = claims.getJWTID();
+        if (!StringUtils.hasText(jti)) {
+            throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_CLAIMS);
+        }
+
+        if (accessTokenBlacklistService.isBlacklisted(jti)) {
+            throw CustomException.of(ApiResponseCode.BLACKLISTED_ACCESS_TOKEN);
         }
 
         Object id = claims.getClaim(CLAIM_USER_ID);

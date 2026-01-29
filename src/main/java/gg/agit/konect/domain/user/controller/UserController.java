@@ -13,6 +13,7 @@ import gg.agit.konect.domain.user.dto.UserUpdateRequest;
 import gg.agit.konect.domain.user.service.UserService;
 import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.auth.annotation.UserId;
+import gg.agit.konect.global.auth.AccessTokenBlacklistService;
 import gg.agit.konect.global.auth.JwtProvider;
 import gg.agit.konect.global.auth.token.AuthCookieService;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
@@ -28,11 +29,15 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/users")
 public class UserController implements UserApi {
 
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final UserService userService;
     private final SignupTokenService signupTokenService;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
+    private final AccessTokenBlacklistService accessTokenBlacklistService;
 
     @Override
     @PublicApi
@@ -77,6 +82,9 @@ public class UserController implements UserApi {
     @Override
     @PublicApi
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        String accessToken = resolveBearerToken(request);
+        accessTokenBlacklistService.blacklist(accessToken);
+
         String refreshToken = getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         refreshTokenService.revoke(refreshToken);
 
@@ -89,6 +97,9 @@ public class UserController implements UserApi {
     @Override
     @PublicApi
     public ResponseEntity<UserAccessTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
+        String oldAccessToken = resolveBearerToken(request);
+        accessTokenBlacklistService.blacklist(oldAccessToken);
+
         String refreshToken = getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         RefreshTokenService.Rotated rotated = refreshTokenService.rotate(refreshToken);
 
@@ -96,6 +107,14 @@ public class UserController implements UserApi {
         authCookieService.setRefreshToken(request, response, rotated.refreshToken(), refreshTokenService.refreshTtl());
 
         return ResponseEntity.ok(new UserAccessTokenResponse(accessToken));
+    }
+
+    private String resolveBearerToken(HttpServletRequest request) {
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+            return null;
+        }
+        return authorization.substring(BEARER_PREFIX.length());
     }
 
     @Override
