@@ -19,7 +19,11 @@ import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.service.RefreshTokenService;
+import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.global.auth.bridge.NativeSessionBridgeService;
+import gg.agit.konect.global.auth.JwtProvider;
+import gg.agit.konect.global.auth.token.AuthCookieService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
 import gg.agit.konect.global.exception.CustomException;
@@ -35,12 +39,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
-    private static final int TEMP_SESSION_EXPIRATION_SECONDS = 600;
-
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
+
+    private final SignupTokenService signupTokenService;
+    private final JwtProvider jwtProvider;
+    private final RefreshTokenService refreshTokenService;
+    private final AuthCookieService authCookieService;
 
     @Override
     public void onAuthenticationSuccess(
@@ -89,16 +96,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Provider provider,
         String providerId
     ) throws IOException {
-        HttpSession session = request.getSession(true);
-        session.setAttribute("email", email);
-        session.setAttribute("provider", provider);
-
-        if (StringUtils.hasText(providerId)) {
-            session.setAttribute("providerId", providerId);
-        }
-
-        session.setMaxInactiveInterval(TEMP_SESSION_EXPIRATION_SECONDS);
-
+        String token = signupTokenService.issue(email, provider, providerId);
+        authCookieService.setSignupToken(request, response, token, signupTokenService.signupTtl());
         response.sendRedirect(frontendBaseUrl + "/signup");
     }
 
@@ -107,11 +106,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletResponse response,
         User user
     ) throws IOException {
-        HttpSession session = request.getSession(true);
-        session.setAttribute("userId", user.getId());
-
-        String redirectUri = (String)session.getAttribute("redirect_uri");
-        session.removeAttribute("redirect_uri");
+        HttpSession session = request.getSession(false);
+        String redirectUri = session == null ? null : (String)session.getAttribute("redirect_uri");
+        if (session != null) {
+            session.removeAttribute("redirect_uri");
+        }
 
         String safeRedirect = resolveSafeRedirect(redirectUri);
 
@@ -122,7 +121,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 String bridgeToken = svc.issue(user.getId());
                 safeRedirect = appendBridgeToken(safeRedirect, bridgeToken);
             }
+
+            authCookieService.clearRefreshToken(request, response);
+            authCookieService.clearSignupToken(request, response);
+
+            response.sendRedirect(safeRedirect);
+            return;
         }
+
+        String refreshToken = refreshTokenService.issue(user.getId());
+        authCookieService.setRefreshToken(request, response, refreshToken, refreshTokenService.refreshTtl());
+
+        authCookieService.clearSignupToken(request, response);
 
         response.sendRedirect(safeRedirect);
     }
