@@ -11,6 +11,9 @@ public record MyManagedClubResponse(
     @Schema(description = "동아리 고유 ID", example = "1", requiredMode = REQUIRED)
     Integer clubId,
 
+    @Schema(description = "동아리 이미지 링크", example = "https://bcsdlab.com/static/img/logo.d89d9cc.png", requiredMode = REQUIRED)
+    String imageUrl,
+
     @Schema(description = "동아리 이름", example = "BCSD", requiredMode = REQUIRED)
     String clubName,
 
@@ -27,6 +30,7 @@ public record MyManagedClubResponse(
         User user = clubMember.getUser();
         return new MyManagedClubResponse(
             club.getId(),
+            club.getImageUrl(),
             club.getName(),
             user.getName(),
             user.getStudentNumber(),
