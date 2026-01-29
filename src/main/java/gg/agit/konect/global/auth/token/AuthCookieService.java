@@ -57,6 +57,7 @@ public class AuthCookieService {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
             .httpOnly(true)
             .secure(isSecureRequest(request))
+            .sameSite("None")
             .path(COOKIE_PATH)
             .domain(domain);
 
