@@ -8,7 +8,6 @@ import java.util.List;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
@@ -21,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 public class SignupTokenService {
 
     private static final int TOKEN_BYTES = 32;
+
+    private static final Duration SIGNUP_TOKEN_TTL = Duration.ofMinutes(10);
     private static final String KEY_PREFIX = "auth:signup:";
     private static final String DELIMITER = "|";
     private static final int EXPECTED_PARTS = 3;
@@ -37,14 +38,8 @@ public class SignupTokenService {
 
     private final StringRedisTemplate redis;
 
-    @Value("${app.auth.signup-token-ttl-seconds:600}")
-    private long signupTokenTtlSeconds;
-
     public Duration signupTtl() {
-        if (signupTokenTtlSeconds <= 0) {
-            throw new IllegalStateException("app.auth.signup-token-ttl-seconds must be positive");
-        }
-        return Duration.ofSeconds(signupTokenTtlSeconds);
+        return SIGNUP_TOKEN_TTL;
     }
 
     public String issue(String email, Provider provider, String providerId) {

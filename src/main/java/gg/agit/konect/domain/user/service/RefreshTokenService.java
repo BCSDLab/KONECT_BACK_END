@@ -8,7 +8,6 @@ import java.util.List;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -20,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 public class RefreshTokenService {
 
     private static final int TOKEN_BYTES = 32;
+
+    private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
     private static final String ACTIVE_PREFIX = "auth:refresh:active:";
     private static final String REVOKED_PREFIX = "auth:refresh:revoked:";
@@ -37,14 +38,8 @@ public class RefreshTokenService {
 
     private final StringRedisTemplate redis;
 
-    @Value("${app.auth.refresh-token-ttl-seconds:2592000}")
-    private long refreshTokenTtlSeconds;
-
     public Duration refreshTtl() {
-        if (refreshTokenTtlSeconds <= 0) {
-            throw new IllegalStateException("app.auth.refresh-token-ttl-seconds must be positive");
-        }
-        return Duration.ofSeconds(refreshTokenTtlSeconds);
+        return REFRESH_TOKEN_TTL;
     }
 
     public String issue(Integer userId) {

@@ -27,6 +27,7 @@ public class JwtProvider {
 
     private static final int MIN_HS256_SECRET_BYTES = 32;
     private static final String CLAIM_USER_ID = "id";
+    private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(15);
 
     private final JwtProperties properties;
 
@@ -36,7 +37,7 @@ public class JwtProvider {
         }
 
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(accessTtl());
+        Instant expiresAt = now.plus(ACCESS_TOKEN_TTL);
 
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
             .issuer(resolveIssuer())
@@ -103,14 +104,6 @@ public class JwtProvider {
         }
 
         return number.intValue();
-    }
-
-    public Duration accessTtl() {
-        long seconds = properties.accessTokenTtlSeconds();
-        if (seconds <= 0) {
-            throw new IllegalStateException("app.jwt.access-token-ttl-seconds must be positive");
-        }
-        return Duration.ofSeconds(seconds);
     }
 
     private String resolveIssuer() {
