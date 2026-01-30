@@ -35,7 +35,6 @@ public class GoogleTokenVerifier implements OAuthTokenVerifier {
 
     private final JwtDecoder jwtDecoder;
 
-
     public GoogleTokenVerifier() {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(GOOGLE_JWKS_URI).build();
 

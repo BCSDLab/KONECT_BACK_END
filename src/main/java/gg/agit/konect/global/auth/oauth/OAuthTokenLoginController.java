@@ -3,7 +3,10 @@ package gg.agit.konect.global.auth.oauth;
 import java.io.IOException;
 import java.util.List;
 
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.global.auth.annotation.PublicApi;

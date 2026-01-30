@@ -14,7 +14,11 @@ public record OAuthTokenLoginRequest(
     @Schema(description = "OAuth 액세스 토큰", example = "eyJhbGciOiJIUzI1NiJ9...", requiredMode = NOT_REQUIRED)
     String accessToken,
 
-    @Schema(description = "OAuth 아이디 토큰", example = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...", requiredMode = NOT_REQUIRED)
+    @Schema(
+        description = "OAuth 아이디 토큰",
+        example = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+        requiredMode = NOT_REQUIRED
+    )
     String idToken,
 
     @Schema(description = "리다이렉트 경로", example = "https://agit.gg", requiredMode = NOT_REQUIRED)
