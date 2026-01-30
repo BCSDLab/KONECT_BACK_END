@@ -21,7 +21,6 @@ import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
-import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.web.AuthCookieService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
@@ -44,7 +43,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
 
     private final SignupTokenService signupTokenService;
-    private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
 

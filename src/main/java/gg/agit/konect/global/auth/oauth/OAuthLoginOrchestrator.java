@@ -10,11 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
+import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.web.AuthCookieService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
@@ -34,6 +36,8 @@ public class OAuthLoginOrchestrator {
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
+
+    private final JwtProvider jwtProvider;
 
     private final SignupTokenService signupTokenService;
     private final RefreshTokenService refreshTokenService;
@@ -65,6 +69,8 @@ public class OAuthLoginOrchestrator {
 
         String safeRedirect = resolveSafeRedirect(redirectUri);
 
+        String accessToken = jwtProvider.createToken(user.get().getId());
+
         if (isAppleOauthCallback(safeRedirect)) {
             NativeSessionBridgeService svc = nativeSessionBridgeService.getIfAvailable();
             if (svc != null) {
@@ -75,14 +81,14 @@ public class OAuthLoginOrchestrator {
             authCookieService.clearRefreshToken(request, response);
             authCookieService.clearSignupToken(request, response);
 
-            return OAuthTokenLoginResponse.login(safeRedirect, null);
+            return OAuthTokenLoginResponse.login(safeRedirect, accessToken, null);
         }
 
         String refreshToken = refreshTokenService.issue(user.get().getId());
         authCookieService.setRefreshToken(request, response, refreshToken, refreshTokenService.refreshTtl());
         authCookieService.clearSignupToken(request, response);
 
-        return OAuthTokenLoginResponse.login(safeRedirect, refreshToken);
+        return OAuthTokenLoginResponse.login(safeRedirect, accessToken, refreshToken);
     }
 
     private Optional<User> findUserByProvider(Provider provider, String email, String providerId) {
@@ -98,7 +104,7 @@ public class OAuthLoginOrchestrator {
         }
 
         return unRegisteredUserRepository.findByProviderIdAndProvider(providerId, Provider.APPLE)
-            .map(unRegisteredUser -> unRegisteredUser.getEmail())
+            .map(UnRegisteredUser::getEmail)
             .orElse(null);
     }
 
