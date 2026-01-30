@@ -23,6 +23,6 @@ public record OAuthTokenLoginResponse(
     }
 
     public static OAuthTokenLoginResponse signup(String redirectUri, String signupToken) {
-        return new OAuthTokenLoginResponse(redirectUri, null,null, signupToken);
+        return new OAuthTokenLoginResponse(redirectUri, null, null, signupToken);
     }
 }
