@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.oauth;
+package gg.agit.konect.infra.oauth;
 
 import java.util.Optional;
 
@@ -14,6 +14,7 @@ import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.auth.oauth.SocialOAuthService;
 import lombok.RequiredArgsConstructor;
 
 @Service("google")

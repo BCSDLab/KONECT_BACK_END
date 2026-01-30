@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth;
+package gg.agit.konect.global.auth.jwt;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

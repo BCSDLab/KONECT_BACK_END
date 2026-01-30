@@ -1,8 +1,7 @@
-package gg.agit.konect.global.auth.bridge;
+package gg.agit.konect.global.auth.web;
 
 import java.util.Map;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -12,13 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.global.auth.annotation.PublicApi;
-import gg.agit.konect.global.auth.token.AuthCookieService;
+import gg.agit.konect.global.auth.oauth.NativeSessionBridgeService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
-@Profile("!local")
 @RestController
 @RequiredArgsConstructor
 public class NativeSessionController {

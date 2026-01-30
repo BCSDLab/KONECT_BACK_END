@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.oauth;
+package gg.agit.konect.infra.oauth;
 
 import java.util.Optional;
 

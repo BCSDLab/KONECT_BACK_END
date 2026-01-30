@@ -1,4 +1,4 @@
-package gg.agit.konect.global.config;
+package gg.agit.konect.infra.storage.cdn;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

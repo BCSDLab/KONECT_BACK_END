@@ -1,12 +1,12 @@
-package gg.agit.konect.global.auth.interceptor;
+package gg.agit.konect.global.auth.web;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.annotation.PublicApi;
-import gg.agit.konect.global.auth.JwtProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

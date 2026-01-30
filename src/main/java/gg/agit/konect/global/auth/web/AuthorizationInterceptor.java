@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.interceptor;
+package gg.agit.konect.global.auth.web;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;

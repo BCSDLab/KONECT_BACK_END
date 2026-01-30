@@ -1,4 +1,4 @@
-package gg.agit.konect.global.config;
+package gg.agit.konect.infra.storage.s3;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
