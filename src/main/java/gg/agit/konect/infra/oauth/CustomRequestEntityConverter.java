@@ -1,4 +1,4 @@
-package gg.agit.konect.infra.auth.oauth;
+package gg.agit.konect.infra.oauth;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.client.endpoint.DefaultOAuth2TokenRequestParametersConverter;
