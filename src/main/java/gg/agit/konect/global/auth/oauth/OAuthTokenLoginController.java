@@ -3,6 +3,7 @@ package gg.agit.konect.global.auth.oauth;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +27,7 @@ public class OAuthTokenLoginController {
 
     @PublicApi
     @PostMapping("/token")
-    public void loginWithToken(
+    public ResponseEntity<OAuthTokenLoginResponse> loginWithToken(
         HttpServletRequest request,
         HttpServletResponse response,
         @RequestBody OAuthTokenLoginRequest body
@@ -40,13 +41,15 @@ public class OAuthTokenLoginController {
 
         VerifiedOAuthUser verified = verifier.verify(body);
 
-        orchestrator.loginOrSignup(
-            request,
-            response,
-            provider,
-            verified.email(),
-            verified.providerId(),
-            body.redirectUri()
+        return ResponseEntity.ok(
+            orchestrator.loginOrSignup(
+                request,
+                response,
+                provider,
+                verified.email(),
+                verified.providerId(),
+                body.redirectUri()
+            )
         );
     }
 }

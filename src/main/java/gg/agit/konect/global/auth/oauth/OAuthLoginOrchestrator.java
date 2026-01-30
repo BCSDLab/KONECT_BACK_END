@@ -1,6 +1,5 @@
 package gg.agit.konect.global.auth.oauth;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
@@ -40,14 +39,14 @@ public class OAuthLoginOrchestrator {
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
 
-    public void loginOrSignup(
+    public OAuthTokenLoginResponse loginOrSignup(
         HttpServletRequest request,
         HttpServletResponse response,
         Provider provider,
         String email,
         String providerId,
         String redirectUri
-    ) throws IOException {
+    ) {
         Optional<User> user = findUserByProvider(provider, email, providerId);
 
         if (user.isEmpty()) {
@@ -60,8 +59,8 @@ public class OAuthLoginOrchestrator {
 
             String token = signupTokenService.issue(email, provider, providerId);
             authCookieService.setSignupToken(request, response, token, signupTokenService.signupTtl());
-            response.sendRedirect(frontendBaseUrl + "/signup");
-            return;
+
+            return OAuthTokenLoginResponse.signup(frontendBaseUrl + "/signup", token);
         }
 
         String safeRedirect = resolveSafeRedirect(redirectUri);
@@ -75,15 +74,15 @@ public class OAuthLoginOrchestrator {
 
             authCookieService.clearRefreshToken(request, response);
             authCookieService.clearSignupToken(request, response);
-            response.sendRedirect(safeRedirect);
-            return;
+
+            return OAuthTokenLoginResponse.login(safeRedirect, null);
         }
 
         String refreshToken = refreshTokenService.issue(user.get().getId());
         authCookieService.setRefreshToken(request, response, refreshToken, refreshTokenService.refreshTtl());
         authCookieService.clearSignupToken(request, response);
 
-        response.sendRedirect(safeRedirect);
+        return OAuthTokenLoginResponse.login(safeRedirect, refreshToken);
     }
 
     private Optional<User> findUserByProvider(Provider provider, String email, String providerId) {
