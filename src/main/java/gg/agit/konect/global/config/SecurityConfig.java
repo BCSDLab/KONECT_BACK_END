@@ -20,10 +20,10 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import gg.agit.konect.global.auth.filter.OAuth2RedirectUriSaveFilter;
 import gg.agit.konect.global.auth.handler.OAuth2LoginSuccessHandler;
-import gg.agit.konect.global.auth.oauth.AppleClientSecretProvider;
-import gg.agit.konect.global.auth.oauth.AppleOAuthServiceImpl;
-import gg.agit.konect.global.auth.oauth.CustomRequestEntityConverter;
 import gg.agit.konect.global.auth.oauth.SocialOAuthService;
+import gg.agit.konect.infra.auth.oauth.AppleClientSecretProvider;
+import gg.agit.konect.infra.auth.oauth.AppleOAuthServiceImpl;
+import gg.agit.konect.infra.auth.oauth.CustomRequestEntityConverter;
 import lombok.RequiredArgsConstructor;
 
 @Configuration

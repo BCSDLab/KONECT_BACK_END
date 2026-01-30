@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.oauth;
+package gg.agit.konect.infra.auth.oauth;
 
 import java.util.Map;
 import java.util.Optional;
@@ -15,28 +15,30 @@ import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.auth.oauth.SocialOAuthService;
 import lombok.RequiredArgsConstructor;
 
-@Service("kakao")
+@Service("naver")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class KakaoOAuthServiceImpl extends DefaultOAuth2UserService implements SocialOAuthService {
+public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements SocialOAuthService {
 
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
 
-    @Override
     @Transactional
+    @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
-        Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
-        String email = (String)kakaoAccount.get("email");
+        Map<String, Object> response = oAuth2User.getAttribute("response");
+        String email = (String)response.get("email");
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
 
         Optional<User> registered = userRepository.findByEmailAndProvider(email, provider);
+
         if (registered.isPresent()) {
             return oAuth2User;
         }
