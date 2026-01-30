@@ -39,6 +39,7 @@ public enum ApiResponseCode {
     INVALID_RECRUITMENT_PERIOD(HttpStatus.BAD_REQUEST, "모집 시작일은 모집 마감일보다 이전이어야 합니다."),
     INVALID_FILE_CONTENT_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 타입입니다."),
     INVALID_FILE_SIZE(HttpStatus.BAD_REQUEST, "파일 크기가 제한을 초과했습니다."),
+    UNSUPPORTED_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth Provider 입니다."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
@@ -49,6 +50,7 @@ public enum ApiResponseCode {
     INVALID_ACCESS_TOKEN_ISSUER(HttpStatus.UNAUTHORIZED, "액세스 토큰 발급자가 올바르지 않습니다."),
     INVALID_ACCESS_TOKEN_CLAIMS(HttpStatus.UNAUTHORIZED, "액세스 토큰 정보가 올바르지 않습니다."),
     BLACKLISTED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "폐기된 액세스 토큰입니다."),
+    INVALID_OAUTH_TOKEN(HttpStatus.UNAUTHORIZED, "올바르지 않은 OAuth 토큰 입니다."),
 
     // 403 Forbidden (접근 권한 없음)
     FORBIDDEN_CHAT_ROOM_ACCESS(HttpStatus.FORBIDDEN, "채팅방에 접근할 권한이 없습니다."),
