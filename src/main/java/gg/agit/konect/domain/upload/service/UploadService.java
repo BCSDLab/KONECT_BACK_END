@@ -11,9 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import gg.agit.konect.domain.upload.dto.ImageUploadResponse;
 import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.config.S3StorageProperties;
-import gg.agit.konect.global.config.StorageCdnProperties;
 import gg.agit.konect.global.exception.CustomException;
+import gg.agit.konect.infra.storage.cdn.StorageCdnProperties;
+import gg.agit.konect.infra.storage.s3.S3StorageProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.exception.SdkClientException;
