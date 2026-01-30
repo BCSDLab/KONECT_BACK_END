@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.token;
+package gg.agit.konect.global.auth.web;
 
 import java.time.Duration;
 

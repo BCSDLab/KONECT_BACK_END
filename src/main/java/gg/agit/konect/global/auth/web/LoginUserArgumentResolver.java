@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.resolver;
+package gg.agit.konect.global.auth.web;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
@@ -8,7 +8,6 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import gg.agit.konect.global.auth.annotation.UserId;
-import gg.agit.konect.global.auth.interceptor.LoginCheckInterceptor;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import jakarta.servlet.http.HttpServletRequest;

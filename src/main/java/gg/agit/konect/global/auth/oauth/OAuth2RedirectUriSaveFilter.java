@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.filter;
+package gg.agit.konect.global.auth.oauth;
 
 import java.io.IOException;
 import java.net.URI;

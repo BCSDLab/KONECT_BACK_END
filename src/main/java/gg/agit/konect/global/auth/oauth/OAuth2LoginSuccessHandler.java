@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.handler;
+package gg.agit.konect.global.auth.oauth;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,9 +21,8 @@ import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
-import gg.agit.konect.global.auth.bridge.NativeSessionBridgeService;
-import gg.agit.konect.global.auth.JwtProvider;
-import gg.agit.konect.global.auth.token.AuthCookieService;
+import gg.agit.konect.global.auth.jwt.JwtProvider;
+import gg.agit.konect.global.auth.web.AuthCookieService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
 import gg.agit.konect.global.exception.CustomException;

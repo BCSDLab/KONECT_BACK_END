@@ -9,9 +9,9 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import gg.agit.konect.global.auth.interceptor.LoginCheckInterceptor;
-import gg.agit.konect.global.auth.interceptor.AuthorizationInterceptor;
-import gg.agit.konect.global.auth.resolver.LoginUserArgumentResolver;
+import gg.agit.konect.global.auth.web.AuthorizationInterceptor;
+import gg.agit.konect.global.auth.web.LoginCheckInterceptor;
+import gg.agit.konect.global.auth.web.LoginUserArgumentResolver;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
