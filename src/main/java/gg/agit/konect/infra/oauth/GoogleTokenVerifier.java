@@ -21,9 +21,7 @@ import gg.agit.konect.global.auth.oauth.OAuthTokenVerifier;
 import gg.agit.konect.global.auth.oauth.VerifiedOAuthUser;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Component
 public class GoogleTokenVerifier implements OAuthTokenVerifier {
 
@@ -66,12 +64,10 @@ public class GoogleTokenVerifier implements OAuthTokenVerifier {
     @Override
     public VerifiedOAuthUser verify(OAuthTokenLoginRequest req) {
         String idToken = req.idToken();
-        log.info("Verifying Google Id token: {}", idToken);
         if (!StringUtils.hasText(idToken)) {
             idToken = req.idToken();
         }
 
-        log.info("Verifying Google Id token: {}", idToken);
         if (!StringUtils.hasText(idToken)) {
             throw CustomException.of(ApiResponseCode.INVALID_OAUTH_TOKEN);
         }
