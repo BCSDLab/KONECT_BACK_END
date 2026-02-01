@@ -19,8 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class RefreshTokenService {
 
-    private static final int TOKEN_BYTES = 32;
-
     private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
     private static final String ACTIVE_PREFIX = "auth:refresh:active:";

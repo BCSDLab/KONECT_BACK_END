@@ -18,8 +18,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SignupTokenService {
 
-    private static final int TOKEN_BYTES = 32;
-
     private static final Duration SIGNUP_TOKEN_TTL = Duration.ofMinutes(10);
     private static final String KEY_PREFIX = "auth:signup:";
     private static final String DELIMITER = "|";

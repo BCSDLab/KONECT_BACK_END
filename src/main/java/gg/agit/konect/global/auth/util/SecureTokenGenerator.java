@@ -13,15 +13,7 @@ public class SecureTokenGenerator {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public String generate() {
-        return generate(DEFAULT_TOKEN_BYTES);
-    }
-
-    public String generate(int tokenBytes) {
-        if (tokenBytes <= 0) {
-            throw new IllegalArgumentException("tokenBytes must be positive");
-        }
-
-        byte[] bytes = new byte[tokenBytes];
+        byte[] bytes = new byte[DEFAULT_TOKEN_BYTES];
         secureRandom.nextBytes(bytes);
 
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
