@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.appversion.enums;
+package gg.agit.konect.domain.version.enums;
 
 public enum PlatformType {
     IOS,

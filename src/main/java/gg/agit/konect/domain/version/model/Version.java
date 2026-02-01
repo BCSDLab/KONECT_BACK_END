@@ -1,9 +1,9 @@
-package gg.agit.konect.domain.appversion.model;
+package gg.agit.konect.domain.version.model;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-import gg.agit.konect.domain.appversion.enums.PlatformType;
+import gg.agit.konect.domain.version.enums.PlatformType;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,9 +18,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "app_version")
+@Table(name = "version")
 @NoArgsConstructor(access = PROTECTED)
-public class AppVersion extends BaseEntity {
+public class Version extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -38,7 +38,7 @@ public class AppVersion extends BaseEntity {
     private String releaseNotes;
 
     @Builder
-    private AppVersion(
+    private Version(
         PlatformType platform,
         String version,
         String releaseNotes
