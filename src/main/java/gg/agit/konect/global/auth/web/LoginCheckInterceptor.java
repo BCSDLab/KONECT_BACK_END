@@ -11,13 +11,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 로그인 체크 인터셉터.
+ * JWT 액세스 토큰을 검증하고 인증된 사용자 ID를 request attribute에 설정합니다.
+ * @PublicApi 어노테이션이 있는 경우 인증을 건너뜁니다.
+ */
 @Component
 @RequiredArgsConstructor
 public class LoginCheckInterceptor implements HandlerInterceptor {
 
     public static final String AUTHENTICATED_USER_ID_ATTRIBUTE = "authenticatedUserId";
     public static final String PUBLIC_ENDPOINT_ATTRIBUTE = "publicEndpoint";
-
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
