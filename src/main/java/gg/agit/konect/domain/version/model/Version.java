@@ -12,13 +12,22 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "version")
+@Table(
+    name = "version",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_version_platform_version",
+            columnNames = {"platform, version"}
+        )
+    }
+)
 @NoArgsConstructor(access = PROTECTED)
 public class Version extends BaseEntity {
 

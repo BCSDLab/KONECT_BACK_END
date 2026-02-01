@@ -5,5 +5,7 @@ CREATE TABLE IF NOT EXISTS version
     version  VARCHAR(20)   NOT NULL,
     release_notes TEXT          NULL,
     created_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+    updated_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    CONSTRAINT uq_version_platform_version UNIQUE (platform, version)
 );
