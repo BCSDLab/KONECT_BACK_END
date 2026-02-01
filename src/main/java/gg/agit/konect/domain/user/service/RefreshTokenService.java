@@ -1,8 +1,6 @@
 package gg.agit.konect.domain.user.service;
 
-import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -10,6 +8,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.global.auth.util.SecureTokenGenerator;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +35,8 @@ public class RefreshTokenService {
             String.class
         );
 
-    private final SecureRandom secureRandom = new SecureRandom();
-
     private final StringRedisTemplate redis;
+    private final SecureTokenGenerator secureTokenGenerator;
 
     public Duration refreshTtl() {
         return REFRESH_TOKEN_TTL;
@@ -49,7 +47,7 @@ public class RefreshTokenService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        String token = generateToken();
+        String token = secureTokenGenerator.generate();
         Duration ttl = refreshTtl();
 
         redis.opsForValue().set(activeKey(token), userId.toString(), ttl);
@@ -143,12 +141,6 @@ public class RefreshTokenService {
 
     private String userSetKey(Integer userId) {
         return USER_SET_PREFIX + userId;
-    }
-
-    private String generateToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        secureRandom.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private Integer parseUserId(String value) {
