@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.admin.version.dto.AdminVersionCreateRequest;
-import gg.agit.konect.admin.version.repository.AdminVersionRepository;
 import gg.agit.konect.domain.version.model.Version;
+import gg.agit.konect.domain.version.repository.VersionRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class AdminVersionService {
 
-    private final AdminVersionRepository adminVersionRepository;
+    private final VersionRepository versionRepository;
 
     @Transactional
     public void createVersion(AdminVersionCreateRequest request) {
@@ -23,6 +23,6 @@ public class AdminVersionService {
                 .releaseNotes(request.releaseNotes())
                 .build();
 
-        adminVersionRepository.save(version);
+        versionRepository.save(version);
     }
 }
