@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS version
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    platform      VARCHAR(20)   NOT NULL,
+    version  VARCHAR(20)   NOT NULL,
+    release_notes TEXT          NULL,
+    created_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    CONSTRAINT uq_version_platform_version UNIQUE (platform, version)
+);

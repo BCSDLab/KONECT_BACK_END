@@ -81,7 +81,7 @@ public enum ApiResponseCode {
     NOT_FOUND_CLUB_APPLY_QUESTION(HttpStatus.NOT_FOUND, "동아리 가입 문항을 찾을 수 없습니다."),
     NOT_FOUND_RANKING_TYPE(HttpStatus.NOT_FOUND, "순위 타입을 찾을 수 없습니다."),
     NOT_FOUND_BANK(HttpStatus.NOT_FOUND, "해당하는 은행을 찾을 수 없습니다."),
-
+    NOT_FOUND_VERSION(HttpStatus.NOT_FOUND, "버전을 찾을 수 없습니다."),
     // 405 Method Not Allowed (지원하지 않는 HTTP 메소드)
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 HTTP 메소드 입니다."),
 
@@ -97,6 +97,7 @@ public enum ApiResponseCode {
     VICE_PRESIDENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "부회장은 이미 존재합니다."),
     ALREADY_RUNNING_STUDY_TIMER(HttpStatus.CONFLICT, "이미 실행 중인 스터디 타이머가 있습니다."),
     ALREADY_EXIST_CLUB_RECRUITMENT(HttpStatus.CONFLICT, "이미 동아리 모집 공고가 존재합니다."),
+    DUPLICATE_VERSION(HttpStatus.CONFLICT, "이미 등록된 버전입니다."),
 
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
