@@ -13,11 +13,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class VersionController implements VersionApi {
 
-    private final VersionService VersionService;
+    private final VersionService versionService;
 
     @Override
     public ResponseEntity<VersionResponse> getLatestVersion(@RequestParam PlatformType platform) {
-        VersionResponse response = VersionService.getLatestVersion(platform);
+        VersionResponse response = versionService.getLatestVersion(platform);
         return ResponseEntity.ok(response);
     }
 }
