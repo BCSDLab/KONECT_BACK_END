@@ -88,7 +88,7 @@ public class OAuthLoginHelper {
             if (allowedOrigins.contains(origin)) {
                 return redirectUri;
             }
-        } catch (Exception ignored) {
+        } catch (Exception ignore) {
         }
 
         return frontendBaseUrl + "/home";
