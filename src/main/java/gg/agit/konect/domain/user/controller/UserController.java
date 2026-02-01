@@ -4,7 +4,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.WebUtils;
 
 import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
@@ -17,7 +16,6 @@ import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.auth.annotation.UserId;
 import gg.agit.konect.global.auth.web.AuthCookieService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -45,7 +43,7 @@ public class UserController implements UserApi {
         HttpServletResponse response,
         @RequestBody @Valid SignupRequest signupRequest
     ) {
-        String signupToken = getCookieValue(request, AuthCookieService.SIGNUP_TOKEN_COOKIE);
+        String signupToken = authCookieService.getCookieValue(request, AuthCookieService.SIGNUP_TOKEN_COOKIE);
         SignupTokenService.SignupClaims claims = signupTokenService.consumeOrThrow(signupToken);
 
         Integer userId = userService.signup(claims.email(), claims.providerId(), claims.provider(), signupRequest);
@@ -74,7 +72,7 @@ public class UserController implements UserApi {
         String accessToken = resolveBearerToken(request);
         accessTokenBlacklistService.blacklist(accessToken);
 
-        String refreshToken = getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
+        String refreshToken = authCookieService.getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         refreshTokenService.revoke(refreshToken);
 
         authCookieService.clearRefreshToken(request, response);
@@ -89,7 +87,7 @@ public class UserController implements UserApi {
         String oldAccessToken = resolveBearerToken(request);
         accessTokenBlacklistService.blacklist(oldAccessToken);
 
-        String refreshToken = getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
+        String refreshToken = authCookieService.getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         RefreshTokenService.Rotated rotated = refreshTokenService.rotate(refreshToken);
 
         String accessToken = jwtProvider.createToken(rotated.userId());
@@ -116,10 +114,5 @@ public class UserController implements UserApi {
         logout(request, response);
 
         return ResponseEntity.noContent().build();
-    }
-
-    private String getCookieValue(HttpServletRequest request, String name) {
-        Cookie cookie = WebUtils.getCookie(request, name);
-        return cookie == null ? null : cookie.getValue();
     }
 }
