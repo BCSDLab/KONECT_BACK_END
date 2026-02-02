@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpsertRequest;
-import gg.agit.konect.domain.club.service.ClubService;
+import gg.agit.konect.domain.club.service.ClubRecruitmentService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,14 +18,14 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/clubs")
 public class ClubRecruitmentController implements ClubRecruitmentApi {
 
-    private final ClubService clubService;
+    private final ClubRecruitmentService clubRecruitmentService;
 
     @Override
     public ResponseEntity<ClubRecruitmentResponse> getRecruitments(
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     ) {
-        ClubRecruitmentResponse response = clubService.getRecruitment(clubId, userId);
+        ClubRecruitmentResponse response = clubRecruitmentService.getRecruitment(clubId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -35,7 +35,7 @@ public class ClubRecruitmentController implements ClubRecruitmentApi {
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     ) {
-        clubService.upsertRecruitment(clubId, userId, request);
+        clubRecruitmentService.upsertRecruitment(clubId, userId, request);
         return ResponseEntity.noContent().build();
     }
 }
