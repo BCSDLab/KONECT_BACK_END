@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.model.ChatMessage;
+import gg.agit.konect.domain.user.enums.UserRole;
 
 public interface ChatMessageRepository extends Repository<ChatMessage, Integer> {
 
@@ -50,5 +51,33 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
     List<ChatMessage> findUnreadMessagesByChatRoomIdAndUserId(
         @Param("chatRoomId") Integer chatRoomId,
         @Param("receiverId") Integer receiverId
+    );
+
+    @Query("""
+        SELECT cm
+        FROM ChatMessage cm
+        WHERE cm.chatRoom.id = :chatRoomId
+        AND cm.receiver.role = :adminRole
+        AND cm.isRead = false
+        """)
+    List<ChatMessage> findUnreadMessagesForAdmin(
+        @Param("chatRoomId") Integer chatRoomId,
+        @Param("adminRole") UserRole adminRole
+    );
+
+    @Query("""
+        SELECT new gg.agit.konect.domain.chat.dto.UnreadMessageCount(
+            cm.chatRoom.id,
+            COUNT(cm)
+        )
+        FROM ChatMessage cm
+        WHERE cm.chatRoom.id IN :chatRoomIds
+        AND cm.receiver.role = :adminRole
+        AND cm.isRead = false
+        GROUP BY cm.chatRoom.id
+        """)
+    List<UnreadMessageCount> countUnreadMessagesForAdmin(
+        @Param("chatRoomIds") List<Integer> chatRoomIds,
+        @Param("adminRole") UserRole adminRole
     );
 }
