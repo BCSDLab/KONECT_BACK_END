@@ -35,6 +35,9 @@ public interface ClubBasicApi {
         - isRecruiting가 true일 경우, 모집 중인 동아리만 조회하며 모집일(마감일)이 빠른 순으로 정렬됩니다.
         - isRecruiting가 false일 경우, 전체 동아리를 조회하되 모집 중인 동아리를 먼저 보여줍니다.
         - status은 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
+        
+        ## 에러
+        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
     @GetMapping
     ResponseEntity<ClubsResponse> getClubs(
@@ -46,6 +49,9 @@ public interface ClubBasicApi {
         - recruitmentStatus는 모집 기간에 따라 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         - 모집 일정 데이터가 존재하지 않는다면 CLOSED(모집 마감)으로 간주되며, startDate, endDate는 null로 반환됩니다.
         - 동아리 멤버이거나 지원 이력이 존재할 경우 isApplied는 true로 반환됩니다.
+        
+        ## 에러
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         """)
     @GetMapping("/{clubId}")
     ResponseEntity<ClubDetailResponse> getClubDetail(
@@ -131,6 +137,7 @@ public interface ClubBasicApi {
         동아리 관리자(회장, 부회장, 운영진)만 조회할 수 있습니다.
         
         ## 에러
+        - NOT_FOUND_CLUB_MEMBER (404): 해당하는 동아리 원을 찾을 수 없습니다
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         """)
