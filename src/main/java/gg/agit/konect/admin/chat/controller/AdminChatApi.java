@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse.InnerAdminChatMessageResponse;
-import gg.agit.konect.admin.chat.dto.AdminChatRoomCreateRequest;
 import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
@@ -30,9 +29,9 @@ public interface AdminChatApi {
         특정 유저와의 1:1 채팅방을 생성하거나 기존 채팅방을 반환합니다.
         이미 해당 유저와 어드민 사이의 채팅방이 존재하면 기존 채팅방 ID를 반환합니다.
         """)
-    @PostMapping("/rooms")
+    @PostMapping("/rooms/users/{userId}")
     ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
-        @Valid @RequestBody AdminChatRoomCreateRequest request,
+        @PathVariable Integer userId,
         @UserId Integer adminId
     );
 

@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse.InnerAdminChatMessageResponse;
-import gg.agit.konect.admin.chat.dto.AdminChatRoomCreateRequest;
 import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse;
 import gg.agit.konect.admin.chat.service.AdminChatService;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
@@ -21,11 +20,8 @@ public class AdminChatController implements AdminChatApi {
     private final AdminChatService adminChatService;
 
     @Override
-    public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
-        AdminChatRoomCreateRequest request,
-        Integer adminId
-    ) {
-        ChatRoomResponse response = adminChatService.createOrGetChatRoom(request, adminId);
+    public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(Integer userId, Integer adminId) {
+        ChatRoomResponse response = adminChatService.createOrGetChatRoom(userId, adminId);
 
         return ResponseEntity.ok(response);
     }

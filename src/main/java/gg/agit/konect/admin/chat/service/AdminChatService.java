@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse.InnerAdminChatMessageResponse;
-import gg.agit.konect.admin.chat.dto.AdminChatRoomCreateRequest;
 import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
@@ -38,9 +37,9 @@ public class AdminChatService {
     private final UserRepository userRepository;
 
     @Transactional
-    public ChatRoomResponse createOrGetChatRoom(AdminChatRoomCreateRequest request, Integer adminId) {
+    public ChatRoomResponse createOrGetChatRoom(Integer userId, Integer adminId) {
         User admin = userRepository.getById(adminId);
-        User targetUser = userRepository.getById(request.userId());
+        User targetUser = userRepository.getById(userId);
 
         ChatRoom chatRoom = chatRoomRepository.findByUserIdAndAdminRole(targetUser.getId(), UserRole.ADMIN)
             .orElseGet(() -> {
