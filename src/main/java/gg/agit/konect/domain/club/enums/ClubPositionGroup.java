@@ -1,5 +1,8 @@
 package gg.agit.konect.domain.club.enums;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 import lombok.Getter;
 
 @Getter
@@ -45,4 +48,8 @@ public enum ClubPositionGroup {
     public boolean isMember() {
         return this == MEMBER;
     }
+
+    public static final Set<ClubPositionGroup> PRESIDENT_ONLY = EnumSet.of(PRESIDENT);
+    public static final Set<ClubPositionGroup> LEADERS = EnumSet.of(PRESIDENT, VICE_PRESIDENT);
+    public static final Set<ClubPositionGroup> MANAGERS = EnumSet.of(PRESIDENT, VICE_PRESIDENT, MANAGER);
 }
