@@ -20,6 +20,7 @@ import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
 import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
+import gg.agit.konect.domain.club.service.ClubApplicationService;
 import gg.agit.konect.domain.club.service.ClubService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class ClubBasicController implements ClubBasicApi {
 
     private final ClubService clubService;
+    private final ClubApplicationService clubApplicationService;
 
     @Override
     public ResponseEntity<ClubsResponse> getClubs(
@@ -112,7 +114,7 @@ public class ClubBasicController implements ClubBasicApi {
 
     @Override
     public ResponseEntity<ClubAppliedClubsResponse> getAppliedClubs(@UserId Integer userId) {
-        ClubAppliedClubsResponse response = clubService.getAppliedClubs(userId);
+        ClubAppliedClubsResponse response = clubApplicationService.getAppliedClubs(userId);
         return ResponseEntity.ok(response);
     }
 

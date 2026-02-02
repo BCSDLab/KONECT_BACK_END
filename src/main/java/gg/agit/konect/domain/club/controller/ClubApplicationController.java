@@ -16,7 +16,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
-import gg.agit.konect.domain.club.service.ClubService;
+import gg.agit.konect.domain.club.service.ClubApplicationService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/clubs")
 public class ClubApplicationController implements ClubApplicationApi {
 
-    private final ClubService clubService;
+    private final ClubApplicationService clubApplicationService;
 
     @Override
     public ResponseEntity<ClubFeeInfoResponse> applyClub(
@@ -34,7 +34,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @Valid @RequestBody ClubApplyRequest request,
         @UserId Integer userId
     ) {
-        ClubFeeInfoResponse response = clubService.applyClub(clubId, userId, request);
+        ClubFeeInfoResponse response = clubApplicationService.applyClub(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -44,7 +44,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @Valid @ParameterObject @ModelAttribute ClubApplicationCondition condition,
         @UserId Integer userId
     ) {
-        ClubApplicationsResponse response = clubService.getClubApplications(clubId, userId, condition);
+        ClubApplicationsResponse response = clubApplicationService.getClubApplications(clubId, userId, condition);
         return ResponseEntity.ok(response);
     }
 
@@ -54,7 +54,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @PathVariable(name = "applicationId") Integer applicationId,
         @UserId Integer userId
     ) {
-        ClubApplicationAnswersResponse response = clubService.getClubApplicationAnswers(
+        ClubApplicationAnswersResponse response = clubApplicationService.getClubApplicationAnswers(
             clubId,
             applicationId,
             userId
@@ -68,7 +68,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @PathVariable(name = "applicationId") Integer applicationId,
         @UserId Integer userId
     ) {
-        clubService.approveClubApplication(clubId, applicationId, userId);
+        clubApplicationService.approveClubApplication(clubId, applicationId, userId);
         return ResponseEntity.ok().build();
     }
 
@@ -78,7 +78,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @PathVariable(name = "applicationId") Integer applicationId,
         @UserId Integer userId
     ) {
-        clubService.rejectClubApplication(clubId, applicationId, userId);
+        clubApplicationService.rejectClubApplication(clubId, applicationId, userId);
         return ResponseEntity.ok().build();
     }
 
@@ -87,7 +87,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     ) {
-        ClubApplyQuestionsResponse response = clubService.getApplyQuestions(clubId, userId);
+        ClubApplyQuestionsResponse response = clubApplicationService.getApplyQuestions(clubId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -97,7 +97,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @Valid @RequestBody ClubApplyQuestionsReplaceRequest request,
         @UserId Integer userId
     ) {
-        ClubApplyQuestionsResponse response = clubService.replaceApplyQuestions(clubId, userId, request);
+        ClubApplyQuestionsResponse response = clubApplicationService.replaceApplyQuestions(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -106,7 +106,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer userId
     ) {
-        ClubFeeInfoResponse response = clubService.getFeeInfo(clubId, userId);
+        ClubFeeInfoResponse response = clubApplicationService.getFeeInfo(clubId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -116,7 +116,7 @@ public class ClubApplicationController implements ClubApplicationApi {
         @Valid @RequestBody ClubFeeInfoReplaceRequest request,
         @UserId Integer userId
     ) {
-        ClubFeeInfoResponse response = clubService.replaceFeeInfo(clubId, userId, request);
+        ClubFeeInfoResponse response = clubApplicationService.replaceFeeInfo(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 }
