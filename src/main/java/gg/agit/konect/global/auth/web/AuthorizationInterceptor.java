@@ -14,6 +14,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 권한 체크 인터셉터.
+ * @Auth 어노테이션이 있는 경우 사용자의 역할(Role)을 검증
+ */
 @Component
 @RequiredArgsConstructor
 public class AuthorizationInterceptor implements HandlerInterceptor {
@@ -61,6 +65,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
         return handlerMethod.getBeanType().getAnnotation(Auth.class);
     }
 
+    // 요청자의 권한과 @Auth에서 지정된 권한을 비교하여 검증
     private void validateRole(Integer userId, Auth auth) {
         User user = userRepository.getById(userId);
 

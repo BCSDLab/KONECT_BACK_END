@@ -1,8 +1,6 @@
 package gg.agit.konect.domain.user.service;
 
-import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -11,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.global.auth.util.SecureTokenGenerator;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class SignupTokenService {
-
-    private static final int TOKEN_BYTES = 32;
 
     private static final Duration SIGNUP_TOKEN_TTL = Duration.ofMinutes(10);
     private static final String KEY_PREFIX = "auth:signup:";
@@ -34,9 +31,8 @@ public class SignupTokenService {
             String.class
         );
 
-    private final SecureRandom secureRandom = new SecureRandom();
-
     private final StringRedisTemplate redis;
+    private final SecureTokenGenerator secureTokenGenerator;
 
     public Duration signupTtl() {
         return SIGNUP_TOKEN_TTL;
@@ -47,7 +43,7 @@ public class SignupTokenService {
             throw new IllegalArgumentException("email and provider are required");
         }
 
-        String token = generateToken();
+        String token = secureTokenGenerator.generate();
         redis.opsForValue().set(key(token), serialize(new SignupClaims(email, provider, providerId)), signupTtl());
         return token;
     }
@@ -67,12 +63,6 @@ public class SignupTokenService {
 
     private String key(String token) {
         return KEY_PREFIX + token;
-    }
-
-    private String generateToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        secureRandom.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private String serialize(SignupClaims claims) {

@@ -1,8 +1,6 @@
 package gg.agit.konect.global.auth.oauth;
 
-import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,13 +9,13 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+import gg.agit.konect.global.auth.util.SecureTokenGenerator;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class NativeSessionBridgeService {
 
-    private static final int TOKEN_BYTES = 32;
     private static final String KEY_PREFIX = "native:session-bridge:";
     private static final Duration TTL = Duration.ofSeconds(30);
     private static final DefaultRedisScript<String> GET_DEL_SCRIPT =
@@ -28,16 +26,15 @@ public class NativeSessionBridgeService {
             String.class
         );
 
-    private final SecureRandom secureRandom = new SecureRandom();
-
     private final StringRedisTemplate redis;
+    private final SecureTokenGenerator secureTokenGenerator;
 
     public String issue(Integer userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
 
-        String token = generateToken();
+        String token = secureTokenGenerator.generate();
         redis.opsForValue().set(KEY_PREFIX + token, userId.toString(), TTL);
 
         return token;
@@ -60,11 +57,5 @@ public class NativeSessionBridgeService {
         } catch (NumberFormatException e) {
             return Optional.empty();
         }
-    }
-
-    private String generateToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        secureRandom.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,21 @@ public class AuthCookieService {
             .build();
 
         response.addHeader("Set-Cookie", cookie.toString());
+    }
+
+    public String getCookieValue(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+
+        for (Cookie cookie : cookies) {
+            if (cookie.getName().equals(name)) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
 
     private ResponseCookie.ResponseCookieBuilder baseCookie(HttpServletRequest request, String name, String value) {
