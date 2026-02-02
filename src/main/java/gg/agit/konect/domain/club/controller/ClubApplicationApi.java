@@ -30,7 +30,7 @@ public interface ClubApplicationApi {
     @Operation(summary = "동아리 가입 신청을 한다.", description = """
         동아리 가입 신청서를 제출합니다.
         설문 질문이 없는 경우 answers는 빈 배열을 전달합니다.
-
+        
         - ALREADY_APPLIED_CLUB (409): 이미 가입 신청을 완료한 사용자입니다.
         - NOT_FOUND_CLUB_APPLY_QUESTION (404): 존재하지 않는 가입 문항입니다.
         - DUPLICATE_CLUB_APPLY_QUESTION (409): 중복된 id의 가입 문항이 포함되어 있습니다.
@@ -50,7 +50,7 @@ public interface ClubApplicationApi {
          - 정렬 기준: APPLIED_AT(신청 일시), STUDENT_NUMBER(학번), NAME(이름)
          - 정렬 방향: ASC(오름차순), DESC(내림차순)
          - 기본 정렬: 신청 일시 최신순 (APPLIED_AT DESC)
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -65,7 +65,7 @@ public interface ClubApplicationApi {
 
     @Operation(summary = "동아리 지원 답변을 조회한다.", description = """
         - 동아리 관리자만 해당 동아리의 지원 답변을 조회할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -81,7 +81,7 @@ public interface ClubApplicationApi {
     @Operation(summary = "동아리 가입 신청을 승인한다.", description = """
         동아리 회장 또는 부회장만 가입 신청을 승인할 수 있습니다.
         승인 시 지원자는 일반회원으로 등록되며, 지원 내역은 삭제됩니다.
-
+        
         ## 에러
         - ALREADY_CLUB_MEMBER (409): 이미 동아리 회원입니다.
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
@@ -98,7 +98,7 @@ public interface ClubApplicationApi {
     @Operation(summary = "동아리 가입 신청을 거절한다.", description = """
         동아리 회장 또는 부회장만 가입 신청을 거절할 수 있습니다.
         거절 시 지원 내역은 삭제됩니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -124,7 +124,7 @@ public interface ClubApplicationApi {
         - questionId가 없으면 생성
         - 요청에 없는 기존 문항은 삭제됩니다.
         - 저장된 문항 목록을 반환합니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB_APPLY_QUESTION (404): 존재하지 않는 가입 문항입니다.
@@ -139,7 +139,7 @@ public interface ClubApplicationApi {
 
     @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
         동아리 가입 신청을 완료했거나 동아리 관리자 권한이 있는 사용자만 회비 계좌 정보를 조회할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_FEE_INFO (403): 회비 정보 조회 권한이 없습니다.
         """)
@@ -154,7 +154,7 @@ public interface ClubApplicationApi {
         - 모든 필드를 전달하면 생성/수정합니다.
         - 모든 필드가 null이면 회비 정보를 삭제합니다.
         - 일부 필드가 누락된 경우 에러가 발생합니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - INVALID_REQUEST_BODY (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우

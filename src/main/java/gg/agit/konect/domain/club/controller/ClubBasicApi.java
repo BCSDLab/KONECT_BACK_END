@@ -55,7 +55,7 @@ public interface ClubBasicApi {
 
     @Operation(summary = "새로운 동아리를 생성한다.", description = """
         새로운 동아리를 생성하고, 생성한 사용자를 회장으로 등록합니다.
-
+        
         ## 에러
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
@@ -69,7 +69,7 @@ public interface ClubBasicApi {
         동아리 회장 또는 부회장만 동아리 프로필을 수정할 수 있습니다.
         수정 가능 항목: 한 줄 소개, 로고 이미지, 태그
         동아리명과 분과는 수정할 수 없으며, 변경이 필요한 경우 문의하기를 통해 어드민에게 요청하세요.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -85,7 +85,7 @@ public interface ClubBasicApi {
     @Operation(summary = "동아리 상세정보를 수정한다.", description = """
         동아리 회장 또는 부회장만 동아리 상세정보를 수정할 수 있습니다.
         수정 가능 항목: 동방 위치, 상세 소개
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -102,7 +102,7 @@ public interface ClubBasicApi {
         어드민만 동아리 기본정보를 수정할 수 있습니다.
         수정 가능 항목: 동아리명, 분과
         일반 관리자는 이 API를 사용할 수 없으며, 변경이 필요한 경우 문의하기를 통해 어드민에게 요청하세요.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 어드민 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -129,7 +129,7 @@ public interface ClubBasicApi {
 
     @Operation(summary = "관리 중인 동아리의 상세 정보를 조회한다.", description = """
         동아리 관리자(회장, 부회장, 운영진)만 조회할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -149,7 +149,7 @@ public interface ClubBasicApi {
     @Operation(summary = "동아리 멤버 리스트를 조회한다.", description = """
         동아리 회원만 멤버 리스트를 조회할 수 있습니다.
         positionGroup 파라미터로 특정 직책 그룹의 회원만 필터링할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MEMBER_ACCESS (403): 동아리 멤버 조회 권한이 없습니다.
         """)
