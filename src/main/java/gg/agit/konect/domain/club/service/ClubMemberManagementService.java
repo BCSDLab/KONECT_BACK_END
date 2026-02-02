@@ -33,6 +33,7 @@ public class ClubMemberManagementService {
     private final ClubMemberRepository clubMemberRepository;
     private final ClubPositionRepository clubPositionRepository;
     private final UserRepository userRepository;
+    private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
     public void changeMemberPosition(
@@ -45,9 +46,9 @@ public class ClubMemberManagementService {
 
         validateNotSelf(requesterId, targetUserId, CANNOT_CHANGE_OWN_POSITION);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
-        validateManagerPermission(requester);
+        clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
+        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
         ClubMember target = clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
 
         if (!requester.canManage(target)) {
@@ -91,9 +92,9 @@ public class ClubMemberManagementService {
     ) {
         clubRepository.getById(clubId);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
-        validateManagerPermission(requester);
+        clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
+        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
         Integer targetUserId = request.userId();
 
         if (clubMemberRepository.existsByClubIdAndUserId(clubId, targetUserId)) {
@@ -146,10 +147,11 @@ public class ClubMemberManagementService {
     ) {
         clubRepository.getById(clubId);
 
-        ClubMember currentPresident = clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId);
-        validatePresidentPermission(currentPresident);
+        clubPermissionValidator.validatePresidentAccess(clubId, currentPresidentId);
 
         Integer newPresidentUserId = request.newPresidentUserId();
+
+        ClubMember currentPresident = clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId);
         validateNotSelf(currentPresidentId, newPresidentUserId, ILLEGAL_ARGUMENT);
 
         ClubMember newPresident = clubMemberRepository.getByClubIdAndUserId(clubId, newPresidentUserId);
@@ -169,8 +171,7 @@ public class ClubMemberManagementService {
     ) {
         clubRepository.getById(clubId);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
-        validatePresidentPermission(requester);
+        clubPermissionValidator.validatePresidentAccess(clubId, requesterId);
 
         ClubPosition vicePresidentPosition = clubPositionRepository.getFirstByClubIdAndClubPositionGroup(
             clubId,
@@ -216,9 +217,9 @@ public class ClubMemberManagementService {
 
         validateNotSelf(requesterId, targetUserId, CANNOT_REMOVE_SELF);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
-        validateManagerPermission(requester);
+        clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
+        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
         ClubMember target = clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
 
         if (target.isPresident()) {
@@ -239,19 +240,6 @@ public class ClubMemberManagementService {
     private void validateNotSelf(Integer userId1, Integer userId2, ApiResponseCode errorCode) {
         if (userId1.equals(userId2)) {
             throw CustomException.of(errorCode);
-        }
-    }
-
-    private void validatePresidentPermission(ClubMember member) {
-        if (!member.isPresident()) {
-            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
-        }
-    }
-
-    private void validateManagerPermission(ClubMember member) {
-        ClubPositionGroup positionGroup = member.getPositionGroup();
-        if (positionGroup != PRESIDENT && positionGroup != VICE_PRESIDENT) {
-            throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
         }
     }
 }

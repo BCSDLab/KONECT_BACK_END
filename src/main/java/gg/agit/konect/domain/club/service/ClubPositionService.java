@@ -1,12 +1,8 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.VICE_PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +24,10 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ClubPositionService {
 
-    private static final Set<ClubPositionGroup> MANAGER_ALLOWED_GROUPS =
-        EnumSet.of(PRESIDENT, VICE_PRESIDENT);
-
     private final ClubRepository clubRepository;
     private final ClubPositionRepository clubPositionRepository;
     private final ClubMemberRepository clubMemberRepository;
+    private final ClubPermissionValidator clubPermissionValidator;
 
     public ClubPositionsResponse getClubPositions(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
@@ -58,7 +52,7 @@ public class ClubPositionService {
     ) {
         Club club = clubRepository.getById(clubId);
 
-        validateManagerPermission(clubId, userId);
+        clubPermissionValidator.validateLeaderAccess(clubId, userId);
 
         ClubPositionGroup positionGroup = request.positionGroup();
         if (positionGroup == ClubPositionGroup.PRESIDENT || positionGroup == ClubPositionGroup.VICE_PRESIDENT) {
@@ -89,7 +83,7 @@ public class ClubPositionService {
     ) {
         clubRepository.getById(clubId);
 
-        validateManagerPermission(clubId, userId);
+        clubPermissionValidator.validateLeaderAccess(clubId, userId);
 
         ClubPosition position = clubPositionRepository.getById(positionId);
 
@@ -114,7 +108,7 @@ public class ClubPositionService {
     public void deleteClubPosition(Integer clubId, Integer positionId, Integer userId) {
         Club club = clubRepository.getById(clubId);
 
-        validateManagerPermission(clubId, userId);
+        clubPermissionValidator.validateLeaderAccess(clubId, userId);
 
         ClubPosition position = clubPositionRepository.getById(positionId);
 
@@ -138,15 +132,5 @@ public class ClubPositionService {
         }
 
         clubPositionRepository.delete(position);
-    }
-
-    private void validateManagerPermission(Integer clubId, Integer userId) {
-        boolean hasPermission = clubMemberRepository.existsByClubIdAndUserIdAndPositionGroupIn(
-            clubId, userId, MANAGER_ALLOWED_GROUPS
-        );
-
-        if (!hasPermission) {
-            throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
-        }
     }
 }
