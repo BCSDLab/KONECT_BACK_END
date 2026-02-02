@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse.InnerAdminChatMessageResponse;
+import gg.agit.konect.admin.chat.dto.AdminChatRoomCreateRequest;
 import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.model.ChatMessage;
@@ -34,6 +36,20 @@ public class AdminChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+
+    @Transactional
+    public ChatRoomResponse createOrGetChatRoom(AdminChatRoomCreateRequest request, Integer adminId) {
+        User admin = userRepository.getById(adminId);
+        User targetUser = userRepository.getById(request.userId());
+
+        ChatRoom chatRoom = chatRoomRepository.findByUserIdAndAdminRole(targetUser.getId(), UserRole.ADMIN)
+            .orElseGet(() -> {
+                ChatRoom newChatRoom = ChatRoom.of(admin, targetUser);
+                return chatRoomRepository.save(newChatRoom);
+            });
+
+        return ChatRoomResponse.from(chatRoom);
+    }
 
     public AdminChatRoomsResponse getChatRooms() {
         List<ChatRoom> chatRooms = chatRoomRepository.findAllAdminChatRooms(UserRole.ADMIN);

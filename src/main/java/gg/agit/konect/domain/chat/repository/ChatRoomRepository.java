@@ -50,4 +50,17 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
     List<ChatRoom> findAllAdminChatRooms(@Param("adminRole") UserRole adminRole);
+
+    @Query("""
+        SELECT cr
+        FROM ChatRoom cr
+        JOIN FETCH cr.sender s
+        JOIN FETCH cr.receiver r
+        WHERE (s.id = :userId AND r.role = :adminRole)
+           OR (s.role = :adminRole AND r.id = :userId)
+        """)
+    Optional<ChatRoom> findByUserIdAndAdminRole(
+        @Param("userId") Integer userId,
+        @Param("adminRole") UserRole adminRole
+    );
 }
