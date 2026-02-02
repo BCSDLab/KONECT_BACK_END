@@ -1,7 +1,9 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.*;
-import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS;
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.LEADERS;
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT_ONLY;
+import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.util.Set;
 
