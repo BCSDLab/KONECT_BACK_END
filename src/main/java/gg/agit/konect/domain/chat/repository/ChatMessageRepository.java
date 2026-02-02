@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -52,11 +51,4 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         @Param("chatRoomId") Integer chatRoomId,
         @Param("receiverId") Integer receiverId
     );
-
-    @Modifying
-    @Query("""
-        DELETE FROM ChatMessage cm
-        WHERE cm.sender.id = :userId OR cm.receiver.id = :userId
-        """)
-    void deleteByUserId(@Param("userId") Integer userId);
 }

@@ -30,6 +30,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.retry:spring-retry'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // db
@@ -47,6 +48,7 @@ dependencies {
     // notification
     implementation 'com.github.maricn:logback-slack-appender:1.4.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+    implementation 'com.slack.api:slack-api-client:1.44.2'
 
     // querydsl
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'

@@ -71,4 +71,8 @@ public class ClubMember extends BaseEntity {
     public boolean canManage(ClubMember target) {
         return this.getPositionGroup().canManage(target.getPositionGroup());
     }
+
+    public boolean hasUnpaidFee() {
+        return Boolean.FALSE.equals(this.isFeePaid);
+    }
 }

@@ -26,6 +26,4 @@ public interface CouncilNoticeReadRepository extends Repository<CouncilNoticeRea
                 )
         """)
     Long countUnreadNoticesByUserId(@Param("userId") Integer userId);
-
-    void deleteByUserId(Integer userId);
 }

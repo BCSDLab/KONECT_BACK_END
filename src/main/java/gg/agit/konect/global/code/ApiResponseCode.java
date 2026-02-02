@@ -32,6 +32,7 @@ public enum ApiResponseCode {
     POSITION_IN_USE(HttpStatus.BAD_REQUEST, "해당 직책을 사용 중인 회원이 있어 삭제할 수 없습니다."),
     POSITION_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "동일한 직책 이름이 이미 존재합니다."),
     REQUIRED_CLUB_APPLY_ANSWER_MISSING(HttpStatus.BAD_REQUEST, "필수 가입 답변이 누락되었습니다."),
+    CANNOT_DELETE_USER_WITH_UNPAID_FEE(HttpStatus.BAD_REQUEST, "미납 회비가 있는 경우 탈퇴할 수 없습니다."),
     STUDY_TIMER_NOT_RUNNING(HttpStatus.BAD_REQUEST, "실행 중인 스터디 타이머가 없습니다."),
     STUDY_TIMER_TIME_MISMATCH(HttpStatus.BAD_REQUEST, "스터디 타이머 시간이 유효하지 않습니다."),
     INVALID_RECRUITMENT_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "상시 모집인 경우 모집 시작일과 마감일을 지정할 수 없습니다."),
