@@ -50,6 +50,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ClubApplicationService {
 
     private final ClubRepository clubRepository;
@@ -162,7 +163,6 @@ public class ClubApplicationService {
     }
 
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
-        User user = userRepository.getById(userId);
         List<ClubApplyQuestion> questions =
             clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
 
