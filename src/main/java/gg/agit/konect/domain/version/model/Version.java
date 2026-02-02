@@ -1,0 +1,59 @@
+package gg.agit.konect.domain.version.model;
+
+import static jakarta.persistence.GenerationType.IDENTITY;
+import static lombok.AccessLevel.PROTECTED;
+
+import gg.agit.konect.domain.version.enums.PlatformType;
+import gg.agit.konect.global.model.BaseEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Entity
+@Table(
+    name = "version",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_version_platform_version",
+            columnNames = {"platform, version"}
+        )
+    }
+)
+@NoArgsConstructor(access = PROTECTED)
+public class Version extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    @Column(name = "id", nullable = false, updatable = false, unique = true)
+    private Integer id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "platform", length = 20, nullable = false)
+    private PlatformType platform;
+
+    @Column(name = "version", length = 20, nullable = false)
+    private String version;
+
+    @Column(name = "release_notes", columnDefinition = "TEXT")
+    private String releaseNotes;
+
+    @Builder
+    private Version(
+        PlatformType platform,
+        String version,
+        String releaseNotes
+    ) {
+        this.platform = platform;
+        this.version = version;
+        this.releaseNotes = releaseNotes;
+    }
+}

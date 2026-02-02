@@ -6,6 +6,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,11 +37,17 @@ import lombok.NoArgsConstructor;
         @UniqueConstraint(
             name = "uq_users_university_id_student_number",
             columnNames = {"university_id", "student_number"}
+        ),
+        @UniqueConstraint(
+            name = "uq_users_provider_provider_id",
+            columnNames = {"provider", "provider_id"}
         )
     }
 )
 @NoArgsConstructor(access = PROTECTED)
 public class User extends BaseEntity {
+
+    private static final Integer STUDENT_NUMBER_YEAR_MAX_LENGTH = 4;
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -54,7 +61,7 @@ public class User extends BaseEntity {
     @Column(name = "email", length = 100, nullable = false)
     private String email;
 
-    @Column(name = "name", length = 50, nullable = false)
+    @Column(name = "name", length = 5, nullable = false)
     private String name;
 
     @Column(name = "phone_number", length = 20, unique = true)
@@ -66,6 +73,13 @@ public class User extends BaseEntity {
     @Column(name = "provider", length = 20)
     @Enumerated(EnumType.STRING)
     private Provider provider;
+
+    @Column(name = "provider_id", length = 255)
+    private String providerId;
+
+    @Column(name = "role", length = 20, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 
     @Column(name = "is_marketing_agreement", nullable = false)
     private Boolean isMarketingAgreement;
@@ -82,6 +96,8 @@ public class User extends BaseEntity {
         String phoneNumber,
         String studentNumber,
         Provider provider,
+        String providerId,
+        UserRole role,
         Boolean isMarketingAgreement,
         String imageUrl
     ) {
@@ -92,8 +108,30 @@ public class User extends BaseEntity {
         this.phoneNumber = phoneNumber;
         this.studentNumber = studentNumber;
         this.provider = provider;
+        this.providerId = providerId;
+        this.role = role == null ? UserRole.USER : role;
         this.isMarketingAgreement = isMarketingAgreement;
         this.imageUrl = imageUrl;
+    }
+
+    public static User of(
+        University university,
+        UnRegisteredUser tempUser,
+        String name,
+        String studentNumber,
+        Boolean isMarketingAgreement,
+        String imageUrl
+    ) {
+        return User.builder()
+            .university(university)
+            .email(tempUser.getEmail())
+            .name(name)
+            .studentNumber(studentNumber)
+            .provider(tempUser.getProvider())
+            .providerId(tempUser.getProviderId())
+            .isMarketingAgreement(isMarketingAgreement)
+            .imageUrl(imageUrl)
+            .build();
     }
 
     public void updateInfo(String name, String studentNumber, String phoneNumber) {
@@ -102,11 +140,21 @@ public class User extends BaseEntity {
         this.phoneNumber = phoneNumber;
     }
 
+    public void updateRepresentativeInfo(String name, String phoneNumber, String email) {
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+    }
+
     public boolean hasSameStudentNumber(String studentNumber) {
         return this.studentNumber.equals(studentNumber);
     }
 
     public boolean hasSamePhoneNumber(String phoneNumber) {
         return phoneNumber != null && phoneNumber.equals(this.phoneNumber);
+    }
+
+    public String getStudentNumberYear() {
+        return studentNumber.substring(0, STUDENT_NUMBER_YEAR_MAX_LENGTH);
     }
 }

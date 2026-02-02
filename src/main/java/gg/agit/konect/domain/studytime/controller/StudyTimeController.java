@@ -1,14 +1,22 @@
 package gg.agit.konect.domain.studytime.controller;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingCondition;
+import gg.agit.konect.domain.studytime.dto.StudyTimeMyRankingsResponse;
+import gg.agit.konect.domain.studytime.dto.StudyTimeRankingCondition;
+import gg.agit.konect.domain.studytime.dto.StudyTimeRankingsResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimeSummaryResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
+import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
 import gg.agit.konect.domain.studytime.service.StudyTimeQueryService;
+import gg.agit.konect.domain.studytime.service.StudyTimeRankingService;
 import gg.agit.konect.domain.studytime.service.StudyTimerService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -21,6 +29,7 @@ public class StudyTimeController implements StudyTimeApi {
 
     private final StudyTimerService studyTimerService;
     private final StudyTimeQueryService studyTimeQueryService;
+    private final StudyTimeRankingService studyTimeRankingService;
 
     @Override
     public ResponseEntity<StudyTimeSummaryResponse> getSummary(@UserId Integer userId) {
@@ -30,8 +39,38 @@ public class StudyTimeController implements StudyTimeApi {
     }
 
     @Override
+    public ResponseEntity<StudyTimeRankingsResponse> getRankings(
+        @Valid @ParameterObject @ModelAttribute StudyTimeRankingCondition condition,
+        @UserId Integer userId
+    ) {
+        StudyTimeRankingsResponse response = studyTimeRankingService.getRankings(condition, userId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<StudyTimeMyRankingsResponse> getMyRankings(
+        @Valid @ParameterObject @ModelAttribute StudyTimeMyRankingCondition condition,
+        @UserId Integer userId
+    ) {
+        StudyTimeMyRankingsResponse response = studyTimeRankingService.getMyRankings(condition, userId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<Void> start(@UserId Integer userId) {
         studyTimerService.start(userId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> sync(
+        @UserId Integer userId,
+        @RequestBody @Valid StudyTimerSyncRequest request
+    ) {
+        studyTimerService.sync(userId, request);
 
         return ResponseEntity.ok().build();
     }

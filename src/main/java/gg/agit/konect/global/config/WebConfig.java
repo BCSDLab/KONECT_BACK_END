@@ -6,10 +6,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import gg.agit.konect.global.auth.interceptor.LoginCheckInterceptor;
-import gg.agit.konect.global.auth.resolver.LoginUserArgumentResolver;
+import gg.agit.konect.global.auth.web.AuthorizationInterceptor;
+import gg.agit.konect.global.auth.web.LoginCheckInterceptor;
+import gg.agit.konect.global.auth.web.LoginUserArgumentResolver;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -20,6 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final CorsProperties corsProperties;
     private final LoginCheckInterceptor loginCheckInterceptor;
+    private final AuthorizationInterceptor authorizationInterceptor;
     private final LoginUserArgumentResolver loginUserArgumentResolver;
 
     @Override
@@ -28,6 +31,7 @@ public class WebConfig implements WebMvcConfigurer {
             .allowedOrigins(corsProperties.allowedOrigins().toArray(new String[0]))
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
             .allowedHeaders("*")
+            .exposedHeaders("Authorization")
             .allowCredentials(true)
             .maxAge(CORS_PREFLIGHT_MAX_AGE_SECONDS);
     }
@@ -42,5 +46,14 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(loginCheckInterceptor)
             .addPathPatterns("/**")
             .excludePathPatterns(SecurityPaths.PUBLIC_PATHS);
+
+        registry.addInterceptor(authorizationInterceptor)
+            .addPathPatterns("/**")
+            .excludePathPatterns(SecurityPaths.PUBLIC_PATHS);
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/login").setViewName("forward:/login.html");
     }
 }

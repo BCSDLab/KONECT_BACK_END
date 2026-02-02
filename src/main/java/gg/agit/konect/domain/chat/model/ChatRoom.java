@@ -33,7 +33,7 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
-    @Column(name = "last_message_content", columnDefinition = "TEXT")
+    @Column(name = "last_message_content", length = 1000)
     private String lastMessageContent;
 
     @Column(name = "last_message_sent_at")

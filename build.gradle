@@ -31,6 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // db
     implementation 'com.mysql:mysql-connector-j'
@@ -57,6 +58,10 @@ dependencies {
 
     // OAuth
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // AWS SDK v2
+    implementation platform('software.amazon.awssdk:bom:2.41.14')
+    implementation 'software.amazon.awssdk:s3'
 
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

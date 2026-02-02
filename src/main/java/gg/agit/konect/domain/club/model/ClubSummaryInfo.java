@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.club.model;
 
-import java.util.List;
+import java.time.LocalDate;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 
@@ -11,7 +11,8 @@ public record ClubSummaryInfo(
     String categoryName,
     String description,
     RecruitmentStatus status,
-    List<String> tags
+    Boolean isAlwaysRecruiting,
+    LocalDate applicationDeadline
 ) {
 
 }

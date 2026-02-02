@@ -31,7 +31,7 @@ public class ChatMessage extends BaseEntity {
     private Integer id;
 
     @NotNull
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "content", nullable = false, length = 1000)
     private String content;
 
     @Column(name = "is_read", nullable = false)

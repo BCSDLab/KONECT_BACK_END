@@ -1,0 +1,6 @@
+UPDATE users
+SET name = LEFT(name, 5)
+WHERE CHAR_LENGTH(name) > 5;
+
+ALTER TABLE users
+    MODIFY COLUMN name VARCHAR(5) NOT NULL;

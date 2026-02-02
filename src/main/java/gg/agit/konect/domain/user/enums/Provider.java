@@ -4,7 +4,8 @@ public enum Provider {
 
     GOOGLE("email"),
     NAVER("response.email"),
-    KAKAO("kakao_account.email");
+    KAKAO("kakao_account.email"),
+    APPLE("email");
 
     private final String emailPath;
 

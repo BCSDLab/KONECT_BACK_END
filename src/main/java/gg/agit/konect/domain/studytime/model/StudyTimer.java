@@ -51,4 +51,8 @@ public class StudyTimer extends BaseEntity {
             .startedAt(startedAt)
             .build();
     }
+
+    public void updateStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
 }

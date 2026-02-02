@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
+import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
 import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
 import gg.agit.konect.domain.studytime.model.StudyTimeSummary;
@@ -33,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class StudyTimerService {
 
-    private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 60L;
+    private static final long TIMER_MISMATCH_THRESHOLD_SECONDS = 3L;
 
     private final StudyTimeQueryService studyTimeQueryService;
     private final StudyTimerRepository studyTimerRepository;
@@ -65,27 +66,41 @@ public class StudyTimerService {
         StudyTimer studyTimer = studyTimerRepository.getByUserId(userId);
 
         LocalDateTime endedAt = LocalDateTime.now();
-        LocalDateTime startedAt = studyTimer.getStartedAt();
-        long serverSeconds = Duration.between(startedAt, endedAt).getSeconds();
+        LocalDateTime lastSyncedAt = studyTimer.getStartedAt();
+        LocalDateTime sessionStartedAt = studyTimer.getCreatedAt();
+
+        long serverSeconds = Duration.between(sessionStartedAt, endedAt).getSeconds();
         long clientSeconds = request.totalSeconds();
 
-        if (isElapsedTimeInvalid(serverSeconds, clientSeconds)) {
-            studyTimerRepository.delete(studyTimer);
-            throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
-        }
+        deleteTimerIfElapsedTimeInvalid(studyTimer, serverSeconds, clientSeconds);
 
-        long sessionSeconds = accumulateStudyTime(studyTimer.getUser(), startedAt, endedAt);
+        accumulateStudyTime(studyTimer.getUser(), lastSyncedAt, endedAt);
         studyTimerRepository.delete(studyTimer);
-        StudyTimeSummary summary = buildSummary(userId, sessionSeconds);
+        StudyTimeSummary summary = buildSummary(userId, serverSeconds);
 
         return StudyTimerStopResponse.from(summary);
     }
 
-    private long accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
+    @Transactional(noRollbackFor = CustomException.class)
+    public void sync(Integer userId, StudyTimerSyncRequest request) {
+        StudyTimer studyTimer = studyTimerRepository.getByUserId(userId);
+
+        LocalDateTime syncedAt = LocalDateTime.now();
+        LocalDateTime lastSyncedAt = studyTimer.getStartedAt();
+        LocalDateTime sessionStartedAt = studyTimer.getCreatedAt();
+
+        long serverSeconds = Duration.between(sessionStartedAt, syncedAt).getSeconds();
+        long clientSeconds = request.totalSeconds();
+
+        deleteTimerIfElapsedTimeInvalid(studyTimer, serverSeconds, clientSeconds);
+
+        accumulateStudyTime(studyTimer.getUser(), lastSyncedAt, syncedAt);
+        studyTimer.updateStartedAt(syncedAt);
+    }
+
+    private void accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
         long sessionSeconds = accumulateDailyAndMonthlySeconds(user, startedAt, endedAt);
         updateTotalSecondsIfNeeded(user, sessionSeconds);
-
-        return sessionSeconds;
     }
 
     private long accumulateDailyAndMonthlySeconds(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
@@ -169,7 +184,10 @@ public class StudyTimerService {
         return new StudyTimeSummary(sessionSeconds, dailySeconds, monthlySeconds, totalSeconds);
     }
 
-    private boolean isElapsedTimeInvalid(long serverSeconds, long clientSeconds) {
-        return Math.abs(serverSeconds - clientSeconds) >= TIMER_MISMATCH_THRESHOLD_SECONDS;
+    private void deleteTimerIfElapsedTimeInvalid(StudyTimer studyTimer, long serverSeconds, long clientSeconds) {
+        if (Math.abs(serverSeconds - clientSeconds) >= TIMER_MISMATCH_THRESHOLD_SECONDS) {
+            studyTimerRepository.delete(studyTimer);
+            throw CustomException.of(STUDY_TIMER_TIME_MISMATCH);
+        }
     }
 }

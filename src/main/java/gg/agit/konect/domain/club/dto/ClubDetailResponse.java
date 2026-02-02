@@ -4,13 +4,11 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIR
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
-import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubDetailResponse(
@@ -51,8 +49,8 @@ public record ClubDetailResponse(
     @Schema(description = "동아리 모집 정보", requiredMode = REQUIRED)
     InnerRecruitment recruitment,
 
-    @Schema(description = "동아리 대표 임원진", requiredMode = REQUIRED)
-    List<InnerRepresentative> representatives,
+    @Schema(description = "동아리 회장 이름", example = "김철수", requiredMode = REQUIRED)
+    String presidentName,
 
     @Schema(description = "동아리 소속 여부", example = "true", requiredMode = REQUIRED)
     Boolean isMember,
@@ -80,27 +78,11 @@ public record ClubDetailResponse(
         }
     }
 
-    public record InnerRepresentative(
-        @Schema(description = "동아리 대표 임원진 이름", example = "김철수", requiredMode = REQUIRED)
-        String name,
-
-        @Schema(description = "동아리 대표 임원진 전화번호", example = "01012345678", requiredMode = REQUIRED)
-        String phone,
-
-        @Schema(description = "동아리 대표 임원진 이메일", example = "example@koreatech.ac.kr", requiredMode = REQUIRED)
-        String email
-    ) {
-        public static InnerRepresentative from(ClubMember clubMember) {
-            User user = clubMember.getUser();
-            return new InnerRepresentative(user.getName(), user.getPhoneNumber(), user.getEmail());
-        }
-    }
-
     public static ClubDetailResponse of(
         Club club,
         Integer memberCount,
         ClubRecruitment clubRecruitment,
-        List<ClubMember> clubPresidents,
+        ClubMember president,
         Boolean isMember,
         Boolean isApplied
     ) {
@@ -114,9 +96,7 @@ public record ClubDetailResponse(
             club.getClubCategory().getDescription(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
-            clubPresidents.stream()
-                .map(InnerRepresentative::from)
-                .toList(),
+            president.getUser().getName(),
             isMember,
             isApplied
         );

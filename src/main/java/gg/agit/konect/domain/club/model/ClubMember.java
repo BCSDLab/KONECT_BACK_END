@@ -3,8 +3,9 @@ package gg.agit.konect.domain.club.model;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
 
-import gg.agit.konect.global.model.BaseEntity;
+import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -57,6 +58,18 @@ public class ClubMember extends BaseEntity {
 
     public boolean isSameUser(Integer userId) {
         return this.user.getId().equals(userId);
+    }
+
+    public void changePosition(ClubPosition clubPosition) {
+        this.clubPosition = clubPosition;
+    }
+
+    public ClubPositionGroup getPositionGroup() {
+        return this.clubPosition.getClubPositionGroup();
+    }
+
+    public boolean canManage(ClubMember target) {
+        return this.getPositionGroup().canManage(target.getPositionGroup());
     }
 
     public boolean hasUnpaidFee() {

@@ -46,15 +46,33 @@ public class ClubApplyQuestion extends BaseEntity {
     private Boolean isRequired;
 
     @Builder
-    private ClubApplyQuestion(Integer id, Club club, String question, Boolean isRequired) {
+    private ClubApplyQuestion(
+        Integer id,
+        Club club,
+        String question,
+        Boolean isRequired
+    ) {
         this.id = id;
         this.club = club;
         this.question = question;
         this.isRequired = isRequired;
     }
 
+    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired) {
+        return ClubApplyQuestion.builder()
+            .club(club)
+            .question(question)
+            .isRequired(isRequired)
+            .build();
+    }
+
     public void validateAnswer(String answer) {
         validateRequiredAnswer(answer);
+    }
+
+    public void update(String question, Boolean isRequired) {
+        this.question = question;
+        this.isRequired = isRequired;
     }
 
     private void validateRequiredAnswer(String answer) {
