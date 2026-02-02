@@ -137,7 +137,7 @@ public interface ClubBasicApi {
         동아리 관리자(회장, 부회장, 운영진)만 조회할 수 있습니다.
         
         ## 에러
-        - NOT_FOUND_CLUB_MEMBER (404): 해당하는 동아리 원을 찾을 수 없습니다
+        - NOT_FOUND_CLUB_MEMBER (404): 해당하는 동아리 원을 찾을 수 없습니다.
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         """)
