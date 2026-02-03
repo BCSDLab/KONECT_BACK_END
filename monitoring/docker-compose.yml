@@ -2,7 +2,7 @@ services:
   prometheus:
     image: prom/prometheus:v3.5.0
     ports:
-      - "127.0.0.1:9090:9090"
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
@@ -11,15 +11,38 @@ services:
   grafana:
     image: grafana/grafana:12.3.1
     ports:
-      - "127.0.0.1:3100:3000"
+      - "127.0.0.1:${GRAFANA_PORT:-3100}:3000"
+    env_file:
+      - .env
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana-data:/var/lib/grafana
     restart: unless-stopped
     depends_on:
       - prometheus
+
+  loki:
+    image: grafana/loki:3.1.0
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3101}:3100"
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki-config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.1.0
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - ../logs:/var/log/konect-backend:ro
+      - promtail-positions:/var/lib/promtail
+    restart: unless-stopped
+    depends_on:
+      - loki
 
 volumes:
   prometheus-data:
@@ -28,3 +51,9 @@ volumes:
   grafana-data:
     external: true
     name: monitoring_grafana-data
+  loki-data:
+    external: true
+    name: monitoring_loki-data
+  promtail-positions:
+    external: true
+    name: monitoring_promtail-positions
