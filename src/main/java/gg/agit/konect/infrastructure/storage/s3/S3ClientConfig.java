@@ -1,4 +1,4 @@
-package gg.agit.konect.infra.storage.s3;
+package gg.agit.konect.infrastructure.storage.s3;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

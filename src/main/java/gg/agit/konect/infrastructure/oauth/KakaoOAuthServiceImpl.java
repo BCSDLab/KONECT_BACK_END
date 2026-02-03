@@ -1,4 +1,4 @@
-package gg.agit.konect.infra.oauth;
+package gg.agit.konect.infrastructure.oauth;
 
 import java.util.Map;
 import java.util.Optional;

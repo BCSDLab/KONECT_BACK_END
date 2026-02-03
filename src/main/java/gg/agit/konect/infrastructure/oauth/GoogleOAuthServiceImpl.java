@@ -1,6 +1,5 @@
-package gg.agit.konect.infra.oauth;
+package gg.agit.konect.infrastructure.oauth;
 
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -18,10 +17,10 @@ import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.auth.oauth.SocialOAuthService;
 import lombok.RequiredArgsConstructor;
 
-@Service("naver")
+@Service("google")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements SocialOAuthService {
+public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements SocialOAuthService {
 
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
@@ -30,9 +29,7 @@ public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements S
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
-
-        Map<String, Object> response = oAuth2User.getAttribute("response");
-        String email = (String)response.get("email");
+        String email = oAuth2User.getAttribute("email");
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
