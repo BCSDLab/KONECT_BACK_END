@@ -18,7 +18,6 @@ import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/chats")
@@ -37,7 +36,7 @@ public class AdminChatController implements AdminChatApi {
     }
 
     @Override
-    public ResponseEntity<AdminChatRoomsResponse> getChatRooms(@UserId Integer adminId) {
+    public ResponseEntity<AdminChatRoomsResponse> getChatRooms() {
         AdminChatRoomsResponse response = adminChatService.getChatRooms();
 
         return ResponseEntity.ok(response);

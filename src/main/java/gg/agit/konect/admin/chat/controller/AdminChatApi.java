@@ -40,7 +40,7 @@ public interface AdminChatApi {
         송신자 또는 수신자 중 한 명이 어드민인 채팅방들이 조회됩니다.
         """)
     @GetMapping("/rooms")
-    ResponseEntity<AdminChatRoomsResponse> getChatRooms(@UserId Integer adminId);
+    ResponseEntity<AdminChatRoomsResponse> getChatRooms();
 
     @Operation(summary = "어드민 채팅방의 메시지를 조회한다.", description = """
         채팅방의 메시지 목록을 조회하고, 어드민 대상 미읽음 메시지를 읽음 처리합니다.
