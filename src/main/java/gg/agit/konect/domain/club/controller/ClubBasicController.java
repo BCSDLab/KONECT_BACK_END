@@ -13,11 +13,10 @@ import gg.agit.konect.domain.club.dto.ClubBasicInfoUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubDetailUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
-import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.service.ClubApplicationService;
@@ -62,22 +61,12 @@ public class ClubBasicController implements ClubBasicApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateProfile(
+    public ResponseEntity<Void> updateInfo(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubProfileUpdateRequest request,
+        @Valid @RequestBody ClubUpdateRequest request,
         @UserId Integer userId
     ) {
-        clubService.updateProfile(clubId, userId, request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @Override
-    public ResponseEntity<Void> updateDetails(
-        @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubDetailUpdateRequest request,
-        @UserId Integer userId
-    ) {
-        clubService.updateDetails(clubId, userId, request);
+        clubService.updateInfo(clubId, userId, request);
         return ResponseEntity.noContent().build();
     }
 
