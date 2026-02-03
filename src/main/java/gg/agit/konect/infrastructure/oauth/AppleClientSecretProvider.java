@@ -1,4 +1,4 @@
-package gg.agit.konect.infra.oauth;
+package gg.agit.konect.infrastructure.oauth;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
