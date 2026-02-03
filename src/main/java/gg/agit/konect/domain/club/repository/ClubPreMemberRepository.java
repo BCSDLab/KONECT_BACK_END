@@ -6,8 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-import gg.agit.konect.domain.club.enums.ClubPositionGroup;
-import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 
 // TODO. 초기 회원 처리 완료 후 제거 예정
@@ -25,18 +23,6 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
         @Param("universityId") Integer universityId,
         @Param("studentNumber") String studentNumber,
         @Param("name") String name
-    );
-
-    @Query("""
-        SELECT cp
-        FROM ClubPosition cp
-        WHERE cp.club.id IN :clubIds
-        AND cp.clubPositionGroup = :clubPositionGroup
-        ORDER BY cp.id ASC
-        """)
-    List<ClubPosition> findAllByClubIdInAndClubPositionGroup(
-        @Param("clubIds") List<Integer> clubIds,
-        @Param("clubPositionGroup") ClubPositionGroup clubPositionGroup
     );
 
     void deleteAll(Iterable<ClubPreMember> preMembers);

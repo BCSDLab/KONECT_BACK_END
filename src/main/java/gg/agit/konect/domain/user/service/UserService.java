@@ -1,11 +1,10 @@
 package gg.agit.konect.domain.user.service;
 
+import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -16,9 +15,7 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
-import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
@@ -150,31 +147,11 @@ public class UserService {
             return;
         }
 
-        List<Integer> clubIds = preMembers.stream()
-            .map(preMember -> preMember.getClub().getId())
-            .distinct()
-            .toList();
-
-        Map<Integer, ClubPosition> memberPositions = clubPreMemberRepository
-            .findAllByClubIdInAndClubPositionGroup(clubIds, ClubPositionGroup.MEMBER)
-            .stream()
-            .collect(Collectors.toMap(
-                position -> position.getClub().getId(),
-                position -> position,
-                (existing, ignored) -> existing
-            ));
-
         for (ClubPreMember preMember : preMembers) {
-            ClubPosition clubPosition = memberPositions.get(preMember.getClub().getId());
-
-            if (clubPosition == null) {
-                throw CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_POSITION);
-            }
-
             ClubMember clubMember = ClubMember.builder()
                 .club(preMember.getClub())
                 .user(user)
-                .clubPosition(clubPosition)
+                .clubPosition(MEMBER)
                 .isFeePaid(false)
                 .build();
 

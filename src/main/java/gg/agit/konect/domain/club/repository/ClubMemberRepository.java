@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-import gg.agit.konect.domain.club.enums.ClubPositionGroup;
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubMemberId;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -20,16 +20,15 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
-        JOIN FETCH cm.clubPosition cp
         WHERE cm.club.id = :clubId
-        ORDER BY 
-            CASE cp.clubPositionGroup
-                WHEN gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT THEN 0
-                WHEN gg.agit.konect.domain.club.enums.ClubPositionGroup.VICE_PRESIDENT THEN 1
-                WHEN gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGER THEN 2
-                WHEN gg.agit.konect.domain.club.enums.ClubPositionGroup.MEMBER THEN 3
+        ORDER BY
+            CASE cm.clubPosition
+                WHEN gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT THEN 0
+                WHEN gg.agit.konect.domain.club.enums.ClubPosition.VICE_PRESIDENT THEN 1
+                WHEN gg.agit.konect.domain.club.enums.ClubPosition.MANAGER THEN 2
+                WHEN gg.agit.konect.domain.club.enums.ClubPosition.MEMBER THEN 3
             END ASC,
-            cp.name ASC
+            cm.user.name ASC
         """)
     List<ClubMember> findAllByClubId(@Param("clubId") Integer clubId);
 
@@ -37,21 +36,19 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
-        JOIN FETCH cm.clubPosition cp
         WHERE cm.club.id = :clubId
-        AND cp.clubPositionGroup = :positionGroup
-        ORDER BY cp.name ASC
+        AND cm.clubPosition = :position
+        ORDER BY cm.user.name ASC
         """)
-    List<ClubMember> findAllByClubIdAndPositionGroup(
+    List<ClubMember> findAllByClubIdAndPosition(
         @Param("clubId") Integer clubId,
-        @Param("positionGroup") ClubPositionGroup positionGroup
+        @Param("position") ClubPosition position
     );
 
     @Query("""
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.club c
-        JOIN FETCH cm.clubPosition cp
         WHERE cm.id.userId = :userId
         """)
     List<ClubMember> findAllByUserId(Integer userId);
@@ -60,9 +57,8 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
-        JOIN FETCH cm.clubPosition cp
         WHERE cm.club.id = :clubId
-        AND cp.name = '회장'
+        AND cm.clubPosition = gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT
         """)
     Optional<ClubMember> findPresidentByClubId(@Param("clubId") Integer clubId);
 
@@ -70,47 +66,43 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
-        JOIN FETCH cm.clubPosition cp
         WHERE cm.user.id = :userId
-        AND cp.clubPositionGroup = :clubPositionGroup
+        AND cm.clubPosition = :clubPosition
         """)
     List<ClubMember> findAllByUserIdAndClubPosition(
         @Param("userId") Integer userId,
-        @Param("clubPositionGroup") ClubPositionGroup clubPositionGroup
+        @Param("clubPosition") ClubPosition clubPosition
     );
 
     @Query("""
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.club c
-        JOIN FETCH cm.clubPosition cp
         WHERE cm.id.userId = :userId
-        AND cp.clubPositionGroup IN :clubPositionGroups
+        AND cm.clubPosition IN :clubPositions
         """)
-    List<ClubMember> findAllByUserIdAndClubPositionGroups(
+    List<ClubMember> findAllByUserIdAndClubPositions(
         @Param("userId") Integer userId,
-        @Param("clubPositionGroups") Set<ClubPositionGroup> clubPositionGroups
+        @Param("clubPositions") Set<ClubPosition> clubPositions
     );
 
     @Query("""
         SELECT COUNT(cm) > 0
         FROM ClubMember cm
-        JOIN cm.clubPosition cp
         WHERE cm.club.id = :clubId
         AND cm.user.id = :userId
-        AND cp.clubPositionGroup IN :positionGroups
+        AND cm.clubPosition IN :positions
         """)
-    boolean existsByClubIdAndUserIdAndPositionGroupIn(
+    boolean existsByClubIdAndUserIdAndPositionIn(
         @Param("clubId") Integer clubId,
         @Param("userId") Integer userId,
-        @Param("positionGroups") Set<ClubPositionGroup> positionGroups
+        @Param("positions") Set<ClubPosition> positions
     );
 
     @Query("""
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
-        JOIN FETCH cm.clubPosition
         WHERE cm.club.id = :clubId
         AND cm.user.id = :userId
         """)
@@ -156,20 +148,12 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     @Query("""
         SELECT COUNT(cm)
         FROM ClubMember cm
-        WHERE cm.clubPosition.id = :positionId
-        """)
-    long countByPositionId(@Param("positionId") Integer positionId);
-
-    @Query("""
-        SELECT COUNT(cm)
-        FROM ClubMember cm
-        JOIN cm.clubPosition cp
         WHERE cm.club.id = :clubId
-        AND cp.clubPositionGroup = :positionGroup
+        AND cm.clubPosition = :position
         """)
-    long countByClubIdAndPositionGroup(
+    long countByClubIdAndPosition(
         @Param("clubId") Integer clubId,
-        @Param("positionGroup") ClubPositionGroup positionGroup
+        @Param("position") ClubPosition position
     );
 
     void delete(ClubMember clubMember);

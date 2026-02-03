@@ -1,15 +1,15 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.LEADERS;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGERS;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.PRESIDENT_ONLY;
+import static gg.agit.konect.domain.club.enums.ClubPosition.LEADERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT_ONLY;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import gg.agit.konect.domain.club.enums.ClubPositionGroup;
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class ClubPermissionValidator {
         }
     }
 
-    private boolean hasAccess(Integer clubId, Integer userId, Set<ClubPositionGroup> allowedGroups) {
-        return clubMemberRepository.existsByClubIdAndUserIdAndPositionGroupIn(clubId, userId, allowedGroups);
+    private boolean hasAccess(Integer clubId, Integer userId, Set<ClubPosition> allowedPositions) {
+        return clubMemberRepository.existsByClubIdAndUserIdAndPositionIn(clubId, userId, allowedPositions);
     }
 }

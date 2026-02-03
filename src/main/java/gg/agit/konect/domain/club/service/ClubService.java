@@ -1,9 +1,9 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CLUB_MEMBER_ACCESS;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -18,22 +18,19 @@ import gg.agit.konect.domain.club.dto.ClubBasicInfoUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
+import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
-import gg.agit.konect.domain.club.enums.ClubPositionGroup;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubMembers;
-import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
-import gg.agit.konect.domain.club.repository.ClubPositionRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.model.User;
@@ -49,7 +46,6 @@ public class ClubService {
     private final ClubQueryRepository clubQueryRepository;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
-    private final ClubPositionRepository clubPositionRepository;
     private final ClubApplyRepository clubApplyRepository;
     private final UserRepository userRepository;
     private final ClubPermissionValidator clubPermissionValidator;
@@ -108,21 +104,10 @@ public class ClubService {
 
         Club savedClub = clubRepository.save(club);
 
-        List<ClubPosition> defaultPositions = Arrays.stream(ClubPositionGroup.values())
-            .map(group -> ClubPosition.builder()
-                .name(group.getDescription())
-                .clubPositionGroup(group)
-                .club(savedClub)
-                .build())
-            .toList();
-
-        defaultPositions.forEach(clubPositionRepository::save);
-
-        ClubPosition presidentPosition = defaultPositions.get(0);
         ClubMember president = ClubMember.builder()
             .club(savedClub)
             .user(user)
-            .clubPosition(presidentPosition)
+            .clubPosition(PRESIDENT)
             .isFeePaid(false)
             .build();
 
@@ -160,7 +145,7 @@ public class ClubService {
     }
 
     public ClubMembershipsResponse getManagedClubs(Integer userId) {
-        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPositionGroups(
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPositions(
             userId,
             MANAGERS
         );
@@ -183,8 +168,8 @@ public class ClubService {
         }
 
         List<ClubMember> clubMembers;
-        if (condition != null && condition.positionGroup() != null) {
-            clubMembers = clubMemberRepository.findAllByClubIdAndPositionGroup(clubId, condition.positionGroup());
+        if (condition != null && condition.position() != null) {
+            clubMembers = clubMemberRepository.findAllByClubIdAndPosition(clubId, condition.position());
         } else {
             clubMembers = clubMemberRepository.findAllByClubId(clubId);
         }
