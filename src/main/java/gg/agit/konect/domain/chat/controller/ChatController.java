@@ -16,6 +16,7 @@ import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -44,8 +45,8 @@ public class ChatController implements ChatApi {
 
     @Override
     public ResponseEntity<ChatMessagesResponse> getChatRoomMessages(
-        @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
+        @RequestParam(name = "page", defaultValue = "1") @Min(1) Integer page,
+        @RequestParam(name = "limit", defaultValue = "20", required = false) @Min(1) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
