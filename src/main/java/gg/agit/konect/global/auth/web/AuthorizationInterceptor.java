@@ -47,7 +47,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
         Object userId = request.getAttribute(LoginCheckInterceptor.AUTHENTICATED_USER_ID_ATTRIBUTE);
 
         if (!(userId instanceof Integer id)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.MISSING_ACCESS_TOKEN);
         }
 
         validateRole(id, auth);

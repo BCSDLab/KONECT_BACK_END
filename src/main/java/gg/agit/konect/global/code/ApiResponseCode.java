@@ -50,8 +50,9 @@ public enum ApiResponseCode {
     INVALID_ACCESS_TOKEN_SIGNATURE(HttpStatus.UNAUTHORIZED, "액세스 토큰 서명이 올바르지 않습니다."),
     INVALID_ACCESS_TOKEN_ISSUER(HttpStatus.UNAUTHORIZED, "액세스 토큰 발급자가 올바르지 않습니다."),
     INVALID_ACCESS_TOKEN_CLAIMS(HttpStatus.UNAUTHORIZED, "액세스 토큰 정보가 올바르지 않습니다."),
-    BLACKLISTED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "폐기된 액세스 토큰입니다."),
     INVALID_OAUTH_TOKEN(HttpStatus.UNAUTHORIZED, "올바르지 않은 OAuth 토큰 입니다."),
+    INVALID_SIGNUP_TOKEN(HttpStatus.UNAUTHORIZED, "회원가입 토큰이 올바르지 않습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 올바르지 않습니다."),
 
     // 403 Forbidden (접근 권한 없음)
     FORBIDDEN_CHAT_ROOM_ACCESS(HttpStatus.FORBIDDEN, "채팅방에 접근할 권한이 없습니다."),

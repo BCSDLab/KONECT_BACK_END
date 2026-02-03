@@ -27,6 +27,7 @@ public interface UserApi {
         description = """
             추가 정보를 입력받아 회원가입을 완료합니다.
 
+            - `INVALID_SIGNUP_TOKEN` (401): 회원가입 토큰이 없거나 올바르지 않은 경우
             - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
             - `DUPLICATE_STUDENT_NUMBER` (409): 동일 대학교 + 학번 조합이 이미 존재하는 경우
             - `ALREADY_REGISTERED_USER` (409): 이미 가입된 회원인 경우
@@ -51,7 +52,12 @@ public interface UserApi {
     @PublicApi
     ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response);
 
-    @Operation(summary = "리프레시 토큰으로 액세스 토큰을 재발급한다.")
+    @Operation(
+        summary = "리프레시 토큰으로 액세스 토큰을 재발급한다.",
+        description = """
+            - `INVALID_REFRESH_TOKEN` (401): 리프레시 토큰이 없거나 올바르지 않은 경우
+            """
+    )
     @PostMapping("/refresh")
     @PublicApi
     ResponseEntity<UserAccessTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response);
