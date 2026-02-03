@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="true">
     <springProperty scope="context" name="SLACK_WEBHOOK_ERROR" source="slack.webhooks.error"/>
+    <property name="LOG_PATH" value="logs"/>
 
     <conversionRule conversionWord="clr"
                     converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
@@ -8,8 +9,20 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>
-                [%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %clr(%-5level) %clr(${PID:-}){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr(%-40.40logger{36}){cyan} %clr(:){faint} : %msg%n
+                [%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %clr(%-5level) %clr(${PID:-}){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr(%-40.40logger{36}){cyan} : %msg%n
             </pattern>
+        </encoder>
+    </appender>
+
+    <appender name="SCHEDULER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/scheduler.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/scheduler.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %-5level [%thread] : %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -56,6 +69,10 @@
 
     <logger name="runtime.error" level="ERROR" additivity="false">
         <appender-ref ref="ASYNC_SLACK_RUNTIME"/>
+    </logger>
+
+    <logger name="scheduler.studytime" level="INFO" additivity="false">
+        <appender-ref ref="SCHEDULER_FILE"/>
     </logger>
 
     <root level="INFO">
