@@ -47,8 +47,8 @@ public class AdminChatController implements AdminChatApi {
     @Override
     public ResponseEntity<AdminChatMessagesResponse> getChatRoomMessages(
         @PathVariable Integer chatRoomId,
-        @RequestParam(name = "page", defaultValue = "1") @Min(1) Integer page,
-        @RequestParam(name = "limit", defaultValue = "20") @Min(1) Integer limit,
+        @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @RequestParam(name = "limit", defaultValue = "20") Integer limit,
         @UserId Integer adminId
     ) {
         AdminChatMessagesResponse response = adminChatService.getChatRoomMessages(
