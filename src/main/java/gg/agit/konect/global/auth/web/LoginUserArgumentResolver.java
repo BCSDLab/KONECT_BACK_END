@@ -35,7 +35,7 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
 
         Object userId = request.getAttribute(LoginCheckInterceptor.AUTHENTICATED_USER_ID_ATTRIBUTE);
         if (!(userId instanceof Integer id)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.MISSING_ACCESS_TOKEN);
         }
 
         return id;

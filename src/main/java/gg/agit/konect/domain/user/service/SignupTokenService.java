@@ -50,13 +50,13 @@ public class SignupTokenService {
 
     public SignupClaims consumeOrThrow(String token) {
         if (!StringUtils.hasText(token)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN);
         }
 
         String value = redis.execute(GET_DEL_SCRIPT, List.of(key(token)));
         SignupClaims claims = deserialize(value);
         if (claims == null) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN);
         }
         return claims;
     }

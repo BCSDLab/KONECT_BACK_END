@@ -22,7 +22,7 @@ public interface UploadApi {
         - 응답의 fileUrl을 기존 도메인 API의 imageUrl로 사용합니다.
 
         ## 에러
-        - INVALID_SESSION (401): 로그인 정보가 올바르지 않습니다.
+        - MISSING_ACCESS_TOKEN (401): 액세스 토큰이 필요합니다.
         - INVALID_REQUEST_BODY (400): 파일이 비어있거나 요청 형식이 올바르지 않은 경우
         - INVALID_FILE_CONTENT_TYPE (400): 지원하지 않는 Content-Type 인 경우
         - INVALID_FILE_SIZE (400): 파일 크기가 제한을 초과한 경우

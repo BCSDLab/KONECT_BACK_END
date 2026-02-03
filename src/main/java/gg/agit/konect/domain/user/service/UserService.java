@@ -63,7 +63,7 @@ public class UserService {
     @Transactional
     public Integer signup(String email, String providerId, Provider provider, SignupRequest request) {
         if (provider == Provider.APPLE && !StringUtils.hasText(providerId)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_REQUEST_BODY);
         }
 
         if (StringUtils.hasText(providerId)) {

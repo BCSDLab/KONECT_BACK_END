@@ -57,12 +57,12 @@ public class RefreshTokenService {
     public Rotated rotate(String refreshToken) {
         log.info("Redis set refresh token: {}", refreshToken);
         if (!StringUtils.hasText(refreshToken)) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
         }
 
         Integer userId = consumeActive(refreshToken);
         if (userId == null) {
-            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
         }
 
         String newToken = issue(userId);
