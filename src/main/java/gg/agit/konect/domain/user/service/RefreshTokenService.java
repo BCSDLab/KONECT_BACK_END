@@ -22,7 +22,6 @@ public class RefreshTokenService {
     private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
     private static final String ACTIVE_PREFIX = "auth:refresh:active:";
-    private static final String REVOKED_PREFIX = "auth:refresh:revoked:";
     private static final String USER_SET_PREFIX = "auth:refresh:user:";
 
     private static final DefaultRedisScript<String> GET_DEL_SCRIPT =
@@ -63,11 +62,6 @@ public class RefreshTokenService {
 
         Integer userId = consumeActive(refreshToken);
         if (userId == null) {
-            Integer revokedUserId = findRevokedUserId(refreshToken);
-            if (revokedUserId != null) {
-                revokeAll(revokedUserId);
-            }
-            log.info("revoked user id {}", revokedUserId);
             throw CustomException.of(ApiResponseCode.INVALID_SESSION);
         }
 
@@ -86,8 +80,6 @@ public class RefreshTokenService {
             return;
         }
 
-        Duration ttl = refreshTtl();
-        redis.opsForValue().set(revokedKey(refreshToken), userId.toString(), ttl);
         redis.opsForSet().remove(userSetKey(userId), refreshToken);
     }
 
@@ -104,10 +96,8 @@ public class RefreshTokenService {
             return;
         }
 
-        Duration ttl = refreshTtl();
         for (String token : tokens) {
             redis.delete(activeKey(token));
-            redis.opsForValue().set(revokedKey(token), userId.toString(), ttl);
         }
 
         redis.delete(setKey);
@@ -120,23 +110,12 @@ public class RefreshTokenService {
             return null;
         }
 
-        Duration ttl = refreshTtl();
-        redis.opsForValue().set(revokedKey(token), userId.toString(), ttl);
         redis.opsForSet().remove(userSetKey(userId), token);
         return userId;
     }
 
-    private Integer findRevokedUserId(String token) {
-        String value = redis.opsForValue().get(revokedKey(token));
-        return parseUserId(value);
-    }
-
     private String activeKey(String token) {
         return ACTIVE_PREFIX + token;
-    }
-
-    private String revokedKey(String token) {
-        return REVOKED_PREFIX + token;
     }
 
     private String userSetKey(Integer userId) {

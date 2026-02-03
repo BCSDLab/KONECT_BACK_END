@@ -11,7 +11,6 @@ import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.domain.user.service.UserService;
-import gg.agit.konect.global.auth.jwt.AccessTokenBlacklistService;
 import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -34,7 +33,6 @@ public class UserController implements UserApi {
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
-    private final AccessTokenBlacklistService accessTokenBlacklistService;
 
     @Override
     @PublicApi
@@ -69,9 +67,6 @@ public class UserController implements UserApi {
     @Override
     @PublicApi
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
-        String accessToken = resolveBearerToken(request);
-        accessTokenBlacklistService.blacklist(accessToken);
-
         String refreshToken = authCookieService.getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         refreshTokenService.revoke(refreshToken);
 
@@ -84,9 +79,6 @@ public class UserController implements UserApi {
     @Override
     @PublicApi
     public ResponseEntity<UserAccessTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
-        String oldAccessToken = resolveBearerToken(request);
-        accessTokenBlacklistService.blacklist(oldAccessToken);
-
         String refreshToken = authCookieService.getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         RefreshTokenService.Rotated rotated = refreshTokenService.rotate(refreshToken);
 

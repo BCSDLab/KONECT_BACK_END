@@ -27,10 +27,9 @@ public class JwtProvider {
 
     private static final int MIN_HS256_SECRET_BYTES = 32;
     private static final String CLAIM_USER_ID = "id";
-    private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(15);
+    private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(5);
 
     private final JwtProperties properties;
-    private final AccessTokenBlacklistService accessTokenBlacklistService;
 
     public String createToken(Integer userId) {
         if (userId == null) {
@@ -102,10 +101,6 @@ public class JwtProvider {
         String jti = claims.getJWTID();
         if (!StringUtils.hasText(jti)) {
             throw CustomException.of(ApiResponseCode.INVALID_ACCESS_TOKEN_CLAIMS);
-        }
-
-        if (accessTokenBlacklistService.isBlacklisted(jti)) {
-            throw CustomException.of(ApiResponseCode.BLACKLISTED_ACCESS_TOKEN);
         }
 
         Object id = claims.getClaim(CLAIM_USER_ID);
