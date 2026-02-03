@@ -58,19 +58,7 @@ public class ClubMemberManagementService {
             throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
         }
 
-        if (newPosition == VICE_PRESIDENT) {
-            long vicePresidentCount = clubMemberRepository.countByClubIdAndPosition(clubId, VICE_PRESIDENT);
-            if (target.getClubPosition() != VICE_PRESIDENT && vicePresidentCount >= 1) {
-                throw CustomException.of(VICE_PRESIDENT_ALREADY_EXISTS);
-            }
-        }
-
-        if (newPosition == MANAGER) {
-            long managerCount = clubMemberRepository.countByClubIdAndPosition(clubId, MANAGER);
-            if (target.getClubPosition() != MANAGER && managerCount >= MAX_MANAGER_COUNT) {
-                throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
-            }
-        }
+        validatePositionLimit(clubId, newPosition, target);
 
         target.changePosition(newPosition);
     }
@@ -100,19 +88,7 @@ public class ClubMemberManagementService {
             throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
         }
 
-        if (position == VICE_PRESIDENT) {
-            long vicePresidentCount = clubMemberRepository.countByClubIdAndPosition(clubId, VICE_PRESIDENT);
-            if (vicePresidentCount >= 1) {
-                throw CustomException.of(VICE_PRESIDENT_ALREADY_EXISTS);
-            }
-        }
-
-        if (position == MANAGER) {
-            long managerCount = clubMemberRepository.countByClubIdAndPosition(clubId, MANAGER);
-            if (managerCount >= MAX_MANAGER_COUNT) {
-                throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
-            }
-        }
+        validatePositionLimit(clubId, position, null);
 
         ClubMember newMember = ClubMember.builder()
             .club(clubRepository.getById(clubId))
@@ -215,6 +191,32 @@ public class ClubMemberManagementService {
     private void validateNotSelf(Integer userId1, Integer userId2, ApiResponseCode errorCode) {
         if (userId1.equals(userId2)) {
             throw CustomException.of(errorCode);
+        }
+    }
+
+    private void validatePositionLimit(Integer clubId, ClubPosition newPosition, ClubMember existingMember) {
+        if (newPosition == VICE_PRESIDENT) {
+            boolean isAlreadyVicePresident = existingMember != null
+                && existingMember.getClubPosition() == VICE_PRESIDENT;
+            if (isAlreadyVicePresident) {
+                return;
+            }
+            long count = clubMemberRepository.countByClubIdAndPosition(clubId, VICE_PRESIDENT);
+            if (count >= 1) {
+                throw CustomException.of(VICE_PRESIDENT_ALREADY_EXISTS);
+            }
+        }
+
+        if (newPosition == MANAGER) {
+            boolean isAlreadyManager = existingMember != null
+                && existingMember.getClubPosition() == MANAGER;
+            if (isAlreadyManager) {
+                return;
+            }
+            long count = clubMemberRepository.countByClubIdAndPosition(clubId, MANAGER);
+            if (count >= MAX_MANAGER_COUNT) {
+                throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
+            }
         }
     }
 }
