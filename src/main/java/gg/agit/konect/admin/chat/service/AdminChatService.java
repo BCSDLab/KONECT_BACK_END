@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse.InnerAdminChatMessageResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse;
+import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse.InnerAdminChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
@@ -57,7 +58,15 @@ public class AdminChatService {
             .toList();
         Map<Integer, Integer> unreadCountMap = getUnreadCountMap(chatRoomIds);
 
-        return AdminChatRoomsResponse.from(chatRooms, unreadCountMap);
+        List<InnerAdminChatRoomResponse> responses = chatRooms.stream()
+            .map(chatRoom -> InnerAdminChatRoomResponse.from(
+                chatRoom,
+                getNormalUser(chatRoom),
+                unreadCountMap.getOrDefault(chatRoom.getId(), 0)
+            ))
+            .toList();
+
+        return new AdminChatRoomsResponse(responses);
     }
 
     private Map<Integer, Integer> getUnreadCountMap(List<Integer> chatRoomIds) {

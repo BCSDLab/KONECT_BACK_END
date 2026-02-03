@@ -2,10 +2,8 @@ package gg.agit.konect.admin.chat.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import gg.agit.konect.domain.chat.model.ChatRoom;
-import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -13,19 +11,6 @@ public record AdminChatRoomsResponse(
     @Schema(description = "채팅방 목록")
     List<InnerAdminChatRoomResponse> chatRooms
 ) {
-
-    public static AdminChatRoomsResponse from(
-        List<ChatRoom> chatRooms,
-        Map<Integer, Integer> unreadCountMap
-    ) {
-        List<InnerAdminChatRoomResponse> responses = chatRooms.stream()
-            .map(chatRoom -> InnerAdminChatRoomResponse.from(
-                chatRoom,
-                unreadCountMap.getOrDefault(chatRoom.getId(), 0)
-            ))
-            .toList();
-        return new AdminChatRoomsResponse(responses);
-    }
 
     public record InnerAdminChatRoomResponse(
         @Schema(description = "채팅방 ID", example = "1")
@@ -47,8 +32,11 @@ public record AdminChatRoomsResponse(
         Integer unreadCount
     ) {
 
-        public static InnerAdminChatRoomResponse from(ChatRoom chatRoom, Integer unreadCount) {
-            User normalUser = getNormalUser(chatRoom);
+        public static InnerAdminChatRoomResponse from(
+            ChatRoom chatRoom,
+            User normalUser,
+            Integer unreadCount
+        ) {
             return new InnerAdminChatRoomResponse(
                 chatRoom.getId(),
                 normalUser.getName(),
@@ -57,13 +45,6 @@ public record AdminChatRoomsResponse(
                 chatRoom.getLastMessageSentAt(),
                 unreadCount
             );
-        }
-
-        private static User getNormalUser(ChatRoom chatRoom) {
-            if (chatRoom.getSender().getRole() == UserRole.ADMIN) {
-                return chatRoom.getReceiver();
-            }
-            return chatRoom.getSender();
         }
     }
 }
