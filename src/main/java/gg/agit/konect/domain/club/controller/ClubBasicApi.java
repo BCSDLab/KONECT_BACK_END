@@ -15,11 +15,10 @@ import gg.agit.konect.domain.club.dto.ClubBasicInfoUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubDetailUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
-import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -71,36 +70,20 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "동아리 프로필을 수정한다.", description = """
-        동아리 회장 또는 부회장만 동아리 프로필을 수정할 수 있습니다.
-        수정 가능 항목: 한 줄 소개, 로고 이미지, 태그
+    @Operation(summary = "동아리 정보를 수정한다.", description = """
+        동아리 회장 또는 부회장만 동아리 정보를 수정할 수 있습니다.
+        수정 가능 항목: 한 줄 소개, 로고 이미지, 동방 위치, 상세 소개
         동아리명과 분과는 수정할 수 없으며, 변경이 필요한 경우 문의하기를 통해 어드민에게 요청하세요.
-        
-        ## 에러
-        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
-        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
-        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
-        """)
-    @PutMapping("/{clubId}/profile")
-    ResponseEntity<Void> updateProfile(
-        @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubProfileUpdateRequest request,
-        @UserId Integer userId
-    );
 
-    @Operation(summary = "동아리 상세정보를 수정한다.", description = """
-        동아리 회장 또는 부회장만 동아리 상세정보를 수정할 수 있습니다.
-        수정 가능 항목: 동방 위치, 상세 소개
-        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
-    @PutMapping("/{clubId}/details")
-    ResponseEntity<Void> updateDetails(
+    @PutMapping("/{clubId}/info")
+    ResponseEntity<Void> updateInfo(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubDetailUpdateRequest request,
+        @Valid @RequestBody ClubUpdateRequest request,
         @UserId Integer userId
     );
 

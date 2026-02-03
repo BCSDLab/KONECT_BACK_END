@@ -18,11 +18,10 @@ import gg.agit.konect.domain.club.dto.ClubBasicInfoUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubDetailUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubMemberCondition;
 import gg.agit.konect.domain.club.dto.ClubMembersResponse;
 import gg.agit.konect.domain.club.dto.ClubMembershipsResponse;
-import gg.agit.konect.domain.club.dto.ClubProfileUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.enums.ClubPositionGroup;
@@ -133,23 +132,13 @@ public class ClubService {
     }
 
     @Transactional
-    public void updateProfile(Integer clubId, Integer userId, ClubProfileUpdateRequest request) {
+    public void updateInfo(Integer clubId, Integer userId, ClubUpdateRequest request) {
         userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
-        club.updateProfile(request.introduce(), request.imageUrl());
-    }
-
-    @Transactional
-    public void updateDetails(Integer clubId, Integer userId, ClubDetailUpdateRequest request) {
-        userRepository.getById(userId);
-        Club club = clubRepository.getById(clubId);
-
-        clubPermissionValidator.validateManagerAccess(clubId, userId);
-
-        club.updateDetails(request.location(), request.introduce());
+        club.updateInfo(request.description(), request.imageUrl(), request.location(), request.introduce());
     }
 
     @Transactional
