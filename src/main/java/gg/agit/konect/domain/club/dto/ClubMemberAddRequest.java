@@ -2,17 +2,16 @@ package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import gg.agit.konect.domain.club.enums.ClubPosition;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 
 public record ClubMemberAddRequest(
-    @NotNull(message = "사용자 ID는 필수 입력입니다.")
-    @Schema(description = "추가할 사용자 ID", example = "123", requiredMode = REQUIRED)
-    Integer userId,
+    @NotBlank(message = "학번은 필수 입력입니다.")
+    @Schema(description = "사전 등록할 회원의 학번", example = "2021136089", requiredMode = REQUIRED)
+    String studentNumber,
 
-    @NotNull(message = "직책은 필수 입력입니다.")
-    @Schema(description = "부여할 직책", example = "MEMBER", requiredMode = REQUIRED)
-    ClubPosition position
+    @NotBlank(message = "이름은 필수 입력입니다.")
+    @Schema(description = "사전 등록할 회원의 이름", example = "홍길동", requiredMode = REQUIRED)
+    String name
 ) {
 }

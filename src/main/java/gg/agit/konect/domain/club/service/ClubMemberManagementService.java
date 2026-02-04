@@ -11,14 +11,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubMemberAddRequest;
+import gg.agit.konect.domain.club.dto.ClubMemberAddResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
 import gg.agit.konect.domain.club.enums.ClubPosition;
+import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +34,7 @@ public class ClubMemberManagementService {
     public static final int MAX_MANAGER_COUNT = 20;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
-    private final UserRepository userRepository;
+    private final ClubPreMemberRepository clubPreMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
@@ -68,39 +71,30 @@ public class ClubMemberManagementService {
     }
 
     @Transactional
-    public ClubMember addMember(
+    public ClubMemberAddResponse addPreMember(
         Integer clubId,
         Integer requesterId,
         ClubMemberAddRequest request
     ) {
-        clubRepository.getById(clubId);
+        Club club = clubRepository.getById(clubId);
 
         clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
-        Integer targetUserId = request.userId();
+        String studentNumber = request.studentNumber();
+        String name = request.name();
 
-        if (clubMemberRepository.existsByClubIdAndUserId(clubId, targetUserId)) {
-            throw CustomException.of(ALREADY_CLUB_MEMBER);
+        if (clubPreMemberRepository.existsByClubIdAndStudentNumberAndName(clubId, studentNumber, name)) {
+            throw CustomException.of(ALREADY_CLUB_PRE_MEMBER);
         }
 
-        userRepository.getById(targetUserId);
-
-        ClubPosition position = request.position();
-
-        if (position == PRESIDENT) {
-            throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
-        }
-
-        validatePositionLimit(clubId, position, null);
-
-        ClubMember newMember = ClubMember.builder()
-            .club(clubRepository.getById(clubId))
-            .user(userRepository.getById(targetUserId))
-            .clubPosition(position)
-            .isFeePaid(false)
+        ClubPreMember preMember = ClubPreMember.builder()
+            .club(club)
+            .studentNumber(studentNumber)
+            .name(name)
             .build();
 
-        return clubMemberRepository.save(newMember);
+        ClubPreMember savedPreMember = clubPreMemberRepository.save(preMember);
+        return ClubMemberAddResponse.from(savedPreMember);
     }
 
     @Transactional
