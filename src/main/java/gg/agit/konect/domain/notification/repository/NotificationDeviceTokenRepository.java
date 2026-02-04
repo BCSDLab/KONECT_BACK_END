@@ -24,8 +24,6 @@ public interface NotificationDeviceTokenRepository extends Repository<Notificati
         @Param("token") String token
     );
 
-    List<NotificationDeviceToken> findByUserId(Integer userId);
-
     @Query("""
         SELECT ndt.token
         FROM NotificationDeviceToken ndt
