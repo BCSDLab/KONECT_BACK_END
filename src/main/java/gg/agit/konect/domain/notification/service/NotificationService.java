@@ -55,7 +55,7 @@ public class NotificationService {
                     token.updateToken(request.token());
                 },
                 () -> notificationDeviceTokenRepository.save(
-                    NotificationDeviceToken.of(user, request.token(), request.deviceId(), request.platform())
+                    NotificationDeviceToken.of(user, request.token(), request.deviceId())
                 )
             );
     }

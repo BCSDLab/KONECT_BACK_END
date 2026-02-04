@@ -5,12 +5,9 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.domain.version.enums.PlatformType;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -48,25 +45,19 @@ public class NotificationDeviceToken extends BaseEntity {
     @Column(name = "device_id", length = 100, nullable = false)
     private String deviceId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "platform", length = 20, nullable = false)
-    private PlatformType platform;
-
     @Builder
-    private NotificationDeviceToken(Integer id, User user, String token, String deviceId, PlatformType platform) {
+    private NotificationDeviceToken(Integer id, User user, String token, String deviceId) {
         this.id = id;
         this.user = user;
         this.token = token;
         this.deviceId = deviceId;
-        this.platform = platform;
     }
 
-    public static NotificationDeviceToken of(User user, String token, String deviceId, PlatformType platform) {
+    public static NotificationDeviceToken of(User user, String token, String deviceId) {
         return NotificationDeviceToken.builder()
             .user(user)
             .token(token)
             .deviceId(deviceId)
-            .platform(platform)
             .build();
     }
 
