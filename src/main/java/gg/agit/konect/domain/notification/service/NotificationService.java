@@ -28,8 +28,10 @@ import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepo
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @Transactional(readOnly = true)
 public class NotificationService {
 
@@ -102,9 +104,11 @@ public class NotificationService {
 
             ExpoPushResponse body = response.getBody();
             if (!response.getStatusCode().is2xxSuccessful() || body == null || body.hasError()) {
+                log.error("Notification send failed: userId={}, status={}", userId, response.getStatusCode());
                 throw CustomException.of(FAILED_SEND_NOTIFICATION);
             }
         } catch (RestClientException exception) {
+            log.error("Notification send error: userId={}", userId, exception);
             throw CustomException.of(FAILED_SEND_NOTIFICATION);
         }
     }
