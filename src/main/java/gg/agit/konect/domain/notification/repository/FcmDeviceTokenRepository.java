@@ -11,7 +11,7 @@ public interface FcmDeviceTokenRepository extends Repository<FcmDeviceToken, Int
 
     Optional<FcmDeviceToken> findByToken(String token);
 
-    Optional<FcmDeviceToken> findByUserIdAndToken(Integer userId, String token);
+    Optional<FcmDeviceToken> findByUserIdAndDeviceId(Integer userId, String deviceId);
 
     List<FcmDeviceToken> findByUserId(Integer userId);
 

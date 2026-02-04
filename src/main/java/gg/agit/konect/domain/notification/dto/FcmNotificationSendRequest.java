@@ -17,6 +17,9 @@ public record FcmNotificationSendRequest(
     String body,
 
     @Schema(description = "추가 데이터", example = "{\"type\":\"notice\"}")
-    Map<String, String> data
+    Map<String, String> data,
+
+    @Schema(description = "딥링크 경로(https://agit.gg/ 이후)", example = "chats")
+    String path
 ) {
 }

@@ -3,16 +3,19 @@ package gg.agit.konect.domain.notification.service;
 import static gg.agit.konect.global.code.ApiResponseCode.FAILED_SEND_FCM;
 import static gg.agit.konect.global.code.ApiResponseCode.INVALID_FCM_TOKEN;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.MulticastMessage;
-import com.google.firebase.messaging.Notification;
+import org.springframework.web.client.RestTemplate;
 
 import gg.agit.konect.domain.notification.dto.FcmNotificationSendRequest;
 import gg.agit.konect.domain.notification.dto.FcmTokenDeleteRequest;
@@ -29,26 +32,37 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class NotificationService {
 
+    private static final String EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+    private static final Pattern EXPO_PUSH_TOKEN_PATTERN =
+        Pattern.compile("^(ExponentPushToken|ExpoPushToken)\\[[^\\]]+\\]$");
+
     private final UserRepository userRepository;
     private final FcmDeviceTokenRepository fcmDeviceTokenRepository;
+    private final RestTemplate restTemplate;
 
     @Transactional
     public void registerToken(Integer userId, FcmTokenRegisterRequest request) {
         User user = userRepository.getById(userId);
-        if (request.token().isBlank()) {
+
+        if (!EXPO_PUSH_TOKEN_PATTERN.matcher(request.token()).matches()) {
             throw CustomException.of(INVALID_FCM_TOKEN);
         }
 
-        fcmDeviceTokenRepository.findByToken(request.token())
+        fcmDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
             .ifPresentOrElse(
-                token -> token.updateUser(user),
-                () -> fcmDeviceTokenRepository.save(FcmDeviceToken.of(user, request.token()))
+                token -> {
+                    token.updateUser(user);
+                    token.updateToken(request.token());
+                },
+                () -> fcmDeviceTokenRepository.save(
+                    FcmDeviceToken.of(user, request.token(), request.deviceId(), request.platform())
+                )
             );
     }
 
     @Transactional
     public void deleteToken(Integer userId, FcmTokenDeleteRequest request) {
-        fcmDeviceTokenRepository.findByUserIdAndToken(userId, request.token())
+        fcmDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
             .ifPresent(fcmDeviceTokenRepository::delete);
     }
 
@@ -61,24 +75,52 @@ public class NotificationService {
             return;
         }
 
-        MulticastMessage.Builder messageBuilder = MulticastMessage.builder()
-            .addAllTokens(tokens)
-            .setNotification(
-                Notification.builder()
-                    .setTitle(request.title())
-                    .setBody(request.body())
-                    .build()
-            );
+        Map<String, Object> data = buildData(request.data(), request.path());
+        List<ExpoPushMessage> messages = tokens.stream()
+            .map(token -> new ExpoPushMessage(token, request.title(), request.body(), data))
+            .toList();
 
-        Map<String, String> data = request.data();
-        if (data != null && !data.isEmpty()) {
-            messageBuilder.putAllData(data);
-        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
-        try {
-            FirebaseMessaging.getInstance().sendEachForMulticast(messageBuilder.build());
-        } catch (FirebaseMessagingException exception) {
+        HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
+        ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
+            EXPO_PUSH_URL,
+            HttpMethod.POST,
+            entity,
+            ExpoPushResponse.class
+        );
+
+        ExpoPushResponse body = response.getBody();
+        if (!response.getStatusCode().is2xxSuccessful() || body == null || body.hasError()) {
             throw CustomException.of(FAILED_SEND_FCM);
         }
+    }
+
+    private Map<String, Object> buildData(Map<String, String> data, String path) {
+        Map<String, Object> payload = new HashMap<>();
+        if (data != null && !data.isEmpty()) {
+            payload.putAll(data);
+        }
+        if (path != null && !path.isBlank()) {
+            payload.put("path", path);
+        }
+        return payload.isEmpty() ? null : payload;
+    }
+
+    private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data) {
+    }
+
+    private record ExpoPushResponse(List<ExpoPushTicket> data) {
+        boolean hasError() {
+            if (data == null) {
+                return true;
+            }
+            return data.stream().anyMatch(ticket -> !"ok".equalsIgnoreCase(ticket.status()));
+        }
+    }
+
+    private record ExpoPushTicket(String status, String message, Map<String, Object> details) {
     }
 }
