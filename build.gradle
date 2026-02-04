@@ -63,6 +63,9 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.41.14')
     implementation 'software.amazon.awssdk:s3'
 
+    // notification
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
