@@ -39,6 +39,7 @@ services:
     volumes:
       - ./promtail.yml:/etc/promtail/config.yml:ro
       - ../logs:/var/log/konect-backend:ro
+      - /var/log/nginx:/var/log/nginx:ro
       - promtail-positions:/var/lib/promtail
     restart: unless-stopped
     depends_on:
