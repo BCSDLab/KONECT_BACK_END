@@ -3,6 +3,8 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPosition.*;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -33,7 +35,7 @@ public class ClubMemberManagementService {
     private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
-    public void changeMemberPosition(
+    public ClubMember changeMemberPosition(
         Integer clubId,
         Integer targetUserId,
         Integer requesterId,
@@ -61,10 +63,12 @@ public class ClubMemberManagementService {
         validatePositionLimit(clubId, newPosition, target);
 
         target.changePosition(newPosition);
+
+        return target;
     }
 
     @Transactional
-    public void addMember(
+    public ClubMember addMember(
         Integer clubId,
         Integer requesterId,
         ClubMemberAddRequest request
@@ -73,7 +77,6 @@ public class ClubMemberManagementService {
 
         clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
         Integer targetUserId = request.userId();
 
         if (clubMemberRepository.existsByClubIdAndUserId(clubId, targetUserId)) {
@@ -97,11 +100,11 @@ public class ClubMemberManagementService {
             .isFeePaid(false)
             .build();
 
-        clubMemberRepository.save(newMember);
+        return clubMemberRepository.save(newMember);
     }
 
     @Transactional
-    public void transferPresident(
+    public List<ClubMember> transferPresident(
         Integer clubId,
         Integer currentPresidentId,
         PresidentTransferRequest request
@@ -119,10 +122,12 @@ public class ClubMemberManagementService {
 
         currentPresident.changePosition(MEMBER);
         newPresident.changePosition(PRESIDENT);
+
+        return List.of(currentPresident, newPresident);
     }
 
     @Transactional
-    public void changeVicePresident(
+    public List<ClubMember> changeVicePresident(
         Integer clubId,
         Integer requesterId,
         VicePresidentChangeRequest request
@@ -139,13 +144,15 @@ public class ClubMemberManagementService {
             .findFirst();
 
         Integer newVicePresidentUserId = request.vicePresidentUserId();
+        List<ClubMember> changedMembers = new ArrayList<>();
 
         if (newVicePresidentUserId == null) {
             if (currentVicePresidentOpt.isPresent()) {
                 ClubMember currentVicePresident = currentVicePresidentOpt.get();
                 currentVicePresident.changePosition(MEMBER);
+                changedMembers.add(currentVicePresident);
             }
-            return;
+            return changedMembers;
         }
 
         validateNotSelf(requesterId, newVicePresidentUserId, CANNOT_CHANGE_OWN_POSITION);
@@ -156,10 +163,14 @@ public class ClubMemberManagementService {
             ClubMember currentVicePresident = currentVicePresidentOpt.get();
             if (!currentVicePresident.getId().getUserId().equals(newVicePresidentUserId)) {
                 currentVicePresident.changePosition(MEMBER);
+                changedMembers.add(currentVicePresident);
             }
         }
 
         newVicePresident.changePosition(VICE_PRESIDENT);
+        changedMembers.add(newVicePresident);
+
+        return changedMembers;
     }
 
     @Transactional
