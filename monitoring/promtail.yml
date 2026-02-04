@@ -4,6 +4,7 @@ server:
 
 positions:
   filename: /var/lib/promtail/positions.yml
+  sync_period: 1s
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
@@ -11,15 +12,14 @@ clients:
 scrape_configs:
   - job_name: konect-backend
     static_configs:
-      - targets:
-          - localhost
+      - targets: [localhost]
         labels:
           job: konect-backend
-          __path__: /var/log/konect-backend/konect-backend.log
+          __path__: /var/log/konect-backend/konect-backend*.log
+
   - job_name: nginx
     static_configs:
-      - targets:
-          - localhost
+      - targets: [localhost]
         labels:
           job: nginx
           __path__: /var/log/nginx/*.log
