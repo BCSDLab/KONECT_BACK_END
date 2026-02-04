@@ -14,7 +14,7 @@ public record ClubMemberResponse(
     Integer userId,
 
     @Schema(description = "회원 이름", example = "홍길동", requiredMode = REQUIRED)
-    String name,
+    String userName,
 
     @Schema(description = "회원 직책", example = "MANAGER", requiredMode = REQUIRED)
     ClubPosition position
