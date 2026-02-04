@@ -25,10 +25,8 @@ import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepo
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class NotificationService {
 
@@ -40,6 +38,16 @@ public class NotificationService {
     private final NotificationDeviceTokenRepository notificationDeviceTokenRepository;
     private final RestTemplate restTemplate;
 
+    public NotificationService(
+        UserRepository userRepository,
+        NotificationDeviceTokenRepository notificationDeviceTokenRepository,
+        RestTemplate restTemplate
+    ) {
+        this.userRepository = userRepository;
+        this.notificationDeviceTokenRepository = notificationDeviceTokenRepository;
+        this.restTemplate = restTemplate;
+    }
+
     @Transactional
     public void registerToken(Integer userId, NotificationTokenRegisterRequest request) {
         User user = userRepository.getById(userId);
@@ -48,21 +56,18 @@ public class NotificationService {
             throw CustomException.of(INVALID_NOTIFICATION_TOKEN);
         }
 
-        notificationDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
+        notificationDeviceTokenRepository.findByToken(request.token())
             .ifPresentOrElse(
-                token -> {
-                    token.updateUser(user);
-                    token.updateToken(request.token());
-                },
+                token -> token.updateUser(user),
                 () -> notificationDeviceTokenRepository.save(
-                    NotificationDeviceToken.of(user, request.token(), request.deviceId())
+                    NotificationDeviceToken.of(user, request.token())
                 )
             );
     }
 
     @Transactional
     public void deleteToken(Integer userId, NotificationTokenDeleteRequest request) {
-        notificationDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
+        notificationDeviceTokenRepository.findByToken(request.token())
             .ifPresent(notificationDeviceTokenRepository::delete);
     }
 

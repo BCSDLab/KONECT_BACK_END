@@ -8,10 +8,6 @@ import jakarta.validation.constraints.NotEmpty;
 public record NotificationTokenRegisterRequest(
     @NotEmpty(message = "푸시 토큰은 필수 입력입니다.")
     @Schema(description = "푸시 디바이스 토큰", example = "ExpoPushToken[xxxx]", requiredMode = REQUIRED)
-    String token,
-
-    @NotEmpty(message = "디바이스 식별자는 필수 입력입니다.")
-    @Schema(description = "디바이스 식별자", example = "device-uuid", requiredMode = REQUIRED)
-    String deviceId
+    String token
 ) {
 }

@@ -3,10 +3,8 @@ package gg.agit.konect.global.code;
 import org.springframework.http.HttpStatus;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum ApiResponseCode {
 
     // 400 Bad Request (잘못된 요청)
@@ -110,6 +108,11 @@ public enum ApiResponseCode {
 
     private final HttpStatus httpStatus;
     private final String message;
+
+    ApiResponseCode(HttpStatus httpStatus, String message) {
+        this.httpStatus = httpStatus;
+        this.message = message;
+    }
 
     public String getCode() {
         return this.name();

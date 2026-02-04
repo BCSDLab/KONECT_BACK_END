@@ -14,7 +14,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -23,8 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "notification_device_token",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uq_notification_device_token_token", columnNames = "token"),
-        @UniqueConstraint(name = "uq_notification_device_token_user_device", columnNames = {"user_id, device_id"})
+        @UniqueConstraint(name = "uq_notification_device_token_token", columnNames = "token")
     }
 )
 @NoArgsConstructor(access = PROTECTED)
@@ -42,23 +40,14 @@ public class NotificationDeviceToken extends BaseEntity {
     @Column(name = "token", length = 255, nullable = false, unique = true)
     private String token;
 
-    @Column(name = "device_id", length = 100, nullable = false)
-    private String deviceId;
-
-    @Builder
-    private NotificationDeviceToken(Integer id, User user, String token, String deviceId) {
+    private NotificationDeviceToken(Integer id, User user, String token) {
         this.id = id;
         this.user = user;
         this.token = token;
-        this.deviceId = deviceId;
     }
 
-    public static NotificationDeviceToken of(User user, String token, String deviceId) {
-        return NotificationDeviceToken.builder()
-            .user(user)
-            .token(token)
-            .deviceId(deviceId)
-            .build();
+    public static NotificationDeviceToken of(User user, String token) {
+        return new NotificationDeviceToken(null, user, token);
     }
 
     public void updateUser(User user) {
