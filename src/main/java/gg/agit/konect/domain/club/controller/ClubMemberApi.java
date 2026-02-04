@@ -36,12 +36,12 @@ public interface ClubMemberApi {
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_MEMBER (404): 동아리 회원을 찾을 수 없습니다.
         """)
-    @PatchMapping("/{clubId}/members/{memberId}/position")
+    @PatchMapping("/{clubId}/members/{userId}/position")
     ResponseEntity<ClubMemberResponse> changeMemberPosition(
         @PathVariable(name = "clubId") Integer clubId,
-        @PathVariable(name = "memberId") Integer memberId,
+        @PathVariable(name = "userId") Integer targetUserId,
         @Valid @RequestBody MemberPositionChangeRequest request,
-        @UserId Integer userId
+        @UserId Integer requesterId
     );
 
     @Operation(summary = "동아리 회장 권한을 위임한다.", description = """
@@ -110,10 +110,10 @@ public interface ClubMemberApi {
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_MEMBER (404): 동아리 회원을 찾을 수 없습니다.
         """)
-    @DeleteMapping("/{clubId}/members/{memberId}")
+    @DeleteMapping("/{clubId}/members/{userId}")
     ResponseEntity<Void> removeMember(
         @PathVariable(name = "clubId") Integer clubId,
-        @PathVariable(name = "memberId") Integer memberId,
-        @UserId Integer userId
+        @PathVariable(name = "userId") Integer targetUserId,
+        @UserId Integer requesterId
     );
 }
