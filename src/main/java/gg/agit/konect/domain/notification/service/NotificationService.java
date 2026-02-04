@@ -121,7 +121,7 @@ public class NotificationService {
         if (path != null && !path.isBlank()) {
             payload.put("path", path);
         }
-        return payload.isEmpty() ? null : payload;
+        return payload;
     }
 
     private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data) {
