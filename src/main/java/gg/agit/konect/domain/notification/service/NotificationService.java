@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import gg.agit.konect.domain.notification.dto.NotificationSendRequest;
@@ -90,15 +91,19 @@ public class NotificationService {
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
-        ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
-            EXPO_PUSH_URL,
-            HttpMethod.POST,
-            entity,
-            ExpoPushResponse.class
-        );
+        try {
+            ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
+                EXPO_PUSH_URL,
+                HttpMethod.POST,
+                entity,
+                ExpoPushResponse.class
+            );
 
-        ExpoPushResponse body = response.getBody();
-        if (!response.getStatusCode().is2xxSuccessful() || body == null || body.hasError()) {
+            ExpoPushResponse body = response.getBody();
+            if (!response.getStatusCode().is2xxSuccessful() || body == null || body.hasError()) {
+                throw CustomException.of(FAILED_SEND_NOTIFICATION);
+            }
+        } catch (RestClientException exception) {
             throw CustomException.of(FAILED_SEND_NOTIFICATION);
         }
     }
