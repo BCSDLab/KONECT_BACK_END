@@ -26,4 +26,8 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
     );
 
     void deleteAll(Iterable<ClubPreMember> preMembers);
+
+    boolean existsByClubIdAndStudentNumberAndName(Integer clubId, String studentNumber, String name);
+
+    ClubPreMember save(ClubPreMember preMember);
 }

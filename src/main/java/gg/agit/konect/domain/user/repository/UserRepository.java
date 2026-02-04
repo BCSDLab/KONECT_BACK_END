@@ -39,6 +39,8 @@ public interface UserRepository extends Repository<User, Integer> {
 
     boolean existsByUniversityIdAndStudentNumber(Integer universityId, String studentNumber);
 
+    Optional<User> findByUniversityIdAndStudentNumber(Integer universityId, String studentNumber);
+
     @Query("""
         SELECT u
         FROM User u
