@@ -4,6 +4,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
 
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,6 +14,9 @@ public record ClubMembersResponse(
     List<InnerClubMember> clubMembers
 ) {
     public record InnerClubMember(
+        @Schema(description = "유저 ID", example = "1", requiredMode = REQUIRED)
+        Integer userId,
+
         @Schema(description = "동아리 맴버 이름", example = "배진호", requiredMode = REQUIRED)
         String name,
 
@@ -22,17 +26,18 @@ public record ClubMembersResponse(
         @Schema(description = "동아리 멤버 학번", example = "2020136061", requiredMode = REQUIRED)
         String studentNumber,
 
-        @Schema(description = "직책", example = "회장", requiredMode = REQUIRED)
-        String position
+        @Schema(description = "직책", example = "PRESIDENT", requiredMode = REQUIRED)
+        ClubPosition position
     ) {
         public static InnerClubMember from(ClubMember clubMember) {
             User user = clubMember.getUser();
 
             return new InnerClubMember(
+                user.getId(),
                 user.getName(),
                 user.getImageUrl(),
                 user.getStudentNumber(),
-                clubMember.getClubPosition().getName()
+                clubMember.getClubPosition()
             );
         }
     }

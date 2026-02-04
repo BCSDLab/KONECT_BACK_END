@@ -34,7 +34,7 @@ public record MyManagedClubResponse(
             club.getName(),
             user.getName(),
             user.getStudentNumber(),
-            clubMember.getClubPosition().getName()
+            clubMember.getClubPosition().getDescription()
         );
     }
 }

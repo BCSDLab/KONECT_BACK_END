@@ -1,8 +1,10 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.*;
+import static gg.agit.konect.domain.club.enums.ClubPosition.*;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -12,11 +14,9 @@ import gg.agit.konect.domain.club.dto.ClubMemberAddRequest;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
-import gg.agit.konect.domain.club.enums.ClubPositionGroup;
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
-import gg.agit.konect.domain.club.repository.ClubPositionRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -31,12 +31,11 @@ public class ClubMemberManagementService {
     public static final int MAX_MANAGER_COUNT = 20;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
-    private final ClubPositionRepository clubPositionRepository;
     private final UserRepository userRepository;
     private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
-    public void changeMemberPosition(
+    public ClubMember changeMemberPosition(
         Integer clubId,
         Integer targetUserId,
         Integer requesterId,
@@ -55,37 +54,21 @@ public class ClubMemberManagementService {
             throw CustomException.of(CANNOT_MANAGE_HIGHER_POSITION);
         }
 
-        ClubPosition newPosition = clubPositionRepository.getById(request.positionId());
+        ClubPosition newPosition = request.position();
 
-        if (!newPosition.getClub().getId().equals(clubId)) {
-            throw CustomException.of(NOT_FOUND_CLUB_POSITION);
-        }
-
-        ClubPositionGroup newPositionGroup = newPosition.getClubPositionGroup();
-
-        if (!requester.getPositionGroup().canManage(newPositionGroup)) {
+        if (!requester.getClubPosition().canManage(newPosition)) {
             throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
         }
 
-        if (newPositionGroup == VICE_PRESIDENT) {
-            long vicePresidentCount = clubMemberRepository.countByClubIdAndPositionGroup(clubId, VICE_PRESIDENT);
-            if (target.getPositionGroup() != VICE_PRESIDENT && vicePresidentCount >= 1) {
-                throw CustomException.of(VICE_PRESIDENT_ALREADY_EXISTS);
-            }
-        }
-
-        if (newPositionGroup == MANAGER) {
-            long managerCount = clubMemberRepository.countByClubIdAndPositionGroup(clubId, MANAGER);
-            if (target.getPositionGroup() != MANAGER && managerCount >= MAX_MANAGER_COUNT) {
-                throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
-            }
-        }
+        validatePositionLimit(clubId, newPosition, target);
 
         target.changePosition(newPosition);
+
+        return target;
     }
 
     @Transactional
-    public void addMember(
+    public ClubMember addMember(
         Integer clubId,
         Integer requesterId,
         ClubMemberAddRequest request
@@ -94,7 +77,6 @@ public class ClubMemberManagementService {
 
         clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
         Integer targetUserId = request.userId();
 
         if (clubMemberRepository.existsByClubIdAndUserId(clubId, targetUserId)) {
@@ -103,31 +85,13 @@ public class ClubMemberManagementService {
 
         userRepository.getById(targetUserId);
 
-        ClubPosition position = clubPositionRepository.getById(request.positionId());
+        ClubPosition position = request.position();
 
-        if (!position.getClub().getId().equals(clubId)) {
-            throw CustomException.of(NOT_FOUND_CLUB_POSITION);
-        }
-
-        ClubPositionGroup positionGroup = position.getClubPositionGroup();
-
-        if (positionGroup == PRESIDENT) {
+        if (position == PRESIDENT) {
             throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
         }
 
-        if (positionGroup == VICE_PRESIDENT) {
-            long vicePresidentCount = clubMemberRepository.countByClubIdAndPositionGroup(clubId, VICE_PRESIDENT);
-            if (vicePresidentCount >= 1) {
-                throw CustomException.of(VICE_PRESIDENT_ALREADY_EXISTS);
-            }
-        }
-
-        if (positionGroup == MANAGER) {
-            long managerCount = clubMemberRepository.countByClubIdAndPositionGroup(clubId, MANAGER);
-            if (managerCount >= MAX_MANAGER_COUNT) {
-                throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
-            }
-        }
+        validatePositionLimit(clubId, position, null);
 
         ClubMember newMember = ClubMember.builder()
             .club(clubRepository.getById(clubId))
@@ -136,11 +100,11 @@ public class ClubMemberManagementService {
             .isFeePaid(false)
             .build();
 
-        clubMemberRepository.save(newMember);
+        return clubMemberRepository.save(newMember);
     }
 
     @Transactional
-    public void transferPresident(
+    public List<ClubMember> transferPresident(
         Integer clubId,
         Integer currentPresidentId,
         PresidentTransferRequest request
@@ -156,15 +120,14 @@ public class ClubMemberManagementService {
 
         ClubMember newPresident = clubMemberRepository.getByClubIdAndUserId(clubId, newPresidentUserId);
 
-        ClubPosition presidentPosition = clubPositionRepository.getFirstByClubIdAndClubPositionGroup(clubId, PRESIDENT);
-        ClubPosition memberPosition = clubPositionRepository.getFirstByClubIdAndClubPositionGroup(clubId, MEMBER);
+        currentPresident.changePosition(MEMBER);
+        newPresident.changePosition(PRESIDENT);
 
-        currentPresident.changePosition(memberPosition);
-        newPresident.changePosition(presidentPosition);
+        return List.of(currentPresident, newPresident);
     }
 
     @Transactional
-    public void changeVicePresident(
+    public List<ClubMember> changeVicePresident(
         Integer clubId,
         Integer requesterId,
         VicePresidentChangeRequest request
@@ -173,26 +136,23 @@ public class ClubMemberManagementService {
 
         clubPermissionValidator.validatePresidentAccess(clubId, requesterId);
 
-        ClubPosition vicePresidentPosition = clubPositionRepository.getFirstByClubIdAndClubPositionGroup(
-            clubId,
-            VICE_PRESIDENT
-        );
-
-        Optional<ClubMember> currentVicePresidentOpt = clubMemberRepository.findAllByClubIdAndPositionGroup(clubId,
-                VICE_PRESIDENT)
+        Optional<ClubMember> currentVicePresidentOpt = clubMemberRepository.findAllByClubIdAndPosition(
+                clubId,
+                VICE_PRESIDENT
+            )
             .stream()
             .findFirst();
 
         Integer newVicePresidentUserId = request.vicePresidentUserId();
+        List<ClubMember> changedMembers = new ArrayList<>();
 
         if (newVicePresidentUserId == null) {
             if (currentVicePresidentOpt.isPresent()) {
                 ClubMember currentVicePresident = currentVicePresidentOpt.get();
-                ClubPosition memberPosition = clubPositionRepository.getFirstByClubIdAndClubPositionGroup(clubId,
-                    MEMBER);
-                currentVicePresident.changePosition(memberPosition);
+                currentVicePresident.changePosition(MEMBER);
+                changedMembers.add(currentVicePresident);
             }
-            return;
+            return changedMembers;
         }
 
         validateNotSelf(requesterId, newVicePresidentUserId, CANNOT_CHANGE_OWN_POSITION);
@@ -202,13 +162,15 @@ public class ClubMemberManagementService {
         if (currentVicePresidentOpt.isPresent()) {
             ClubMember currentVicePresident = currentVicePresidentOpt.get();
             if (!currentVicePresident.getId().getUserId().equals(newVicePresidentUserId)) {
-                ClubPosition memberPosition = clubPositionRepository.getFirstByClubIdAndClubPositionGroup(clubId,
-                    MEMBER);
-                currentVicePresident.changePosition(memberPosition);
+                currentVicePresident.changePosition(MEMBER);
+                changedMembers.add(currentVicePresident);
             }
         }
 
-        newVicePresident.changePosition(vicePresidentPosition);
+        newVicePresident.changePosition(VICE_PRESIDENT);
+        changedMembers.add(newVicePresident);
+
+        return changedMembers;
     }
 
     @Transactional
@@ -230,7 +192,7 @@ public class ClubMemberManagementService {
             throw CustomException.of(CANNOT_MANAGE_HIGHER_POSITION);
         }
 
-        if (target.getPositionGroup() != MEMBER) {
+        if (target.getClubPosition() != MEMBER) {
             throw CustomException.of(CANNOT_REMOVE_NON_MEMBER);
         }
 
@@ -240,6 +202,32 @@ public class ClubMemberManagementService {
     private void validateNotSelf(Integer userId1, Integer userId2, ApiResponseCode errorCode) {
         if (userId1.equals(userId2)) {
             throw CustomException.of(errorCode);
+        }
+    }
+
+    private void validatePositionLimit(Integer clubId, ClubPosition newPosition, ClubMember existingMember) {
+        if (newPosition == VICE_PRESIDENT) {
+            boolean isAlreadyVicePresident = existingMember != null
+                && existingMember.getClubPosition() == VICE_PRESIDENT;
+            if (isAlreadyVicePresident) {
+                return;
+            }
+            long count = clubMemberRepository.countByClubIdAndPosition(clubId, VICE_PRESIDENT);
+            if (count >= 1) {
+                throw CustomException.of(VICE_PRESIDENT_ALREADY_EXISTS);
+            }
+        }
+
+        if (newPosition == MANAGER) {
+            boolean isAlreadyManager = existingMember != null
+                && existingMember.getClubPosition() == MANAGER;
+            if (isAlreadyManager) {
+                return;
+            }
+            long count = clubMemberRepository.countByClubIdAndPosition(clubId, MANAGER);
+            if (count >= MAX_MANAGER_COUNT) {
+                throw CustomException.of(MANAGER_LIMIT_EXCEEDED);
+            }
         }
     }
 }

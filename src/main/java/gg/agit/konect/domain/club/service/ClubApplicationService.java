@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.club.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MANAGERS;
-import static gg.agit.konect.domain.club.enums.ClubPositionGroup.MEMBER;
+import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;
@@ -33,14 +33,12 @@ import gg.agit.konect.domain.club.model.ClubApplyAnswer;
 import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubApplyQuestionAnswers;
 import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.model.ClubPosition;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
-import gg.agit.konect.domain.club.repository.ClubPositionRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.model.User;
@@ -59,7 +57,6 @@ public class ClubApplicationService {
     private final ClubApplyQuestionRepository clubApplyQuestionRepository;
     private final ClubApplyAnswerRepository clubApplyAnswerRepository;
     private final ClubApplyQueryRepository clubApplyQueryRepository;
-    private final ClubPositionRepository clubPositionRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
     private final BankRepository bankRepository;
@@ -115,12 +112,10 @@ public class ClubApplicationService {
             throw CustomException.of(ALREADY_CLUB_MEMBER);
         }
 
-        ClubPosition memberPosition = clubPositionRepository.getFirstByClubIdAndClubPositionGroup(clubId, MEMBER);
-
         ClubMember newMember = ClubMember.builder()
             .club(club)
             .user(applicant)
-            .clubPosition(memberPosition)
+            .clubPosition(MEMBER)
             .isFeePaid(true)
             .build();
 
@@ -291,7 +286,7 @@ public class ClubApplicationService {
         userRepository.getById(userId);
 
         boolean isApplied = clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
-        boolean isManager = clubMemberRepository.existsByClubIdAndUserIdAndPositionGroupIn(
+        boolean isManager = clubMemberRepository.existsByClubIdAndUserIdAndPositionIn(
             clubId,
             userId,
             MANAGERS
