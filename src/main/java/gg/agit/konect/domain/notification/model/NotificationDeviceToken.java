@@ -53,8 +53,4 @@ public class NotificationDeviceToken extends BaseEntity {
     public void updateUser(User user) {
         this.user = user;
     }
-
-    public void updateToken(String token) {
-        this.token = token;
-    }
 }

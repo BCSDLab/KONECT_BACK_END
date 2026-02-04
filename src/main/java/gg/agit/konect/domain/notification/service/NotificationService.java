@@ -68,7 +68,7 @@ public class NotificationService {
 
     @Transactional
     public void deleteToken(Integer userId, NotificationTokenDeleteRequest request) {
-        notificationDeviceTokenRepository.findByToken(request.token())
+        notificationDeviceTokenRepository.findByUserIdAndToken(userId, request.token())
             .ifPresent(notificationDeviceTokenRepository::delete);
     }
 

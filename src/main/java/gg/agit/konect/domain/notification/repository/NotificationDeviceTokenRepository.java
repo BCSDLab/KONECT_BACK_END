@@ -11,6 +11,8 @@ public interface NotificationDeviceTokenRepository extends Repository<Notificati
 
     Optional<NotificationDeviceToken> findByToken(String token);
 
+    Optional<NotificationDeviceToken> findByUserIdAndToken(Integer userId, String token);
+
     List<NotificationDeviceToken> findByUserId(Integer userId);
 
     void save(NotificationDeviceToken notificationDeviceToken);
