@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.domain.club.dto.ClubMemberAddRequest;
-import gg.agit.konect.domain.club.dto.ClubMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
+import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberChangesResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
@@ -66,12 +66,12 @@ public class ClubMemberController implements ClubMemberApi {
     }
 
     @Override
-    public ResponseEntity<ClubMemberAddResponse> addPreMember(
+    public ResponseEntity<ClubPreMemberAddResponse> addPreMember(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubMemberAddRequest request,
+        @Valid @RequestBody ClubPreMemberAddRequest request,
         @UserId Integer userId
     ) {
-        ClubMemberAddResponse response = clubMemberManagementService.addPreMember(clubId, userId, request);
+        ClubPreMemberAddResponse response = clubMemberManagementService.addPreMember(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 

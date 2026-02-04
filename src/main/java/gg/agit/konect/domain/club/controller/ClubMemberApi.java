@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import gg.agit.konect.domain.club.dto.ClubMemberAddRequest;
-import gg.agit.konect.domain.club.dto.ClubMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
+import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberChangesResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
@@ -90,9 +90,9 @@ public interface ClubMemberApi {
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         """)
     @PostMapping("/{clubId}/pre-members")
-    ResponseEntity<ClubMemberAddResponse> addPreMember(
+    ResponseEntity<ClubPreMemberAddResponse> addPreMember(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubMemberAddRequest request,
+        @Valid @RequestBody ClubPreMemberAddRequest request,
         @UserId Integer userId
     );
 

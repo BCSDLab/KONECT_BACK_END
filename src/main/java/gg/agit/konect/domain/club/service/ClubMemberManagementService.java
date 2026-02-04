@@ -10,8 +10,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.club.dto.ClubMemberAddRequest;
-import gg.agit.konect.domain.club.dto.ClubMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
+import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -71,10 +71,10 @@ public class ClubMemberManagementService {
     }
 
     @Transactional
-    public ClubMemberAddResponse addPreMember(
+    public ClubPreMemberAddResponse addPreMember(
         Integer clubId,
         Integer requesterId,
-        ClubMemberAddRequest request
+        ClubPreMemberAddRequest request
     ) {
         Club club = clubRepository.getById(clubId);
 
@@ -94,7 +94,7 @@ public class ClubMemberManagementService {
             .build();
 
         ClubPreMember savedPreMember = clubPreMemberRepository.save(preMember);
-        return ClubMemberAddResponse.from(savedPreMember);
+        return ClubPreMemberAddResponse.from(savedPreMember);
     }
 
     @Transactional
