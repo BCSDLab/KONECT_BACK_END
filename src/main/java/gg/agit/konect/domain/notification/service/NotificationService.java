@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.notification.service;
 
+import static gg.agit.konect.global.code.ApiResponseCode.DUPLICATE_NOTIFICATION_TOKEN;
 import static gg.agit.konect.global.code.ApiResponseCode.FAILED_SEND_NOTIFICATION;
 import static gg.agit.konect.global.code.ApiResponseCode.INVALID_NOTIFICATION_TOKEN;
 
@@ -57,6 +58,11 @@ public class NotificationService {
             throw CustomException.of(INVALID_NOTIFICATION_TOKEN);
         }
 
+        if (notificationDeviceTokenRepository.findByToken(request.token()).isPresent()
+            && notificationDeviceTokenRepository.findByUserIdAndToken(userId, request.token()).isEmpty()) {
+            throw CustomException.of(DUPLICATE_NOTIFICATION_TOKEN);
+        }
+
         notificationDeviceTokenRepository.findByToken(request.token())
             .ifPresentOrElse(
                 token -> token.updateUser(user),
@@ -73,9 +79,7 @@ public class NotificationService {
     }
 
     public void sendToMe(Integer userId, NotificationSendRequest request) {
-        List<String> tokens = notificationDeviceTokenRepository.findByUserId(userId).stream()
-            .map(NotificationDeviceToken::getToken)
-            .toList();
+        List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(userId);
 
         if (tokens.isEmpty()) {
             return;
