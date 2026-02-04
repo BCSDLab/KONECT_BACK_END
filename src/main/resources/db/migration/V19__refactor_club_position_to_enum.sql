@@ -3,7 +3,18 @@ ALTER TABLE club_member
 
 UPDATE club_member cm
     INNER JOIN club_position cp ON cm.club_position_id = cp.id
-    SET cm.club_position = cp.club_position_group;
+    SET cm.club_position = CASE
+        WHEN cp.club_position_group = 'PRESIDENT' THEN 'PRESIDENT'
+        WHEN cp.club_position_group = 'VICE_PRESIDENT' THEN 'VICE_PRESIDENT'
+        WHEN cp.club_position_group = 'MANAGER' THEN 'MANAGER'
+        WHEN cp.club_position_group = 'MEMBER' THEN 'MEMBER'
+
+        WHEN cp.club_position_group LIKE '%회장%' AND cp.club_position_group NOT LIKE '%부회장%' THEN 'PRESIDENT'
+        WHEN cp.club_position_group LIKE '%부회장%' THEN 'VICE_PRESIDENT'
+        WHEN cp.club_position_group LIKE '%운영%' THEN 'MANAGER'
+
+        ELSE 'MEMBER'
+END;
 
 ALTER TABLE club_member
     MODIFY COLUMN club_position VARCHAR(20) NOT NULL;

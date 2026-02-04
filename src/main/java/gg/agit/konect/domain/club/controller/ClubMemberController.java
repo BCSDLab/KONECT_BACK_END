@@ -30,12 +30,12 @@ public class ClubMemberController implements ClubMemberApi {
     @Override
     public ResponseEntity<ClubMemberResponse> changeMemberPosition(
         @PathVariable(name = "clubId") Integer clubId,
-        @PathVariable(name = "memberId") Integer memberId,
+        @PathVariable(name = "userId") Integer targetUserId,
         @Valid @RequestBody MemberPositionChangeRequest request,
-        @UserId Integer userId
+        @UserId Integer requesterId
     ) {
         ClubMember changedMember = clubMemberManagementService.changeMemberPosition(
-            clubId, memberId, userId, request
+            clubId, targetUserId, requesterId, request
         );
         return ResponseEntity.ok(ClubMemberResponse.from(changedMember));
     }
@@ -77,10 +77,10 @@ public class ClubMemberController implements ClubMemberApi {
     @Override
     public ResponseEntity<Void> removeMember(
         @PathVariable(name = "clubId") Integer clubId,
-        @PathVariable(name = "memberId") Integer memberId,
-        @UserId Integer userId
+        @PathVariable(name = "userId") Integer targetUserId,
+        @UserId Integer requesterId
     ) {
-        clubMemberManagementService.removeMember(clubId, memberId, userId);
+        clubMemberManagementService.removeMember(clubId, targetUserId, requesterId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -75,35 +75,20 @@ INSERT INTO club_apply_question (club_id, question, is_required)
 VALUES (1, '지원 동기를 입력해주세요.', TRUE),
        (1, '동아리에서 기대하는 점을 적어주세요.', FALSE);
 
--- 동아리 직책
-INSERT INTO club_position (club_id, name, club_position_group)
-VALUES (1, '회장', 'PRESIDENT'),
-       (2, '회장', 'PRESIDENT'),
-       (3, '회장', 'PRESIDENT'),
-       (4, '회장', 'PRESIDENT'),
-       (5, '회장', 'PRESIDENT'),
-       (6, '회장', 'PRESIDENT'),
-       (7, '회장', 'PRESIDENT'),
-       (8, '회장', 'PRESIDENT'),
-       (9, '회장', 'PRESIDENT'),
-       (10, '회장', 'PRESIDENT'),
-       (11, '회장', 'PRESIDENT'),
-       (12, '회장', 'PRESIDENT');
-
 -- 동아리 멤버
-INSERT INTO club_member (club_id, user_id, club_position_id, is_fee_paid)
-VALUES (1, 1, 1, true),
-       (2, 1, 2, true),
-       (3, 1, 3, true),
-       (4, 1, 4, true),
-       (5, 1, 5, true),
-       (6, 1, 6, true),
-       (7, 1, 7, true),
-       (8, 1, 8, true),
-       (9, 1, 9, true),
-       (10, 1, 10, true),
-       (11, 1, 11, true),
-       (12, 1, 12, true);
+INSERT INTO club_member (club_id, user_id, club_position, is_fee_paid)
+VALUES (1, 1, 'PRESIDENT', true),
+       (2, 1, 'PRESIDENT', true),
+       (3, 1, 'PRESIDENT', true),
+       (4, 1, 'PRESIDENT', true),
+       (5, 1, 'PRESIDENT', true),
+       (6, 1, 'PRESIDENT', true),
+       (7, 1, 'PRESIDENT', true),
+       (8, 1, 'PRESIDENT', true),
+       (9, 1, 'PRESIDENT', true),
+       (10, 1, 'PRESIDENT', true),
+       (11, 1, 'PRESIDENT', true),
+       (12, 1, 'PRESIDENT', true);
 
 INSERT INTO club_recruitment (club_id, start_date, end_date, content, image_url)
 VALUES (1, '2025-11-30', '2025-12-31',

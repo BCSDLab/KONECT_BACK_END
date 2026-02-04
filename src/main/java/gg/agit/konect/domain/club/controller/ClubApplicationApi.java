@@ -89,7 +89,6 @@ public interface ClubApplicationApi {
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
-        - NOT_FOUND_CLUB_POSITION (404): 동아리 직책을 찾을 수 없습니다.
         """)
     @PostMapping("/{clubId}/applications/{applicationId}/approve")
     ResponseEntity<Void> approveClubApplication(
