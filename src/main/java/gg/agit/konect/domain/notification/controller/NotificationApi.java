@@ -14,18 +14,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "(Normal) Notification: 푸시 알림", description = "푸시 알림 API")
+@Tag(name = "(Normal) Notification: 알림", description = "알림 API")
 @RequestMapping("/notifications")
 public interface NotificationApi {
 
-    @Operation(summary = "FCM 토큰을 등록한다.")
+    @Operation(summary = "알림 토큰을 등록한다.")
     @PostMapping("/tokens")
     ResponseEntity<Void> registerToken(
         @UserId Integer userId,
         @Valid @RequestBody NotificationTokenRegisterRequest request
     );
 
-    @Operation(summary = "FCM 토큰을 삭제한다.")
+    @Operation(summary = "알림 토큰을 삭제한다.")
     @DeleteMapping("/tokens")
     ResponseEntity<Void> deleteToken(
         @UserId Integer userId,

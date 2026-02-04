@@ -6,8 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 
 public record NotificationTokenRegisterRequest(
-    @NotEmpty(message = "푸시 토큰은 필수 입력입니다.")
-    @Schema(description = "푸시 디바이스 토큰", example = "ExpoPushToken[xxxx]", requiredMode = REQUIRED)
+    @NotEmpty(message = "알림 토큰은 필수 입력입니다.")
+    @Schema(description = "알림 디바이스 토큰", example = "ExpoPushToken[xxxx]", requiredMode = REQUIRED)
     String token
 ) {
 }
