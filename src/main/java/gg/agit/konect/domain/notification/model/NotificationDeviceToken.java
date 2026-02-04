@@ -24,14 +24,14 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(
-    name = "fcm_device_token",
+    name = "notification_device_token",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uq_fcm_device_token_token", columnNames = "token"),
-        @UniqueConstraint(name = "uq_fcm_device_token_user_device", columnNames = {"user_id, device_id"})
+        @UniqueConstraint(name = "uq_notification_device_token_token", columnNames = "token"),
+        @UniqueConstraint(name = "uq_notification_device_token_user_device", columnNames = {"user_id, device_id"})
     }
 )
 @NoArgsConstructor(access = PROTECTED)
-public class FcmDeviceToken extends BaseEntity {
+public class NotificationDeviceToken extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -53,7 +53,7 @@ public class FcmDeviceToken extends BaseEntity {
     private PlatformType platform;
 
     @Builder
-    private FcmDeviceToken(Integer id, User user, String token, String deviceId, PlatformType platform) {
+    private NotificationDeviceToken(Integer id, User user, String token, String deviceId, PlatformType platform) {
         this.id = id;
         this.user = user;
         this.token = token;
@@ -61,8 +61,8 @@ public class FcmDeviceToken extends BaseEntity {
         this.platform = platform;
     }
 
-    public static FcmDeviceToken of(User user, String token, String deviceId, PlatformType platform) {
-        return FcmDeviceToken.builder()
+    public static NotificationDeviceToken of(User user, String token, String deviceId, PlatformType platform) {
+        return NotificationDeviceToken.builder()
             .user(user)
             .token(token)
             .deviceId(deviceId)

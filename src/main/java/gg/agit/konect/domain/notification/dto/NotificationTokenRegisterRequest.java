@@ -7,9 +7,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-public record FcmTokenRegisterRequest(
-    @NotEmpty(message = "FCM 토큰은 필수 입력입니다.")
-    @Schema(description = "FCM 디바이스 토큰", example = "fcm_token_value", requiredMode = REQUIRED)
+public record NotificationTokenRegisterRequest(
+    @NotEmpty(message = "푸시 토큰은 필수 입력입니다.")
+    @Schema(description = "푸시 디바이스 토큰", example = "ExpoPushToken[xxxx]", requiredMode = REQUIRED)
     String token,
 
     @NotEmpty(message = "디바이스 식별자는 필수 입력입니다.")

@@ -7,7 +7,7 @@ import java.util.Map;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 
-public record FcmNotificationSendRequest(
+public record NotificationSendRequest(
     @NotEmpty(message = "알림 제목은 필수 입력입니다.")
     @Schema(description = "알림 제목", example = "새로운 알림이 도착했어요", requiredMode = REQUIRED)
     String title,

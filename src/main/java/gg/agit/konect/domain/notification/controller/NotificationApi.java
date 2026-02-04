@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import gg.agit.konect.domain.notification.dto.FcmNotificationSendRequest;
-import gg.agit.konect.domain.notification.dto.FcmTokenDeleteRequest;
-import gg.agit.konect.domain.notification.dto.FcmTokenRegisterRequest;
+import gg.agit.konect.domain.notification.dto.NotificationSendRequest;
+import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
+import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,20 +22,20 @@ public interface NotificationApi {
     @PostMapping("/tokens")
     ResponseEntity<Void> registerToken(
         @UserId Integer userId,
-        @Valid @RequestBody FcmTokenRegisterRequest request
+        @Valid @RequestBody NotificationTokenRegisterRequest request
     );
 
     @Operation(summary = "FCM 토큰을 삭제한다.")
     @DeleteMapping("/tokens")
     ResponseEntity<Void> deleteToken(
         @UserId Integer userId,
-        @Valid @RequestBody FcmTokenDeleteRequest request
+        @Valid @RequestBody NotificationTokenDeleteRequest request
     );
 
     @Operation(summary = "내 디바이스로 테스트 푸시를 전송한다.")
     @PostMapping("/send")
     ResponseEntity<Void> sendToMe(
         @UserId Integer userId,
-        @Valid @RequestBody FcmNotificationSendRequest request
+        @Valid @RequestBody NotificationSendRequest request
     );
 }

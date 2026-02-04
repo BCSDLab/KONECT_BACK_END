@@ -41,7 +41,7 @@ public enum ApiResponseCode {
     INVALID_FILE_CONTENT_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 타입입니다."),
     INVALID_FILE_SIZE(HttpStatus.BAD_REQUEST, "파일 크기가 제한을 초과했습니다."),
     UNSUPPORTED_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth Provider 입니다."),
-    INVALID_FCM_TOKEN(HttpStatus.BAD_REQUEST, "푸시 토큰이 유효하지 않습니다."),
+    INVALID_NOTIFICATION_TOKEN(HttpStatus.BAD_REQUEST, "푸시 알림 토큰이 유효하지 않습니다."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
@@ -105,7 +105,7 @@ public enum ApiResponseCode {
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
     FAILED_UPLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
-    FAILED_SEND_FCM(HttpStatus.INTERNAL_SERVER_ERROR, "푸시 전송에 실패했습니다."),
+    FAILED_SEND_NOTIFICATION(HttpStatus.INTERNAL_SERVER_ERROR, "알림 전송에 실패했습니다."),
     UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 예기치 못한 에러가 발생했습니다.");
 
     private final HttpStatus httpStatus;

@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.notification.service;
 
-import static gg.agit.konect.global.code.ApiResponseCode.FAILED_SEND_FCM;
-import static gg.agit.konect.global.code.ApiResponseCode.INVALID_FCM_TOKEN;
+import static gg.agit.konect.global.code.ApiResponseCode.FAILED_SEND_NOTIFICATION;
+import static gg.agit.konect.global.code.ApiResponseCode.INVALID_NOTIFICATION_TOKEN;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,11 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import gg.agit.konect.domain.notification.dto.FcmNotificationSendRequest;
-import gg.agit.konect.domain.notification.dto.FcmTokenDeleteRequest;
-import gg.agit.konect.domain.notification.dto.FcmTokenRegisterRequest;
-import gg.agit.konect.domain.notification.model.FcmDeviceToken;
-import gg.agit.konect.domain.notification.repository.FcmDeviceTokenRepository;
+import gg.agit.konect.domain.notification.dto.NotificationSendRequest;
+import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
+import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
+import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
+import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -37,38 +37,38 @@ public class NotificationService {
         Pattern.compile("^(ExponentPushToken|ExpoPushToken)\\[[^\\]]+\\]$");
 
     private final UserRepository userRepository;
-    private final FcmDeviceTokenRepository fcmDeviceTokenRepository;
+    private final NotificationDeviceTokenRepository notificationDeviceTokenRepository;
     private final RestTemplate restTemplate;
 
     @Transactional
-    public void registerToken(Integer userId, FcmTokenRegisterRequest request) {
+    public void registerToken(Integer userId, NotificationTokenRegisterRequest request) {
         User user = userRepository.getById(userId);
 
         if (!EXPO_PUSH_TOKEN_PATTERN.matcher(request.token()).matches()) {
-            throw CustomException.of(INVALID_FCM_TOKEN);
+            throw CustomException.of(INVALID_NOTIFICATION_TOKEN);
         }
 
-        fcmDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
+        notificationDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
             .ifPresentOrElse(
                 token -> {
                     token.updateUser(user);
                     token.updateToken(request.token());
                 },
-                () -> fcmDeviceTokenRepository.save(
-                    FcmDeviceToken.of(user, request.token(), request.deviceId(), request.platform())
+                () -> notificationDeviceTokenRepository.save(
+                    NotificationDeviceToken.of(user, request.token(), request.deviceId(), request.platform())
                 )
             );
     }
 
     @Transactional
-    public void deleteToken(Integer userId, FcmTokenDeleteRequest request) {
-        fcmDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
-            .ifPresent(fcmDeviceTokenRepository::delete);
+    public void deleteToken(Integer userId, NotificationTokenDeleteRequest request) {
+        notificationDeviceTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
+            .ifPresent(notificationDeviceTokenRepository::delete);
     }
 
-    public void sendToMe(Integer userId, FcmNotificationSendRequest request) {
-        List<String> tokens = fcmDeviceTokenRepository.findByUserId(userId).stream()
-            .map(FcmDeviceToken::getToken)
+    public void sendToMe(Integer userId, NotificationSendRequest request) {
+        List<String> tokens = notificationDeviceTokenRepository.findByUserId(userId).stream()
+            .map(NotificationDeviceToken::getToken)
             .toList();
 
         if (tokens.isEmpty()) {
@@ -94,7 +94,7 @@ public class NotificationService {
 
         ExpoPushResponse body = response.getBody();
         if (!response.getStatusCode().is2xxSuccessful() || body == null || body.hasError()) {
-            throw CustomException.of(FAILED_SEND_FCM);
+            throw CustomException.of(FAILED_SEND_NOTIFICATION);
         }
     }
 
