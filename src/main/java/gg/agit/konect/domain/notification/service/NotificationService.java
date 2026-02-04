@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -53,23 +54,19 @@ public class NotificationService {
     @Transactional
     public void registerToken(Integer userId, NotificationTokenRegisterRequest request) {
         User user = userRepository.getById(userId);
+        String token = request.token();
+        validateExpoToken(token);
 
-        if (!EXPO_PUSH_TOKEN_PATTERN.matcher(request.token()).matches()) {
-            throw CustomException.of(INVALID_NOTIFICATION_TOKEN);
+        try {
+            notificationDeviceTokenRepository.save(NotificationDeviceToken.of(user, token));
+        } catch (DataIntegrityViolationException e) {
+            Integer ownerId = notificationDeviceTokenRepository.findUserIdByToken(token)
+                .orElseThrow(() -> e);
+
+            if (!ownerId.equals(userId)) {
+                throw CustomException.of(DUPLICATE_NOTIFICATION_TOKEN);
+            }
         }
-
-        if (notificationDeviceTokenRepository.findByToken(request.token()).isPresent()
-            && notificationDeviceTokenRepository.findByUserIdAndToken(userId, request.token()).isEmpty()) {
-            throw CustomException.of(DUPLICATE_NOTIFICATION_TOKEN);
-        }
-
-        notificationDeviceTokenRepository.findByToken(request.token())
-            .ifPresentOrElse(
-                token -> token.updateUser(user),
-                () -> notificationDeviceTokenRepository.save(
-                    NotificationDeviceToken.of(user, request.token())
-                )
-            );
     }
 
     @Transactional
@@ -132,6 +129,12 @@ public class NotificationService {
                 return true;
             }
             return data.stream().anyMatch(ticket -> !"ok".equalsIgnoreCase(ticket.status()));
+        }
+    }
+
+    private void validateExpoToken(String token) {
+        if (!EXPO_PUSH_TOKEN_PATTERN.matcher(token).matches()) {
+            throw CustomException.of(INVALID_NOTIFICATION_TOKEN);
         }
     }
 
