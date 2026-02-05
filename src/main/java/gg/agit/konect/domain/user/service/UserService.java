@@ -82,11 +82,15 @@ public class UserService {
 
         validateStudentNumberDuplicationOnSignup(university.getId(), request.studentNumber());
 
+        String phoneNumber = resolvePhoneNumber(request.phoneNumber(), tempUser.getPhoneNumber());
+        validatePhoneNumberDuplicationOnSignup(phoneNumber);
+
         User newUser = User.of(
             university,
             tempUser,
             request.name(),
             request.studentNumber(),
+            phoneNumber,
             request.isMarketingAgreement(),
             "https://stage-static.koreatech.in/konect/User_02.png"
         );
@@ -177,6 +181,25 @@ public class UserService {
 
         if (exists) {
             throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
+        }
+    }
+
+    private String resolvePhoneNumber(String requestPhoneNumber, String oauthPhoneNumber) {
+        if (StringUtils.hasText(requestPhoneNumber)) {
+            return requestPhoneNumber;
+        }
+        return oauthPhoneNumber;
+    }
+
+    private void validatePhoneNumberDuplicationOnSignup(String phoneNumber) {
+        if (!StringUtils.hasText(phoneNumber)) {
+            return;
+        }
+
+        boolean exists = userRepository.existsByPhoneNumber(phoneNumber);
+
+        if (exists) {
+            throw CustomException.of(ApiResponseCode.DUPLICATE_PHONE_NUMBER);
         }
     }
 

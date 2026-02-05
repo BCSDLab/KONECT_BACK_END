@@ -50,11 +50,19 @@ public class UnRegisteredUser extends BaseEntity {
     @Column(name = "provider_id", length = 255)
     private String providerId;
 
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
     @Builder
-    private UnRegisteredUser(Integer id, String email, Provider provider, String providerId) {
+    private UnRegisteredUser(Integer id, String email, Provider provider, String providerId, String phoneNumber) {
         this.id = id;
         this.email = email;
         this.provider = provider;
         this.providerId = providerId;
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void updatePhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

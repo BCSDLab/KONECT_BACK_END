@@ -119,6 +119,7 @@ public class User extends BaseEntity {
         UnRegisteredUser tempUser,
         String name,
         String studentNumber,
+        String phoneNumber,
         Boolean isMarketingAgreement,
         String imageUrl
     ) {
@@ -126,6 +127,7 @@ public class User extends BaseEntity {
             .university(university)
             .email(tempUser.getEmail())
             .name(name)
+            .phoneNumber(phoneNumber)
             .studentNumber(studentNumber)
             .provider(tempUser.getProvider())
             .providerId(tempUser.getProviderId())

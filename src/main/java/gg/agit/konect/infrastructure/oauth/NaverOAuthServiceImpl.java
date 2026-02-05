@@ -16,6 +16,7 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.auth.oauth.SocialOAuthService;
+import gg.agit.konect.global.util.PhoneNumberUtils;
 import lombok.RequiredArgsConstructor;
 
 @Service("naver")
@@ -33,6 +34,7 @@ public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements S
 
         Map<String, Object> response = oAuth2User.getAttribute("response");
         String email = (String)response.get("email");
+        String phoneNumber = PhoneNumberUtils.format((String)response.get("mobile"));
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
@@ -50,9 +52,15 @@ public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements S
             UnRegisteredUser newUser = UnRegisteredUser.builder()
                 .email(email)
                 .provider(provider)
+                .phoneNumber(phoneNumber)
                 .build();
 
             unRegisteredUserRepository.save(newUser);
+        } else {
+            UnRegisteredUser existingUser = unregistered.get();
+            if (phoneNumber != null && existingUser.getPhoneNumber() == null) {
+                existingUser.updatePhoneNumber(phoneNumber);
+            }
         }
 
         return oAuth2User;

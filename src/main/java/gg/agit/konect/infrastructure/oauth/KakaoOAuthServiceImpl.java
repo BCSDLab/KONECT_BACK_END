@@ -16,6 +16,7 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.auth.oauth.SocialOAuthService;
+import gg.agit.konect.global.util.PhoneNumberUtils;
 import lombok.RequiredArgsConstructor;
 
 @Service("kakao")
@@ -33,6 +34,7 @@ public class KakaoOAuthServiceImpl extends DefaultOAuth2UserService implements S
 
         Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
         String email = (String)kakaoAccount.get("email");
+        String phoneNumber = PhoneNumberUtils.format((String)kakaoAccount.get("phone_number"));
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
@@ -49,9 +51,15 @@ public class KakaoOAuthServiceImpl extends DefaultOAuth2UserService implements S
             UnRegisteredUser newUser = UnRegisteredUser.builder()
                 .email(email)
                 .provider(provider)
+                .phoneNumber(phoneNumber)
                 .build();
 
             unRegisteredUserRepository.save(newUser);
+        } else {
+            UnRegisteredUser existingUser = unregistered.get();
+            if (phoneNumber != null && existingUser.getPhoneNumber() == null) {
+                existingUser.updatePhoneNumber(phoneNumber);
+            }
         }
 
         return oAuth2User;
