@@ -71,6 +71,28 @@ jobs:
           target: ${{ secrets.WORK_DIR }}
           rm: false
 
+      - name: Deploy monitoring stack
+        uses: appleboy/ssh-action@v0.1.8
+        env:
+          WORK_DIR: ${{ secrets.WORK_DIR }}
+          MONITORING_ENV: ${{ secrets.MONITORING_ENV }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          envs: WORK_DIR,MONITORING_ENV
+          script: |
+            set -euo pipefail
+            : "${WORK_DIR:?}"
+            : "${MONITORING_ENV:?}"
+            cd "${WORK_DIR}/monitoring"
+            umask 077
+            printf '%s' "${MONITORING_ENV}" > .env
+            chmod 600 .env
+            docker compose up -d
+            docker compose ps
+
       - name: Read deploy script
         id: deploy_script
         run: |
