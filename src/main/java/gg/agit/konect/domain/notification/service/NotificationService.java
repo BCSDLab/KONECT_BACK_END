@@ -78,6 +78,11 @@ public class NotificationService {
             Integer ownerId = notificationDeviceTokenRepository.findUserIdByToken(token)
                 .orElse(null);
             if (ownerId == null) {
+                log.warn(
+                    "Token uniqueness violation without owner: userId={}, token={}",
+                    userId,
+                    token
+                );
                 throw e;
             }
             if (!ownerId.equals(userId)) {
