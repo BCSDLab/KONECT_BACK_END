@@ -92,7 +92,6 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
                 entity,
                 Map.class
             );
-            log.info("Google People API 응답: {}", response.getBody());
 
             response.getBody();
 

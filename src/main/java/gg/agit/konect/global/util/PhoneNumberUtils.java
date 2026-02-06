@@ -11,6 +11,11 @@ public final class PhoneNumberUtils {
         "^0(1[0-9])(\\d{3,4})(\\d{4})$"
     );
     private static final String FORMATTED_PHONE_PATTERN = "^01[0-9]-\\d{3,4}-\\d{4}$";
+    private static final int MIN_LENGTH_WITH_COUNTRY_CODE = 10;
+    private static final int COUNTRY_CODE_LENGTH = 2;
+    private static final int GROUP_PREFIX = 1;
+    private static final int GROUP_MIDDLE = 2;
+    private static final int GROUP_LAST = 3;
 
     private PhoneNumberUtils() {
     }
@@ -22,8 +27,8 @@ public final class PhoneNumberUtils {
 
         String cleaned = phoneNumber.replaceAll("\\D", "");
 
-        if (cleaned.startsWith("82") && cleaned.length() > 10) {
-            cleaned = "0" + cleaned.substring(2);
+        if (cleaned.startsWith("82") && cleaned.length() > MIN_LENGTH_WITH_COUNTRY_CODE) {
+            cleaned = "0" + cleaned.substring(COUNTRY_CODE_LENGTH);
         }
 
         if (!cleaned.startsWith("0")) {
@@ -32,9 +37,9 @@ public final class PhoneNumberUtils {
 
         Matcher matcher = PHONE_PATTERN.matcher(cleaned);
         if (matcher.matches()) {
-            String prefix = matcher.group(1);
-            String middle = matcher.group(2);
-            String last = matcher.group(3);
+            String prefix = matcher.group(GROUP_PREFIX);
+            String middle = matcher.group(GROUP_MIDDLE);
+            String last = matcher.group(GROUP_LAST);
             return String.format("0%s-%s-%s", prefix, middle, last);
         }
 
