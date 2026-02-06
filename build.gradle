@@ -74,6 +74,14 @@ clean {
     delete file('src/main/generated')
 }
 
+bootJar {
+	archiveFileName = 'KONECT_API.jar'
+}
+
+jar {
+    enabled = false
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
