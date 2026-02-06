@@ -9,5 +9,5 @@ storage:
 
 slack:
   webhooks:
-    error: ${SLACK_WEBHOOK_ERROR:}
-    event: ${SLACK_WEBHOOK_EVENT:}
+    error: ${SLACK_WEBHOOK_ERROR}
+    event: ${SLACK_WEBHOOK_EVENT}
