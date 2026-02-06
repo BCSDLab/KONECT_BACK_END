@@ -113,7 +113,7 @@ public class NotificationService {
 
             String truncatedBody = buildPreview(messageContent);
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats");
+            data.put("path", "chats/" + roomId);
 
             List<ExpoPushMessage> messages = tokens.stream()
                 .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
