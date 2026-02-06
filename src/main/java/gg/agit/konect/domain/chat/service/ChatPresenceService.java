@@ -50,7 +50,7 @@ public class ChatPresenceService {
         }
 
         String key = presenceKey(roomId, userId);
-        return Boolean.TRUE.equals(redis.opsForValue().get(key) != null);
+        return redis.opsForValue().get(key) != null;
     }
 
     /**
