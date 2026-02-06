@@ -40,6 +40,7 @@ out/
 *adminsdk.json
 
 logs
+/monitoring/.env
 
 .env*
 !.env.example
