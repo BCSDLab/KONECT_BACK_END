@@ -41,4 +41,3 @@ application.yml
 *adminsdk.json
 
 logs
-/monitoring/.env
