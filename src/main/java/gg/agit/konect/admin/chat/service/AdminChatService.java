@@ -22,8 +22,6 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
-import gg.agit.konect.domain.chat.service.ChatPresenceService;
-import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
@@ -38,8 +36,6 @@ public class AdminChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
-    private final ChatPresenceService chatPresenceService;
-    private final NotificationService notificationService;
 
     @Transactional
     public ChatRoomResponse createOrGetChatRoom(Integer userId, Integer adminId) {
@@ -93,13 +89,10 @@ public class AdminChatService {
     public AdminChatMessagesResponse getChatRoomMessages(
         Integer chatRoomId,
         Integer page,
-        Integer limit,
-        Integer adminId
+        Integer limit
     ) {
         ChatRoom chatRoom = chatRoomRepository.getById(chatRoomId);
         validateAdminChatRoom(chatRoom);
-
-        chatPresenceService.recordPresence(chatRoomId, adminId);
 
         List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessagesForAdmin(
             chatRoomId, UserRole.ADMIN
@@ -127,13 +120,6 @@ public class AdminChatService {
             ChatMessage.of(chatRoom, admin, normalUser, request.content())
         );
         chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-
-        notificationService.sendChatNotification(
-            normalUser.getId(),
-            chatRoomId,
-            admin.getName(),
-            request.content()
-        );
 
         return InnerAdminChatMessageResponse.from(chatMessage);
     }

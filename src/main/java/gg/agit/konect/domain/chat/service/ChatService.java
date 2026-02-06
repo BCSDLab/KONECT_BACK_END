@@ -25,7 +25,6 @@ import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +38,6 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final ClubMemberRepository clubMemberRepository;
-    private final ChatPresenceService chatPresenceService;
-    private final NotificationService notificationService;
 
     @Transactional
     public ChatRoomResponse createOrGetChatRoom(Integer userId, ChatRoomCreateRequest request) {
@@ -92,8 +89,6 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.getById(roomId);
         chatRoom.validateIsParticipant(userId);
 
-        chatPresenceService.recordPresence(roomId, userId);
-
         List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessagesByChatRoomIdAndUserId(
             roomId, userId
         );
@@ -116,9 +111,6 @@ public class ChatService {
             ChatMessage.of(chatRoom, sender, receiver, request.content())
         );
         chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-
-        notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
-
         return ChatMessageResponse.from(chatMessage, userId);
     }
 }
