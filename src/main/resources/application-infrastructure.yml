@@ -1,0 +1,13 @@
+storage:
+  s3:
+    bucket: ${STORAGE_S3_BUCKET}
+    region: ${STORAGE_S3_REGION}
+    key-prefix: konect/
+    max-upload-bytes: 10485760
+  cdn:
+    base-url: ${STORAGE_CDN_BASE_URL}
+
+slack:
+  webhooks:
+    error: ${SLACK_WEBHOOK_ERROR}
+    event: ${SLACK_WEBHOOK_EVENT}

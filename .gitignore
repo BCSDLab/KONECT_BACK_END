@@ -37,8 +37,10 @@ out/
 .vscode/
 .DS_STORE
 
-application.yml
 *adminsdk.json
 
 logs
 /monitoring/.env
+
+.env*
+!.env.example
