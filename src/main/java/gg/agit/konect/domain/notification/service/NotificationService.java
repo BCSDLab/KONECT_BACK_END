@@ -8,13 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +27,10 @@ import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepo
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @Transactional(readOnly = true)
 public class NotificationService {
 
@@ -38,7 +39,6 @@ public class NotificationService {
         Pattern.compile("^(ExponentPushToken|ExpoPushToken)\\[[^\\]]+\\]$");
     private static final int CHAT_MESSAGE_PREVIEW_MAX_LENGTH = 30;
     private static final String CHAT_MESSAGE_PREVIEW_SUFFIX = "...";
-    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final UserRepository userRepository;
     private final NotificationDeviceTokenRepository notificationDeviceTokenRepository;
@@ -119,12 +119,45 @@ public class NotificationService {
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
             HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
-            restTemplate.exchange(
+            ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
                 EXPO_PUSH_URL,
                 HttpMethod.POST,
                 entity,
                 ExpoPushResponse.class
             );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error(
+                    "Expo push response not successful: roomId={}, receiverId={}, status={}",
+                    roomId,
+                    receiverId,
+                    response.getStatusCode()
+                );
+                return;
+            }
+
+            ExpoPushResponse body = response.getBody();
+            if (body == null || body.data == null) {
+                log.error("Expo push response body missing: roomId={}, receiverId={}", roomId, receiverId);
+                return;
+            }
+
+            for (int i = 0; i < body.data.size(); i += 1) {
+                ExpoPushTicket ticket = body.data.get(i);
+                if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
+                    continue;
+                }
+                String token = i < tokens.size() ? tokens.get(i) : "unknown";
+                log.error(
+                    "Expo push failed: roomId={}, receiverId={}, token={}, status={}, message={}, details={}",
+                    roomId,
+                    receiverId,
+                    token,
+                    ticket.status(),
+                    ticket.message(),
+                    ticket.details()
+                );
+            }
 
             log.debug(
                 "Chat notification sent: roomId={}, receiverId={}, tokenCount={}",
@@ -166,12 +199,6 @@ public class NotificationService {
     }
 
     private record ExpoPushResponse(List<ExpoPushTicket> data) {
-        boolean hasError() {
-            if (data == null) {
-                return true;
-            }
-            return data.stream().anyMatch(ticket -> !"ok".equalsIgnoreCase(ticket.status()));
-        }
     }
 
     private void validateExpoToken(String token) {
