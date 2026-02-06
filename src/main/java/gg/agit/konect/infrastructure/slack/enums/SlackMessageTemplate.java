@@ -17,7 +17,8 @@ public enum SlackMessageTemplate {
     ),
     INQUIRY(
         """
-        %s
+        *:incoming_envelope: 사용자로부터 문의가 도착했습니다.*
+        > %s
         """
     ),
     ;
