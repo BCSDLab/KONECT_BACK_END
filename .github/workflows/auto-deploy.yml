@@ -16,6 +16,7 @@ jobs:
           submodules: recursive
           token: ${{ secrets.SUBMODULE_TOKEN }}
 
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -70,17 +71,6 @@ jobs:
           target: ${{ secrets.WORK_DIR }}
           rm: false
 
-      - name: Transfer monitoring configs to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          source: "monitoring"
-          target: ${{ secrets.WORK_DIR }}
-          rm: false
-
       - name: Read deploy script
         id: deploy_script
         run: |
@@ -101,37 +91,3 @@ jobs:
             bash -s <<'__SCRIPT__'
             ${{ steps.deploy_script.outputs.script }}
             __SCRIPT__
-
-      - name: Deploy monitoring stack
-        uses: appleboy/ssh-action@v0.1.8
-        env:
-          WORK_DIR: ${{ secrets.WORK_DIR }}
-          MONITORING_ENV: ${{ secrets.MONITORING_ENV }}
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          envs: WORK_DIR,MONITORING_ENV
-          script: |
-            set -euo pipefail
-            : "${WORK_DIR:?}"
-            : "${MONITORING_ENV:?}"
-            cd "${WORK_DIR}/monitoring"
-            umask 077
-            printf '%s' "${MONITORING_ENV}" > .env
-            chmod 600 .env
-            if ! docker volume inspect monitoring_prometheus-data >/dev/null 2>&1; then
-              docker volume create monitoring_prometheus-data
-            fi
-            if ! docker volume inspect monitoring_grafana-data >/dev/null 2>&1; then
-              docker volume create monitoring_grafana-data
-            fi
-            if ! docker volume inspect monitoring_loki-data >/dev/null 2>&1; then
-              docker volume create monitoring_loki-data
-            fi
-            if ! docker volume inspect monitoring_promtail-positions >/dev/null 2>&1; then
-              docker volume create monitoring_promtail-positions
-            fi
-            docker compose up -d
-            docker compose ps

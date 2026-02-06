@@ -63,9 +63,6 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.41.14')
     implementation 'software.amazon.awssdk:s3'
 
-    // monitoring
-    implementation 'io.micrometer:micrometer-registry-prometheus'
-
     // notification
     implementation 'com.google.firebase:firebase-admin:9.2.0'
 
