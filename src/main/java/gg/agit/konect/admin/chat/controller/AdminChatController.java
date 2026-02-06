@@ -49,7 +49,7 @@ public class AdminChatController implements AdminChatApi {
         @UserId Integer adminId
     ) {
         AdminChatMessagesResponse response = adminChatService.getChatRoomMessages(
-            chatRoomId, page, limit
+            chatRoomId, page, limit, adminId
         );
 
         return ResponseEntity.ok(response);
