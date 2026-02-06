@@ -44,6 +44,7 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         String email = oAuth2User.getAttribute("email");
+        String providerId = oAuth2User.getAttribute("sub");
         String phoneNumber = fetchPhoneNumberFromPeopleApi(userRequest);
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
@@ -62,6 +63,7 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
             UnRegisteredUser newUser = UnRegisteredUser.builder()
                 .email(email)
                 .provider(provider)
+                .providerId(providerId)
                 .phoneNumber(phoneNumber)
                 .build();
 
@@ -90,6 +92,7 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
                 entity,
                 Map.class
             );
+            log.info("Google People API 응답: {}", response.getBody());
 
             response.getBody();
 
@@ -104,7 +107,7 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
             String rawPhoneNumber = (String)phoneNumbers.get(0).get("value");
             return PhoneNumberUtils.format(rawPhoneNumber);
         } catch (Exception e) {
-            log.warn("Google People API 전화번호 조회 실패", e);
+            log.error("Google People API 전화번호 조회 실패", e);
             return null;
         }
     }
