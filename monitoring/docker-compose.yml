@@ -1,6 +1,9 @@
 services:
   prometheus:
     image: prom/prometheus:v3.5.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
     ports:
       - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     extra_hosts:
