@@ -1,10 +1,8 @@
 package gg.agit.konect.infrastructure.slack.enums;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum SlackMessageTemplate {
 
     USER_REGISTER(
@@ -17,9 +15,19 @@ public enum SlackMessageTemplate {
         `%s님이 탈퇴하셨습니다.`
         """
     ),
+    INQUIRY(
+        """
+        *:incoming_envelope: 사용자로부터 문의가 도착했습니다.*
+        > %s
+        """
+    ),
     ;
 
     private final String template;
+
+    SlackMessageTemplate(String template) {
+        this.template = template;
+    }
 
     public String format(Object... args) {
         return String.format(template, args);

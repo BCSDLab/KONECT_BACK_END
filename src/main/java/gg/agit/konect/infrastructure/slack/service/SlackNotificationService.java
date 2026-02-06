@@ -1,5 +1,6 @@
 package gg.agit.konect.infrastructure.slack.service;
 
+import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.INQUIRY;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_REGISTER;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_WITHDRAWAL;
 
@@ -23,6 +24,11 @@ public class SlackNotificationService {
 
     public void notifyUserRegister(String email) {
         String message = USER_REGISTER.format(email);
+        slackClient.sendMessage(message, slackProperties.webhooks().event());
+    }
+
+    public void notifyInquiry(String content) {
+        String message = INQUIRY.format(content);
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }
 }
