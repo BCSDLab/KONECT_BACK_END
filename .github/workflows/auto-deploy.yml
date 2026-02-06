@@ -121,9 +121,17 @@ jobs:
             umask 077
             printf '%s' "${MONITORING_ENV}" > .env
             chmod 600 .env
-            docker volume create monitoring_prometheus-data >/dev/null
-            docker volume create monitoring_grafana-data >/dev/null
-            docker volume create monitoring_loki-data >/dev/null
-            docker volume create monitoring_promtail-positions >/dev/null
+            if ! docker volume inspect monitoring_prometheus-data >/dev/null 2>&1; then
+              docker volume create monitoring_prometheus-data
+            fi
+            if ! docker volume inspect monitoring_grafana-data >/dev/null 2>&1; then
+              docker volume create monitoring_grafana-data
+            fi
+            if ! docker volume inspect monitoring_loki-data >/dev/null 2>&1; then
+              docker volume create monitoring_loki-data
+            fi
+            if ! docker volume inspect monitoring_promtail-positions >/dev/null 2>&1; then
+              docker volume create monitoring_promtail-positions
+            fi
             docker compose up -d
             docker compose ps
