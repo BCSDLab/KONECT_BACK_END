@@ -98,7 +98,7 @@ public class NotificationService {
                 Math.min(CHAT_MESSAGE_PREVIEW_MAX_LENGTH, messageContent.length())
             );
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/rooms/" + roomId);
+            data.put("path", "chats");
 
             List<ExpoPushMessage> messages = tokens.stream()
                 .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
