@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,17 +28,17 @@ import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepo
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
-@Slf4j
 @Transactional(readOnly = true)
 public class NotificationService {
 
     private static final String EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
     private static final Pattern EXPO_PUSH_TOKEN_PATTERN =
         Pattern.compile("^(ExponentPushToken|ExpoPushToken)\\[[^\\]]+\\]$");
-    private static final int CHAT_MESSAGE_PREVIEW_MAX_LENGTH = 50;
+    private static final int CHAT_MESSAGE_PREVIEW_MAX_LENGTH = 30;
+    private static final String CHAT_MESSAGE_PREVIEW_SUFFIX = "...";
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final UserRepository userRepository;
     private final NotificationDeviceTokenRepository notificationDeviceTokenRepository;
@@ -104,10 +106,7 @@ public class NotificationService {
                 return;
             }
 
-            String truncatedBody = messageContent.substring(
-                0,
-                Math.min(CHAT_MESSAGE_PREVIEW_MAX_LENGTH, messageContent.length())
-            );
+            String truncatedBody = buildPreview(messageContent);
             Map<String, Object> data = new HashMap<>();
             data.put("path", "chats");
 
@@ -147,6 +146,20 @@ public class NotificationService {
             payload.put("path", path);
         }
         return payload;
+    }
+
+    private String buildPreview(String messageContent) {
+        if (messageContent == null) {
+            return "";
+        }
+
+        int codePointCount = messageContent.codePointCount(0, messageContent.length());
+        if (codePointCount <= CHAT_MESSAGE_PREVIEW_MAX_LENGTH) {
+            return messageContent;
+        }
+
+        int endIndex = messageContent.offsetByCodePoints(0, CHAT_MESSAGE_PREVIEW_MAX_LENGTH);
+        return messageContent.substring(0, endIndex) + CHAT_MESSAGE_PREVIEW_SUFFIX;
     }
 
     private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data) {
