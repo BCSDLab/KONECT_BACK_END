@@ -93,8 +93,6 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
                 Map.class
             );
 
-            response.getBody();
-
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> phoneNumbers =
                 (List<Map<String, Object>>)response.getBody().get("phoneNumbers");
@@ -103,11 +101,23 @@ public class GoogleOAuthServiceImpl extends DefaultOAuth2UserService implements 
                 return null;
             }
 
-            String rawPhoneNumber = (String)phoneNumbers.get(0).get("value");
+            String rawPhoneNumber = findPrimaryPhoneNumber(phoneNumbers);
             return PhoneNumberUtils.format(rawPhoneNumber);
         } catch (Exception e) {
             log.error("Google People API 전화번호 조회 실패", e);
             return null;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String findPrimaryPhoneNumber(List<Map<String, Object>> phoneNumbers) {
+        return phoneNumbers.stream()
+            .filter(phone -> {
+                Map<String, Object> metadata = (Map<String, Object>)phone.get("metadata");
+                return metadata != null && Boolean.TRUE.equals(metadata.get("primary"));
+            })
+            .findFirst()
+            .map(phone -> (String)phone.get("value"))
+            .orElse((String)phoneNumbers.get(0).get("value"));
     }
 }
