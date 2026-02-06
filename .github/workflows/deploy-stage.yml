@@ -53,10 +53,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/konect_back_end
+          images: soundbar91/konect-stage
           tags: |
-            type=raw,value=stage
-            type=sha,prefix=stage-
+            type=raw,value=latest
+            type=sha,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
