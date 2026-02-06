@@ -61,12 +61,23 @@ public class NotificationService {
         String token = request.token();
         validateExpoToken(token);
 
+        Integer existingOwnerId = notificationDeviceTokenRepository.findUserIdByToken(token)
+            .orElse(null);
+        if (existingOwnerId != null) {
+            if (!existingOwnerId.equals(userId)) {
+                throw CustomException.of(DUPLICATE_NOTIFICATION_TOKEN);
+            }
+            return;
+        }
+
         try {
             notificationDeviceTokenRepository.save(NotificationDeviceToken.of(user, token));
         } catch (DataIntegrityViolationException e) {
             Integer ownerId = notificationDeviceTokenRepository.findUserIdByToken(token)
-                .orElseThrow(() -> e);
-
+                .orElse(null);
+            if (ownerId == null) {
+                throw e;
+            }
             if (!ownerId.equals(userId)) {
                 throw CustomException.of(DUPLICATE_NOTIFICATION_TOKEN);
             }
