@@ -9,9 +9,11 @@ import static lombok.AccessLevel.PROTECTED;
 import java.time.LocalDateTime;
 
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.global.encryption.EncryptedStringConverter;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -33,7 +35,8 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
-    @Column(name = "last_message_content", length = 1000)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "last_message_content", columnDefinition = "TEXT")
     private String lastMessageContent;
 
     @Column(name = "last_message_sent_at")

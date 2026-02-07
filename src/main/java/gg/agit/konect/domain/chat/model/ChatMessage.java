@@ -6,8 +6,10 @@ import static java.lang.Boolean.FALSE;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.global.encryption.EncryptedStringConverter;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -31,7 +33,8 @@ public class ChatMessage extends BaseEntity {
     private Integer id;
 
     @NotNull
-    @Column(name = "content", nullable = false, length = 1000)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "is_read", nullable = false)
