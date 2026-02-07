@@ -11,4 +11,5 @@ import lombok.Getter;
 public class EncryptionProperties {
 
     private String chatKey;
+    private boolean migrationEnabled;
 }
