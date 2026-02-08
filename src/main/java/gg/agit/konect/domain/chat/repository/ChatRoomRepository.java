@@ -3,6 +3,8 @@ package gg.agit.konect.domain.chat.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,8 @@ import gg.agit.konect.domain.user.enums.UserRole;
 public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
 
     ChatRoom save(ChatRoom chatRoom);
+
+    Page<ChatRoom> findAll(Pageable pageable);
 
     @Query("""
         SELECT DISTINCT cr

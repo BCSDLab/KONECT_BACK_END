@@ -4,11 +4,12 @@ import java.util.List;
 
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.chat.model.ChatMessage;
@@ -31,6 +32,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     public void run(org.springframework.boot.ApplicationArguments args) throws Exception {
@@ -57,8 +59,8 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
 
         while (true) {
             Pageable pageable = PageRequest.of(page, BATCH_SIZE);
-            List<ChatMessage> messages = chatMessageRepository.findByChatRoomId(0, pageable)
-                .getContent();
+            Page<ChatMessage> messagesPage = chatMessageRepository.findAll(pageable);
+            List<ChatMessage> messages = messagesPage.getContent();
 
             if (messages.isEmpty()) {
                 break;
@@ -74,7 +76,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
                 }
             }
 
-            if (messages.size() < BATCH_SIZE) {
+            if (messagesPage.isLast()) {
                 break;
             }
 
@@ -95,22 +97,14 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         int page = 0;
         while (true) {
             Pageable pageable = PageRequest.of(page, BATCH_SIZE);
-            List<ChatRoom> chatRooms = chatRoomRepository.findAllAdminChatRooms(null);
+            Page<ChatRoom> chatRoomsPage = chatRoomRepository.findAll(pageable);
+            List<ChatRoom> chatRooms = chatRoomsPage.getContent();
 
             if (chatRooms.isEmpty()) {
                 break;
             }
 
-            int start = page * BATCH_SIZE;
-            int end = Math.min(start + BATCH_SIZE, chatRooms.size());
-
-            if (start >= chatRooms.size()) {
-                break;
-            }
-
-            List<ChatRoom> batch = chatRooms.subList(start, end);
-
-            for (ChatRoom chatRoom : batch) {
+            for (ChatRoom chatRoom : chatRooms) {
                 processedCount++;
                 if (StringUtils.hasText(chatRoom.getLastMessageContent())
                     && isPlaintext(chatRoom.getLastMessageContent())) {
@@ -119,6 +113,10 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
                 } else {
                     skippedCount++;
                 }
+            }
+
+            if (chatRoomsPage.isLast()) {
+                break;
             }
 
             page++;
@@ -141,33 +139,35 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         }
     }
 
-    @Transactional
     private void encryptChatMessage(ChatMessage message) {
-        try {
-            String plaintext = message.getContent();
-            String encrypted = encryptionUtil.encrypt(plaintext, encryptionProperties.getChatKey());
+        transactionTemplate.executeWithoutResult(status -> {
+            try {
+                String plaintext = message.getContent();
+                String encrypted = encryptionUtil.encrypt(plaintext, encryptionProperties.getChatKey());
 
-            String sql = "UPDATE chat_message SET content = ? WHERE id = ?";
-            jdbcTemplate.update(sql, encrypted, message.getId());
+                String sql = "UPDATE chat_message SET content = ? WHERE id = ?";
+                jdbcTemplate.update(sql, encrypted, message.getId());
 
-            log.debug("Message {} encrypted successfully", message.getId());
-        } catch (Exception e) {
-            log.error("Failed to encrypt message {}", message.getId(), e);
-        }
+                log.debug("Message {} encrypted successfully", message.getId());
+            } catch (Exception e) {
+                log.error("Failed to encrypt message {}", message.getId(), e);
+            }
+        });
     }
 
-    @Transactional
     private void encryptChatRoom(ChatRoom chatRoom) {
-        try {
-            String plaintext = chatRoom.getLastMessageContent();
-            String encrypted = encryptionUtil.encrypt(plaintext, encryptionProperties.getChatKey());
+        transactionTemplate.executeWithoutResult(status -> {
+            try {
+                String plaintext = chatRoom.getLastMessageContent();
+                String encrypted = encryptionUtil.encrypt(plaintext, encryptionProperties.getChatKey());
 
-            String sql = "UPDATE chat_room SET last_message_content = ? WHERE id = ?";
-            jdbcTemplate.update(sql, encrypted, chatRoom.getId());
+                String sql = "UPDATE chat_room SET last_message_content = ? WHERE id = ?";
+                jdbcTemplate.update(sql, encrypted, chatRoom.getId());
 
-            log.debug("ChatRoom {} encrypted successfully", chatRoom.getId());
-        } catch (Exception e) {
-            log.error("Failed to encrypt chat room {}", chatRoom.getId(), e);
-        }
+                log.debug("ChatRoom {} encrypted successfully", chatRoom.getId());
+            } catch (Exception e) {
+                log.error("Failed to encrypt chat room {}", chatRoom.getId(), e);
+            }
+        });
     }
 }

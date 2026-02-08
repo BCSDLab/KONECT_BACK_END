@@ -16,6 +16,8 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
 
     ChatMessage save(ChatMessage chatMessage);
 
+    Page<ChatMessage> findAll(Pageable pageable);
+
     @Query("""
         SELECT new gg.agit.konect.domain.chat.dto.UnreadMessageCount(
             cm.chatRoom.id,
