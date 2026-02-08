@@ -1,6 +1,7 @@
 package gg.agit.konect.global.encryption;
 
 import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -60,7 +61,7 @@ public class ChatEncryptionService {
             Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
 
-            byte[] plaintextBytes = plaintext.getBytes();
+            byte[] plaintextBytes = plaintext.getBytes(StandardCharsets.UTF_8);
             byte[] ciphertext = cipher.doFinal(plaintextBytes);
 
             // IV + ciphertext를 결합하여 Base64 인코딩
@@ -125,7 +126,7 @@ public class ChatEncryptionService {
             cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
 
             byte[] plaintextBytes = cipher.doFinal(actualCiphertext);
-            return new String(plaintextBytes);
+            return new String(plaintextBytes, StandardCharsets.UTF_8);
 
         } catch (IllegalArgumentException e) {
             throw e;
