@@ -1,36 +1,31 @@
 package gg.agit.konect.global.encryption;
 
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import lombok.RequiredArgsConstructor;
 
 /**
- * JPA AttributeConverter for automatic encryption/decryption of string attributes.
- * Encrypts strings when storing to database and decrypts when loading from database.
+ * 문자열 필드의 자동 암호화/복호화를 위한 JPA AttributeConverter입니다.
+ * DB 저장 시 암호화하고, 조회 시 복호화합니다.
  *
- * Usage: @Convert(converter = EncryptedStringConverter.class)
+ * 사용 예시: @Convert(converter = EncryptedStringConverter.class)
  */
 @Converter
 @Component
-public class EncryptedStringConverter implements AttributeConverter<String, String>, ApplicationContextAware {
+@RequiredArgsConstructor
+public class EncryptedStringConverter implements AttributeConverter<String, String> {
 
-    private static ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext context) throws BeansException {
-        applicationContext = context;
-    }
+    private final EncryptionUtil encryptionUtil;
+    private final EncryptionProperties properties;
 
     /**
-     * Converts entity attribute (plaintext string) to database column value (encrypted string).
+     * 엔티티 속성 값(평문 문자열)을 DB 컬럼 값(암호문 문자열)으로 변환합니다.
      *
-     * @param attribute plaintext string from entity
-     * @return encrypted string for database, or original value if null/empty
+     * @param attribute 엔티티의 평문 문자열
+     * @return DB에 저장할 암호문 문자열, 또는 null/빈값이면 원본
      */
     @Override
     public String convertToDatabaseColumn(String attribute) {
@@ -38,27 +33,21 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             return attribute;
         }
 
-        EncryptionUtil encryptionUtil = applicationContext.getBean(EncryptionUtil.class);
-        EncryptionProperties properties = applicationContext.getBean(EncryptionProperties.class);
-
         return encryptionUtil.encrypt(attribute, properties.getChatKey());
     }
 
     /**
-     * Converts database column value (encrypted string) to entity attribute (plaintext string).
-     * Uses tryDecrypt to handle migration scenarios where data might not be encrypted.
+     * DB 컬럼 값(암호문 문자열)을 엔티티 속성 값(평문 문자열)으로 변환합니다.
+     * 마이그레이션 과정에서 평문 데이터가 섞여 있을 수 있어 tryDecrypt를 사용합니다.
      *
-     * @param dbData encrypted string from database
-     * @return plaintext string for entity, or original value if null/empty
+     * @param dbData DB에서 읽은 암호문 문자열
+     * @return 엔티티에 주입할 평문 문자열, 또는 null/빈값이면 원본
      */
     @Override
     public String convertToEntityAttribute(String dbData) {
         if (!StringUtils.hasText(dbData)) {
             return dbData;
         }
-
-        EncryptionUtil encryptionUtil = applicationContext.getBean(EncryptionUtil.class);
-        EncryptionProperties properties = applicationContext.getBean(EncryptionProperties.class);
 
         return encryptionUtil.tryDecrypt(dbData, properties.getChatKey());
     }
