@@ -14,7 +14,7 @@ import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 
 @Component
-public class EncryptionUtil {
+public class ChatEncryptionService {
 
     private static final String CIPHER_ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_TAG_LENGTH_BITS = 128;

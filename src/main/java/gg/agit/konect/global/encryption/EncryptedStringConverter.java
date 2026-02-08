@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EncryptedStringConverter implements AttributeConverter<String, String> {
 
-    private final EncryptionUtil encryptionUtil;
+    private final ChatEncryptionService chatEncryptionService;
     private final EncryptionProperties properties;
 
     /**
@@ -33,7 +33,7 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             return attribute;
         }
 
-        return encryptionUtil.encrypt(attribute, properties.getChatKey());
+        return chatEncryptionService.encrypt(attribute, properties.getChatKey());
     }
 
     /**
@@ -49,6 +49,6 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             return dbData;
         }
 
-        return encryptionUtil.tryDecrypt(dbData, properties.getChatKey());
+        return chatEncryptionService.tryDecrypt(dbData, properties.getChatKey());
     }
 }

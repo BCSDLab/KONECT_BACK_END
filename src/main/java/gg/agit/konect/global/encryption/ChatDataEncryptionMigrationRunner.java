@@ -27,7 +27,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
 
     private static final int BATCH_SIZE = 100;
 
-    private final EncryptionUtil encryptionUtil;
+    private final ChatEncryptionService chatEncryptionService;
     private final EncryptionProperties encryptionProperties;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -132,7 +132,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         }
 
         try {
-            encryptionUtil.decrypt(value, encryptionProperties.getChatKey());
+            chatEncryptionService.decrypt(value, encryptionProperties.getChatKey());
             return false;
         } catch (Exception e) {
             return true;
@@ -143,7 +143,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         transactionTemplate.executeWithoutResult(status -> {
             try {
                 String plaintext = message.getContent();
-                String encrypted = encryptionUtil.encrypt(plaintext, encryptionProperties.getChatKey());
+                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getChatKey());
 
                 String sql = "UPDATE chat_message SET content = ? WHERE id = ?";
                 jdbcTemplate.update(sql, encrypted, message.getId());
@@ -159,7 +159,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         transactionTemplate.executeWithoutResult(status -> {
             try {
                 String plaintext = chatRoom.getLastMessageContent();
-                String encrypted = encryptionUtil.encrypt(plaintext, encryptionProperties.getChatKey());
+                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getChatKey());
 
                 String sql = "UPDATE chat_room SET last_message_content = ? WHERE id = ?";
                 jdbcTemplate.update(sql, encrypted, chatRoom.getId());
