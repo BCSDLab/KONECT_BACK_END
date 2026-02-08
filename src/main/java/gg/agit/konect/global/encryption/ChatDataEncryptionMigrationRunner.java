@@ -37,7 +37,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         log.info("Start chat data encryption migration");
 
         if (!StringUtils.hasText(encryptionProperties.getSecretKey())) {
-            log.error("APP_CHAT_ENCRYPTION_KEY is not set. Migration skipped.");
+            log.error("app.encryption.secret-key is not set. Migration skipped.");
             return;
         }
 
