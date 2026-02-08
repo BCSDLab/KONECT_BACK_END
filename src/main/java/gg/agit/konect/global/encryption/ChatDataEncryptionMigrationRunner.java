@@ -3,7 +3,6 @@ package gg.agit.konect.global.encryption;
 import java.util.List;
 
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "app.encryption.migration-enabled", havingValue = "true")
 public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
 
     private static final int BATCH_SIZE = 100;
