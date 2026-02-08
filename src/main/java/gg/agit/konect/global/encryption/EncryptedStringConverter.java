@@ -38,7 +38,6 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
 
     /**
      * DB 컬럼 값(암호문 문자열)을 엔티티 속성 값(평문 문자열)으로 변환합니다.
-     * 마이그레이션 과정에서 평문 데이터가 섞여 있을 수 있어 tryDecrypt를 사용합니다.
      *
      * @param dbData DB에서 읽은 암호문 문자열
      * @return 엔티티에 주입할 평문 문자열, 또는 null/빈값이면 원본
@@ -49,6 +48,6 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             return dbData;
         }
 
-        return chatEncryptionService.tryDecrypt(dbData, properties.getSecretKey());
+        return chatEncryptionService.decrypt(dbData, properties.getSecretKey());
     }
 }
