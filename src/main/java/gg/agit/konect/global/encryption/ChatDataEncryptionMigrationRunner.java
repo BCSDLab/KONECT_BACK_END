@@ -1,5 +1,6 @@
 package gg.agit.konect.global.encryption;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.boot.ApplicationRunner;
@@ -64,15 +65,28 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
                 break;
             }
 
+            List<Object[]> batchUpdates = new ArrayList<>();
+
             for (ChatMessage message : messages) {
                 processedCount++;
                 if (isPlaintext(message.getContent())) {
-                    encryptChatMessage(message);
-                    encryptedCount++;
+                    try {
+                        String encrypted = chatEncryptionService.encrypt(
+                            message.getContent(),
+                            encryptionProperties.getSecretKey()
+                        );
+                        batchUpdates.add(new Object[] {encrypted, message.getId()});
+                        encryptedCount++;
+                    } catch (Exception e) {
+                        skippedCount++;
+                        log.error("Failed to encrypt message {}", message.getId(), e);
+                    }
                 } else {
                     skippedCount++;
                 }
             }
+
+            executeMessageBatchUpdate(batchUpdates);
 
             if (messagesPage.isLast()) {
                 break;
@@ -102,16 +116,29 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
                 break;
             }
 
+            List<Object[]> batchUpdates = new ArrayList<>();
+
             for (ChatRoom chatRoom : chatRooms) {
                 processedCount++;
                 if (StringUtils.hasText(chatRoom.getLastMessageContent())
                     && isPlaintext(chatRoom.getLastMessageContent())) {
-                    encryptChatRoom(chatRoom);
-                    encryptedCount++;
+                    try {
+                        String encrypted = chatEncryptionService.encrypt(
+                            chatRoom.getLastMessageContent(),
+                            encryptionProperties.getSecretKey()
+                        );
+                        batchUpdates.add(new Object[] {encrypted, chatRoom.getId()});
+                        encryptedCount++;
+                    } catch (Exception e) {
+                        skippedCount++;
+                        log.error("Failed to encrypt chat room {}", chatRoom.getId(), e);
+                    }
                 } else {
                     skippedCount++;
                 }
             }
+
+            executeChatRoomBatchUpdate(batchUpdates);
 
             if (chatRoomsPage.isLast()) {
                 break;
@@ -137,35 +164,25 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         }
     }
 
-    private void encryptChatMessage(ChatMessage message) {
-        transactionTemplate.executeWithoutResult(status -> {
-            try {
-                String plaintext = message.getContent();
-                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getSecretKey());
+    private void executeMessageBatchUpdate(List<Object[]> batchUpdates) {
+        if (batchUpdates.isEmpty()) {
+            return;
+        }
 
-                String sql = "UPDATE chat_message SET content = ? WHERE id = ?";
-                jdbcTemplate.update(sql, encrypted, message.getId());
-
-                log.debug("Message {} encrypted successfully", message.getId());
-            } catch (Exception e) {
-                log.error("Failed to encrypt message {}", message.getId(), e);
-            }
-        });
+        transactionTemplate.executeWithoutResult(status -> jdbcTemplate.batchUpdate(
+            "UPDATE chat_message SET content = ? WHERE id = ?",
+            batchUpdates
+        ));
     }
 
-    private void encryptChatRoom(ChatRoom chatRoom) {
-        transactionTemplate.executeWithoutResult(status -> {
-            try {
-                String plaintext = chatRoom.getLastMessageContent();
-                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getSecretKey());
+    private void executeChatRoomBatchUpdate(List<Object[]> batchUpdates) {
+        if (batchUpdates.isEmpty()) {
+            return;
+        }
 
-                String sql = "UPDATE chat_room SET last_message_content = ? WHERE id = ?";
-                jdbcTemplate.update(sql, encrypted, chatRoom.getId());
-
-                log.debug("ChatRoom {} encrypted successfully", chatRoom.getId());
-            } catch (Exception e) {
-                log.error("Failed to encrypt chat room {}", chatRoom.getId(), e);
-            }
-        });
+        transactionTemplate.executeWithoutResult(status -> jdbcTemplate.batchUpdate(
+            "UPDATE chat_room SET last_message_content = ? WHERE id = ?",
+            batchUpdates
+        ));
     }
 }
