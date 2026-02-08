@@ -12,10 +12,8 @@ import org.springframework.util.StringUtils;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import lombok.RequiredArgsConstructor;
 
 @Component
-@RequiredArgsConstructor
 public class EncryptionUtil {
 
     private static final String CIPHER_ALGORITHM = "AES/GCM/NoPadding";
@@ -24,7 +22,6 @@ public class EncryptionUtil {
     private static final int AES_KEY_SIZE_BITS = 256;
     private static final int AES_KEY_SIZE_BYTES = AES_KEY_SIZE_BITS / 8;
 
-    private final EncryptionProperties properties;
     private final SecureRandom secureRandom = new SecureRandom();
 
     /**
@@ -158,15 +155,4 @@ public class EncryptionUtil {
         }
     }
 
-    /**
-     * AES-256 암호화 키를 생성합니다.
-     * 생성된 키는 Base64로 인코딩되어 반환됩니다.
-     *
-     * @return Base64 인코딩된 AES-256 키
-     */
-    public String generateKey() {
-        byte[] key = new byte[AES_KEY_SIZE_BYTES];
-        secureRandom.nextBytes(key);
-        return Base64.getEncoder().encodeToString(key);
-    }
 }
