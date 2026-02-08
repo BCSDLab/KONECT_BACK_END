@@ -13,5 +13,4 @@ import lombok.Setter;
 public class EncryptionProperties {
 
     private String secretKey;
-    private boolean migrationEnabled;
 }
