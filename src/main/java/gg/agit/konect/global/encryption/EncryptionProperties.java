@@ -12,6 +12,6 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "app.encryption")
 public class EncryptionProperties {
 
-    private String chatKey;
+    private String secretKey;
     private boolean migrationEnabled;
 }

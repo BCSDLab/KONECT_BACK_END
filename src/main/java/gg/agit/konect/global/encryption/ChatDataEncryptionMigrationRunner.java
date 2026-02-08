@@ -36,7 +36,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
     public void run(org.springframework.boot.ApplicationArguments args) throws Exception {
         log.info("Start chat data encryption migration");
 
-        if (!StringUtils.hasText(encryptionProperties.getChatKey())) {
+        if (!StringUtils.hasText(encryptionProperties.getSecretKey())) {
             log.error("APP_CHAT_ENCRYPTION_KEY is not set. Migration skipped.");
             return;
         }
@@ -130,7 +130,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         }
 
         try {
-            chatEncryptionService.decrypt(value, encryptionProperties.getChatKey());
+            chatEncryptionService.decrypt(value, encryptionProperties.getSecretKey());
             return false;
         } catch (Exception e) {
             return true;
@@ -141,7 +141,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         transactionTemplate.executeWithoutResult(status -> {
             try {
                 String plaintext = message.getContent();
-                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getChatKey());
+                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getSecretKey());
 
                 String sql = "UPDATE chat_message SET content = ? WHERE id = ?";
                 jdbcTemplate.update(sql, encrypted, message.getId());
@@ -157,7 +157,7 @@ public class ChatDataEncryptionMigrationRunner implements ApplicationRunner {
         transactionTemplate.executeWithoutResult(status -> {
             try {
                 String plaintext = chatRoom.getLastMessageContent();
-                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getChatKey());
+                String encrypted = chatEncryptionService.encrypt(plaintext, encryptionProperties.getSecretKey());
 
                 String sql = "UPDATE chat_room SET last_message_content = ? WHERE id = ?";
                 jdbcTemplate.update(sql, encrypted, chatRoom.getId());

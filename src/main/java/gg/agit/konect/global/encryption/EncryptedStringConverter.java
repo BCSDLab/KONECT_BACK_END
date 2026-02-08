@@ -33,7 +33,7 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             return attribute;
         }
 
-        return chatEncryptionService.encrypt(attribute, properties.getChatKey());
+        return chatEncryptionService.encrypt(attribute, properties.getSecretKey());
     }
 
     /**
@@ -49,6 +49,6 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             return dbData;
         }
 
-        return chatEncryptionService.tryDecrypt(dbData, properties.getChatKey());
+        return chatEncryptionService.tryDecrypt(dbData, properties.getSecretKey());
     }
 }
