@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -77,7 +78,7 @@ class ClubMemberManagementServiceTest {
                 REQUESTER_ID,
                 REQUESTER_ID,
                 request
-            )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
+            )).isInstanceOfSatisfying(CustomException.class, ex -> assertThat(
                 ex.getErrorCode()).isEqualTo(ApiResponseCode.CANNOT_CHANGE_OWN_POSITION));
 
             verifyNoInteractions(clubPermissionValidator);
@@ -101,7 +102,7 @@ class ClubMemberManagementServiceTest {
                 TARGET_ID,
                 REQUESTER_ID,
                 request
-            )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
+            )).isInstanceOfSatisfying(CustomException.class, ex -> assertThat(
                 ex.getErrorCode()).isEqualTo(ApiResponseCode.CANNOT_MANAGE_HIGHER_POSITION));
         }
 
@@ -124,7 +125,7 @@ class ClubMemberManagementServiceTest {
                 TARGET_ID,
                 REQUESTER_ID,
                 request
-            )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
+            )).isInstanceOfSatisfying(CustomException.class, ex -> assertThat(
                 ex.getErrorCode()).isEqualTo(ApiResponseCode.VICE_PRESIDENT_ALREADY_EXISTS));
         }
 
@@ -148,7 +149,7 @@ class ClubMemberManagementServiceTest {
                 TARGET_ID,
                 REQUESTER_ID,
                 request
-            )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
+            )).isInstanceOfSatisfying(CustomException.class, ex -> assertThat(
                 ex.getErrorCode()).isEqualTo(ApiResponseCode.MANAGER_LIMIT_EXCEEDED));
         }
 
@@ -187,7 +188,7 @@ class ClubMemberManagementServiceTest {
                 TARGET_ID,
                 REQUESTER_ID,
                 request
-            )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
+            )).isInstanceOfSatisfying(CustomException.class, ex -> assertThat(
                 ex.getErrorCode()).isEqualTo(ApiResponseCode.FORBIDDEN_MEMBER_POSITION_CHANGE));
         }
 
@@ -212,7 +213,7 @@ class ClubMemberManagementServiceTest {
 
             // Then
             assertThat(changed.getClubPosition()).isEqualTo(ClubPosition.VICE_PRESIDENT);
-            verify(clubMemberRepository, org.mockito.Mockito.never())
+            verify(clubMemberRepository, never())
                 .countByClubIdAndPosition(CLUB_ID, ClubPosition.VICE_PRESIDENT);
         }
 
@@ -237,7 +238,7 @@ class ClubMemberManagementServiceTest {
 
             // Then
             assertThat(changed.getClubPosition()).isEqualTo(ClubPosition.MANAGER);
-            verify(clubMemberRepository, org.mockito.Mockito.never())
+            verify(clubMemberRepository, never())
                 .countByClubIdAndPosition(CLUB_ID, ClubPosition.MANAGER);
         }
     }

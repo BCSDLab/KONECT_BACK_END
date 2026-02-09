@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -23,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Sort.Direction;
 
 import gg.agit.konect.domain.bank.model.Bank;
 import gg.agit.konect.domain.bank.repository.BankRepository;
@@ -263,7 +265,7 @@ class ClubApplicationServiceTest {
             Club club = createClub(CLUB_ID);
             CustomException forbidden = CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS);
             when(clubRepository.getById(CLUB_ID)).thenReturn(club);
-            org.mockito.Mockito.doThrow(forbidden)
+            doThrow(forbidden)
                 .when(clubPermissionValidator)
                 .validateLeaderAccess(CLUB_ID, USER_ID);
 
@@ -303,7 +305,7 @@ class ClubApplicationServiceTest {
             // Given
             CustomException forbidden = CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS);
             when(clubRepository.getById(CLUB_ID)).thenReturn(createClub(CLUB_ID));
-            org.mockito.Mockito.doThrow(forbidden)
+            doThrow(forbidden)
                 .when(clubPermissionValidator)
                 .validateLeaderAccess(CLUB_ID, USER_ID);
 
@@ -326,7 +328,7 @@ class ClubApplicationServiceTest {
                 PAGE,
                 LIMIT,
                 ClubApplicationSortBy.APPLIED_AT,
-                org.springframework.data.domain.Sort.Direction.DESC
+                Direction.DESC
             );
             ClubRecruitment recruitment = ClubRecruitment.builder()
                 .club(createClub(CLUB_ID))
@@ -356,7 +358,7 @@ class ClubApplicationServiceTest {
                 PAGE,
                 LIMIT,
                 ClubApplicationSortBy.APPLIED_AT,
-                org.springframework.data.domain.Sort.Direction.DESC
+                Direction.DESC
             );
             LocalDate startDate = LocalDate.of(YEAR, MONTH_JANUARY, START_DAY);
             LocalDate endDate = LocalDate.of(YEAR, MONTH_JANUARY, END_DAY);
@@ -436,7 +438,7 @@ class ClubApplicationServiceTest {
             // Given
             CustomException forbidden = CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS);
             when(clubRepository.getById(CLUB_ID)).thenReturn(createClub(CLUB_ID));
-            org.mockito.Mockito.doThrow(forbidden)
+            doThrow(forbidden)
                 .when(clubPermissionValidator)
                 .validateManagerAccess(CLUB_ID, USER_ID);
 
@@ -689,7 +691,7 @@ class ClubApplicationServiceTest {
             );
             when(userRepository.getById(USER_ID)).thenReturn(createUser(USER_ID, "관리자"));
             when(clubRepository.getById(CLUB_ID)).thenReturn(createClub(CLUB_ID));
-            org.mockito.Mockito.doThrow(forbidden)
+            doThrow(forbidden)
                 .when(clubPermissionValidator)
                 .validateManagerAccess(CLUB_ID, USER_ID);
 

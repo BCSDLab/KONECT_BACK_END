@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -204,7 +205,7 @@ class ClubRecruitmentServiceTest {
             CustomException forbidden = CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS);
             when(clubRepository.getById(CLUB_ID)).thenReturn(createClub(CLUB_ID));
             when(userRepository.getById(USER_ID)).thenReturn(createUser(USER_ID, "user"));
-            org.mockito.Mockito.doThrow(forbidden)
+            doThrow(forbidden)
                 .when(clubPermissionValidator)
                 .validateManagerAccess(CLUB_ID, USER_ID);
 

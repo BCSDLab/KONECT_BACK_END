@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
@@ -51,8 +52,7 @@ class ClubPermissionValidatorTest {
 
             // When & Then
             assertThatThrownBy(() -> clubPermissionValidator.validatePresidentAccess(CLUB_ID, USER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions
-                    .assertThat(ex.getErrorCode())
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
         }
     }
@@ -79,8 +79,7 @@ class ClubPermissionValidatorTest {
 
             // When & Then
             assertThatThrownBy(() -> clubPermissionValidator.validateLeaderAccess(CLUB_ID, USER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions
-                    .assertThat(ex.getErrorCode())
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
         }
     }
@@ -107,8 +106,7 @@ class ClubPermissionValidatorTest {
 
             // When & Then
             assertThatThrownBy(() -> clubPermissionValidator.validateManagerAccess(CLUB_ID, USER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions
-                    .assertThat(ex.getErrorCode())
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
         }
     }
