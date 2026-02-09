@@ -51,10 +51,13 @@ class ClubMemberManagementServiceTest {
 
     @Mock
     private ClubRepository clubRepository;
+
     @Mock
     private ClubMemberRepository clubMemberRepository;
+
     @Mock
     private ClubPreMemberRepository clubPreMemberRepository;
+
     @Mock
     private ClubPermissionValidator clubPermissionValidator;
 

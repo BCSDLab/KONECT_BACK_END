@@ -77,22 +77,31 @@ class ClubApplicationServiceTest {
 
     @Mock
     private ClubRepository clubRepository;
+
     @Mock
     private ClubRecruitmentRepository clubRecruitmentRepository;
+
     @Mock
     private ClubApplyRepository clubApplyRepository;
+
     @Mock
     private ClubApplyQuestionRepository clubApplyQuestionRepository;
+
     @Mock
     private ClubApplyAnswerRepository clubApplyAnswerRepository;
+
     @Mock
     private ClubApplyQueryRepository clubApplyQueryRepository;
+
     @Mock
     private ClubMemberRepository clubMemberRepository;
+
     @Mock
     private UserRepository userRepository;
+
     @Mock
     private BankRepository bankRepository;
+
     @Mock
     private ClubPermissionValidator clubPermissionValidator;
 
