@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -104,7 +103,7 @@ class ClubServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubService.getClubMembers(CLUB_ID, USER_ID, null))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_MEMBER_ACCESS));
         }
 
@@ -578,13 +577,4 @@ class ClubServiceTest {
             .build();
     }
 
-    private ApiResponseCode getErrorCode(CustomException exception) {
-        try {
-            Field field = CustomException.class.getDeclaredField("errorCode");
-            field.setAccessible(true);
-            return ApiResponseCode.class.cast(field.get(exception));
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to read errorCode", e);
-        }
-    }
 }

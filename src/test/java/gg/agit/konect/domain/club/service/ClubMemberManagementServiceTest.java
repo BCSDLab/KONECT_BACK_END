@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -79,7 +78,7 @@ class ClubMemberManagementServiceTest {
                 REQUESTER_ID,
                 request
             )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
-                getErrorCode(ex)).isEqualTo(ApiResponseCode.CANNOT_CHANGE_OWN_POSITION));
+                ex.getErrorCode()).isEqualTo(ApiResponseCode.CANNOT_CHANGE_OWN_POSITION));
 
             verifyNoInteractions(clubPermissionValidator);
         }
@@ -103,7 +102,7 @@ class ClubMemberManagementServiceTest {
                 REQUESTER_ID,
                 request
             )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
-                getErrorCode(ex)).isEqualTo(ApiResponseCode.CANNOT_MANAGE_HIGHER_POSITION));
+                ex.getErrorCode()).isEqualTo(ApiResponseCode.CANNOT_MANAGE_HIGHER_POSITION));
         }
 
         @Test
@@ -126,7 +125,7 @@ class ClubMemberManagementServiceTest {
                 REQUESTER_ID,
                 request
             )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
-                getErrorCode(ex)).isEqualTo(ApiResponseCode.VICE_PRESIDENT_ALREADY_EXISTS));
+                ex.getErrorCode()).isEqualTo(ApiResponseCode.VICE_PRESIDENT_ALREADY_EXISTS));
         }
 
         @Test
@@ -150,7 +149,7 @@ class ClubMemberManagementServiceTest {
                 REQUESTER_ID,
                 request
             )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
-                getErrorCode(ex)).isEqualTo(ApiResponseCode.MANAGER_LIMIT_EXCEEDED));
+                ex.getErrorCode()).isEqualTo(ApiResponseCode.MANAGER_LIMIT_EXCEEDED));
         }
 
         @Test
@@ -189,7 +188,7 @@ class ClubMemberManagementServiceTest {
                 REQUESTER_ID,
                 request
             )).isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions.assertThat(
-                getErrorCode(ex)).isEqualTo(ApiResponseCode.FORBIDDEN_MEMBER_POSITION_CHANGE));
+                ex.getErrorCode()).isEqualTo(ApiResponseCode.FORBIDDEN_MEMBER_POSITION_CHANGE));
         }
 
         @Test
@@ -258,7 +257,7 @@ class ClubMemberManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubMemberManagementService.addPreMember(CLUB_ID, REQUESTER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.ALREADY_CLUB_PRE_MEMBER));
         }
 
@@ -304,7 +303,7 @@ class ClubMemberManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubMemberManagementService.transferPresident(CLUB_ID, REQUESTER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.ILLEGAL_ARGUMENT));
         }
 
@@ -383,7 +382,7 @@ class ClubMemberManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubMemberManagementService.changeVicePresident(CLUB_ID, REQUESTER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.CANNOT_CHANGE_OWN_POSITION));
         }
 
@@ -441,7 +440,7 @@ class ClubMemberManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubMemberManagementService.removeMember(CLUB_ID, REQUESTER_ID, REQUESTER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.CANNOT_REMOVE_SELF));
         }
 
@@ -457,7 +456,7 @@ class ClubMemberManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubMemberManagementService.removeMember(CLUB_ID, TARGET_ID, REQUESTER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT));
         }
 
@@ -473,7 +472,7 @@ class ClubMemberManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubMemberManagementService.removeMember(CLUB_ID, TARGET_ID, REQUESTER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.CANNOT_MANAGE_HIGHER_POSITION));
         }
 
@@ -489,7 +488,7 @@ class ClubMemberManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubMemberManagementService.removeMember(CLUB_ID, TARGET_ID, REQUESTER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.CANNOT_REMOVE_NON_MEMBER));
         }
 
@@ -544,13 +543,4 @@ class ClubMemberManagementServiceTest {
             .build();
     }
 
-    private ApiResponseCode getErrorCode(CustomException exception) {
-        try {
-            Field field = CustomException.class.getDeclaredField("errorCode");
-            field.setAccessible(true);
-            return ApiResponseCode.class.cast(field.get(exception));
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to read errorCode", e);
-        }
-    }
 }

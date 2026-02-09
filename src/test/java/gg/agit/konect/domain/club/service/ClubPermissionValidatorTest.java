@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -54,7 +52,7 @@ class ClubPermissionValidatorTest {
             // When & Then
             assertThatThrownBy(() -> clubPermissionValidator.validatePresidentAccess(CLUB_ID, USER_ID))
                 .isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions
-                    .assertThat(getErrorCode(ex))
+                    .assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
         }
     }
@@ -82,7 +80,7 @@ class ClubPermissionValidatorTest {
             // When & Then
             assertThatThrownBy(() -> clubPermissionValidator.validateLeaderAccess(CLUB_ID, USER_ID))
                 .isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions
-                    .assertThat(getErrorCode(ex))
+                    .assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
         }
     }
@@ -110,18 +108,8 @@ class ClubPermissionValidatorTest {
             // When & Then
             assertThatThrownBy(() -> clubPermissionValidator.validateManagerAccess(CLUB_ID, USER_ID))
                 .isInstanceOfSatisfying(CustomException.class, ex -> org.assertj.core.api.Assertions
-                    .assertThat(getErrorCode(ex))
+                    .assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
-        }
-    }
-
-    private ApiResponseCode getErrorCode(CustomException exception) {
-        try {
-            Field field = CustomException.class.getDeclaredField("errorCode");
-            field.setAccessible(true);
-            return ApiResponseCode.class.cast(field.get(exception));
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to read errorCode", e);
         }
     }
 }

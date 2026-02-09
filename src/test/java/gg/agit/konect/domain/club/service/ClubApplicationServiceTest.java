@@ -9,7 +9,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -115,7 +114,7 @@ class ClubApplicationServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubApplicationService.applyClub(CLUB_ID, USER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.ALREADY_APPLIED_CLUB));
         }
 
@@ -140,7 +139,7 @@ class ClubApplicationServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubApplicationService.applyClub(CLUB_ID, USER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING));
         }
 
@@ -233,7 +232,7 @@ class ClubApplicationServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubApplicationService.approveClubApplication(CLUB_ID, APPLICATION_ID, USER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.ALREADY_CLUB_MEMBER));
         }
 
@@ -501,7 +500,7 @@ class ClubApplicationServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubApplicationService.replaceApplyQuestions(CLUB_ID, USER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.DUPLICATE_CLUB_APPLY_QUESTION));
         }
 
@@ -519,7 +518,7 @@ class ClubApplicationServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubApplicationService.replaceApplyQuestions(CLUB_ID, USER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.NOT_FOUND_CLUB_APPLY_QUESTION));
         }
 
@@ -641,7 +640,7 @@ class ClubApplicationServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubApplicationService.getFeeInfo(CLUB_ID, USER_ID))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.FORBIDDEN_CLUB_FEE_INFO));
         }
     }
@@ -744,13 +743,4 @@ class ClubApplicationServiceTest {
             .build();
     }
 
-    private ApiResponseCode getErrorCode(CustomException exception) {
-        try {
-            Field field = CustomException.class.getDeclaredField("errorCode");
-            field.setAccessible(true);
-            return ApiResponseCode.class.cast(field.get(exception));
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to read errorCode", e);
-        }
-    }
 }

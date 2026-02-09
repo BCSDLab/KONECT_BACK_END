@@ -232,7 +232,7 @@ class ClubRecruitmentServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clubRecruitmentService.upsertRecruitment(CLUB_ID, USER_ID, request))
-                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(getErrorCode(ex))
+                .isInstanceOfSatisfying(CustomException.class, ex -> assertThat(ex.getErrorCode())
                     .isEqualTo(ApiResponseCode.INVALID_RECRUITMENT_DATE_NOT_ALLOWED));
             verify(clubRecruitmentRepository, never()).save(any());
         }
@@ -292,15 +292,5 @@ class ClubRecruitmentServiceTest {
             .map(InnerClubRecruitmentImageRequest::new)
             .toList();
         return new ClubRecruitmentUpsertRequest(startDate, endDate, alwaysRecruiting, content, images);
-    }
-
-    private ApiResponseCode getErrorCode(CustomException exception) {
-        try {
-            java.lang.reflect.Field field = CustomException.class.getDeclaredField("errorCode");
-            field.setAccessible(true);
-            return ApiResponseCode.class.cast(field.get(exception));
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to read errorCode", e);
-        }
     }
 }
