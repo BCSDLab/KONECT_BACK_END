@@ -39,6 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -116,11 +117,11 @@ class UserServiceTest {
         void signupWithDuplicatedProviderIdThrowsException() {
             // Given
             SignupRequest request = createSignupRequest();
-            given(userRepository.findByProviderIdAndProvider(PROVIDER_ID, Provider.GOOGLE))
+            given(userRepository.findByProviderIdAndProvider(PROVIDER_ID, Provider.APPLE))
                 .willReturn(Optional.of(mock(User.class)));
 
             // When & Then
-            assertThatThrownBy(() -> userService.signup(EMAIL, PROVIDER_ID, Provider.GOOGLE, request))
+            assertThatThrownBy(() -> userService.signup(EMAIL, PROVIDER_ID, Provider.APPLE, request))
                 .isInstanceOf(CustomException.class)
                 .hasMessage(ALREADY_REGISTERED_USER_MESSAGE);
         }
@@ -140,18 +141,18 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("providerId로 임시유저를 조회할 수 있으면 해당 경로로 회원가입을 진행한다")
+        @DisplayName("APPLE 회원가입에서 providerId로 임시유저를 조회할 수 있으면 해당 경로로 진행한다")
         void signupWithProviderIdResolvesTempUserByProviderPath() {
             // Given
             SignupRequest request = createSignupRequest();
             University university = createUniversity();
-            UnRegisteredUser tempUser = createTempUser();
+            UnRegisteredUser tempUser = createTempUser(PROVIDER_ID, Provider.APPLE);
             User savedUser = createUser(USER_ID, EMAIL, STUDENT_NUMBER, university);
 
-            given(userRepository.findByProviderIdAndProvider(PROVIDER_ID, Provider.GOOGLE)).willReturn(Optional.empty());
-            given(userRepository.findByEmailAndProvider(EMAIL, Provider.GOOGLE)).willReturn(Optional.empty());
-            given(unRegisteredUserRepository.existsByProviderIdAndProvider(PROVIDER_ID, Provider.GOOGLE)).willReturn(true);
-            given(unRegisteredUserRepository.getByProviderIdAndProvider(PROVIDER_ID, Provider.GOOGLE)).willReturn(tempUser);
+            given(userRepository.findByProviderIdAndProvider(PROVIDER_ID, Provider.APPLE)).willReturn(Optional.empty());
+            given(userRepository.findByEmailAndProvider(EMAIL, Provider.APPLE)).willReturn(Optional.empty());
+            given(unRegisteredUserRepository.existsByProviderIdAndProvider(PROVIDER_ID, Provider.APPLE)).willReturn(true);
+            given(unRegisteredUserRepository.getByProviderIdAndProvider(PROVIDER_ID, Provider.APPLE)).willReturn(tempUser);
             given(universityRepository.findById(UNIVERSITY_ID)).willReturn(Optional.of(university));
             given(userRepository.existsByUniversityIdAndStudentNumber(UNIVERSITY_ID, STUDENT_NUMBER)).willReturn(false);
             given(userRepository.save(any(User.class))).willReturn(savedUser);
@@ -163,11 +164,15 @@ class UserServiceTest {
             given(userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)).willReturn(Optional.empty());
 
             // When
-            Integer result = userService.signup(EMAIL, PROVIDER_ID, Provider.GOOGLE, request);
+            Integer result = userService.signup(EMAIL, PROVIDER_ID, Provider.APPLE, request);
 
             // Then
             assertThat(result).isEqualTo(USER_ID);
-            verify(unRegisteredUserRepository).getByProviderIdAndProvider(PROVIDER_ID, Provider.GOOGLE);
+            verify(unRegisteredUserRepository).getByProviderIdAndProvider(PROVIDER_ID, Provider.APPLE);
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+            assertThat(ReflectionTestUtils.getField(captor.getValue(), "providerId")).isEqualTo(PROVIDER_ID);
         }
 
         @Test
@@ -440,11 +445,15 @@ class UserServiceTest {
     }
 
     private UnRegisteredUser createTempUser() {
+        return createTempUser(null, Provider.GOOGLE);
+    }
+
+    private UnRegisteredUser createTempUser(String providerId, Provider provider) {
         UnRegisteredUser user = newInstance(UnRegisteredUser.class);
         ReflectionTestUtils.setField(user, "id", 5);
         ReflectionTestUtils.setField(user, "email", EMAIL);
-        ReflectionTestUtils.setField(user, "provider", Provider.GOOGLE);
-        ReflectionTestUtils.setField(user, "providerId", null);
+        ReflectionTestUtils.setField(user, "provider", provider);
+        ReflectionTestUtils.setField(user, "providerId", providerId);
         return user;
     }
 
