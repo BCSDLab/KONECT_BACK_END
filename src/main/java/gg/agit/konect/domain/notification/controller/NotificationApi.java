@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import gg.agit.konect.domain.notification.dto.NotificationSendRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -30,12 +29,5 @@ public interface NotificationApi {
     ResponseEntity<Void> deleteToken(
         @UserId Integer userId,
         @Valid @RequestBody NotificationTokenDeleteRequest request
-    );
-
-    @Operation(summary = "내 디바이스로 테스트 푸시를 전송한다.")
-    @PostMapping("/send")
-    ResponseEntity<Void> sendToMe(
-        @UserId Integer userId,
-        @Valid @RequestBody NotificationSendRequest request
     );
 }

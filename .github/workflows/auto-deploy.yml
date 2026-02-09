@@ -134,4 +134,5 @@ jobs:
               docker volume create monitoring_promtail-positions
             fi
             docker compose up -d
+            curl -fsS -X POST "http://127.0.0.1:${PROMETHEUS_PORT:-9090}/-/reload" || true
             docker compose ps

@@ -18,7 +18,14 @@ public record ScheduleCondition(
     @NotNull(message = "월은 필수입니다.")
     @Min(value = 1, message = "월은 1 이상이어야 합니다.")
     @Max(value = 12, message = "월은 12 이하여야 합니다.")
-    Integer month
-) {
+    Integer month,
 
+    @Schema(description = "검색 키워드 (일정 제목 기준, 대소문자 구분 없음)", example = "수강", defaultValue = "")
+    String query
+) {
+    private static final String DEFAULT_QUERY = "";
+
+    public ScheduleCondition {
+        query = query != null ? query : DEFAULT_QUERY;
+    }
 }
