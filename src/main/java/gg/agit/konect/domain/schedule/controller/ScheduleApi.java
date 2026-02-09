@@ -10,6 +10,7 @@ import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 
 @Tag(name = "(Normal) Schedule: 일정", description = "일정 API")
 public interface ScheduleApi {
@@ -80,7 +81,7 @@ public interface ScheduleApi {
         """)
     @GetMapping("/schedules")
     ResponseEntity<SchedulesResponse> getSchedules(
-        @Valid @ModelAttribute ScheduleCondition request,
+        @Valid @ParameterObject @ModelAttribute ScheduleCondition request,
         @UserId Integer userId
     );
 }
