@@ -10,7 +10,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.model.ChatMessage;
+import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.notice.repository.CouncilNoticeReadRepository;
@@ -238,7 +242,7 @@ class UserServiceTest {
             University university = createUniversity();
             UnRegisteredUser tempUser = createTempUser();
             User savedUser = createUser(USER_ID, EMAIL, STUDENT_NUMBER, university);
-            gg.agit.konect.domain.club.model.ClubPreMember preMember = createPreMember();
+            ClubPreMember preMember = createPreMember();
             given(userRepository.findByEmailAndProvider(EMAIL, Provider.GOOGLE)).willReturn(Optional.empty());
             given(unRegisteredUserRepository.getByEmailAndProvider(EMAIL, Provider.GOOGLE)).willReturn(tempUser);
             given(universityRepository.findById(UNIVERSITY_ID)).willReturn(Optional.of(university));
@@ -268,8 +272,8 @@ class UserServiceTest {
             UnRegisteredUser tempUser = createTempUser();
             User savedUser = createUser(USER_ID, EMAIL, STUDENT_NUMBER, university);
             User admin = createUser(ADMIN_ID, "admin@example.com", "20200001", university);
-            gg.agit.konect.domain.chat.model.ChatRoom chatRoom = mock(gg.agit.konect.domain.chat.model.ChatRoom.class);
-            gg.agit.konect.domain.chat.model.ChatMessage chatMessage = createChatMessage();
+            ChatRoom chatRoom = mock(ChatRoom.class);
+            ChatMessage chatMessage = createChatMessage();
             given(userRepository.findByEmailAndProvider(EMAIL, Provider.GOOGLE)).willReturn(Optional.empty());
             given(unRegisteredUserRepository.getByEmailAndProvider(EMAIL, Provider.GOOGLE)).willReturn(tempUser);
             given(universityRepository.findById(UNIVERSITY_ID)).willReturn(Optional.of(university));
@@ -282,13 +286,13 @@ class UserServiceTest {
             )).willReturn(List.of());
             given(userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)).willReturn(Optional.of(admin));
             given(chatRoomRepository.findByTwoUsers(ADMIN_ID, USER_ID)).willReturn(Optional.of(chatRoom));
-            given(chatMessageRepository.save(any(gg.agit.konect.domain.chat.model.ChatMessage.class))).willReturn(chatMessage);
+            given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(chatMessage);
 
             // When
             userService.signup(EMAIL, null, Provider.GOOGLE, request);
 
             // Then
-            verify(chatMessageRepository).save(any(gg.agit.konect.domain.chat.model.ChatMessage.class));
+            verify(chatMessageRepository).save(any(ChatMessage.class));
             verify(chatRoom).updateLastMessage(any(String.class), any(java.time.LocalDateTime.class));
         }
     }
@@ -466,17 +470,17 @@ class UserServiceTest {
         return user;
     }
 
-    private gg.agit.konect.domain.club.model.ClubPreMember createPreMember() {
-        gg.agit.konect.domain.club.model.ClubPreMember preMember = newInstance(gg.agit.konect.domain.club.model.ClubPreMember.class);
+    private ClubPreMember createPreMember() {
+        ClubPreMember preMember = newInstance(ClubPreMember.class);
         ReflectionTestUtils.setField(preMember, "id", 77);
-        ReflectionTestUtils.setField(preMember, "club", mock(gg.agit.konect.domain.club.model.Club.class));
+        ReflectionTestUtils.setField(preMember, "club", mock(Club.class));
         ReflectionTestUtils.setField(preMember, "studentNumber", STUDENT_NUMBER);
         ReflectionTestUtils.setField(preMember, "name", "홍길동");
         return preMember;
     }
 
-    private gg.agit.konect.domain.chat.model.ChatMessage createChatMessage() {
-        gg.agit.konect.domain.chat.model.ChatMessage message = newInstance(gg.agit.konect.domain.chat.model.ChatMessage.class);
+    private ChatMessage createChatMessage() {
+        ChatMessage message = newInstance(ChatMessage.class);
         ReflectionTestUtils.setField(message, "id", 101);
         ReflectionTestUtils.setField(message, "content", "welcome");
         ReflectionTestUtils.setField(message, "createdAt", java.time.LocalDateTime.now());
