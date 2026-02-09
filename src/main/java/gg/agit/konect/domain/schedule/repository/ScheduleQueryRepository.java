@@ -31,7 +31,7 @@ public class ScheduleQueryRepository {
 
         return jpaQueryFactory
             .selectFrom(schedule)
-            .leftJoin(universitySchedule).on(schedule.id.eq(universitySchedule.id))
+            .innerJoin(universitySchedule).on(schedule.id.eq(universitySchedule.id))
             .where(condition)
             .orderBy(schedule.startedAt.asc())
             .fetch();
@@ -53,10 +53,7 @@ public class ScheduleQueryRepository {
     }
 
     private void addUniversityCondition(BooleanBuilder condition, Integer universityId) {
-        condition.and(
-            universitySchedule.id.isNotNull()
-                .and(universitySchedule.university.id.eq(universityId))
-        );
+        condition.and(universitySchedule.university.id.eq(universityId));
     }
 
     private void addMonthRangeCondition(
