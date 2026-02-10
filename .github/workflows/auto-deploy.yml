@@ -40,16 +40,12 @@ jobs:
           MYSQL_URL: dummy
           MYSQL_USERNAME: dummy
           MYSQL_PASSWORD: dummy
-
           OAUTH_GOOGLE_CLIENT_ID: dummy
           OAUTH_GOOGLE_CLIENT_SECRET: dummy
-
           OAUTH_NAVER_CLIENT_ID: dummy
           OAUTH_NAVER_CLIENT_SECRET: dummy
-
           OAUTH_KAKAO_CLIENT_ID: dummy
           OAUTH_KAKAO_CLIENT_SECRET: dummy
-
           SLACK_ERROR_WEBHOOK: dummy
 
         run: ./gradlew clean build -x test -Dspring.profiles.active=prod
@@ -57,7 +53,7 @@ jobs:
       - name: Rename jar to app.jar
         run: |
           JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -n 1)
-          cp "$JAR_FILE" build/libs/app.jar
+          cp "$JAR_FILE" app.jar
 
       - name: Transfer app.jar to server
         uses: appleboy/scp-action@v0.1.7
@@ -66,73 +62,19 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "build/libs/app.jar"
+          source: "app.jar"
           target: ${{ secrets.WORK_DIR }}
           rm: false
-
-      - name: Transfer monitoring configs to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          source: "monitoring"
-          target: ${{ secrets.WORK_DIR }}
-          rm: false
-
-      - name: Read deploy script
-        id: deploy_script
-        run: |
-          {
-            echo 'script<<__SCRIPT__'
-            cat scripts/blue-green-deploy.sh
-            echo '__SCRIPT__'
-          } >> "$GITHUB_OUTPUT"
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v0.1.8
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          script: |
-            bash -s <<'__SCRIPT__'
-            ${{ steps.deploy_script.outputs.script }}
-            __SCRIPT__
-
-      - name: Deploy monitoring stack
-        uses: appleboy/ssh-action@v0.1.8
-        env:
-          WORK_DIR: ${{ secrets.WORK_DIR }}
-          MONITORING_ENV: ${{ secrets.MONITORING_ENV }}
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          envs: WORK_DIR,MONITORING_ENV
-          script: |
-            set -euo pipefail
-            : "${WORK_DIR:?}"
-            : "${MONITORING_ENV:?}"
-            cd "${WORK_DIR}/monitoring"
-            umask 077
-            printf '%s' "${MONITORING_ENV}" > .env
-            chmod 600 .env
-            if ! docker volume inspect monitoring_prometheus-data >/dev/null 2>&1; then
-              docker volume create monitoring_prometheus-data
-            fi
-            if ! docker volume inspect monitoring_grafana-data >/dev/null 2>&1; then
-              docker volume create monitoring_grafana-data
-            fi
-            if ! docker volume inspect monitoring_loki-data >/dev/null 2>&1; then
-              docker volume create monitoring_loki-data
-            fi
-            if ! docker volume inspect monitoring_promtail-positions >/dev/null 2>&1; then
-              docker volume create monitoring_promtail-positions
-            fi
-            docker compose up -d
-            curl -fsS -X POST "http://127.0.0.1:${PROMETHEUS_PORT:-9090}/-/reload" || true
-            docker compose ps
+            host: ${{ secrets.SERVER_IP }}
+            username: ${{ secrets.SERVER_USER }}
+            key: ${{ secrets.SERVER_SSH_KEY }}
+            port: ${{ secrets.SERVER_PORT }}
+            script: |
+              set -euo pipefail
+              cd /opt/konect/api
+              chmod +x scripts/blue-green-deploy.sh || true
+              bash scripts/blue-green-deploy.sh
