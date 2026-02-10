@@ -40,16 +40,12 @@ jobs:
           MYSQL_URL: dummy
           MYSQL_USERNAME: dummy
           MYSQL_PASSWORD: dummy
-
           OAUTH_GOOGLE_CLIENT_ID: dummy
           OAUTH_GOOGLE_CLIENT_SECRET: dummy
-
           OAUTH_NAVER_CLIENT_ID: dummy
           OAUTH_NAVER_CLIENT_SECRET: dummy
-
           OAUTH_KAKAO_CLIENT_ID: dummy
           OAUTH_KAKAO_CLIENT_SECRET: dummy
-
           SLACK_ERROR_WEBHOOK: dummy
 
         run: ./gradlew clean build -x test -Dspring.profiles.active=prod
@@ -81,26 +77,18 @@ jobs:
           target: ${{ secrets.WORK_DIR }}
           rm: false
 
-      - name: Read deploy script
-        id: deploy_script
-        run: |
-          {
-            echo 'script<<__SCRIPT__'
-            cat scripts/blue-green-deploy.sh
-            echo '__SCRIPT__'
-          } >> "$GITHUB_OUTPUT"
-
       - name: Deploy on server
         uses: appleboy/ssh-action@v0.1.8
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          script: |
-            bash -s <<'__SCRIPT__'
-            ${{ steps.deploy_script.outputs.script }}
-            __SCRIPT__
+            host: ${{ secrets.SERVER_IP }}
+            username: ${{ secrets.SERVER_USER }}
+            key: ${{ secrets.SERVER_SSH_KEY }}
+            port: ${{ secrets.SERVER_PORT }}
+            script: |
+              set -euo pipefail
+              cd /opt/konect/api
+              chmod +x scripts/blue-green-deploy.sh || true
+              bash scripts/blue-green-deploy.sh
 
       - name: Deploy monitoring stack
         uses: appleboy/ssh-action@v0.1.8
