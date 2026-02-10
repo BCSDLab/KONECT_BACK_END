@@ -3,7 +3,7 @@ set -euo pipefail
 
 NGINX_CONF="/etc/nginx/conf.d/konect.conf"
 
-SERVICE_PREFIX="konect-prod"
+SERVICE_PREFIX="konect-backend-prod"
 
 health_check() {
   curl -fsS --connect-timeout 2 --max-time 3 "http://localhost:$1/actuator/health" \
