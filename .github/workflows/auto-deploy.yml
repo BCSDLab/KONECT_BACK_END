@@ -76,5 +76,5 @@ jobs:
             script: |
               set -euo pipefail
               cd /opt/konect/api
-              chmod +x scripts/blue-green-deploy.sh || true
-              bash scripts/blue-green-deploy.sh
+              chmod +x blue-green-deploy.sh || true
+              bash blue-green-deploy.sh
