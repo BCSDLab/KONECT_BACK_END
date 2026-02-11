@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import gg.agit.konect.domain.chat.enums.ChatRoomType;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -35,10 +36,16 @@ public record ChatRoomsResponse(
         LocalDateTime lastSentTime,
 
         @Schema(description = "읽지 않은 메시지 개수", example = "12", requiredMode = REQUIRED)
-        Integer unreadCount
+        Integer unreadCount,
+
+        @Schema(description = "채팅방 타입", example = "NORMAL", requiredMode = REQUIRED)
+        ChatRoomType chatRoomType
     ) {
         public static InnerChatRoomResponse from(
-            ChatRoom chatRoom, User currentUser, Map<Integer, Integer> unreadCountMap
+            ChatRoom chatRoom,
+            User currentUser,
+            Map<Integer, Integer> unreadCountMap,
+            ChatRoomType chatRoomType
         ) {
             User chatPartner = chatRoom.getChatPartner(currentUser);
 
@@ -48,16 +55,13 @@ public record ChatRoomsResponse(
                 chatPartner.getImageUrl(),
                 chatRoom.getLastMessageContent(),
                 chatRoom.getLastMessageSentAt(),
-                unreadCountMap.getOrDefault(chatRoom.getId(), 0)
+                unreadCountMap.getOrDefault(chatRoom.getId(), 0),
+                chatRoomType
             );
         }
     }
 
-    public static ChatRoomsResponse from(
-        List<ChatRoom> chatRooms, User currentUser, Map<Integer, Integer> unreadCountMap
-    ) {
-        return new ChatRoomsResponse(chatRooms.stream()
-            .map(chatRoom -> InnerChatRoomResponse.from(chatRoom, currentUser, unreadCountMap))
-            .toList());
+    public static ChatRoomsResponse of(List<InnerChatRoomResponse> chatRooms) {
+        return new ChatRoomsResponse(chatRooms);
     }
 }

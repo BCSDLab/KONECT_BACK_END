@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse.InnerAdminChatMessageResponse;
-import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.user.enums.UserRole;
@@ -34,13 +33,6 @@ public interface AdminChatApi {
         @PathVariable Integer userId,
         @UserId Integer adminId
     );
-
-    @Operation(summary = "어드민 채팅방 목록을 조회한다.", description = """
-        어드민과 대화한 모든 채팅방 목록을 조회합니다.
-        송신자 또는 수신자 중 한 명이 어드민인 채팅방들이 조회됩니다.
-        """)
-    @GetMapping("/rooms")
-    ResponseEntity<AdminChatRoomsResponse> getChatRooms();
 
     @Operation(summary = "어드민 채팅방의 메시지를 조회한다.", description = """
         채팅방의 메시지 목록을 조회하고, 어드민 대상 미읽음 메시지를 읽음 처리합니다.

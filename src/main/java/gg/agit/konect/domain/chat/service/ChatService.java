@@ -2,8 +2,12 @@ package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -18,7 +22,9 @@ import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomsResponse.InnerChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
+import gg.agit.konect.domain.chat.enums.ChatRoomType;
 import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
@@ -65,14 +71,47 @@ public class ChatService {
 
     public ChatRoomsResponse getChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
+        List<InnerChatRoomResponse> chatRoomResponses = new ArrayList<>();
 
-        List<ChatRoom> chatRooms = chatRoomRepository.findByUserId(userId);
-        List<Integer> chatRoomIds = chatRooms.stream()
+        List<ChatRoom> personalChatRooms = chatRoomRepository.findByUserId(userId);
+        Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(
+            extractChatRoomIds(personalChatRooms), userId
+        );
+
+        Set<Integer> addedChatRoomIds = new HashSet<>();
+        if (user.getRole() == UserRole.ADMIN) {
+            List<ChatRoom> adminChatRooms = chatRoomRepository.findAllAdminChatRooms(UserRole.ADMIN);
+            Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(
+                extractChatRoomIds(adminChatRooms)
+            );
+
+            for (ChatRoom chatRoom : adminChatRooms) {
+                chatRoomResponses.add(InnerChatRoomResponse.from(
+                    chatRoom, user, adminUnreadCountMap, ChatRoomType.ADMIN
+                ));
+                addedChatRoomIds.add(chatRoom.getId());
+            }
+        }
+
+        for (ChatRoom chatRoom : personalChatRooms) {
+            if (!addedChatRoomIds.contains(chatRoom.getId())) {
+                chatRoomResponses.add(InnerChatRoomResponse.from(
+                    chatRoom, user, personalUnreadCountMap, ChatRoomType.NORMAL
+                ));
+            }
+        }
+
+        chatRoomResponses.sort(Comparator
+            .comparing(InnerChatRoomResponse::lastSentTime, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(InnerChatRoomResponse::chatRoomId));
+
+        return ChatRoomsResponse.of(chatRoomResponses);
+    }
+
+    private List<Integer> extractChatRoomIds(List<ChatRoom> chatRooms) {
+        return chatRooms.stream()
             .map(ChatRoom::getId)
             .toList();
-        Map<Integer, Integer> unreadCountMap = getUnreadCountMap(chatRoomIds, userId);
-
-        return ChatRoomsResponse.from(chatRooms, user, unreadCountMap);
     }
 
     private Map<Integer, Integer> getUnreadCountMap(List<Integer> chatRoomIds, Integer userId) {
@@ -82,6 +121,22 @@ public class ChatService {
 
         List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesByChatRoomIdsAndUserId(
             chatRoomIds, userId
+        );
+
+        return unreadMessageCounts.stream()
+            .collect(Collectors.toMap(
+                UnreadMessageCount::chatRoomId,
+                unreadMessageCount -> unreadMessageCount.unreadCount().intValue()
+            ));
+    }
+
+    private Map<Integer, Integer> getAdminUnreadCountMap(List<Integer> chatRoomIds) {
+        if (chatRoomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesForAdmin(
+            chatRoomIds, UserRole.ADMIN
         );
 
         return unreadMessageCounts.stream()

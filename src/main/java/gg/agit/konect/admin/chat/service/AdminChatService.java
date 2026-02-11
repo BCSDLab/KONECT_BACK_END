@@ -3,8 +3,6 @@ package gg.agit.konect.admin.chat.service;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,11 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse;
 import gg.agit.konect.admin.chat.dto.AdminChatMessagesResponse.InnerAdminChatMessageResponse;
-import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse;
-import gg.agit.konect.admin.chat.dto.AdminChatRoomsResponse.InnerAdminChatRoomResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
-import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
+import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
@@ -53,40 +48,6 @@ public class AdminChatService {
             });
 
         return ChatRoomResponse.from(chatRoom);
-    }
-
-    public AdminChatRoomsResponse getChatRooms() {
-        List<ChatRoom> chatRooms = chatRoomRepository.findAllAdminChatRooms(UserRole.ADMIN);
-        List<Integer> chatRoomIds = chatRooms.stream()
-            .map(ChatRoom::getId)
-            .toList();
-        Map<Integer, Integer> unreadCountMap = getUnreadCountMap(chatRoomIds);
-
-        List<InnerAdminChatRoomResponse> responses = chatRooms.stream()
-            .map(chatRoom -> InnerAdminChatRoomResponse.from(
-                chatRoom,
-                getNormalUser(chatRoom),
-                unreadCountMap.getOrDefault(chatRoom.getId(), 0)
-            ))
-            .toList();
-
-        return new AdminChatRoomsResponse(responses);
-    }
-
-    private Map<Integer, Integer> getUnreadCountMap(List<Integer> chatRoomIds) {
-        if (chatRoomIds.isEmpty()) {
-            return Map.of();
-        }
-
-        List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesForAdmin(
-            chatRoomIds, UserRole.ADMIN
-        );
-
-        return unreadMessageCounts.stream()
-            .collect(Collectors.toMap(
-                UnreadMessageCount::chatRoomId,
-                unreadMessageCount -> unreadMessageCount.unreadCount().intValue()
-            ));
     }
 
     @Transactional
