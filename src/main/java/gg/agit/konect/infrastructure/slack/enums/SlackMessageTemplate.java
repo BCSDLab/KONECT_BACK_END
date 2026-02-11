@@ -21,6 +21,13 @@ public enum SlackMessageTemplate {
         > %s
         """
     ),
+    ADMIN_CHAT_RECEIVED(
+        """
+        *:speech_balloon: 새로운 채팅이 도착했습니다.*
+        보낸 사람: %s
+        > %s
+        """
+    ),
     ;
 
     private final String template;
