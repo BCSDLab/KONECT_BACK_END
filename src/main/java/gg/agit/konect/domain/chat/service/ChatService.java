@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,16 @@ import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
+import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
-import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.notification.service.NotificationService;
+import gg.agit.konect.domain.user.enums.UserRole;
+import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +44,7 @@ public class ChatService {
     private final ClubMemberRepository clubMemberRepository;
     private final ChatPresenceService chatPresenceService;
     private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ChatRoomResponse createOrGetChatRoom(Integer userId, ChatRoomCreateRequest request) {
@@ -118,7 +122,14 @@ public class ChatService {
         chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
 
         notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
+        publishAdminChatEventIfNeeded(receiver, sender, request.content());
 
         return ChatMessageResponse.from(chatMessage, userId);
+    }
+
+    private void publishAdminChatEventIfNeeded(User receiver, User sender, String content) {
+        if (receiver.getRole() == UserRole.ADMIN) {
+            eventPublisher.publishEvent(AdminChatReceivedEvent.of(sender.getId(), sender.getName(), content));
+        }
     }
 }
