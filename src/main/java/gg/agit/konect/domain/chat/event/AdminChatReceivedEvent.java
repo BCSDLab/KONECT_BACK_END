@@ -1,11 +1,11 @@
 package gg.agit.konect.domain.chat.event;
 
 public record AdminChatReceivedEvent(
-    Integer userId,
+    Integer senderId,
     String senderName,
     String content
 ) {
-    public static AdminChatReceivedEvent of(Integer userId, String senderName, String content) {
-        return new AdminChatReceivedEvent(userId, senderName, content);
+    public static AdminChatReceivedEvent of(Integer senderId, String senderName, String content) {
+        return new AdminChatReceivedEvent(senderId, senderName, content);
     }
 }
