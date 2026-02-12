@@ -50,14 +50,14 @@ public class GroupChatService {
     public GroupChatRoomResponse getGroupChatRoom(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
 
-        Integer roomId = getRoomIdOrThrow(clubId);
+        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
         return new GroupChatRoomResponse(roomId);
     }
 
     @Transactional
     public GroupChatMessagesResponse getMessages(Integer clubId, Integer userId, Integer page, Integer limit) {
         LocalDateTime joinedAt = getJoinedAtOrThrow(clubId, userId);
-        Integer roomId = getRoomIdOrThrow(clubId);
+        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
 
         chatPresenceService.recordPresence(roomId, userId);
 
@@ -114,7 +114,7 @@ public class GroupChatService {
     public GroupChatMessageResponse sendMessage(Integer clubId, Integer userId, String content) {
         validateClubMember(clubId, userId);
 
-        Integer roomId = getRoomIdOrThrow(clubId);
+        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
         GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
         User sender = userRepository.getById(userId);
 
@@ -156,7 +156,7 @@ public class GroupChatService {
 
     @Transactional
     public void markAsRead(Integer clubId, Integer userId) {
-        Integer roomId = getRoomIdOrThrow(clubId);
+        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
 
         markAsReadInternal(roomId, userId, LocalDateTime.now());
     }
@@ -165,7 +165,7 @@ public class GroupChatService {
     public Boolean toggleMute(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
 
-        Integer roomId = getRoomIdOrThrow(clubId);
+        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
 
         GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
         User user = userRepository.getById(userId);
@@ -212,10 +212,6 @@ public class GroupChatService {
             .toList();
 
         return new HashSet<>(mutedUserIds);
-    }
-
-    private Integer getRoomIdOrThrow(Integer clubId) {
-        return groupChatRoomRepository.getByClubId(clubId).getId();
     }
 
     private LocalDateTime getJoinedAtOrThrow(Integer clubId, Integer userId) {

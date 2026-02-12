@@ -16,6 +16,8 @@ public interface GroupChatRoomRepository extends Repository<GroupChatRoom, Integ
 
     Optional<GroupChatRoom> findByClubId(Integer clubId);
 
+    Optional<Integer> findIdByClubId(Integer clubId);
+
     default GroupChatRoom getById(Integer roomId) {
         return findById(roomId)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_GROUP_CHAT_ROOM));
@@ -23,6 +25,11 @@ public interface GroupChatRoomRepository extends Repository<GroupChatRoom, Integ
 
     default GroupChatRoom getByClubId(Integer clubId) {
         return findByClubId(clubId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_GROUP_CHAT_ROOM));
+    }
+
+    default Integer getIdByClubId(Integer clubId) {
+        return findIdByClubId(clubId)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_GROUP_CHAT_ROOM));
     }
 }
