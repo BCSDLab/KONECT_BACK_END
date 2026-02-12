@@ -3,6 +3,7 @@ package gg.agit.konect.domain.user.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -35,7 +36,10 @@ public record UserInfoResponse(
     Long unreadCouncilNoticeCount,
 
     @Schema(description = "동아리 관리자 여부", example = "true", requiredMode = REQUIRED)
-    Boolean isClubManager
+    Boolean isClubManager,
+
+    @Schema(description = "유저 역할", example = "USER", requiredMode = REQUIRED)
+    UserRole role
 ) {
 
     private static final long SECONDS_PER_HOUR = 3600;
@@ -58,7 +62,8 @@ public record UserInfoResponse(
             joinedClubCount,
             formatSecondsToHHmm(studyTime),
             unreadCouncilNoticeCount,
-            isClubManager
+            isClubManager,
+            user.getRole()
         );
     }
 
