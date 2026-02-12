@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.user.enums.UserRole;
+import gg.agit.konect.global.auth.annotation.Auth;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -95,5 +97,20 @@ public interface ChatApi {
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @Valid @RequestBody ChatMessageSendRequest request,
         @UserId Integer userId
+    );
+
+    @Operation(summary = "[어드민] 유저와의 채팅방을 생성하거나 기존 채팅방을 반환한다.", description = """
+        ## 설명
+        - 어드민이 특정 유저와의 1:1 채팅방을 생성하거나 기존 채팅방을 반환합니다.
+
+        ## 로직
+        - 이미 해당 유저와 어드민 사이의 채팅방이 존재하면 기존 채팅방을 반환합니다.
+        - 존재하지 않으면 새로운 채팅방을 생성합니다.
+        """)
+    @Auth(roles = {UserRole.ADMIN})
+    @PostMapping("/rooms/users/{userId}")
+    ResponseEntity<ChatRoomResponse> createOrGetAdminChatRoom(
+        @PathVariable Integer userId,
+        @UserId Integer adminId
     );
 }

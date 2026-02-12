@@ -69,6 +69,20 @@ public class ChatService {
         return ChatRoomResponse.from(chatRoom);
     }
 
+    @Transactional
+    public ChatRoomResponse createOrGetAdminChatRoom(Integer userId, Integer adminId) {
+        User admin = userRepository.getById(adminId);
+        User targetUser = userRepository.getById(userId);
+
+        ChatRoom chatRoom = chatRoomRepository.findByUserIdAndAdminRole(targetUser.getId(), UserRole.ADMIN)
+            .orElseGet(() -> {
+                ChatRoom newChatRoom = ChatRoom.of(admin, targetUser);
+                return chatRoomRepository.save(newChatRoom);
+            });
+
+        return ChatRoomResponse.from(chatRoom);
+    }
+
     public ChatRoomsResponse getChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
         List<InnerChatRoomResponse> chatRoomResponses = new ArrayList<>();
@@ -152,15 +166,46 @@ public class ChatService {
         chatRoom.validateIsParticipant(userId);
 
         chatPresenceService.recordPresence(roomId, userId);
-
-        List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessagesByChatRoomIdAndUserId(
-            roomId, userId
-        );
-        unreadMessages.forEach(ChatMessage::markAsRead);
+        markUnreadMessagesAsRead(userId, roomId, chatRoom);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
-        return ChatMessagesResponse.from(messages, userId);
+
+        Integer maskedAdminId = getMaskedAdminId(userId, chatRoom);
+        return ChatMessagesResponse.from(messages, userId, maskedAdminId);
+    }
+
+    private Integer getMaskedAdminId(Integer userId, ChatRoom chatRoom) {
+        User user = userRepository.getById(userId);
+        if (user.getRole() == UserRole.ADMIN || !isAdminChatRoom(chatRoom)) {
+            return null;
+        }
+        return getAdminFromChatRoom(chatRoom).getId();
+    }
+
+    private User getAdminFromChatRoom(ChatRoom chatRoom) {
+        if (chatRoom.getSender().getRole() == UserRole.ADMIN) {
+            return chatRoom.getSender();
+        }
+        return chatRoom.getReceiver();
+    }
+
+    private void markUnreadMessagesAsRead(Integer userId, Integer roomId, ChatRoom chatRoom) {
+        User user = userRepository.getById(userId);
+        List<ChatMessage> unreadMessages;
+
+        if (user.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
+            unreadMessages = chatMessageRepository.findUnreadMessagesForAdmin(roomId, UserRole.ADMIN);
+        } else {
+            unreadMessages = chatMessageRepository.findUnreadMessagesByChatRoomIdAndUserId(roomId, userId);
+        }
+
+        unreadMessages.forEach(ChatMessage::markAsRead);
+    }
+
+    private boolean isAdminChatRoom(ChatRoom chatRoom) {
+        return chatRoom.getSender().getRole() == UserRole.ADMIN
+            || chatRoom.getReceiver().getRole() == UserRole.ADMIN;
     }
 
     @Transactional

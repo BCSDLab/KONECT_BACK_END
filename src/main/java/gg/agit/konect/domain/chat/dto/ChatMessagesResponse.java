@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import gg.agit.konect.domain.chat.model.ChatMessage;
+import gg.agit.konect.domain.user.enums.UserRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ChatMessagesResponse(
@@ -48,26 +49,42 @@ public record ChatMessagesResponse(
         @Schema(description = "내가 보낸 메시지 여부", example = "true", requiredMode = REQUIRED)
         Boolean isMine
     ) {
-        public static InnerChatMessageResponse from(ChatMessage message, Integer currentUserId) {
+        public static InnerChatMessageResponse from(
+            ChatMessage message,
+            Integer currentUserId,
+            Integer maskedAdminId
+        ) {
+            Integer senderId = resolveSenderId(message, maskedAdminId);
             return new InnerChatMessageResponse(
                 message.getId(),
-                message.getSender().getId(),
+                senderId,
                 message.getContent(),
                 message.getCreatedAt(),
                 message.getIsRead(),
                 message.isSentBy(currentUserId)
             );
         }
+
+        private static Integer resolveSenderId(ChatMessage message, Integer maskedAdminId) {
+            if (maskedAdminId != null && message.getSender().getRole() == UserRole.ADMIN) {
+                return maskedAdminId;
+            }
+            return message.getSender().getId();
+        }
     }
 
-    public static ChatMessagesResponse from(Page<ChatMessage> page, Integer currentUserId) {
+    public static ChatMessagesResponse from(
+        Page<ChatMessage> page,
+        Integer currentUserId,
+        Integer maskedAdminId
+    ) {
         return new ChatMessagesResponse(
             page.getTotalElements(),
             page.getNumberOfElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
             page.stream()
-                .map(message -> InnerChatMessageResponse.from(message, currentUserId))
+                .map(message -> InnerChatMessageResponse.from(message, currentUserId, maskedAdminId))
                 .toList()
         );
     }
