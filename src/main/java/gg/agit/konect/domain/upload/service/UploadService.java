@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.upload.service;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -50,8 +49,9 @@ public class UploadService {
             .contentType(contentType)
             .build();
 
-        try (InputStream inputStream = file.getInputStream()) {
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, file.getSize()));
+        try {
+            byte[] fileBytes = file.getBytes();
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(fileBytes));
         } catch (S3Exception e) {
             String awsErrorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null;
             String awsErrorMessage = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
