@@ -47,9 +47,36 @@ CREATE TABLE IF NOT EXISTS group_chat_notification_setting
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS group_chat_read_status
+(
+    room_id      INT       NOT NULL,
+    user_id      INT       NOT NULL,
+    last_read_at TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (room_id, user_id),
+    FOREIGN KEY (room_id) REFERENCES group_chat_room (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
 CREATE INDEX idx_group_chat_message_room_created ON group_chat_message (room_id, created_at DESC);
 CREATE INDEX idx_message_read_status_message ON message_read_status (message_id);
+CREATE INDEX idx_group_chat_read_status_room ON group_chat_read_status (room_id);
 
 INSERT INTO group_chat_room (club_id, created_at, updated_at)
 SELECT id, NOW(), NOW() FROM club
 WHERE id NOT IN (SELECT club_id FROM group_chat_room);
+
+INSERT INTO group_chat_read_status (room_id, user_id, last_read_at)
+SELECT m.room_id, rs.user_id, MAX(rs.read_at) AS last_read_at
+FROM message_read_status rs
+    JOIN group_chat_message m ON m.id = rs.message_id
+GROUP BY m.room_id, rs.user_id
+ON DUPLICATE KEY UPDATE last_read_at = GREATEST(group_chat_read_status.last_read_at, VALUES(last_read_at));
+
+INSERT INTO group_chat_read_status (room_id, user_id, last_read_at)
+SELECT r.id, cm.user_id, cm.created_at
+FROM group_chat_room r
+    JOIN club_member cm ON cm.club_id = r.club_id
+    LEFT JOIN group_chat_read_status grs ON grs.room_id = r.id
+    AND grs.user_id = cm.user_id
+WHERE grs.room_id IS NULL;

@@ -12,7 +12,14 @@ public interface GroupChatRoomRepository extends Repository<GroupChatRoom, Integ
 
     GroupChatRoom save(GroupChatRoom room);
 
+    Optional<GroupChatRoom> findById(Integer roomId);
+
     Optional<GroupChatRoom> findByClubId(Integer clubId);
+
+    default GroupChatRoom getById(Integer roomId) {
+        return findById(roomId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_GROUP_CHAT_ROOM));
+    }
 
     default GroupChatRoom getByClubId(Integer clubId) {
         return findByClubId(clubId)
