@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDateTime;
@@ -41,7 +42,10 @@ public record ClubApplicationsResponse(
         String imageUrl,
 
         @Schema(description = "지원 일시", example = "2025-01-13T10:30:00", requiredMode = REQUIRED)
-        LocalDateTime appliedAt
+        LocalDateTime appliedAt,
+
+        @Schema(description = "회비 납부 증빙 사진 URL", example = "https://example.com/payment.png", requiredMode = NOT_REQUIRED)
+        String feePaymentImageUrl
     ) {
 
         public static ClubApplicationResponse from(ClubApply clubApply) {
@@ -50,7 +54,8 @@ public record ClubApplicationsResponse(
                 clubApply.getUser().getStudentNumber(),
                 clubApply.getUser().getName(),
                 clubApply.getUser().getImageUrl(),
-                clubApply.getCreatedAt()
+                clubApply.getCreatedAt(),
+                clubApply.getFeePaymentImageUrl()
             );
         }
     }

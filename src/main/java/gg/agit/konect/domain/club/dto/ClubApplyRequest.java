@@ -17,7 +17,10 @@ public record ClubApplyRequest(
     @Schema(description = "설문 답변 목록", requiredMode = REQUIRED)
     @NotNull(message = "설문 답변 목록은 필수입니다.")
     @Valid
-    List<InnerClubQuestionAnswer> answers
+    List<InnerClubQuestionAnswer> answers,
+
+    @Schema(description = "회비 납부 증빙 사진 URL", example = "https://example.com/payment.png", requiredMode = NOT_REQUIRED)
+    String feePaymentImageUrl
 ) {
     public record InnerClubQuestionAnswer(
         @Schema(description = "설문 질문 ID", example = "1", requiredMode = REQUIRED)

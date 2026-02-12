@@ -46,17 +46,22 @@ public class ClubApply extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User user;
 
+    @Column(name = "fee_payment_image_url", length = 512)
+    private String feePaymentImageUrl;
+
     @Builder
-    private ClubApply(Integer id, Club club, User user) {
+    private ClubApply(Integer id, Club club, User user, String feePaymentImageUrl) {
         this.id = id;
         this.club = club;
         this.user = user;
+        this.feePaymentImageUrl = feePaymentImageUrl;
     }
 
-    public static ClubApply of(Club club, User user) {
+    public static ClubApply of(Club club, User user, String feePaymentImageUrl) {
         return ClubApply.builder()
             .club(club)
             .user(user)
+            .feePaymentImageUrl(feePaymentImageUrl)
             .build();
     }
 }
