@@ -56,7 +56,9 @@ public class GroupChatService {
 
     @Transactional
     public GroupChatMessagesResponse getMessages(Integer clubId, Integer userId, Integer page, Integer limit) {
-        LocalDateTime joinedAt = getJoinedAtOrThrow(clubId, userId);
+        validateClubMember(clubId, userId);
+
+        LocalDateTime joinedAt = clubMemberRepository.getJoinedAtByClubIdAndUserId(clubId, userId);
         Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
 
         chatPresenceService.recordPresence(roomId, userId);
@@ -212,13 +214,6 @@ public class GroupChatService {
             .toList();
 
         return new HashSet<>(mutedUserIds);
-    }
-
-    private LocalDateTime getJoinedAtOrThrow(Integer clubId, Integer userId) {
-        validateClubMember(clubId, userId);
-
-        return clubMemberRepository.findJoinedAtByClubIdAndUserId(clubId, userId)
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_MEMBER));
     }
 
     private int getUnreadCount(

@@ -120,6 +120,11 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         @Param("userId") Integer userId
     );
 
+    default LocalDateTime getJoinedAtByClubIdAndUserId(Integer clubId, Integer userId) {
+        return findJoinedAtByClubIdAndUserId(clubId, userId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_MEMBER));
+    }
+
     default ClubMember getByClubIdAndUserId(Integer clubId, Integer userId) {
         return findByClubIdAndUserId(clubId, userId)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_MEMBER));
