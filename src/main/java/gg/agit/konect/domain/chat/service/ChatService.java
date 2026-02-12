@@ -94,8 +94,9 @@ public class ChatService {
 
         for (ChatRoom chatRoom : personalChatRooms) {
             if (!addedChatRoomIds.contains(chatRoom.getId())) {
+                ChatRoomType type = isAdminChatRoom(chatRoom) ? ChatRoomType.ADMIN : ChatRoomType.NORMAL;
                 chatRoomResponses.add(InnerChatRoomResponse.from(
-                    chatRoom, user, personalUnreadCountMap, ChatRoomType.NORMAL
+                    chatRoom, user, personalUnreadCountMap, type
                 ));
             }
         }
