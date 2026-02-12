@@ -175,6 +175,120 @@ public class NotificationService {
         }
     }
 
+    @Async
+    public void sendGroupChatNotification(
+        Integer roomId,
+        Integer senderId,
+        String senderName,
+        String messageContent,
+        List<Integer> recipientUserIds
+    ) {
+        try {
+            // 발신자를 수신자 목록에서 제외
+            List<Integer> filteredRecipients = recipientUserIds.stream()
+                .filter(recipientId -> !recipientId.equals(senderId))
+                .toList();
+
+            if (filteredRecipients.isEmpty()) {
+                log.debug("No recipients after filtering sender: roomId={}, senderId={}", roomId, senderId);
+                return;
+            }
+
+            String truncatedBody = buildPreview(messageContent);
+            Map<String, Object> data = new HashMap<>();
+            data.put("path", "group-chats/" + roomId);
+
+            for (Integer recipientId : filteredRecipients) {
+                try {
+                    // 사용자가 현재 채팅방에 접속 중인 경우 알림 전송 생략
+                    if (chatPresenceService.isUserInChatRoom(roomId, recipientId)) {
+                        log.debug(
+                            "User in group chat room, skipping notification: roomId={}, recipientId={}",
+                            roomId,
+                            recipientId
+                        );
+                        continue;
+                    }
+
+                    List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(recipientId);
+                    if (tokens.isEmpty()) {
+                        log.debug("No device tokens found for user: recipientId={}", recipientId);
+                        continue;
+                    }
+
+                    List<ExpoPushMessage> messages = tokens.stream()
+                        .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
+                        .toList();
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+                    HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
+                    ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
+                        EXPO_PUSH_URL,
+                        HttpMethod.POST,
+                        entity,
+                        ExpoPushResponse.class
+                    );
+
+                    if (!response.getStatusCode().is2xxSuccessful()) {
+                        log.error(
+                            "Expo push response not successful: roomId={}, recipientId={}, status={}",
+                            roomId,
+                            recipientId,
+                            response.getStatusCode()
+                        );
+                        continue;
+                    }
+
+                    ExpoPushResponse body = response.getBody();
+                    if (body == null || body.data == null) {
+                        log.error(
+                            "Expo push response body missing: roomId={}, recipientId={}",
+                            roomId,
+                            recipientId
+                        );
+                        continue;
+                    }
+
+                    for (int i = 0; i < body.data.size(); i += 1) {
+                        ExpoPushTicket ticket = body.data.get(i);
+                        if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
+                            continue;
+                        }
+                        String token = i < tokens.size() ? tokens.get(i) : "unknown";
+                        log.error(
+                            "Expo push failed: roomId={}, recipientId={}, token={}, status={}, message={}, details={}",
+                            roomId,
+                            recipientId,
+                            token,
+                            ticket.status(),
+                            ticket.message(),
+                            ticket.details()
+                        );
+                    }
+
+                    log.debug(
+                        "Group chat notification sent: roomId={}, recipientId={}, tokenCount={}",
+                        roomId,
+                        recipientId,
+                        tokens.size()
+                    );
+                } catch (Exception e) {
+                    log.error(
+                        "Failed to send group chat notification to recipient: roomId={}, recipientId={}",
+                        roomId,
+                        recipientId,
+                        e
+                    );
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to send group chat notification: roomId={}, senderId={}", roomId, senderId, e);
+        }
+    }
+
     private Map<String, Object> buildData(Map<String, String> data, String path) {
         Map<String, Object> payload = new HashMap<>();
         if (data != null && !data.isEmpty()) {
