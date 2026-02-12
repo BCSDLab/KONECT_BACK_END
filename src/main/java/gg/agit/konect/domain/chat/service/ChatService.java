@@ -1,9 +1,7 @@
 package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
-import static gg.agit.konect.global.code.ApiResponseCode.INVALID_CHAT_ROOM_CREATE_REQUEST;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
-import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,8 +31,6 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
-import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
@@ -50,17 +46,14 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
-    private final ClubMemberRepository clubMemberRepository;
     private final ChatPresenceService chatPresenceService;
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public ChatRoomResponse createOrGetChatRoom(Integer userId, ChatRoomCreateRequest request) {
-        validateChatRoomCreateRequest(request);
-
-        User currentUser = userRepository.getById(userId);
-        User targetUser = resolveTargetUser(request);
+    public ChatRoomResponse createOrGetChatRoom(Integer currentUserId, ChatRoomCreateRequest request) {
+        User currentUser = userRepository.getById(currentUserId);
+        User targetUser = userRepository.getById(request.userId());
 
         if (currentUser.getId().equals(targetUser.getId())) {
             throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
@@ -73,24 +66,6 @@ public class ChatService {
             });
 
         return ChatRoomResponse.from(chatRoom);
-    }
-
-    private void validateChatRoomCreateRequest(ChatRoomCreateRequest request) {
-        boolean hasClubId = request.hasClubId();
-        boolean hasTargetUserId = request.hasTargetUserId();
-
-        if (hasClubId == hasTargetUserId) {
-            throw CustomException.of(INVALID_CHAT_ROOM_CREATE_REQUEST);
-        }
-    }
-
-    private User resolveTargetUser(ChatRoomCreateRequest request) {
-        if (request.hasClubId()) {
-            ClubMember clubPresident = clubMemberRepository.findPresidentByClubId(request.clubId())
-                .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
-            return clubPresident.getUser();
-        }
-        return userRepository.getById(request.targetUserId());
     }
 
     public ChatRoomsResponse getChatRooms(Integer userId) {

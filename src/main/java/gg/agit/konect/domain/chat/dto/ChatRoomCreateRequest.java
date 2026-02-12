@@ -1,20 +1,14 @@
 package gg.agit.konect.domain.chat.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 
 public record ChatRoomCreateRequest(
-    @Schema(description = "동아리 ID (동아리 회장과 채팅 시 사용)", example = "1")
-    Integer clubId,
-
-    @Schema(description = "대상 유저 ID (특정 유저와 직접 채팅 시 사용)", example = "10")
-    Integer targetUserId
+    @NotNull(message = "유저 ID는 필수입니다.")
+    @Schema(description = "채팅 대상 유저 ID", example = "10", requiredMode = REQUIRED)
+    Integer userId
 ) {
 
-    public boolean hasClubId() {
-        return clubId != null;
-    }
-
-    public boolean hasTargetUserId() {
-        return targetUserId != null;
-    }
 }
