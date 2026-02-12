@@ -4,10 +4,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
 import gg.agit.konect.domain.upload.dto.ImageUploadResponse;
+import gg.agit.konect.domain.upload.enums.UploadTarget;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +21,7 @@ public interface UploadApi {
     @Operation(summary = "이미지 파일을 업로드한다.", description = """
         서버가 multipart 파일을 받아 S3에 업로드합니다.
 
+        - target 쿼리파라미터로 이미지 저장 대상 도메인을 지정합니다. (CLUB, BANK, COUNCIL, USER)
         - 응답의 fileUrl을 기존 도메인 API의 imageUrl로 사용합니다.
 
         ## 에러
@@ -31,6 +34,7 @@ public interface UploadApi {
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<ImageUploadResponse> uploadImage(
         @UserId Integer userId,
-        @RequestPart("file") MultipartFile file
+        @RequestPart("file") MultipartFile file,
+        @RequestParam(value = "target") UploadTarget target
     );
 }
