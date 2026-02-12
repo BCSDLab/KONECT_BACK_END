@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import gg.agit.konect.domain.upload.dto.ImageUploadResponse;
+import gg.agit.konect.domain.upload.enums.UploadTarget;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.infrastructure.storage.cdn.StorageCdnProperties;
@@ -37,11 +38,11 @@ public class UploadService {
     private final S3StorageProperties s3StorageProperties;
     private final StorageCdnProperties storageCdnProperties;
 
-    public ImageUploadResponse uploadImage(MultipartFile file) {
+    public ImageUploadResponse uploadImage(MultipartFile file, UploadTarget target) {
         validateS3Configuration();
         String contentType = validateFile(file);
         String extension = extensionFromContentType(contentType);
-        String key = buildKey(extension);
+        String key = buildKey(extension, target);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
             .bucket(s3StorageProperties.bucket())
@@ -118,8 +119,9 @@ public class UploadService {
         };
     }
 
-    private String buildKey(String extension) {
+    private String buildKey(String extension, UploadTarget target) {
         String prefix = normalizePrefix(s3StorageProperties.keyPrefix());
+        String targetPath = target != null ? target.name().toLowerCase() : "";
         LocalDate today = LocalDate.now();
         String datePath = String.format(
             "%04d-%02d-%02d",
@@ -128,7 +130,12 @@ public class UploadService {
             today.getDayOfMonth()
         );
         String uuid = UUID.randomUUID().toString();
-        return prefix + datePath + "-" + uuid + "." + extension;
+
+        if (targetPath.isEmpty()) {
+            return prefix + datePath + "-" + uuid + "." + extension;
+        }
+
+        return prefix + targetPath + "/" + datePath + "-" + uuid + "." + extension;
     }
 
     private String normalizePrefix(String keyPrefix) {
