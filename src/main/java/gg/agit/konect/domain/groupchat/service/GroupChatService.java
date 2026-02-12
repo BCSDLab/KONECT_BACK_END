@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.groupchat.dto.GroupChatMessageResponse;
@@ -129,7 +128,7 @@ public class GroupChatService {
         String messageContent = message.getContent();
         LocalDateTime createdAt = message.getCreatedAt();
 
-        List<Integer> recipientUserIds = getClubMemberUserIds(clubId);
+        List<Integer> recipientUserIds = clubMemberRepository.findUserIdsByClubId(clubId);
         Set<Integer> mutedUserIds = getMutedUserIds(roomId);
         List<Integer> filteredRecipients = recipientUserIds.stream()
             .filter(recipientId -> !mutedUserIds.contains(recipientId))
@@ -184,14 +183,6 @@ public class GroupChatService {
             });
     }
 
-    @Transactional
-    public GroupChatRoom createGroupChatRoom(Club club) {
-        Integer clubId = club.getId();
-
-        return groupChatRoomRepository.findByClubId(clubId)
-            .orElseGet(() -> groupChatRoomRepository.save(GroupChatRoom.of(club)));
-    }
-
     private void validateClubMember(Integer clubId, Integer userId) {
         if (!clubMemberRepository.existsByClubIdAndUserId(clubId, userId)) {
             throw CustomException.of(ApiResponseCode.FORBIDDEN_GROUP_CHAT_ACCESS);
@@ -238,9 +229,4 @@ public class GroupChatService {
 
         return unreadCount;
     }
-
-    private List<Integer> getClubMemberUserIds(Integer clubId) {
-        return clubMemberRepository.findUserIdsByClubId(clubId);
-    }
-
 }
