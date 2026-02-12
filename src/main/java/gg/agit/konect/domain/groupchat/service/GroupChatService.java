@@ -1,12 +1,13 @@
 package gg.agit.konect.domain.groupchat.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.groupchat.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.groupchat.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.groupchat.dto.GroupChatRoomResponse;
+import gg.agit.konect.domain.groupchat.dto.MessageReadCount;
 import gg.agit.konect.domain.groupchat.model.GroupChatMessage;
 import gg.agit.konect.domain.groupchat.model.GroupChatNotificationSetting;
 import gg.agit.konect.domain.groupchat.model.GroupChatRoom;
@@ -30,17 +32,10 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import jakarta.persistence.EntityManager;
 
 @Service
 @Transactional(readOnly = true)
 public class GroupChatService {
-
-    private static final int MESSAGE_ID_INDEX = 0;
-    private static final int SENDER_ID_INDEX = 1;
-    private static final int SENDER_NAME_INDEX = 2;
-    private static final int MESSAGE_CONTENT_INDEX = 3;
-    private static final int MESSAGE_CREATED_AT_INDEX = 4;
 
     private final GroupChatRoomRepository groupChatRoomRepository;
     private final GroupChatMessageRepository groupChatMessageRepository;
@@ -50,7 +45,6 @@ public class GroupChatService {
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final NotificationService notificationService;
-    private final EntityManager entityManager;
 
     public GroupChatService(
         GroupChatRoomRepository groupChatRoomRepository,
@@ -60,8 +54,7 @@ public class GroupChatService {
         ClubMemberRepository clubMemberRepository,
         UserRepository userRepository,
         ChatPresenceService chatPresenceService,
-        NotificationService notificationService,
-        EntityManager entityManager
+        NotificationService notificationService
     ) {
         this.groupChatRoomRepository = groupChatRoomRepository;
         this.groupChatMessageRepository = groupChatMessageRepository;
@@ -71,7 +64,6 @@ public class GroupChatService {
         this.userRepository = userRepository;
         this.chatPresenceService = chatPresenceService;
         this.notificationService = notificationService;
-        this.entityManager = entityManager;
     }
 
     public GroupChatRoomResponse getGroupChatRoom(Integer clubId, Integer userId) {
@@ -91,47 +83,25 @@ public class GroupChatService {
         markAsReadInternal(roomId, userId, joinedAt);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        long offset = pageable.getOffset();
-
-        Long totalCount = entityManager.createQuery(
-                "SELECT COUNT(m) "
-                    + "FROM GroupChatMessage m "
-                    + "WHERE m.room.id = :roomId "
-                    + "AND m.createdAt >= :joinedAt",
-                Long.class
-            )
-            .setParameter("roomId", roomId)
-            .setParameter("joinedAt", joinedAt)
-            .getSingleResult();
-
-        List<Object[]> messageRows = entityManager.createQuery(
-                "SELECT m.id, m.sender.id, m.sender.name, m.content, m.createdAt "
-                    + "FROM GroupChatMessage m "
-                    + "WHERE m.room.id = :roomId "
-                    + "AND m.createdAt >= :joinedAt "
-                    + "ORDER BY m.createdAt DESC",
-                Object[].class
-            )
-            .setParameter("roomId", roomId)
-            .setParameter("joinedAt", joinedAt)
-            .setFirstResult((int)offset)
-            .setMaxResults(pageable.getPageSize())
-            .getResultList();
+        long totalCount = groupChatMessageRepository.countByRoomIdAndCreatedAtGreaterThanEqual(roomId, joinedAt);
+        Page<GroupChatMessage> messagePage = groupChatMessageRepository
+            .findByRoomIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(roomId, joinedAt, pageable);
+        List<GroupChatMessage> messages = messagePage.getContent();
 
         int memberCount = getMemberCount(clubId);
 
-        List<Integer> messageIds = messageRows.stream()
-            .map(row -> (Integer)row[MESSAGE_ID_INDEX])
+        List<Integer> messageIds = messages.stream()
+            .map(GroupChatMessage::getId)
             .toList();
         Map<Integer, Integer> readCountMap = getReadCountMap(messageIds);
 
-        List<GroupChatMessageResponse> responseMessages = messageRows.stream()
-            .map(row -> {
-                Integer messageId = (Integer)row[MESSAGE_ID_INDEX];
-                Integer senderId = (Integer)row[SENDER_ID_INDEX];
-                String senderName = (String)row[SENDER_NAME_INDEX];
-                String messageContent = (String)row[MESSAGE_CONTENT_INDEX];
-                LocalDateTime createdAt = (LocalDateTime)row[MESSAGE_CREATED_AT_INDEX];
+        List<GroupChatMessageResponse> responseMessages = messages.stream()
+            .map(message -> {
+                Integer messageId = message.getId();
+                Integer senderId = message.getSender().getId();
+                String senderName = message.getSender().getName();
+                String messageContent = message.getContent();
+                LocalDateTime createdAt = message.getCreatedAt();
 
                 int readCount = readCountMap.getOrDefault(messageId, 0);
                 int unreadCount = memberCount - readCount;
@@ -165,31 +135,17 @@ public class GroupChatService {
         validateClubMember(clubId, userId);
 
         Integer roomId = getRoomIdOrThrow(clubId);
-        GroupChatRoom room = entityManager.getReference(GroupChatRoom.class, roomId);
-        User sender = entityManager.getReference(User.class, userId);
+        GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
+        User sender = userRepository.getById(userId);
 
         GroupChatMessage message = groupChatMessageRepository.save(GroupChatMessage.of(room, sender, content));
         messageReadStatusRepository.save(MessageReadStatus.of(message, sender));
 
-        entityManager.flush();
-
-        Integer messageId = (Integer)entityManager.getEntityManagerFactory()
-            .getPersistenceUnitUtil()
-            .getIdentifier(message);
-
-        Object[] messageRow = entityManager.createQuery(
-                "SELECT m.id, m.sender.id, m.sender.name, m.content, m.createdAt "
-                    + "FROM GroupChatMessage m "
-                    + "WHERE m.id = :messageId",
-                Object[].class
-            )
-            .setParameter("messageId", messageId)
-            .getSingleResult();
-
-        Integer senderId = (Integer)messageRow[SENDER_ID_INDEX];
-        String senderName = (String)messageRow[SENDER_NAME_INDEX];
-        String messageContent = (String)messageRow[MESSAGE_CONTENT_INDEX];
-        LocalDateTime createdAt = (LocalDateTime)messageRow[MESSAGE_CREATED_AT_INDEX];
+        Integer messageId = message.getId();
+        Integer senderId = sender.getId();
+        String senderName = sender.getName();
+        String messageContent = message.getContent();
+        LocalDateTime createdAt = message.getCreatedAt();
 
         List<Integer> recipientUserIds = getClubMemberUserIds(clubId);
         Set<Integer> mutedUserIds = getMutedUserIds(roomId);
@@ -232,48 +188,24 @@ public class GroupChatService {
 
         Integer roomId = getRoomIdOrThrow(clubId);
 
-        Boolean currentMuted = entityManager.createQuery(
-                "SELECT s.isMuted "
-                    + "FROM GroupChatNotificationSetting s "
-                    + "WHERE s.room.id = :roomId "
-                    + "AND s.user.id = :userId",
-                Boolean.class
-            )
-            .setParameter("roomId", roomId)
-            .setParameter("userId", userId)
-            .getResultStream()
-            .findFirst()
-            .orElse(null);
+        GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
+        User user = userRepository.getById(userId);
 
-        Boolean newMuted;
-
-        if (currentMuted == null) {
-            newMuted = true;
-            GroupChatRoom roomRef = entityManager.getReference(GroupChatRoom.class, roomId);
-            User userRef = entityManager.getReference(User.class, userId);
-            groupChatNotificationSettingRepository.save(GroupChatNotificationSetting.of(roomRef, userRef, true));
-        } else {
-            newMuted = !currentMuted;
-            entityManager.createQuery(
-                    "UPDATE GroupChatNotificationSetting s "
-                        + "SET s.isMuted = :isMuted "
-                        + "WHERE s.room.id = :roomId "
-                        + "AND s.user.id = :userId"
-                )
-                .setParameter("isMuted", newMuted)
-                .setParameter("roomId", roomId)
-                .setParameter("userId", userId)
-                .executeUpdate();
-        }
-
-        return newMuted;
+        return groupChatNotificationSettingRepository.findByRoomIdAndUserId(roomId, userId)
+            .map(setting -> {
+                setting.toggleMute();
+                groupChatNotificationSettingRepository.save(setting);
+                return setting.getIsMuted();
+            })
+            .orElseGet(() -> {
+                groupChatNotificationSettingRepository.save(GroupChatNotificationSetting.of(room, user, true));
+                return true;
+            });
     }
 
     @Transactional
     public GroupChatRoom createGroupChatRoom(Club club) {
-        Integer clubId = (Integer)entityManager.getEntityManagerFactory()
-            .getPersistenceUnitUtil()
-            .getIdentifier(club);
+        Integer clubId = club.getId();
 
         return groupChatRoomRepository.findByClubId(clubId)
             .orElseGet(() -> groupChatRoomRepository.save(GroupChatRoom.of(club)));
@@ -286,30 +218,16 @@ public class GroupChatService {
     }
 
     private void markAsReadInternal(Integer roomId, Integer userId, LocalDateTime joinedAt) {
-        List<GroupChatMessage> unreadMessages = entityManager.createQuery(
-                "SELECT m "
-                    + "FROM GroupChatMessage m "
-                    + "WHERE m.room.id = :roomId "
-                    + "AND m.createdAt >= :joinedAt "
-                    + "AND NOT EXISTS ("
-                    + "  SELECT 1 "
-                    + "  FROM MessageReadStatus rs "
-                    + "  WHERE rs.messageId = m.id "
-                    + "  AND rs.userId = :userId"
-                    + ")",
-                GroupChatMessage.class
-            )
-            .setParameter("roomId", roomId)
-            .setParameter("joinedAt", joinedAt)
-            .setParameter("userId", userId)
-            .getResultList();
+        List<GroupChatMessage> unreadMessages = groupChatMessageRepository
+            .findUnreadMessagesByRoomIdAndUserIdAndCreatedAtGreaterThanEqual(roomId, userId, joinedAt);
 
         if (unreadMessages.isEmpty()) {
             return;
         }
 
+        User user = userRepository.getById(userId);
         List<MessageReadStatus> statuses = unreadMessages.stream()
-            .map(message -> MessageReadStatus.of(message, entityManager.getReference(User.class, userId)))
+            .map(message -> MessageReadStatus.of(message, user))
             .toList();
 
         messageReadStatusRepository.saveAll(statuses);
@@ -320,90 +238,39 @@ public class GroupChatService {
             return Map.of();
         }
 
-        List<Object[]> counts = entityManager.createQuery(
-                "SELECT rs.messageId, COUNT(rs) "
-                    + "FROM MessageReadStatus rs "
-                    + "WHERE rs.messageId IN :messageIds "
-                    + "GROUP BY rs.messageId",
-                Object[].class
-            )
-            .setParameter("messageIds", messageIds)
-            .getResultList();
-
-        Map<Integer, Integer> readCountMap = new HashMap<>();
-        for (Object[] row : counts) {
-            Integer messageId = (Integer)row[0];
-            Long readCount = (Long)row[1];
-            readCountMap.put(messageId, readCount.intValue());
-        }
-
-        return readCountMap;
+        return messageReadStatusRepository.countReadCountByMessageIds(messageIds)
+            .stream()
+            .collect(Collectors.toMap(
+                MessageReadCount::messageId,
+                readCount -> readCount.readCount().intValue()
+            ));
     }
 
     private Set<Integer> getMutedUserIds(Integer roomId) {
-        List<Integer> mutedUserIds = entityManager.createQuery(
-                "SELECT s.user.id "
-                    + "FROM GroupChatNotificationSetting s "
-                    + "WHERE s.room.id = :roomId "
-                    + "AND s.isMuted = true",
-                Integer.class
-            )
-            .setParameter("roomId", roomId)
-            .getResultList();
+        List<Integer> mutedUserIds = groupChatNotificationSettingRepository.findByRoomIdAndIsMutedTrue(roomId).stream()
+            .map(setting -> setting.getUser().getId())
+            .toList();
 
         return new HashSet<>(mutedUserIds);
     }
 
     private Integer getRoomIdOrThrow(Integer clubId) {
-        return entityManager.createQuery(
-                "SELECT r.id "
-                    + "FROM GroupChatRoom r "
-                    + "WHERE r.club.id = :clubId",
-                Integer.class
-            )
-            .setParameter("clubId", clubId)
-            .getResultStream()
-            .findFirst()
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_GROUP_CHAT_ROOM));
+        return groupChatRoomRepository.getByClubId(clubId).getId();
     }
 
     private LocalDateTime getJoinedAtOrThrow(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
 
-        return entityManager.createQuery(
-                "SELECT cm.createdAt "
-                    + "FROM ClubMember cm "
-                    + "WHERE cm.club.id = :clubId "
-                    + "AND cm.user.id = :userId",
-                LocalDateTime.class
-            )
-            .setParameter("clubId", clubId)
-            .setParameter("userId", userId)
-            .getSingleResult();
+        return clubMemberRepository.findJoinedAtByClubIdAndUserId(clubId, userId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_MEMBER));
     }
 
     private int getMemberCount(Integer clubId) {
-        Long count = entityManager.createQuery(
-                "SELECT COUNT(cm) "
-                    + "FROM ClubMember cm "
-                    + "WHERE cm.club.id = :clubId",
-                Long.class
-            )
-            .setParameter("clubId", clubId)
-            .getSingleResult();
-
-        return count.intValue();
+        return Math.toIntExact(clubMemberRepository.countByClubId(clubId));
     }
 
     private List<Integer> getClubMemberUserIds(Integer clubId) {
-        return entityManager.createQuery(
-                "SELECT cm.user.id "
-                    + "FROM ClubMember cm "
-                    + "WHERE cm.club.id = :clubId",
-                Integer.class
-            )
-            .setParameter("clubId", clubId)
-            .getResultList();
+        return clubMemberRepository.findUserIdsByClubId(clubId);
     }
 
 }

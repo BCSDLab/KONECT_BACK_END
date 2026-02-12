@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.repository;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -108,6 +109,17 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         """)
     Optional<ClubMember> findByClubIdAndUserId(@Param("clubId") Integer clubId, @Param("userId") Integer userId);
 
+    @Query("""
+        SELECT cm.createdAt
+        FROM ClubMember cm
+        WHERE cm.club.id = :clubId
+        AND cm.user.id = :userId
+        """)
+    Optional<LocalDateTime> findJoinedAtByClubIdAndUserId(
+        @Param("clubId") Integer clubId,
+        @Param("userId") Integer userId
+    );
+
     default ClubMember getByClubIdAndUserId(Integer clubId, Integer userId) {
         return findByClubIdAndUserId(clubId, userId)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_MEMBER));
@@ -144,6 +156,15 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         WHERE cm.id.userId IN :userIds
         """)
     List<ClubMember> findByUserIdIn(@Param("userIds") List<Integer> userIds);
+
+    @Query("""
+        SELECT cm.user.id
+        FROM ClubMember cm
+        WHERE cm.club.id = :clubId
+        """)
+    List<Integer> findUserIdsByClubId(@Param("clubId") Integer clubId);
+
+    long countByClubId(Integer clubId);
 
     @Query("""
         SELECT COUNT(cm)
