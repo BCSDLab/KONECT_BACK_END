@@ -30,13 +30,16 @@ public interface ClubApplicationApi {
     @Operation(summary = "동아리 가입 신청을 한다.", description = """
         동아리 가입 신청서를 제출합니다.
         설문 질문이 없는 경우 answers는 빈 배열을 전달합니다.
-        
+        모집 공고에서 회비 납부가 필요한 경우(isFeeRequired=true), feePaymentImageUrl은 필수입니다.
+
+        ## 에러
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         - ALREADY_APPLIED_CLUB (409): 이미 가입 신청을 완료한 사용자입니다.
         - NOT_FOUND_CLUB_APPLY_QUESTION (404): 존재하지 않는 가입 문항입니다.
         - DUPLICATE_CLUB_APPLY_QUESTION (409): 중복된 id의 가입 문항이 포함되어 있습니다.
         - REQUIRED_CLUB_APPLY_ANSWER_MISSING (400): 필수 가입 답변이 누락되었습니다.
+        - FEE_PAYMENT_IMAGE_REQUIRED (400): 회비 납부가 필요한 동아리입니다. 납부 증빙 사진을 첨부해주세요.
         """)
     @PostMapping("/{clubId}/apply")
     ResponseEntity<ClubFeeInfoResponse> applyClub(
