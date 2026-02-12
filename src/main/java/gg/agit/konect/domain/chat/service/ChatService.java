@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.chat.service;
 
+import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
+import static gg.agit.konect.global.code.ApiResponseCode.INVALID_CHAT_ROOM_CREATE_REQUEST;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
 import java.util.ArrayList;
@@ -54,33 +56,40 @@ public class ChatService {
 
     @Transactional
     public ChatRoomResponse createOrGetChatRoom(Integer userId, ChatRoomCreateRequest request) {
-        ClubMember clubPresident = clubMemberRepository.findPresidentByClubId(request.clubId())
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
+        validateChatRoomCreateRequest(request);
 
         User currentUser = userRepository.getById(userId);
-        User president = clubPresident.getUser();
+        User targetUser = resolveTargetUser(request);
 
-        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), president.getId())
+        if (currentUser.getId().equals(targetUser.getId())) {
+            throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
+        }
+
+        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), targetUser.getId())
             .orElseGet(() -> {
-                ChatRoom newChatRoom = ChatRoom.of(currentUser, president);
+                ChatRoom newChatRoom = ChatRoom.of(currentUser, targetUser);
                 return chatRoomRepository.save(newChatRoom);
             });
 
         return ChatRoomResponse.from(chatRoom);
     }
 
-    @Transactional
-    public ChatRoomResponse createOrGetAdminChatRoom(Integer userId, Integer adminId) {
-        User admin = userRepository.getById(adminId);
-        User targetUser = userRepository.getById(userId);
+    private void validateChatRoomCreateRequest(ChatRoomCreateRequest request) {
+        boolean hasClubId = request.hasClubId();
+        boolean hasTargetUserId = request.hasTargetUserId();
 
-        ChatRoom chatRoom = chatRoomRepository.findByUserIdAndAdminRole(targetUser.getId(), UserRole.ADMIN)
-            .orElseGet(() -> {
-                ChatRoom newChatRoom = ChatRoom.of(admin, targetUser);
-                return chatRoomRepository.save(newChatRoom);
-            });
+        if (hasClubId == hasTargetUserId) {
+            throw CustomException.of(INVALID_CHAT_ROOM_CREATE_REQUEST);
+        }
+    }
 
-        return ChatRoomResponse.from(chatRoom);
+    private User resolveTargetUser(ChatRoomCreateRequest request) {
+        if (request.hasClubId()) {
+            ClubMember clubPresident = clubMemberRepository.findPresidentByClubId(request.clubId())
+                .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_PRESIDENT));
+            return clubPresident.getUser();
+        }
+        return userRepository.getById(request.targetUserId());
     }
 
     public ChatRoomsResponse getChatRooms(Integer userId) {

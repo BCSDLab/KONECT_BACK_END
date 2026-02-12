@@ -14,8 +14,6 @@ import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.user.enums.UserRole;
-import gg.agit.konect.global.auth.annotation.Auth;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,14 +25,20 @@ public interface ChatApi {
 
     @Operation(summary = "채팅방을 생성하거나 기존 채팅방을 반환한다.", description = """
         ## 설명
-        - 동아리 회장과의 1:1 채팅방을 생성하거나 기존 채팅방을 반환합니다.
+        - 1:1 채팅방을 생성하거나 기존 채팅방을 반환합니다.
+        - clubId 또는 targetUserId 중 하나를 필수로 전달해야 합니다.
 
         ## 로직
-        - 해당 동아리 회장과의 채팅방이 이미 존재하면 기존 채팅방 ID를 반환합니다.
-        - 존재하지 않으면 새로운 채팅방을 생성합니다.
+        ### clubId를 전달한 경우
+        - 해당 동아리 회장과의 채팅방을 생성하거나 기존 채팅방을 반환합니다.
         - 현재 사용자가 해당 동아리의 회장인 경우 자기 자신과 채팅방을 만들 수 없습니다.
 
+        ### targetUserId를 전달한 경우
+        - 해당 유저와의 채팅방을 생성하거나 기존 채팅방을 반환합니다.
+        - 자기 자신과는 채팅방을 만들 수 없습니다.
+
         ## 에러
+        - INVALID_CHAT_ROOM_CREATE_REQUEST (400): clubId 또는 targetUserId 중 하나만 전달해야 합니다.
         - NOT_FOUND_CLUB_PRESIDENT (404): 동아리 회장을 찾을 수 없습니다.
         - CANNOT_CREATE_CHAT_ROOM_WITH_SELF (400): 자기 자신과는 채팅방을 만들 수 없습니다.
         """)
@@ -99,18 +103,4 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "[어드민] 유저와의 채팅방을 생성하거나 기존 채팅방을 반환한다.", description = """
-        ## 설명
-        - 어드민이 특정 유저와의 1:1 채팅방을 생성하거나 기존 채팅방을 반환합니다.
-
-        ## 로직
-        - 이미 해당 유저와 어드민 사이의 채팅방이 존재하면 기존 채팅방을 반환합니다.
-        - 존재하지 않으면 새로운 채팅방을 생성합니다.
-        """)
-    @Auth(roles = {UserRole.ADMIN})
-    @PostMapping("/rooms/users/{userId}")
-    ResponseEntity<ChatRoomResponse> createOrGetAdminChatRoom(
-        @PathVariable Integer userId,
-        @UserId Integer adminId
-    );
 }
