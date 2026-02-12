@@ -2,6 +2,7 @@ package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.INVALID_CHAT_ROOM_CREATE_REQUEST;
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT;
 
 import java.util.ArrayList;
@@ -171,7 +172,8 @@ public class ChatService {
 
     @Transactional
     public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
-        ChatRoom chatRoom = chatRoomRepository.getById(roomId);
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
         chatRoom.validateIsParticipant(userId);
 
         chatPresenceService.recordPresence(roomId, userId);
@@ -219,7 +221,8 @@ public class ChatService {
 
     @Transactional
     public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
-        ChatRoom chatRoom = chatRoomRepository.getById(roomId);
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
         chatRoom.validateIsParticipant(userId);
 
         User sender = userRepository.getById(userId);

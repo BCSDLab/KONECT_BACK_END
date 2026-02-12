@@ -31,7 +31,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         JOIN FETCH cr.receiver
         WHERE cr.id = :chatRoomId
         """)
-    ChatRoom getById(@Param("chatRoomId") Integer chatRoomId);
+    Optional<ChatRoom> findById(@Param("chatRoomId") Integer chatRoomId);
 
     @Query("""
         SELECT cr
