@@ -32,8 +32,10 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class GroupChatService {
 
@@ -45,26 +47,6 @@ public class GroupChatService {
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final NotificationService notificationService;
-
-    public GroupChatService(
-        GroupChatRoomRepository groupChatRoomRepository,
-        GroupChatMessageRepository groupChatMessageRepository,
-        MessageReadStatusRepository messageReadStatusRepository,
-        GroupChatNotificationSettingRepository groupChatNotificationSettingRepository,
-        ClubMemberRepository clubMemberRepository,
-        UserRepository userRepository,
-        ChatPresenceService chatPresenceService,
-        NotificationService notificationService
-    ) {
-        this.groupChatRoomRepository = groupChatRoomRepository;
-        this.groupChatMessageRepository = groupChatMessageRepository;
-        this.messageReadStatusRepository = messageReadStatusRepository;
-        this.groupChatNotificationSettingRepository = groupChatNotificationSettingRepository;
-        this.clubMemberRepository = clubMemberRepository;
-        this.userRepository = userRepository;
-        this.chatPresenceService = chatPresenceService;
-        this.notificationService = notificationService;
-    }
 
     public GroupChatRoomResponse getGroupChatRoom(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
