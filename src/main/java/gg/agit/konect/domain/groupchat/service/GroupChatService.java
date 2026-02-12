@@ -63,7 +63,7 @@ public class GroupChatService {
 
         chatPresenceService.recordPresence(roomId, userId);
 
-        markAsReadInternal(roomId, userId, LocalDateTime.now());
+        updateLastReadAt(roomId, userId, LocalDateTime.now());
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         long totalCount = groupChatMessageRepository.countByRoomIdAndCreatedAtGreaterThanEqual(roomId, joinedAt);
@@ -121,7 +121,7 @@ public class GroupChatService {
         User sender = userRepository.getById(userId);
 
         GroupChatMessage message = groupChatMessageRepository.save(GroupChatMessage.of(room, sender, content));
-        markAsReadInternal(roomId, userId, message.getCreatedAt());
+        updateLastReadAt(roomId, userId, message.getCreatedAt());
 
         Integer messageId = message.getId();
         Integer senderId = sender.getId();
@@ -160,7 +160,7 @@ public class GroupChatService {
     public void markAsRead(Integer clubId, Integer userId) {
         Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
 
-        markAsReadInternal(roomId, userId, LocalDateTime.now());
+        updateLastReadAt(roomId, userId, LocalDateTime.now());
     }
 
     @Transactional
@@ -198,14 +198,15 @@ public class GroupChatService {
         }
     }
 
-    private void markAsReadInternal(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
-        GroupChatRoom room = groupChatRoomRepository.getById(roomId);
-        User user = userRepository.getById(userId);
+    private void updateLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
         groupChatReadStatusRepository.findByRoomIdAndUserId(roomId, userId)
             .ifPresentOrElse(status -> {
                 status.updateLastReadAt(lastReadAt);
-                groupChatReadStatusRepository.save(status);
-            }, () -> groupChatReadStatusRepository.save(GroupChatReadStatus.of(room, user, lastReadAt)));
+            }, () -> {
+                GroupChatRoom room = groupChatRoomRepository.getById(roomId);
+                User user = userRepository.getById(userId);
+                groupChatReadStatusRepository.save(GroupChatReadStatus.of(room, user, lastReadAt));
+            });
     }
 
     private Set<Integer> getMutedUserIds(Integer roomId) {
