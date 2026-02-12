@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.groupchat.repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -39,24 +38,6 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
     );
 
     long countByRoomIdAndCreatedAtGreaterThanEqual(Integer roomId, LocalDateTime joinedAt);
-
-    @Query("""
-        SELECT m
-        FROM GroupChatMessage m
-        WHERE m.room.id = :roomId
-        AND m.createdAt >= :joinedAt
-        AND NOT EXISTS (
-            SELECT 1
-            FROM MessageReadStatus rs
-            WHERE rs.messageId = m.id
-            AND rs.userId = :userId
-        )
-        """)
-    List<GroupChatMessage> findUnreadMessagesByRoomIdAndUserIdAndCreatedAtGreaterThanEqual(
-        @Param("roomId") Integer roomId,
-        @Param("userId") Integer userId,
-        @Param("joinedAt") LocalDateTime joinedAt
-    );
 
     Optional<GroupChatMessage> findTopByRoomIdOrderByCreatedAtDesc(Integer roomId);
 }

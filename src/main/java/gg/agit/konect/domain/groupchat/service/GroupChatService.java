@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,19 +13,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.groupchat.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.groupchat.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.groupchat.dto.GroupChatRoomResponse;
-import gg.agit.konect.domain.groupchat.dto.MessageReadCount;
 import gg.agit.konect.domain.groupchat.model.GroupChatMessage;
 import gg.agit.konect.domain.groupchat.model.GroupChatNotificationSetting;
+import gg.agit.konect.domain.groupchat.model.GroupChatReadStatus;
 import gg.agit.konect.domain.groupchat.model.GroupChatRoom;
-import gg.agit.konect.domain.groupchat.model.MessageReadStatus;
 import gg.agit.konect.domain.groupchat.repository.GroupChatMessageRepository;
 import gg.agit.konect.domain.groupchat.repository.GroupChatNotificationSettingRepository;
+import gg.agit.konect.domain.groupchat.repository.GroupChatReadStatusRepository;
 import gg.agit.konect.domain.groupchat.repository.GroupChatRoomRepository;
-import gg.agit.konect.domain.groupchat.repository.MessageReadStatusRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
@@ -41,7 +40,7 @@ public class GroupChatService {
 
     private final GroupChatRoomRepository groupChatRoomRepository;
     private final GroupChatMessageRepository groupChatMessageRepository;
-    private final MessageReadStatusRepository messageReadStatusRepository;
+    private final GroupChatReadStatusRepository groupChatReadStatusRepository;
     private final GroupChatNotificationSettingRepository groupChatNotificationSettingRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
@@ -62,7 +61,7 @@ public class GroupChatService {
 
         chatPresenceService.recordPresence(roomId, userId);
 
-        markAsReadInternal(roomId, userId, joinedAt);
+        markAsReadInternal(roomId, userId, LocalDateTime.now());
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         long totalCount = groupChatMessageRepository.countByRoomIdAndCreatedAtGreaterThanEqual(roomId, joinedAt);
@@ -70,12 +69,12 @@ public class GroupChatService {
             .findByRoomIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(roomId, joinedAt, pageable);
         List<GroupChatMessage> messages = messagePage.getContent();
 
-        int memberCount = getMemberCount(clubId);
-
-        List<Integer> messageIds = messages.stream()
-            .map(GroupChatMessage::getId)
-            .toList();
-        Map<Integer, Integer> readCountMap = getReadCountMap(messageIds);
+        List<ClubMember> members = clubMemberRepository.findAllByClubId(clubId);
+        Map<Integer, LocalDateTime> lastReadAtMap = groupChatReadStatusRepository.findByRoomId(roomId).stream()
+            .collect(java.util.stream.Collectors.toMap(
+                GroupChatReadStatus::getUserId,
+                GroupChatReadStatus::getLastReadAt
+            ));
 
         List<GroupChatMessageResponse> responseMessages = messages.stream()
             .map(message -> {
@@ -85,8 +84,7 @@ public class GroupChatService {
                 String messageContent = message.getContent();
                 LocalDateTime createdAt = message.getCreatedAt();
 
-                int readCount = readCountMap.getOrDefault(messageId, 0);
-                int unreadCount = memberCount - readCount;
+                int unreadCount = getUnreadCount(message, members, lastReadAtMap);
                 boolean isMine = senderId.equals(userId);
 
                 return new GroupChatMessageResponse(
@@ -121,7 +119,7 @@ public class GroupChatService {
         User sender = userRepository.getById(userId);
 
         GroupChatMessage message = groupChatMessageRepository.save(GroupChatMessage.of(room, sender, content));
-        messageReadStatusRepository.save(MessageReadStatus.of(message, sender));
+        markAsReadInternal(roomId, userId, message.getCreatedAt());
 
         Integer messageId = message.getId();
         Integer senderId = sender.getId();
@@ -158,10 +156,9 @@ public class GroupChatService {
 
     @Transactional
     public void markAsRead(Integer clubId, Integer userId) {
-        LocalDateTime joinedAt = getJoinedAtOrThrow(clubId, userId);
         Integer roomId = getRoomIdOrThrow(clubId);
 
-        markAsReadInternal(roomId, userId, joinedAt);
+        markAsReadInternal(roomId, userId, LocalDateTime.now());
     }
 
     @Transactional
@@ -199,33 +196,14 @@ public class GroupChatService {
         }
     }
 
-    private void markAsReadInternal(Integer roomId, Integer userId, LocalDateTime joinedAt) {
-        List<GroupChatMessage> unreadMessages = groupChatMessageRepository
-            .findUnreadMessagesByRoomIdAndUserIdAndCreatedAtGreaterThanEqual(roomId, userId, joinedAt);
-
-        if (unreadMessages.isEmpty()) {
-            return;
-        }
-
+    private void markAsReadInternal(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
+        GroupChatRoom room = groupChatRoomRepository.getById(roomId);
         User user = userRepository.getById(userId);
-        List<MessageReadStatus> statuses = unreadMessages.stream()
-            .map(message -> MessageReadStatus.of(message, user))
-            .toList();
-
-        messageReadStatusRepository.saveAll(statuses);
-    }
-
-    private Map<Integer, Integer> getReadCountMap(List<Integer> messageIds) {
-        if (messageIds.isEmpty()) {
-            return Map.of();
-        }
-
-        return messageReadStatusRepository.countReadCountByMessageIds(messageIds)
-            .stream()
-            .collect(Collectors.toMap(
-                MessageReadCount::messageId,
-                readCount -> readCount.readCount().intValue()
-            ));
+        groupChatReadStatusRepository.findByRoomIdAndUserId(roomId, userId)
+            .ifPresentOrElse(status -> {
+                status.updateLastReadAt(lastReadAt);
+                groupChatReadStatusRepository.save(status);
+            }, () -> groupChatReadStatusRepository.save(GroupChatReadStatus.of(room, user, lastReadAt)));
     }
 
     private Set<Integer> getMutedUserIds(Integer roomId) {
@@ -247,8 +225,26 @@ public class GroupChatService {
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_MEMBER));
     }
 
-    private int getMemberCount(Integer clubId) {
-        return Math.toIntExact(clubMemberRepository.countByClubId(clubId));
+    private int getUnreadCount(
+        GroupChatMessage message,
+        List<ClubMember> members,
+        Map<Integer, LocalDateTime> lastReadAtMap
+    ) {
+        LocalDateTime messageCreatedAt = message.getCreatedAt();
+        int unreadCount = 0;
+
+        for (ClubMember member : members) {
+            if (member.getCreatedAt().isAfter(messageCreatedAt)) {
+                continue;
+            }
+
+            LocalDateTime lastReadAt = lastReadAtMap.getOrDefault(member.getUser().getId(), member.getCreatedAt());
+            if (lastReadAt.isBefore(messageCreatedAt)) {
+                unreadCount++;
+            }
+        }
+
+        return unreadCount;
     }
 
     private List<Integer> getClubMemberUserIds(Integer clubId) {
