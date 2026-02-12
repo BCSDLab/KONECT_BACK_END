@@ -20,7 +20,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/clubs/{clubId}/group-chat")
 public class GroupChatController implements GroupChatApi {
 
-    private GroupChatService groupChatService;
+    private final GroupChatService groupChatService;
 
     public GroupChatController(GroupChatService groupChatService) {
         this.groupChatService = groupChatService;
