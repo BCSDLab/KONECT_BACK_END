@@ -1,11 +1,11 @@
 package gg.agit.konect.domain.chat.group.service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +27,7 @@ import gg.agit.konect.domain.chat.group.repository.GroupChatMessageRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatNotificationSettingRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatReadStatusRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatRoomRepository;
+import gg.agit.konect.domain.chat.group.repository.GroupRoomUnreadCountProjection;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
@@ -57,18 +58,12 @@ public class GroupChatService {
 
     public GroupChatRoomsResponse getChatRooms(Integer userId) {
         List<GroupChatRoom> rooms = groupChatRoomRepository.findAllByUserId(userId);
-        Map<Integer, GroupChatMessage> lastMessageMap = new HashMap<>();
-        Map<Integer, Integer> unreadCountMap = new HashMap<>();
+        List<Integer> roomIds = rooms.stream()
+            .map(GroupChatRoom::getId)
+            .toList();
 
-        for (GroupChatRoom room : rooms) {
-            Integer roomId = room.getId();
-            Integer clubId = room.getClub().getId();
-
-            groupChatMessageRepository.findTopByRoomIdOrderByCreatedAtDesc(roomId)
-                .ifPresent(lastMessage -> lastMessageMap.put(roomId, lastMessage));
-
-            unreadCountMap.put(roomId, getUnreadCountForUser(clubId, roomId, userId));
-        }
+        Map<Integer, GroupChatMessage> lastMessageMap = getLastMessageMap(roomIds);
+        Map<Integer, Integer> unreadCountMap = getUnreadCountMap(roomIds, userId);
 
         return GroupChatRoomsResponse.from(rooms, lastMessageMap, unreadCountMap);
     }
@@ -255,14 +250,27 @@ public class GroupChatService {
         return unreadCount;
     }
 
-    private int getUnreadCountForUser(Integer clubId, Integer roomId, Integer userId) {
-        LocalDateTime joinedAt = clubMemberRepository.getJoinedAtByClubIdAndUserId(clubId, userId);
-        LocalDateTime lastReadAt = groupChatReadStatusRepository.findByRoomIdAndUserId(roomId, userId)
-            .map(GroupChatReadStatus::getLastReadAt)
-            .orElse(joinedAt);
+    private Map<Integer, GroupChatMessage> getLastMessageMap(List<Integer> roomIds) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
 
-        return Math.toIntExact(
-            groupChatMessageRepository.countByRoomIdAndCreatedAtGreaterThanAndSenderIdNot(roomId, lastReadAt, userId)
-        );
+        return groupChatMessageRepository.findLatestMessagesByRoomIds(roomIds).stream()
+            .collect(Collectors.toMap(
+                message -> message.getRoom().getId(),
+                message -> message
+            ));
+    }
+
+    private Map<Integer, Integer> getUnreadCountMap(List<Integer> roomIds, Integer userId) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return groupChatMessageRepository.countUnreadByRoomIdsAndUserId(roomIds, userId).stream()
+            .collect(Collectors.toMap(
+                GroupRoomUnreadCountProjection::getRoomId,
+                unreadCount -> unreadCount.getUnreadCount().intValue()
+            ));
     }
 }
