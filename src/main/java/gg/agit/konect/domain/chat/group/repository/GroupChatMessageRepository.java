@@ -18,6 +18,13 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
 
     Optional<GroupChatMessage> findById(Integer messageId);
 
+    @Query("""
+        SELECT m
+        FROM GroupChatMessage m
+        WHERE m.room.id = :roomId
+        AND m.id > :minMessageId
+        ORDER BY m.createdAt DESC
+        """)
     Page<GroupChatMessage> findByRoomIdAndIdGreaterThanOrderByCreatedAtDesc(
         Integer roomId,
         Integer minMessageId,
@@ -38,9 +45,29 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
         Pageable pageable
     );
 
-    long countByRoomIdAndCreatedAtGreaterThanEqual(Integer roomId, LocalDateTime joinedAt);
+    @Query("""
+        SELECT COUNT(m)
+        FROM GroupChatMessage m
+        WHERE m.room.id = :roomId
+        AND m.createdAt >= :joinedAt
+        """)
+    long countByRoomIdAndCreatedAtGreaterThanEqual(
+        @Param("roomId") Integer roomId,
+        @Param("joinedAt") LocalDateTime joinedAt
+    );
 
-    long countByRoomIdAndCreatedAtGreaterThanAndSenderIdNot(Integer roomId, LocalDateTime lastReadAt, Integer senderId);
+    @Query("""
+        SELECT COUNT(m)
+        FROM GroupChatMessage m
+        WHERE m.room.id = :roomId
+        AND m.createdAt > :lastReadAt
+        AND m.sender.id <> :senderId
+        """)
+    long countByRoomIdAndCreatedAtGreaterThanAndSenderIdNot(
+        @Param("roomId") Integer roomId,
+        @Param("lastReadAt") LocalDateTime lastReadAt,
+        @Param("senderId") Integer senderId
+    );
 
     @Query("""
         SELECT m
@@ -76,5 +103,11 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
         @Param("userId") Integer userId
     );
 
-    Optional<GroupChatMessage> findTopByRoomIdOrderByCreatedAtDesc(Integer roomId);
+    @Query("""
+        SELECT m
+        FROM GroupChatMessage m
+        WHERE m.room.id = :roomId
+        ORDER BY m.createdAt DESC
+        """)
+    Optional<GroupChatMessage> findTopByRoomIdOrderByCreatedAtDesc(@Param("roomId") Integer roomId);
 }
