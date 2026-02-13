@@ -6,8 +6,7 @@ RUN addgroup -S konect && adduser -S konect -G konect
 
 COPY build/libs/KONECT_API.jar KONECT_API.jar
 
-RUN mkdir -p logs && \
-    chown -R konect:konect KONECT_API.jar logs
+RUN chown -R konect:konect KONECT_API.jar
 
 USER konect:konect
 
