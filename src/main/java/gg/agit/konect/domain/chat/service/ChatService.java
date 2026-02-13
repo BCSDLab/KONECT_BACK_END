@@ -151,7 +151,7 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
         User user = userRepository.getById(userId);
-        validateChatRoomReadAccess(user, chatRoom);
+        validateChatRoomAccess(user, chatRoom);
 
         chatPresenceService.recordPresence(roomId, userId);
         markUnreadMessagesAsRead(user, roomId, chatRoom);
@@ -194,7 +194,7 @@ public class ChatService {
             || chatRoom.getReceiver().getRole() == UserRole.ADMIN;
     }
 
-    private void validateChatRoomReadAccess(User user, ChatRoom chatRoom) {
+    private void validateChatRoomAccess(User user, ChatRoom chatRoom) {
         if (user.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
             return;
         }
@@ -206,7 +206,7 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
         User sender = userRepository.getById(userId);
-        validateChatRoomReadAccess(sender, chatRoom);
+        validateChatRoomAccess(sender, chatRoom);
 
         User receiver = getMessageReceiver(sender, chatRoom);
 
