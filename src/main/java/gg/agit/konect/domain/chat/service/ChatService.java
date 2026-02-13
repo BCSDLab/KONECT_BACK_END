@@ -154,17 +154,16 @@ public class ChatService {
         validateChatRoomReadAccess(user, chatRoom);
 
         chatPresenceService.recordPresence(roomId, userId);
-        markUnreadMessagesAsRead(userId, roomId, chatRoom);
+        markUnreadMessagesAsRead(user, roomId, chatRoom);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
 
-        Integer maskedAdminId = getMaskedAdminId(userId, chatRoom);
+        Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
         return ChatMessagesResponse.from(messages, userId, maskedAdminId);
     }
 
-    private Integer getMaskedAdminId(Integer userId, ChatRoom chatRoom) {
-        User user = userRepository.getById(userId);
+    private Integer getMaskedAdminId(User user, ChatRoom chatRoom) {
         if (user.getRole() == UserRole.ADMIN || !isAdminChatRoom(chatRoom)) {
             return null;
         }
@@ -178,14 +177,13 @@ public class ChatService {
         return chatRoom.getReceiver();
     }
 
-    private void markUnreadMessagesAsRead(Integer userId, Integer roomId, ChatRoom chatRoom) {
-        User user = userRepository.getById(userId);
+    private void markUnreadMessagesAsRead(User user, Integer roomId, ChatRoom chatRoom) {
         List<ChatMessage> unreadMessages;
 
         if (user.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
             unreadMessages = chatMessageRepository.findUnreadMessagesForAdmin(roomId, UserRole.ADMIN);
         } else {
-            unreadMessages = chatMessageRepository.findUnreadMessagesByChatRoomIdAndUserId(roomId, userId);
+            unreadMessages = chatMessageRepository.findUnreadMessagesByChatRoomIdAndUserId(roomId, user.getId());
         }
 
         unreadMessages.forEach(ChatMessage::markAsRead);
