@@ -51,8 +51,8 @@ public class GroupChatService {
     public GroupChatRoomResponse getGroupChatRoom(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
 
-        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
-        return new GroupChatRoomResponse(roomId);
+        GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
+        return new GroupChatRoomResponse(room.getId());
     }
 
     public GroupChatRoomsResponse getChatRooms(Integer userId) {
@@ -89,8 +89,9 @@ public class GroupChatService {
     public GroupChatMessagesResponse getMessages(Integer clubId, Integer userId, Integer page, Integer limit) {
         validateClubMember(clubId, userId);
 
+        GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
         LocalDateTime joinedAt = clubMemberRepository.getJoinedAtByClubIdAndUserId(clubId, userId);
-        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
+        Integer roomId = room.getId();
 
         chatPresenceService.recordPresence(roomId, userId);
 
@@ -147,8 +148,8 @@ public class GroupChatService {
     public GroupChatMessageResponse sendMessage(Integer clubId, Integer userId, String content) {
         validateClubMember(clubId, userId);
 
-        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
         GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
+        Integer roomId = room.getId();
         User sender = userRepository.getById(userId);
 
         GroupChatMessage message = groupChatMessageRepository.save(GroupChatMessage.of(room, sender, content));
@@ -191,9 +192,8 @@ public class GroupChatService {
     public Boolean toggleMute(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
 
-        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
-
         GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
+        Integer roomId = room.getId();
         User user = userRepository.getById(userId);
 
         return groupChatNotificationSettingRepository.findByRoomIdAndUserId(roomId, userId)
