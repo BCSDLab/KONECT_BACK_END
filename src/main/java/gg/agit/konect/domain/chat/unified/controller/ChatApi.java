@@ -42,7 +42,7 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "문의하기 리스트를 조회한다.", description = """
+    @Operation(summary = "채팅방 리스트를 조회한다.", description = """
         ## 설명
         - 현재 사용자가 참여 중인 모든 채팅방 목록을 조회합니다.
 
@@ -56,7 +56,7 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "문의하기 메시지 리스트를 조회한다.", description = """
+    @Operation(summary = "채팅방 메시지 리스트를 조회한다.", description = """
         ## 설명
         - 특정 채팅방의 메시지 목록을 페이지네이션으로 조회합니다.
 
