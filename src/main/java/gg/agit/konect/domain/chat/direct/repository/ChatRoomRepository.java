@@ -14,8 +14,6 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
 
     ChatRoom save(ChatRoom chatRoom);
 
-    Optional<ChatRoom> findById(Integer chatRoomId);
-
     @Query("""
         SELECT DISTINCT cr
         FROM ChatRoom cr

@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.chat.dto;
+package gg.agit.konect.domain.chat.direct.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
@@ -9,7 +9,7 @@ import org.springframework.data.domain.Page;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import gg.agit.konect.domain.chat.model.ChatMessage;
+import gg.agit.konect.domain.chat.direct.model.ChatMessage;
 import gg.agit.konect.domain.user.enums.UserRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 

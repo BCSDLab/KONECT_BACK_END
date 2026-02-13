@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.chat.dto;
+package gg.agit.konect.domain.chat.direct.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
@@ -9,8 +9,8 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import gg.agit.konect.domain.chat.direct.model.ChatRoom;
 import gg.agit.konect.domain.chat.enums.ChatRoomType;
-import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 

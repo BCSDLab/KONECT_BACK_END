@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.chat.service;
+package gg.agit.konect.domain.chat.direct.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
@@ -17,20 +17,20 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
-import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
-import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
-import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomsResponse.InnerChatRoomResponse;
-import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
+import gg.agit.konect.domain.chat.direct.dto.ChatMessageResponse;
+import gg.agit.konect.domain.chat.direct.dto.ChatMessageSendRequest;
+import gg.agit.konect.domain.chat.direct.dto.ChatMessagesResponse;
+import gg.agit.konect.domain.chat.direct.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.direct.dto.ChatRoomResponse;
+import gg.agit.konect.domain.chat.direct.dto.ChatRoomsResponse;
+import gg.agit.konect.domain.chat.direct.dto.UnreadMessageCount;
+import gg.agit.konect.domain.chat.direct.model.ChatMessage;
+import gg.agit.konect.domain.chat.direct.model.ChatRoom;
+import gg.agit.konect.domain.chat.direct.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.enums.ChatRoomType;
 import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
-import gg.agit.konect.domain.chat.model.ChatMessage;
-import gg.agit.konect.domain.chat.model.ChatRoom;
-import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
-import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
@@ -70,7 +70,7 @@ public class ChatService {
 
     public ChatRoomsResponse getChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
-        List<InnerChatRoomResponse> chatRoomResponses = new ArrayList<>();
+        List<ChatRoomsResponse.InnerChatRoomResponse> chatRoomResponses = new ArrayList<>();
 
         List<ChatRoom> personalChatRooms = chatRoomRepository.findByUserId(userId);
         Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(
@@ -85,8 +85,10 @@ public class ChatService {
             );
 
             for (ChatRoom chatRoom : adminChatRooms) {
-                chatRoomResponses.add(InnerChatRoomResponse.fromForAdmin(
+                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.fromForAdmin(
                     chatRoom, adminUnreadCountMap
+                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.from(
+                    chatRoom, user, adminUnreadCountMap, ChatRoomType.ADMIN
                 ));
                 addedChatRoomIds.add(chatRoom.getId());
             }
@@ -95,15 +97,16 @@ public class ChatService {
         for (ChatRoom chatRoom : personalChatRooms) {
             if (!addedChatRoomIds.contains(chatRoom.getId())) {
                 ChatRoomType type = isAdminChatRoom(chatRoom) ? ChatRoomType.ADMIN : ChatRoomType.NORMAL;
-                chatRoomResponses.add(InnerChatRoomResponse.from(
+                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.from(
                     chatRoom, user, personalUnreadCountMap, type
                 ));
             }
         }
 
         chatRoomResponses.sort(Comparator
-            .comparing(InnerChatRoomResponse::lastSentTime, Comparator.nullsLast(Comparator.reverseOrder()))
-            .thenComparing(InnerChatRoomResponse::chatRoomId));
+            .comparing(ChatRoomsResponse.InnerChatRoomResponse::lastSentTime,
+                Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(ChatRoomsResponse.InnerChatRoomResponse::chatRoomId));
 
         return ChatRoomsResponse.of(chatRoomResponses);
     }
