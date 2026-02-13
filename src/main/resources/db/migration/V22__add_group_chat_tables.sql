@@ -22,17 +22,18 @@ CREATE TABLE IF NOT EXISTS group_chat_message
     FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS group_chat_notification_setting
+CREATE TABLE IF NOT EXISTS notification_mute_setting
 (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
-    room_id    INT                                                            NOT NULL,
-    user_id    INT                                                            NOT NULL,
-    is_muted   BOOLEAN                                                        NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT                                                            NOT NULL,
+    target_type   VARCHAR(50)                                                    NOT NULL,
+    target_id     INT                                                            NULL,
+    target_id_key INT GENERATED ALWAYS AS (IFNULL(target_id, -1)) STORED,
+    is_muted      BOOLEAN                                                        NOT NULL DEFAULT FALSE,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
-    CONSTRAINT uq_group_chat_notification_setting_room_id_user_id UNIQUE (room_id, user_id),
-    FOREIGN KEY (room_id) REFERENCES group_chat_room (id) ON DELETE CASCADE,
+    CONSTRAINT uq_notification_mute_setting_user_target UNIQUE (user_id, target_type, target_id_key),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
@@ -52,6 +53,9 @@ CREATE INDEX idx_group_chat_message_room_created_at
 
 CREATE INDEX idx_group_chat_message_room_id
     ON group_chat_message (room_id, id DESC);
+
+CREATE INDEX idx_notification_mute_setting_target
+    ON notification_mute_setting (target_type, target_id, is_muted);
 
 INSERT INTO group_chat_room (club_id, created_at, updated_at)
 SELECT id, NOW(), NOW() FROM club

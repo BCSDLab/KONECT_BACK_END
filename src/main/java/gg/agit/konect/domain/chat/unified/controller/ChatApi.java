@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import gg.agit.konect.domain.chat.direct.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomResponse;
+import gg.agit.konect.domain.chat.group.dto.GroupChatMuteResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
@@ -100,6 +101,13 @@ public interface ChatApi {
         @RequestParam(name = "type") ChatType type,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @Valid @RequestBody ChatMessageSendRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "단체 채팅 알림 음소거를 토글한다.")
+    @PostMapping("/groups/{clubId}/mute")
+    ResponseEntity<GroupChatMuteResponse> toggleGroupChatMute(
+        @PathVariable(value = "clubId") Integer clubId,
         @UserId Integer userId
     );
 }

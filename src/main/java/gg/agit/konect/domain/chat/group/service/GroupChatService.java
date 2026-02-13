@@ -17,11 +17,9 @@ import gg.agit.konect.domain.chat.group.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatRoomResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatRoomsResponse;
 import gg.agit.konect.domain.chat.group.model.GroupChatMessage;
-import gg.agit.konect.domain.chat.group.model.GroupChatNotificationSetting;
 import gg.agit.konect.domain.chat.group.model.GroupChatReadStatus;
 import gg.agit.konect.domain.chat.group.model.GroupChatRoom;
 import gg.agit.konect.domain.chat.group.repository.GroupChatMessageRepository;
-import gg.agit.konect.domain.chat.group.repository.GroupChatNotificationSettingRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatReadStatusRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatRoomRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupRoomUnreadCountProjection;
@@ -29,6 +27,9 @@ import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
+import gg.agit.konect.domain.notification.enums.NotificationTargetType;
+import gg.agit.konect.domain.notification.model.NotificationMuteSetting;
+import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -43,7 +44,7 @@ public class GroupChatService {
     private final GroupChatRoomRepository groupChatRoomRepository;
     private final GroupChatMessageRepository groupChatMessageRepository;
     private final GroupChatReadStatusRepository groupChatReadStatusRepository;
-    private final GroupChatNotificationSettingRepository groupChatNotificationSettingRepository;
+    private final NotificationMuteSettingRepository notificationMuteSettingRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
@@ -191,14 +192,23 @@ public class GroupChatService {
         Integer roomId = room.getId();
         User user = userRepository.getById(userId);
 
-        return groupChatNotificationSettingRepository.findByRoomIdAndUserId(roomId, userId)
+        return notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                NotificationTargetType.GROUP_CHAT_ROOM,
+                roomId,
+                userId
+            )
             .map(setting -> {
                 setting.toggleMute();
-                groupChatNotificationSettingRepository.save(setting);
+                notificationMuteSettingRepository.save(setting);
                 return setting.getIsMuted();
             })
             .orElseGet(() -> {
-                groupChatNotificationSettingRepository.save(GroupChatNotificationSetting.of(room, user, true));
+                notificationMuteSettingRepository.save(NotificationMuteSetting.of(
+                    NotificationTargetType.GROUP_CHAT_ROOM,
+                    roomId,
+                    user,
+                    true
+                ));
                 return true;
             });
     }
@@ -221,7 +231,11 @@ public class GroupChatService {
     }
 
     private Set<Integer> getMutedUserIds(Integer roomId) {
-        List<Integer> mutedUserIds = groupChatNotificationSettingRepository.findByRoomIdAndIsMutedTrue(roomId).stream()
+        List<Integer> mutedUserIds = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndIsMutedTrue(
+                NotificationTargetType.GROUP_CHAT_ROOM,
+                roomId
+            )
+            .stream()
             .map(setting -> setting.getUser().getId())
             .toList();
 
