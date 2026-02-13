@@ -10,7 +10,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import gg.agit.konect.domain.chat.direct.model.ChatRoom;
-import gg.agit.konect.domain.chat.enums.ChatRoomType;
+import gg.agit.konect.domain.chat.direct.enums.ChatRoomType;
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 

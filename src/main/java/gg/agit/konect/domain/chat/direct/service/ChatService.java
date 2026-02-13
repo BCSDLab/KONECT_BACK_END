@@ -28,7 +28,7 @@ import gg.agit.konect.domain.chat.direct.model.ChatMessage;
 import gg.agit.konect.domain.chat.direct.model.ChatRoom;
 import gg.agit.konect.domain.chat.direct.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
-import gg.agit.konect.domain.chat.enums.ChatRoomType;
+import gg.agit.konect.domain.chat.direct.enums.ChatRoomType;
 import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.service.NotificationService;
