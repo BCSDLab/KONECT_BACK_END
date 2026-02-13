@@ -205,10 +205,10 @@ public class ChatService {
     public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-        chatRoom.validateIsParticipant(userId);
-
         User sender = userRepository.getById(userId);
-        User receiver = chatRoom.getChatPartner(sender);
+        validateChatRoomReadAccess(sender, chatRoom);
+
+        User receiver = getMessageReceiver(sender, chatRoom);
 
         ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, receiver, request.content())
@@ -219,6 +219,13 @@ public class ChatService {
         publishAdminChatEventIfNeeded(receiver, sender, request.content());
 
         return ChatMessageResponse.from(chatMessage, userId);
+    }
+
+    private User getMessageReceiver(User sender, ChatRoom chatRoom) {
+        if (sender.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
+            return chatRoom.getNonAdminUser();
+        }
+        return chatRoom.getChatPartner(sender);
     }
 
     private void publishAdminChatEventIfNeeded(User receiver, User sender, String content) {
