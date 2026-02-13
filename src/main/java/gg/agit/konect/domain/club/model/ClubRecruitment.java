@@ -56,7 +56,7 @@ public class ClubRecruitment extends BaseEntity {
     @Column(name = "is_always_recruiting", columnDefinition = "TINYINT(1)")
     private Boolean isAlwaysRecruiting;
 
-    @Column(name = "is_fee_required", columnDefinition = "TINYINT(1)")
+    @Column(name = "is_fee_required", nullable = false, columnDefinition = "TINYINT(1)")
     private Boolean isFeeRequired;
 
     @OneToOne(fetch = LAZY)
