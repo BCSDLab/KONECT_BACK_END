@@ -47,9 +47,6 @@ CREATE TABLE IF NOT EXISTS group_chat_read_status
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_group_chat_message_room_created ON group_chat_message (room_id, created_at DESC);
-CREATE INDEX idx_group_chat_read_status_room ON group_chat_read_status (room_id);
-
 INSERT INTO group_chat_room (club_id, created_at, updated_at)
 SELECT id, NOW(), NOW() FROM club
 WHERE id NOT IN (SELECT club_id FROM group_chat_room);
