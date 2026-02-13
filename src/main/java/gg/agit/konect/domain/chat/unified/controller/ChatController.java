@@ -13,6 +13,7 @@ import gg.agit.konect.domain.chat.direct.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
+import gg.agit.konect.domain.chat.unified.enums.ChatType;
 import gg.agit.konect.domain.chat.direct.service.ChatService;
 import gg.agit.konect.domain.chat.unified.service.UnifiedChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -46,22 +47,24 @@ public class ChatController implements ChatApi {
 
     @Override
     public ResponseEntity<UnifiedChatMessagesResponse> getChatRoomMessages(
+        @RequestParam(name = "type") ChatType type,
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
-        UnifiedChatMessagesResponse response = unifiedChatService.getMessages(userId, chatRoomId, page, limit);
+        UnifiedChatMessagesResponse response = unifiedChatService.getMessages(userId, type, chatRoomId, page, limit);
         return ResponseEntity.ok(response);
     }
 
     @Override
     public ResponseEntity<UnifiedChatMessageResponse> sendMessage(
+        @RequestParam(name = "type") ChatType type,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @Valid @RequestBody ChatMessageSendRequest request,
         @UserId Integer userId
     ) {
-        UnifiedChatMessageResponse response = unifiedChatService.sendMessage(userId, chatRoomId, request);
+        UnifiedChatMessageResponse response = unifiedChatService.sendMessage(userId, type, chatRoomId, request);
         return ResponseEntity.ok(response);
     }
 

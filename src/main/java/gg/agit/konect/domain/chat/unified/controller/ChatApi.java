@@ -14,6 +14,7 @@ import gg.agit.konect.domain.chat.direct.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
+import gg.agit.konect.domain.chat.unified.enums.ChatType;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,6 +73,7 @@ public interface ChatApi {
         """)
     @GetMapping("/rooms/{chatRoomId}")
     ResponseEntity<UnifiedChatMessagesResponse> getChatRoomMessages(
+        @RequestParam(name = "type") ChatType type,
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
@@ -94,6 +96,7 @@ public interface ChatApi {
         """)
     @PostMapping("/rooms/{chatRoomId}/messages")
     ResponseEntity<UnifiedChatMessageResponse> sendMessage(
+        @RequestParam(name = "type") ChatType type,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @Valid @RequestBody ChatMessageSendRequest request,
         @UserId Integer userId

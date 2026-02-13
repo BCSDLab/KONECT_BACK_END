@@ -16,17 +16,10 @@ import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
 import gg.agit.konect.domain.chat.unified.enums.ChatType;
 import gg.agit.konect.domain.chat.direct.service.ChatService;
-import gg.agit.konect.domain.chat.direct.model.ChatRoom;
-import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
-import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatRoomsResponse;
-import gg.agit.konect.domain.chat.group.model.GroupChatRoom;
-import gg.agit.konect.domain.chat.group.repository.GroupChatRoomRepository;
 import gg.agit.konect.domain.chat.group.service.GroupChatService;
-import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -35,9 +28,6 @@ public class UnifiedChatService {
 
     private final ChatService chatService;
     private final GroupChatService groupChatService;
-    private final ChatRoomRepository chatRoomRepository;
-    private final GroupChatRoomRepository groupChatRoomRepository;
-    private final ClubMemberRepository clubMemberRepository;
 
     public UnifiedChatRoomsResponse getChatRooms(Integer userId) {
         ChatRoomsResponse directRooms = chatService.getChatRooms(userId);
@@ -73,9 +63,13 @@ public class UnifiedChatService {
         return new UnifiedChatRoomsResponse(rooms);
     }
 
-    public UnifiedChatMessagesResponse getMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
-        ChatType chatType = resolveChatType(userId, roomId);
-
+    public UnifiedChatMessagesResponse getMessages(
+        Integer userId,
+        ChatType chatType,
+        Integer roomId,
+        Integer page,
+        Integer limit
+    ) {
         if (chatType == ChatType.DIRECT) {
             ChatMessagesResponse response = chatService.getChatRoomMessages(userId, roomId, page, limit);
             return toUnifiedResponse(response);
@@ -85,9 +79,12 @@ public class UnifiedChatService {
         return toUnifiedResponse(response);
     }
 
-    public UnifiedChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
-        ChatType chatType = resolveChatType(userId, roomId);
-
+    public UnifiedChatMessageResponse sendMessage(
+        Integer userId,
+        ChatType chatType,
+        Integer roomId,
+        ChatMessageSendRequest request
+    ) {
         if (chatType == ChatType.DIRECT) {
             ChatMessageResponse response = chatService.sendMessage(userId, roomId, request);
             return new UnifiedChatMessageResponse(
@@ -113,39 +110,6 @@ public class UnifiedChatService {
             response.unreadCount(),
             response.isMine()
         );
-    }
-
-    private ChatType resolveChatType(Integer userId, Integer roomId) {
-        ChatRoom directRoom = chatRoomRepository.findById(roomId)
-            .orElse(null);
-        boolean canAccessDirect = directRoom != null && directRoom.isParticipant(userId);
-
-        GroupChatRoom groupRoom = groupChatRoomRepository.findById(roomId)
-            .orElse(null);
-        boolean canAccessGroup = groupRoom != null
-            && clubMemberRepository.existsByClubIdAndUserId(groupRoom.getClub().getId(), userId);
-
-        if (canAccessDirect && canAccessGroup) {
-            throw CustomException.of(ApiResponseCode.ILLEGAL_STATE);
-        }
-
-        if (canAccessDirect) {
-            return ChatType.DIRECT;
-        }
-
-        if (canAccessGroup) {
-            return ChatType.GROUP;
-        }
-
-        if (directRoom != null) {
-            throw CustomException.of(ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
-
-        if (groupRoom != null) {
-            throw CustomException.of(ApiResponseCode.FORBIDDEN_GROUP_CHAT_ACCESS);
-        }
-
-        throw CustomException.of(ApiResponseCode.ILLEGAL_ARGUMENT);
     }
 
     private UnifiedChatMessagesResponse toUnifiedResponse(ChatMessagesResponse response) {
