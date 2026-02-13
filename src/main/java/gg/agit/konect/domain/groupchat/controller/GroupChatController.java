@@ -57,15 +57,6 @@ public class GroupChatController implements GroupChatApi {
     }
 
     @Override
-    public ResponseEntity<Void> markAsRead(
-        @PathVariable Integer clubId,
-        @UserId Integer userId
-    ) {
-        groupChatService.markAsRead(clubId, userId);
-        return ResponseEntity.ok().build();
-    }
-
-    @Override
     public ResponseEntity<GroupChatMuteResponse> toggleMute(
         @PathVariable Integer clubId,
         @UserId Integer userId

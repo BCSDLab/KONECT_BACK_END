@@ -65,12 +65,4 @@ public class ChatController implements ChatApi {
         return ResponseEntity.ok(response);
     }
 
-    @Override
-    public ResponseEntity<Void> markAsRead(
-        @PathVariable(value = "chatRoomId") Integer chatRoomId,
-        @UserId Integer userId
-    ) {
-        unifiedChatService.markAsRead(userId, chatRoomId);
-        return ResponseEntity.ok().build();
-    }
 }

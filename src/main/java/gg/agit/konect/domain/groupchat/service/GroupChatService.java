@@ -188,19 +188,6 @@ public class GroupChatService {
     }
 
     @Transactional
-    public void markAsRead(Integer clubId, Integer userId) {
-        Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
-
-        updateLastReadAt(roomId, userId, LocalDateTime.now());
-    }
-
-    @Transactional
-    public void markAsReadByRoomId(Integer roomId, Integer userId) {
-        GroupChatRoom room = groupChatRoomRepository.getById(roomId);
-        markAsRead(room.getClub().getId(), userId);
-    }
-
-    @Transactional
     public Boolean toggleMute(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
 

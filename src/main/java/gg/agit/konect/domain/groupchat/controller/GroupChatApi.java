@@ -46,13 +46,6 @@ public interface GroupChatApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "단체 채팅 메시지를 읽음 처리한다.")
-    @PostMapping("/read")
-    ResponseEntity<Void> markAsRead(
-        @PathVariable Integer clubId,
-        @UserId Integer userId
-    );
-
     @Operation(summary = "단체 채팅 알림 음소거를 토글한다.")
     @PostMapping("/mute")
     ResponseEntity<GroupChatMuteResponse> toggleMute(

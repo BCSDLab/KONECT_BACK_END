@@ -114,17 +114,6 @@ public class UnifiedChatService {
         );
     }
 
-    public void markAsRead(Integer userId, Integer roomId) {
-        ChatType chatType = resolveChatType(userId, roomId);
-
-        if (chatType == ChatType.DIRECT) {
-            chatService.markAsRead(roomId, userId);
-            return;
-        }
-
-        groupChatService.markAsReadByRoomId(roomId, userId);
-    }
-
     private ChatType resolveChatType(Integer userId, Integer roomId) {
         ChatRoom directRoom = chatRoomRepository.findById(roomId)
             .orElse(null);
