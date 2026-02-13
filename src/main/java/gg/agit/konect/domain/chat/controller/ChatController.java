@@ -7,13 +7,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
-import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
+import gg.agit.konect.domain.chat.dto.UnifiedChatMessageResponse;
+import gg.agit.konect.domain.chat.dto.UnifiedChatMessagesResponse;
+import gg.agit.konect.domain.chat.dto.UnifiedChatRoomsResponse;
 import gg.agit.konect.domain.chat.service.ChatService;
+import gg.agit.konect.domain.chat.service.UnifiedChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class ChatController implements ChatApi {
 
     private final ChatService chatService;
+    private final UnifiedChatService unifiedChatService;
 
     @Override
     public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
@@ -35,31 +37,40 @@ public class ChatController implements ChatApi {
     }
 
     @Override
-    public ResponseEntity<ChatRoomsResponse> getChatRooms(
+    public ResponseEntity<UnifiedChatRoomsResponse> getChatRooms(
         @UserId Integer userId
     ) {
-        ChatRoomsResponse response = chatService.getChatRooms(userId);
+        UnifiedChatRoomsResponse response = unifiedChatService.getChatRooms(userId);
         return ResponseEntity.ok(response);
     }
 
     @Override
-    public ResponseEntity<ChatMessagesResponse> getChatRoomMessages(
+    public ResponseEntity<UnifiedChatMessagesResponse> getChatRoomMessages(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
-        ChatMessagesResponse response = chatService.getChatRoomMessages(userId, chatRoomId, page, limit);
+        UnifiedChatMessagesResponse response = unifiedChatService.getMessages(userId, chatRoomId, page, limit);
         return ResponseEntity.ok(response);
     }
 
     @Override
-    public ResponseEntity<ChatMessageResponse> sendMessage(
+    public ResponseEntity<UnifiedChatMessageResponse> sendMessage(
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @Valid @RequestBody ChatMessageSendRequest request,
         @UserId Integer userId
     ) {
-        ChatMessageResponse response = chatService.sendMessage(userId, chatRoomId, request);
+        UnifiedChatMessageResponse response = unifiedChatService.sendMessage(userId, chatRoomId, request);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> markAsRead(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @UserId Integer userId
+    ) {
+        unifiedChatService.markAsRead(userId, chatRoomId);
+        return ResponseEntity.ok().build();
     }
 }

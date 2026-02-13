@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
-import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.UnifiedChatMessageResponse;
+import gg.agit.konect.domain.chat.dto.UnifiedChatMessagesResponse;
+import gg.agit.konect.domain.chat.dto.UnifiedChatRoomsResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,7 +52,7 @@ public interface ChatApi {
         - 최근 메시지가 있는 순서대로 정렬됩니다.
         """)
     @GetMapping("/rooms")
-    ResponseEntity<ChatRoomsResponse> getChatRooms(
+    ResponseEntity<UnifiedChatRoomsResponse> getChatRooms(
         @UserId Integer userId
     );
 
@@ -71,7 +71,7 @@ public interface ChatApi {
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
         """)
     @GetMapping("/rooms/{chatRoomId}")
-    ResponseEntity<ChatMessagesResponse> getChatRoomMessages(
+    ResponseEntity<UnifiedChatMessagesResponse> getChatRoomMessages(
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
@@ -93,10 +93,9 @@ public interface ChatApi {
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
         """)
     @PostMapping("/rooms/{chatRoomId}/messages")
-    ResponseEntity<ChatMessageResponse> sendMessage(
+    ResponseEntity<UnifiedChatMessageResponse> sendMessage(
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @Valid @RequestBody ChatMessageSendRequest request,
         @UserId Integer userId
     );
-
 }
