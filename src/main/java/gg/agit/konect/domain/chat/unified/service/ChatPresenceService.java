@@ -15,13 +15,13 @@ public class ChatPresenceService {
 
     private static final String PRESENCE_PREFIX = "chat:presence:room:";
     private static final String USER_SUFFIX = ":user:";
-    private static final Duration PRESENCE_TTL = Duration.ofSeconds(15);
+    private static final Duration PRESENCE_TTL = Duration.ofSeconds(5);
 
     private final StringRedisTemplate redis;
 
     /**
      * 사용자의 채팅방 접속 상태를 Redis에 기록합니다.
-     * 15초의 TTL이 설정되어 있으며, 주기적으로 갱신되어야 합니다.
+     * 5초의 TTL이 설정되어 있으며, 주기적으로 갱신되어야 합니다.
      *
      * @param roomId 채팅방 ID
      * @param userId 사용자 ID
