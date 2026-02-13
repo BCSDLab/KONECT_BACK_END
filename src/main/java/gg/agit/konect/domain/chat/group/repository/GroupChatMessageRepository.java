@@ -21,19 +21,6 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
     @Query("""
         SELECT m
         FROM GroupChatMessage m
-        WHERE m.room.id = :roomId
-        AND m.id > :minMessageId
-        ORDER BY m.createdAt DESC
-        """)
-    Page<GroupChatMessage> findByRoomIdAndIdGreaterThanOrderByCreatedAtDesc(
-        Integer roomId,
-        Integer minMessageId,
-        Pageable pageable
-    );
-
-    @Query("""
-        SELECT m
-        FROM GroupChatMessage m
         JOIN FETCH m.sender
         WHERE m.room.id = :roomId
         AND m.createdAt >= :joinedAt
@@ -54,19 +41,6 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
     long countByRoomIdAndCreatedAtGreaterThanEqual(
         @Param("roomId") Integer roomId,
         @Param("joinedAt") LocalDateTime joinedAt
-    );
-
-    @Query("""
-        SELECT COUNT(m)
-        FROM GroupChatMessage m
-        WHERE m.room.id = :roomId
-        AND m.createdAt > :lastReadAt
-        AND m.sender.id <> :senderId
-        """)
-    long countByRoomIdAndCreatedAtGreaterThanAndSenderIdNot(
-        @Param("roomId") Integer roomId,
-        @Param("lastReadAt") LocalDateTime lastReadAt,
-        @Param("senderId") Integer senderId
     );
 
     @Query("""
@@ -102,12 +76,4 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
         @Param("roomIds") List<Integer> roomIds,
         @Param("userId") Integer userId
     );
-
-    @Query("""
-        SELECT m
-        FROM GroupChatMessage m
-        WHERE m.room.id = :roomId
-        ORDER BY m.createdAt DESC
-        """)
-    Optional<GroupChatMessage> findTopByRoomIdOrderByCreatedAtDesc(@Param("roomId") Integer roomId);
 }

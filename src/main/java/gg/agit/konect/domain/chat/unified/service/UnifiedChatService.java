@@ -10,16 +10,16 @@ import gg.agit.konect.domain.chat.direct.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.direct.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomsResponse;
-import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
-import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
-import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomResponse;
-import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
-import gg.agit.konect.domain.chat.unified.enums.ChatType;
 import gg.agit.konect.domain.chat.direct.service.ChatService;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatRoomsResponse;
 import gg.agit.konect.domain.chat.group.service.GroupChatService;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
+import gg.agit.konect.domain.chat.unified.enums.ChatType;
 import lombok.RequiredArgsConstructor;
 
 @Service

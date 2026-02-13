@@ -12,9 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
-import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatRoomResponse;
@@ -28,6 +25,9 @@ import gg.agit.konect.domain.chat.group.repository.GroupChatNotificationSettingR
 import gg.agit.konect.domain.chat.group.repository.GroupChatReadStatusRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatRoomRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupRoomUnreadCountProjection;
+import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
+import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
