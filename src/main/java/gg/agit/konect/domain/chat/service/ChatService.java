@@ -79,14 +79,14 @@ public class ChatService {
 
         Set<Integer> addedChatRoomIds = new HashSet<>();
         if (user.getRole() == UserRole.ADMIN) {
-            List<ChatRoom> adminChatRooms = chatRoomRepository.findAllAdminChatRooms(UserRole.ADMIN);
+            List<ChatRoom> adminChatRooms = chatRoomRepository.findAdminChatRoomsWithUserReply(UserRole.ADMIN);
             Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(
                 extractChatRoomIds(adminChatRooms)
             );
 
             for (ChatRoom chatRoom : adminChatRooms) {
-                chatRoomResponses.add(InnerChatRoomResponse.from(
-                    chatRoom, user, adminUnreadCountMap, ChatRoomType.ADMIN
+                chatRoomResponses.add(InnerChatRoomResponse.fromForAdmin(
+                    chatRoom, adminUnreadCountMap
                 ));
                 addedChatRoomIds.add(chatRoom.getId());
             }
