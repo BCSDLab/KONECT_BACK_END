@@ -77,6 +77,4 @@ jobs:
           port: ${{ secrets.STAGE_SERVER_PORT }}
           script: |
             cd ${{ secrets.STAGE_WORK_DIR }}
-            docker compose pull
-            docker compose up -d
-            docker image prune -f
+            ./deploy.sh
