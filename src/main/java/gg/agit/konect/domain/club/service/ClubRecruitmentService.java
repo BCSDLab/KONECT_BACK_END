@@ -52,6 +52,7 @@ public class ClubRecruitmentService {
                 request.startDate(),
                 request.endDate(),
                 request.isAlwaysRecruiting(),
+                request.isFeeRequired(),
                 request.content(),
                 club
             ));
@@ -61,6 +62,7 @@ public class ClubRecruitmentService {
                 request.startDate(),
                 request.endDate(),
                 request.isAlwaysRecruiting(),
+                request.isFeeRequired(),
                 request.content()
             );
 

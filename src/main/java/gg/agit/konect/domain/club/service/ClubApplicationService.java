@@ -45,6 +45,7 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -142,11 +143,15 @@ public class ClubApplicationService {
             throw CustomException.of(ALREADY_APPLIED_CLUB);
         }
 
+        validateFeePaymentImage(club, request.feePaymentImageUrl());
+
         List<ClubApplyQuestion> questions =
             clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
         ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
-        ClubApply apply = clubApplyRepository.save(ClubApply.of(club, user));
+        ClubApply apply = clubApplyRepository.save(
+            ClubApply.of(club, user, request.feePaymentImageUrl())
+        );
 
         List<ClubApplyAnswer> applyAnswers = answers.toEntities(apply);
 
@@ -155,6 +160,17 @@ public class ClubApplicationService {
         }
 
         return ClubFeeInfoResponse.from(club);
+    }
+
+    private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
+        ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(club.getId())
+            .orElse(null);
+
+        if (recruitment != null
+            && Boolean.TRUE.equals(recruitment.getIsFeeRequired())
+            && !StringUtils.hasText(feePaymentImageUrl)) {
+            throw CustomException.of(FEE_PAYMENT_IMAGE_REQUIRED);
+        }
     }
 
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
