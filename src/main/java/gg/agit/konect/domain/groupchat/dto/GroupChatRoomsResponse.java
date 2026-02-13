@@ -5,9 +5,12 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import gg.agit.konect.domain.groupchat.model.GroupChatMessage;
+import gg.agit.konect.domain.groupchat.model.GroupChatRoom;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record GroupChatRoomsResponse(
@@ -34,5 +37,35 @@ public record GroupChatRoomsResponse(
         @Schema(description = "읽지 않은 메시지 개수", example = "12", requiredMode = REQUIRED)
         Integer unreadMessageCount
     ) {
+        public static InnerGroupChatRoomResponse from(
+            GroupChatRoom room,
+            GroupChatMessage lastMessage,
+            Map<Integer, Integer> unreadCountMap
+        ) {
+            return new InnerGroupChatRoomResponse(
+                room.getId(),
+                room.getClub().getName(),
+                room.getClub().getImageUrl(),
+                lastMessage != null ? lastMessage.getContent() : null,
+                lastMessage != null ? lastMessage.getCreatedAt() : null,
+                unreadCountMap.getOrDefault(room.getId(), 0)
+            );
+        }
+    }
+
+    public static GroupChatRoomsResponse from(
+        List<GroupChatRoom> rooms,
+        Map<Integer, GroupChatMessage> lastMessageMap,
+        Map<Integer, Integer> unreadCountMap
+    ) {
+        return new GroupChatRoomsResponse(
+            rooms.stream()
+                .map(room -> InnerGroupChatRoomResponse.from(
+                    room,
+                    lastMessageMap.get(room.getId()),
+                    unreadCountMap
+                ))
+                .toList()
+        );
     }
 }

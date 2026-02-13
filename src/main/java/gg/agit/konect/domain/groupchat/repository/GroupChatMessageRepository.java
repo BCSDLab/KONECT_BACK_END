@@ -39,5 +39,7 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
 
     long countByRoomIdAndCreatedAtGreaterThanEqual(Integer roomId, LocalDateTime joinedAt);
 
+    long countByRoomIdAndCreatedAtGreaterThanAndSenderIdNot(Integer roomId, LocalDateTime lastReadAt, Integer senderId);
+
     Optional<GroupChatMessage> findTopByRoomIdOrderByCreatedAtDesc(Integer roomId);
 }

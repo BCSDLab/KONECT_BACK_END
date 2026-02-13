@@ -1,8 +1,11 @@
 package gg.agit.konect.domain.groupchat.repository;
 
+import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
 
 import gg.agit.konect.domain.groupchat.model.GroupChatRoom;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -13,6 +16,16 @@ public interface GroupChatRoomRepository extends Repository<GroupChatRoom, Integ
     GroupChatRoom save(GroupChatRoom room);
 
     Optional<GroupChatRoom> findById(Integer roomId);
+
+    @Query("""
+        SELECT r
+        FROM GroupChatRoom r
+        JOIN FETCH r.club c
+        JOIN ClubMember cm ON cm.club.id = c.id
+        WHERE cm.user.id = :userId
+        ORDER BY r.updatedAt DESC
+        """)
+    List<GroupChatRoom> findAllByUserId(@Param("userId") Integer userId);
 
     Optional<GroupChatRoom> findByClubId(Integer clubId);
 

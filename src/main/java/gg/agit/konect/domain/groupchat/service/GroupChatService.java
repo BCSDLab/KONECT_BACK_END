@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.groupchat.service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.groupchat.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.groupchat.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.groupchat.dto.GroupChatRoomResponse;
+import gg.agit.konect.domain.groupchat.dto.GroupChatRoomsResponse;
 import gg.agit.konect.domain.groupchat.model.GroupChatMessage;
 import gg.agit.konect.domain.groupchat.model.GroupChatNotificationSetting;
 import gg.agit.konect.domain.groupchat.model.GroupChatReadStatus;
@@ -51,6 +53,36 @@ public class GroupChatService {
 
         Integer roomId = groupChatRoomRepository.getIdByClubId(clubId);
         return new GroupChatRoomResponse(roomId);
+    }
+
+    public GroupChatRoomsResponse getChatRooms(Integer userId) {
+        List<GroupChatRoom> rooms = groupChatRoomRepository.findAllByUserId(userId);
+        Map<Integer, GroupChatMessage> lastMessageMap = new HashMap<>();
+        Map<Integer, Integer> unreadCountMap = new HashMap<>();
+
+        for (GroupChatRoom room : rooms) {
+            Integer roomId = room.getId();
+            Integer clubId = room.getClub().getId();
+
+            groupChatMessageRepository.findTopByRoomIdOrderByCreatedAtDesc(roomId)
+                .ifPresent(lastMessage -> lastMessageMap.put(roomId, lastMessage));
+
+            unreadCountMap.put(roomId, getUnreadCountForUser(clubId, roomId, userId));
+        }
+
+        return GroupChatRoomsResponse.from(rooms, lastMessageMap, unreadCountMap);
+    }
+
+    @Transactional
+    public GroupChatMessagesResponse getMessagesByRoomId(Integer roomId, Integer userId, Integer page, Integer limit) {
+        GroupChatRoom room = groupChatRoomRepository.getById(roomId);
+        return getMessages(room.getClub().getId(), userId, page, limit);
+    }
+
+    @Transactional
+    public GroupChatMessageResponse sendMessageByRoomId(Integer roomId, Integer userId, String content) {
+        GroupChatRoom room = groupChatRoomRepository.getById(roomId);
+        return sendMessage(room.getClub().getId(), userId, content);
     }
 
     @Transactional
@@ -163,6 +195,12 @@ public class GroupChatService {
     }
 
     @Transactional
+    public void markAsReadByRoomId(Integer roomId, Integer userId) {
+        GroupChatRoom room = groupChatRoomRepository.getById(roomId);
+        markAsRead(room.getClub().getId(), userId);
+    }
+
+    @Transactional
     public Boolean toggleMute(Integer clubId, Integer userId) {
         validateClubMember(clubId, userId);
 
@@ -228,5 +266,16 @@ public class GroupChatService {
         }
 
         return unreadCount;
+    }
+
+    private int getUnreadCountForUser(Integer clubId, Integer roomId, Integer userId) {
+        LocalDateTime joinedAt = clubMemberRepository.getJoinedAtByClubIdAndUserId(clubId, userId);
+        LocalDateTime lastReadAt = groupChatReadStatusRepository.findByRoomIdAndUserId(roomId, userId)
+            .map(GroupChatReadStatus::getLastReadAt)
+            .orElse(joinedAt);
+
+        return Math.toIntExact(
+            groupChatMessageRepository.countByRoomIdAndCreatedAtGreaterThanAndSenderIdNot(roomId, lastReadAt, userId)
+        );
     }
 }
