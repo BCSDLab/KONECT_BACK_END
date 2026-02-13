@@ -150,7 +150,8 @@ public class ChatService {
     public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-        chatRoom.validateIsParticipant(userId);
+        User user = userRepository.getById(userId);
+        validateChatRoomReadAccess(user, chatRoom);
 
         chatPresenceService.recordPresence(roomId, userId);
         markUnreadMessagesAsRead(userId, roomId, chatRoom);
@@ -193,6 +194,13 @@ public class ChatService {
     private boolean isAdminChatRoom(ChatRoom chatRoom) {
         return chatRoom.getSender().getRole() == UserRole.ADMIN
             || chatRoom.getReceiver().getRole() == UserRole.ADMIN;
+    }
+
+    private void validateChatRoomReadAccess(User user, ChatRoom chatRoom) {
+        if (user.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
+            return;
+        }
+        chatRoom.validateIsParticipant(user.getId());
     }
 
     @Transactional
