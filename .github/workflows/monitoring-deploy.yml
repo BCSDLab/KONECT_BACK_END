@@ -1,0 +1,56 @@
+name: Monitoring Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "monitoring/**"
+      - ".github/workflows/deploy-monitoring.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy-monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Transfer monitoring configs to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "monitoring"
+          target: ${{ secrets.WORK_DIR }}
+          rm: false
+
+      - name: Deploy monitoring stack
+        uses: appleboy/ssh-action@v0.1.8
+        env:
+          WORK_DIR: ${{ secrets.WORK_DIR }}
+          MONITORING_ENV: ${{ secrets.MONITORING_ENV }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          envs: WORK_DIR,MONITORING_ENV
+          script: |
+            set -euo pipefail
+            : "${WORK_DIR:?}"
+            : "${MONITORING_ENV:?}"
+            cd "${WORK_DIR}/monitoring"
+            umask 077
+            printf '%s' "${MONITORING_ENV}" > .env
+            chmod 600 .env
+
+            docker volume inspect monitoring_prometheus-data >/dev/null 2>&1 || docker volume create monitoring_prometheus-data
+            docker volume inspect monitoring_grafana-data >/dev/null 2>&1 || docker volume create monitoring_grafana-data
+            docker volume inspect monitoring_loki-data >/dev/null 2>&1 || docker volume create monitoring_loki-data
+            docker volume inspect monitoring_promtail-positions >/dev/null 2>&1 || docker volume create monitoring_promtail-positions
+
+            docker compose up -d
+            curl -fsS -X POST "http://127.0.0.1:${PROMETHEUS_PORT:-9090}/-/reload" || true
+            docker compose ps

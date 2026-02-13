@@ -19,6 +19,7 @@ public enum ApiResponseCode {
     FAILED_EXTRACT_EMAIL(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 이메일 정보를 가져올 수 없습니다."),
     FAILED_EXTRACT_PROVIDER_ID(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 제공자 식별자를 가져올 수 없습니다."),
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
+    INVALID_CHAT_ROOM_CREATE_REQUEST(HttpStatus.BAD_REQUEST, "clubId 또는 targetUserId 중 하나만 전달해야 합니다."),
     CANNOT_CHANGE_OWN_POSITION(HttpStatus.BAD_REQUEST, "자기 자신의 직책은 변경할 수 없습니다."),
     CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
     CANNOT_DELETE_ESSENTIAL_POSITION(HttpStatus.BAD_REQUEST, "필수 직책은 삭제할 수 없습니다."),
@@ -67,6 +68,7 @@ public enum ApiResponseCode {
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),
+    NOT_FOUND_CHAT_ROOM(HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
     NOT_FOUND_CLUB(HttpStatus.NOT_FOUND, "동아리를 찾을 수 없습니다."),
     NOT_FOUND_CLUB_MEMBER(HttpStatus.NOT_FOUND, "해당하는 동아리 원을 찾을 수 없습니다."),
     NOT_FOUND_CLUB_PRESIDENT(HttpStatus.NOT_FOUND, "동아리 회장을 찾을 수 없습니다."),

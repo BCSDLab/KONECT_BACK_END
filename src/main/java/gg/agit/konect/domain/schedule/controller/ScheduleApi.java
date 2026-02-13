@@ -10,6 +10,7 @@ import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 
 @Tag(name = "(Normal) Schedule: 일정", description = "일정 API")
 public interface ScheduleApi {
@@ -46,36 +47,41 @@ public interface ScheduleApi {
 
     @Operation(summary = "특정 월의 대학교 일정을 조회한다.", description = """
         년월을 기준으로 해당 월의 모든 일정을 조회합니다.
-        
+
         **조회 조건:**
         - 요청한 년월에 시작일 또는 종료일이 포함되는 일정
         - 시작일 기준 오름차순 정렬
-        
+
+        **검색 기능 (query 파라미터):**
+        - 일정 제목을 기준으로 키워드 검색
+        - 대소문자 구분 없음 (예: "수강" 또는 "EXAM" 모두 가능)
+        - 빈 값이거나 미입력 시 전체 일정 조회
+
         **scheduleType (일정 구분):**
         - `UNIVERSITY`: 대학교 일정
         - `CLUB`: 동아리 일정
         - `COUNCIL`: 총동아리연합회 일정
-        
+
         **dDay 계산 규칙:**
         - 오늘이 일정 **시작 전**인 경우: D-Day 계산 (시작일까지 남은 일수)
         - 오늘이 일정 **당일 또는 진행중**인 경우: null
-        
+
         **예시 1) 여러 날 일정 (12.15 ~ 12.17)**
         - 오늘이 12.13 → dDay: 2 (시작까지 2일 남음)
         - 오늘이 12.15 → dDay: null (당일 시작)
         - 오늘이 12.16 → dDay: null (진행중)
-        
+
         **예시 2) 하루 일정 (12.15)**
         - 오늘이 12.13 → dDay: 2 (시작까지 2일 남음)
         - 오늘이 12.15 → dDay: null (당일)
-        
+
         **startedAt, endedAt**
         - 시간이 정해지지 않는 경우 : 00:00
         - 시간이 정해진 경우 : 정해진 시간
         """)
     @GetMapping("/schedules")
     ResponseEntity<SchedulesResponse> getSchedules(
-        @Valid @ModelAttribute ScheduleCondition request,
+        @Valid @ParameterObject @ModelAttribute ScheduleCondition request,
         @UserId Integer userId
     );
 }
