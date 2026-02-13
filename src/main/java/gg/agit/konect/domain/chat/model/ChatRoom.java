@@ -8,6 +8,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDateTime;
 
+import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.model.BaseEntity;
@@ -80,6 +81,13 @@ public class ChatRoom extends BaseEntity {
 
     public User getChatPartner(User currentUser) {
         return sender.getId().equals(currentUser.getId()) ? receiver : sender;
+    }
+
+    public User getNonAdminUser() {
+        if (sender.getRole() != UserRole.ADMIN) {
+            return sender;
+        }
+        return receiver;
     }
 
     public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {
