@@ -1,0 +1,68 @@
+package gg.agit.konect.domain.chat.unified.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import gg.agit.konect.domain.chat.direct.dto.ChatMessageSendRequest;
+import gg.agit.konect.domain.chat.direct.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.direct.dto.ChatRoomResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
+import gg.agit.konect.domain.chat.direct.service.ChatService;
+import gg.agit.konect.domain.chat.unified.service.UnifiedChatService;
+import gg.agit.konect.global.auth.annotation.UserId;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/chats")
+public class ChatController implements ChatApi {
+
+    private final ChatService chatService;
+    private final UnifiedChatService unifiedChatService;
+
+    @Override
+    public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
+        @Valid @RequestBody ChatRoomCreateRequest request,
+        @UserId Integer userId
+    ) {
+        ChatRoomResponse response = chatService.createOrGetChatRoom(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<UnifiedChatRoomsResponse> getChatRooms(
+        @UserId Integer userId
+    ) {
+        UnifiedChatRoomsResponse response = unifiedChatService.getChatRooms(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<UnifiedChatMessagesResponse> getChatRoomMessages(
+        @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @UserId Integer userId
+    ) {
+        UnifiedChatMessagesResponse response = unifiedChatService.getMessages(userId, chatRoomId, page, limit);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<UnifiedChatMessageResponse> sendMessage(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @Valid @RequestBody ChatMessageSendRequest request,
+        @UserId Integer userId
+    ) {
+        UnifiedChatMessageResponse response = unifiedChatService.sendMessage(userId, chatRoomId, request);
+        return ResponseEntity.ok(response);
+    }
+
+}
