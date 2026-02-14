@@ -22,7 +22,9 @@ import org.springframework.web.client.RestTemplate;
 import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
+import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
+import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
@@ -42,17 +44,20 @@ public class NotificationService {
 
     private final UserRepository userRepository;
     private final NotificationDeviceTokenRepository notificationDeviceTokenRepository;
+    private final NotificationMuteSettingRepository notificationMuteSettingRepository;
     private final RestTemplate restTemplate;
     private final ChatPresenceService chatPresenceService;
 
     public NotificationService(
         UserRepository userRepository,
         NotificationDeviceTokenRepository notificationDeviceTokenRepository,
+        NotificationMuteSettingRepository notificationMuteSettingRepository,
         RestTemplate restTemplate,
         ChatPresenceService chatPresenceService
     ) {
         this.userRepository = userRepository;
         this.notificationDeviceTokenRepository = notificationDeviceTokenRepository;
+        this.notificationMuteSettingRepository = notificationMuteSettingRepository;
         this.restTemplate = restTemplate;
         this.chatPresenceService = chatPresenceService;
     }
@@ -102,6 +107,19 @@ public class NotificationService {
         try {
             if (chatPresenceService.isUserInChatRoom(roomId, receiverId)) {
                 log.debug("User in chat room, skipping notification: roomId={}, receiverId={}", roomId, receiverId);
+                return;
+            }
+
+            boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                    NotificationTargetType.DIRECT_CHAT_ROOM,
+                    roomId,
+                    receiverId
+                )
+                .map(setting -> Boolean.TRUE.equals(setting.getIsMuted()))
+                .orElse(false);
+
+            if (isMuted) {
+                log.debug("Direct chat muted, skipping notification: roomId={}, receiverId={}", roomId, receiverId);
                 return;
             }
 

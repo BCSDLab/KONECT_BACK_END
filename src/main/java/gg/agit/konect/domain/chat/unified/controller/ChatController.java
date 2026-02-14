@@ -11,7 +11,7 @@ import gg.agit.konect.domain.chat.direct.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.direct.service.ChatService;
-import gg.agit.konect.domain.chat.group.dto.GroupChatMuteResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMuteResponse;
 import gg.agit.konect.domain.chat.group.service.GroupChatService;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
@@ -72,12 +72,12 @@ public class ChatController implements ChatApi {
     }
 
     @Override
-    public ResponseEntity<GroupChatMuteResponse> toggleGroupChatMute(
+    public ResponseEntity<UnifiedChatMuteResponse> toggleGroupChatMute(
         @RequestParam(name = "type") ChatType type,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
         Boolean isMuted = groupChatService.toggleMute(userId, type, chatRoomId);
-        return ResponseEntity.ok(new GroupChatMuteResponse(isMuted));
+        return ResponseEntity.ok(new UnifiedChatMuteResponse(isMuted));
     }
 }

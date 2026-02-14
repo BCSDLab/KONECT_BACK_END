@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import gg.agit.konect.domain.chat.direct.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomResponse;
-import gg.agit.konect.domain.chat.group.dto.GroupChatMuteResponse;
+import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMuteResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessageResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
@@ -105,8 +105,8 @@ public interface ChatApi {
     );
 
     @Operation(summary = "채팅 알림 기능 유무를 토글한다.")
-    @PostMapping("rooms/{chatRoomId}/mute")
-    ResponseEntity<GroupChatMuteResponse> toggleGroupChatMute(
+    @PostMapping("/rooms/{chatRoomId}/mute")
+    ResponseEntity<UnifiedChatMuteResponse> toggleGroupChatMute(
         @RequestParam(name = "type") ChatType type,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
