@@ -77,6 +77,4 @@ jobs:
           port: ${{ secrets.PROD_SERVER_PORT }}
           script: |
             cd ${{ secrets.PROD_WORK_DIR }}
-            docker-compose pull
-            docker-compose up -d
-            docker image prune -f
+            ./deploy.sh
