@@ -105,7 +105,7 @@ public interface ChatApi {
     );
 
     @Operation(summary = "채팅 알림 기능 유무를 토글한다.")
-    @PostMapping("rooms/{chatRoomId}/mute")
+    @PostMapping("/rooms/{chatRoomId}/mute")
     ResponseEntity<GroupChatMuteResponse> toggleGroupChatMute(
         @RequestParam(name = "type") ChatType type,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
