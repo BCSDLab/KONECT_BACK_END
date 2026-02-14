@@ -157,4 +157,8 @@ public class User extends BaseEntity {
     public String getStudentNumberYear() {
         return studentNumber.substring(0, STUDENT_NUMBER_YEAR_MAX_LENGTH);
     }
+
+    public boolean isAdmin() {
+        return this.role.equals(UserRole.ADMIN);
+    }
 }
