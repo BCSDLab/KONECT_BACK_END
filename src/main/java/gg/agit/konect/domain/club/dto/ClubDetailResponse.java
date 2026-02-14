@@ -49,6 +49,9 @@ public record ClubDetailResponse(
     @Schema(description = "동아리 모집 정보", requiredMode = REQUIRED)
     InnerRecruitment recruitment,
 
+    @Schema(description = "동아리 회장 ID", example = "1", requiredMode = REQUIRED)
+    Integer presidentUserId,
+
     @Schema(description = "동아리 회장 이름", example = "김철수", requiredMode = REQUIRED)
     String presidentName,
 
@@ -96,6 +99,7 @@ public record ClubDetailResponse(
             club.getClubCategory().getDescription(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
+            president.getUser().getId(),
             president.getUser().getName(),
             isMember,
             isApplied
