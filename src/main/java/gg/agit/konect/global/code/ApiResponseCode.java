@@ -57,6 +57,7 @@ public enum ApiResponseCode {
 
     // 403 Forbidden (접근 권한 없음)
     FORBIDDEN_CHAT_ROOM_ACCESS(HttpStatus.FORBIDDEN, "채팅방에 접근할 권한이 없습니다."),
+    FORBIDDEN_GROUP_CHAT_ACCESS(HttpStatus.FORBIDDEN, "단체 채팅방에 접근할 권한이 없습니다."),
     FORBIDDEN_CLUB_FEE_INFO(HttpStatus.FORBIDDEN, "회비 정보 조회 권한이 없습니다."),
     FORBIDDEN_CLUB_MANAGER_ACCESS(HttpStatus.FORBIDDEN, "동아리 매니저 권한이 없습니다."),
     FORBIDDEN_CLUB_MEMBER_ACCESS(HttpStatus.FORBIDDEN, "동아리 멤버 조회 권한이 없습니다."),
@@ -78,6 +79,7 @@ public enum ApiResponseCode {
     NOT_FOUND_CLUB_APPLY(HttpStatus.NOT_FOUND, "동아리 지원 내역을 찾을 수 없습니다."),
     NOT_FOUND_COUNCIL(HttpStatus.NOT_FOUND, "총동아리연합회를 찾을 수 없습니다."),
     NOT_FOUND_COUNCIL_NOTICE(HttpStatus.NOT_FOUND, "총동아리연합회 공지사항을 찾을 수 없습니다."),
+    NOT_FOUND_GROUP_CHAT_ROOM(HttpStatus.NOT_FOUND, "단체 채팅방을 찾을 수 없습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
     NOT_FOUND_SCHEDULE(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다."),
     NOT_FOUND_UNREGISTERED_USER(HttpStatus.NOT_FOUND, "임시 유저를 찾을 수 없습니다."),
