@@ -1,5 +1,7 @@
 package gg.agit.konect;
 
+import java.util.TimeZone;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -13,7 +15,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class KonectApplication {
 
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
         SpringApplication.run(KonectApplication.class, args);
     }
-
 }

@@ -85,10 +85,6 @@ public class ChatService {
             );
 
             for (ChatRoom chatRoom : adminChatRooms) {
-                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.fromForAdmin(
-                    chatRoom, adminUnreadCountMap
-                ));
-
                 chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.from(
                     chatRoom, user, adminUnreadCountMap, ChatRoomType.ADMIN
                 ));
