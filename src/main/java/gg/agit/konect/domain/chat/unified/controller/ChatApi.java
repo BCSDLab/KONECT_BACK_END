@@ -104,10 +104,11 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "단체 채팅 알림 음소거를 토글한다.")
-    @PostMapping("/groups/{clubId}/mute")
+    @Operation(summary = "채팅 알림 기능 유무를 토글한다.")
+    @PostMapping("rooms/{chatRoomId}/mute")
     ResponseEntity<GroupChatMuteResponse> toggleGroupChatMute(
-        @PathVariable(value = "clubId") Integer clubId,
+        @RequestParam(name = "type") ChatType type,
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     );
 }

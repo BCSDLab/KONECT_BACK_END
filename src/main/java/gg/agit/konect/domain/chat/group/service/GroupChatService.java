@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.chat.direct.model.ChatRoom;
+import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessagesResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatRoomResponse;
@@ -23,6 +25,7 @@ import gg.agit.konect.domain.chat.group.repository.GroupChatMessageRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatReadStatusRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupChatRoomRepository;
 import gg.agit.konect.domain.chat.group.repository.GroupRoomUnreadCountProjection;
+import gg.agit.konect.domain.chat.unified.enums.ChatType;
 import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
@@ -45,6 +48,7 @@ public class GroupChatService {
     private final GroupChatMessageRepository groupChatMessageRepository;
     private final GroupChatReadStatusRepository groupChatReadStatusRepository;
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
@@ -185,16 +189,25 @@ public class GroupChatService {
     }
 
     @Transactional
-    public Boolean toggleMute(Integer clubId, Integer userId) {
-        validateClubMember(clubId, userId);
+    public Boolean toggleMute(Integer userId, ChatType type, Integer chatRoomId) {
+        NotificationTargetType targetType;
 
-        GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
-        Integer roomId = room.getId();
+        if (type == ChatType.DIRECT) {
+            ChatRoom directRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CHAT_ROOM));
+            directRoom.validateIsParticipant(userId);
+            targetType = NotificationTargetType.DIRECT_CHAT_ROOM;
+        } else {
+            GroupChatRoom groupRoom = groupChatRoomRepository.getById(chatRoomId);
+            validateClubMember(groupRoom.getClub().getId(), userId);
+            targetType = NotificationTargetType.GROUP_CHAT_ROOM;
+        }
+
         User user = userRepository.getById(userId);
 
         return notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
-                NotificationTargetType.GROUP_CHAT_ROOM,
-                roomId,
+                targetType,
+                chatRoomId,
                 userId
             )
             .map(setting -> {
@@ -204,8 +217,8 @@ public class GroupChatService {
             })
             .orElseGet(() -> {
                 notificationMuteSettingRepository.save(NotificationMuteSetting.of(
-                    NotificationTargetType.GROUP_CHAT_ROOM,
-                    roomId,
+                    targetType,
+                    chatRoomId,
                     user,
                     true
                 ));
