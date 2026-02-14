@@ -145,6 +145,12 @@ public class ClubService {
     }
 
     public ClubMembershipsResponse getManagedClubs(Integer userId) {
+        User user = userRepository.getById(userId);
+        if (user.isAdmin()) {
+            List<Club> clubs = clubRepository.findAll();
+            return ClubMembershipsResponse.forAdmin(clubs);
+        }
+
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPositions(
             userId,
             MANAGERS

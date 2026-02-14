@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +25,8 @@ public interface ClubRepository extends Repository<Club, Integer> {
         return findById(id).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
     }
+
+    List<Club> findAll();
 
     Club save(Club club);
 }

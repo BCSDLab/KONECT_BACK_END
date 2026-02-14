@@ -4,6 +4,8 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
 
+import gg.agit.konect.domain.club.enums.ClubPosition;
+import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -40,11 +42,28 @@ public record ClubMembershipsResponse(
                 clubMember.getIsFeePaid()
             );
         }
+
+        public static InnerJoinedClubResponse forAdmin(Club club) {
+            return new InnerJoinedClubResponse(
+                club.getId(),
+                club.getName(),
+                club.getImageUrl(),
+                club.getClubCategory().getDescription(),
+                ClubPosition.PRESIDENT.getDescription(),
+                true
+            );
+        }
     }
 
     public static ClubMembershipsResponse from(List<ClubMember> clubMembers) {
         return new ClubMembershipsResponse(clubMembers.stream()
             .map(InnerJoinedClubResponse::from)
+            .toList());
+    }
+
+    public static ClubMembershipsResponse forAdmin(List<Club> clubs) {
+        return new ClubMembershipsResponse(clubs.stream()
+            .map(InnerJoinedClubResponse::forAdmin)
             .toList());
     }
 }
