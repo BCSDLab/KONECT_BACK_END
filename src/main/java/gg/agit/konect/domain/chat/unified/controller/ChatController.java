@@ -73,11 +73,11 @@ public class ChatController implements ChatApi {
 
     @Override
     public ResponseEntity<GroupChatMuteResponse> toggleGroupChatMute(
-        @PathVariable(value = "clubId") Integer clubId,
+        @RequestParam(name = "type") ChatType type,
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
-        Boolean isMuted = groupChatService.toggleMute(clubId, userId);
+        Boolean isMuted = groupChatService.toggleMute(userId, type, chatRoomId);
         return ResponseEntity.ok(new GroupChatMuteResponse(isMuted));
     }
-
 }
