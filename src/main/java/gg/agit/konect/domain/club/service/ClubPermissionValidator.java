@@ -21,19 +21,31 @@ public class ClubPermissionValidator {
     private final UserRepository userRepository;
 
     public void validatePresidentAccess(Integer clubId, Integer userId) {
-        if (!isAdmin(userId) || !hasAccess(clubId, userId, PRESIDENT_ONLY)) {
+        if (isAdmin(userId)) {
+            return ;
+        }
+
+        if (!hasAccess(clubId, userId, PRESIDENT_ONLY)) {
             throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
         }
     }
 
     public void validateLeaderAccess(Integer clubId, Integer userId) {
-        if (!isAdmin(userId) || !hasAccess(clubId, userId, LEADERS)) {
+        if (isAdmin(userId)) {
+            return ;
+        }
+
+        if (!hasAccess(clubId, userId, LEADERS)) {
             throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
         }
     }
 
     public void validateManagerAccess(Integer clubId, Integer userId) {
-        if (!isAdmin(userId) || !hasAccess(clubId, userId, MANAGERS)) {
+        if (isAdmin(userId)) {
+            return ;
+        }
+
+        if (!hasAccess(clubId, userId, MANAGERS)) {
             throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
         }
     }
