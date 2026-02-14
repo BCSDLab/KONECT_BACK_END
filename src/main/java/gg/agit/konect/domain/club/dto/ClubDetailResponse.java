@@ -9,6 +9,7 @@ import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
+import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubDetailResponse(
@@ -89,6 +90,8 @@ public record ClubDetailResponse(
         Boolean isMember,
         Boolean isApplied
     ) {
+        User presidentUser = president.getUser();
+
         return new ClubDetailResponse(
             club.getId(),
             club.getName(),
@@ -99,8 +102,8 @@ public record ClubDetailResponse(
             club.getClubCategory().getDescription(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
-            president.getUser().getId(),
-            president.getUser().getName(),
+            presidentUser.getId(),
+            presidentUser.getName(),
             isMember,
             isApplied
         );
