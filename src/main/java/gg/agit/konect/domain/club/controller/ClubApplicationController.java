@@ -103,10 +103,9 @@ public class ClubApplicationController implements ClubApplicationApi {
 
     @Override
     public ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
-        @PathVariable(name = "clubId") Integer clubId,
-        @UserId Integer userId
+        @PathVariable(name = "clubId") Integer clubId
     ) {
-        ClubFeeInfoResponse response = clubApplicationService.getFeeInfo(clubId, userId);
+        ClubFeeInfoResponse response = clubApplicationService.getFeeInfo(clubId);
         return ResponseEntity.ok(response);
     }
 
