@@ -165,6 +165,10 @@ public class ClubService {
 
     public MyManagedClubResponse getManagedClubDetail(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
+        User user = userRepository.getById(userId);
+        if (user.isAdmin()) {
+            return MyManagedClubResponse.forAdmin(club, user);
+        }
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
