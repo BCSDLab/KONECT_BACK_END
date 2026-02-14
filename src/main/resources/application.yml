@@ -1,0 +1,41 @@
+spring:
+  config:
+    import:
+      - classpath:application-db.yml
+      - classpath:application-infrastructure.yml
+      - classpath:application-monitoring.yml
+      - classpath:application-security.yml
+      - optional:file:.env.${spring.profiles.active}[.properties]
+
+app:
+  allowed-redirect-origins: ${ALLOWED_ORIGINS}
+
+  jwt:
+    secret: ${APP_JWT_SECRET}
+    issuer: ${APP_JWT_ISSUER}
+
+  apple:
+    oauth:
+      team-id: ${OAUTH_APPLE_TEAM_ID}
+      client-id: ${OAUTH_APPLE_CLIENT_ID}
+      key-id: ${OAUTH_APPLE_KEY_ID}
+      private-key-path: ${OAUTH_APPLE_PRIVATE_KEY_PATH}
+
+  cookie:
+    domain: ${APP_COOKIE_DOMAIN}
+
+  frontend:
+    base-url: ${APP_FRONTEND_BASE_URL}
+
+  backend:
+    base-url: ${APP_BACKEND_BASE_URL}
+
+cors:
+  allowedOrigins: ${ALLOWED_ORIGINS}
+
+server:
+  forward-headers-strategy: framework
+
+  tomcat:
+    mbeanregistry:
+      enabled: true
