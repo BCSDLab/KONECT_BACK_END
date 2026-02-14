@@ -9,6 +9,7 @@ import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
+import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubDetailResponse(
@@ -49,6 +50,9 @@ public record ClubDetailResponse(
     @Schema(description = "동아리 모집 정보", requiredMode = REQUIRED)
     InnerRecruitment recruitment,
 
+    @Schema(description = "동아리 회장 ID", example = "1", requiredMode = REQUIRED)
+    Integer presidentUserId,
+
     @Schema(description = "동아리 회장 이름", example = "김철수", requiredMode = REQUIRED)
     String presidentName,
 
@@ -86,6 +90,8 @@ public record ClubDetailResponse(
         Boolean isMember,
         Boolean isApplied
     ) {
+        User presidentUser = president.getUser();
+
         return new ClubDetailResponse(
             club.getId(),
             club.getName(),
@@ -96,7 +102,8 @@ public record ClubDetailResponse(
             club.getClubCategory().getDescription(),
             memberCount,
             InnerRecruitment.from(clubRecruitment),
-            president.getUser().getName(),
+            presidentUser.getId(),
+            presidentUser.getName(),
             isMember,
             isApplied
         );
