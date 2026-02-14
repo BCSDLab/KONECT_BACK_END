@@ -59,6 +59,23 @@ public record ChatRoomsResponse(
                 chatRoomType
             );
         }
+
+        public static InnerChatRoomResponse fromForAdmin(
+            ChatRoom chatRoom,
+            Map<Integer, Integer> unreadCountMap
+        ) {
+            User nonAdminUser = chatRoom.getNonAdminUser();
+
+            return new InnerChatRoomResponse(
+                chatRoom.getId(),
+                nonAdminUser.getName(),
+                nonAdminUser.getImageUrl(),
+                chatRoom.getLastMessageContent(),
+                chatRoom.getLastMessageSentAt(),
+                unreadCountMap.getOrDefault(chatRoom.getId(), 0),
+                ChatRoomType.ADMIN
+            );
+        }
     }
 
     public static ChatRoomsResponse of(List<InnerChatRoomResponse> chatRooms) {
