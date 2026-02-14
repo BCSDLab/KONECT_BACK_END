@@ -299,17 +299,19 @@ public class ClubApplicationService {
 
     public ClubFeeInfoResponse getFeeInfo(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
-        userRepository.getById(userId);
+        User user = userRepository.getById(userId);
 
-        boolean isApplied = clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
-        boolean isManager = clubMemberRepository.existsByClubIdAndUserIdAndPositionIn(
-            clubId,
-            userId,
-            MANAGERS
-        );
+        if (!user.isAdmin()) {
+            boolean isApplied = clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
+            boolean isManager = clubMemberRepository.existsByClubIdAndUserIdAndPositionIn(
+                clubId,
+                userId,
+                MANAGERS
+            );
 
-        if (!isApplied && !isManager) {
-            throw CustomException.of(FORBIDDEN_CLUB_FEE_INFO);
+            if (!isApplied && !isManager) {
+                throw CustomException.of(FORBIDDEN_CLUB_FEE_INFO);
+            }
         }
 
         return ClubFeeInfoResponse.from(club);

@@ -177,9 +177,12 @@ public class ClubService {
     }
 
     public ClubMembersResponse getClubMembers(Integer clubId, Integer userId, ClubMemberCondition condition) {
-        boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
-        if (!isMember) {
-            throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
+        User user = userRepository.getById(userId);
+        if (!user.isAdmin()) {
+            boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
+            if (!isMember) {
+                throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
+            }
         }
 
         List<ClubMember> clubMembers;
