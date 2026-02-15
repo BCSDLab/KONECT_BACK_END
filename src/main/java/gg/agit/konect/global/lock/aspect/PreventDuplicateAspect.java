@@ -93,7 +93,7 @@ public class PreventDuplicateAspect {
             return null;
         }
 
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        MethodSignature signature = (MethodSignature)joinPoint.getSignature();
         String[] parameterNames = signature.getParameterNames();
         Object[] args = joinPoint.getArgs();
 
