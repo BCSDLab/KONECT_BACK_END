@@ -106,6 +106,7 @@ public enum ApiResponseCode {
     ALREADY_EXIST_CLUB_RECRUITMENT(HttpStatus.CONFLICT, "이미 동아리 모집 공고가 존재합니다."),
     DUPLICATE_VERSION(HttpStatus.CONFLICT, "이미 등록된 버전입니다."),
     DUPLICATE_NOTIFICATION_TOKEN(HttpStatus.CONFLICT, "이미 등록된 알림 토큰입니다."),
+    DUPLICATE_REQUEST(HttpStatus.CONFLICT, "이미 처리 중인 요청입니다."),
 
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
