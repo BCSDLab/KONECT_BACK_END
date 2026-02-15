@@ -11,6 +11,7 @@ public enum ClubCategory {
     HOBBY("취미"),
     RELIGION("종교"),
     PERFORMANCE("공연"),
+    JUNIOR("준동아리")
     ;
 
     private final String description;
