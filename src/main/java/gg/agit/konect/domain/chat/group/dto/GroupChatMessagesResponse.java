@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.chat.group.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
@@ -18,6 +19,9 @@ public record GroupChatMessagesResponse(
 
     @Schema(description = "현재 페이지", example = "1", requiredMode = REQUIRED)
     Integer currentPage,
+
+    @Schema(description = "동아리 ID", example = "1", requiredMode = NOT_REQUIRED)
+    Integer clubId,
 
     @Schema(description = "채팅 메시지 리스트", requiredMode = REQUIRED)
     List<GroupChatMessageResponse> messages

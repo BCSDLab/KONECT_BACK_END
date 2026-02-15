@@ -131,6 +131,7 @@ public class UnifiedChatService {
             response.currentCount(),
             response.totalPage(),
             response.currentPage(),
+            null,
             messages
         );
     }
@@ -154,6 +155,7 @@ public class UnifiedChatService {
             response.currentCount(),
             response.totalPage(),
             response.currentPage(),
+            response.clubId(),
             messages
         );
     }
