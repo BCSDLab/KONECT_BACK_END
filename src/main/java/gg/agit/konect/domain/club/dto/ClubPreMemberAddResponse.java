@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import gg.agit.konect.domain.club.enums.ClubPosition;
+import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -17,14 +18,29 @@ public record ClubPreMemberAddResponse(
     String name,
 
     @Schema(description = "가입 직책", example = "MEMBER", requiredMode = REQUIRED)
-    ClubPosition clubPosition
+    ClubPosition clubPosition,
+
+    @Schema(description = "직접 회원 가입 여부 (true: 이미 앱 가입자라 ClubMember에 직접 추가됨, false: ClubPreMember에 사전등록됨)",
+        example = "false", requiredMode = REQUIRED)
+    Boolean isDirectMember
 ) {
     public static ClubPreMemberAddResponse from(ClubPreMember preMember) {
         return new ClubPreMemberAddResponse(
             preMember.getClub().getId(),
             preMember.getStudentNumber(),
             preMember.getName(),
-            preMember.getClubPosition()
+            preMember.getClubPosition(),
+            false
+        );
+    }
+
+    public static ClubPreMemberAddResponse from(ClubMember clubMember) {
+        return new ClubPreMemberAddResponse(
+            clubMember.getClub().getId(),
+            clubMember.getUser().getStudentNumber(),
+            clubMember.getUser().getName(),
+            clubMember.getClubPosition(),
+            true
         );
     }
 }
