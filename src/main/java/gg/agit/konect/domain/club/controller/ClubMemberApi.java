@@ -84,11 +84,12 @@ public interface ClubMemberApi {
 
         ## 로직
         - 해당 학번의 사용자가 이미 서비스에 가입한 경우:
-          - 동아리 회원(ClubMember)에 직접 추가됩니다.
+          - 동아리 회원(ClubMember)에 지정한 직책(clubPosition)으로 직접 추가됩니다.
           - 응답의 `isDirectMember`가 `true`로 반환됩니다.
         - 해당 학번의 사용자가 서비스에 가입하지 않은 경우:
           - 사전 회원(ClubPreMember)으로 등록됩니다.
-          - 사전 등록된 회원이 서비스에 가입하면 자동으로 동아리 일반회원(MEMBER)으로 전환됩니다.
+          - 사전 등록된 회원이 서비스에 가입하면 지정한 직책(clubPosition)으로 자동 전환됩니다.
+          - clubPosition이 PRESIDENT인 경우, 기존 회장 회원 정보는 제거되고 새 가입자가 회장으로 등록됩니다.
           - 응답의 `isDirectMember`가 `false`로 반환됩니다.
 
         ## 에러
@@ -107,7 +108,7 @@ public interface ClubMemberApi {
     @Operation(summary = "동아리 회원을 강제 탈퇴시킨다.", description = """
         동아리 회장 또는 부회장만 회원을 강제 탈퇴시킬 수 있습니다.
         일반회원만 강제 탈퇴 가능하며, 부회장이나 운영진은 먼저 직책을 변경한 후 탈퇴시켜야 합니다.
-        
+
         ## 에러
         - CANNOT_REMOVE_SELF (400): 자기 자신을 강제 탈퇴시킬 수 없습니다.
         - CANNOT_REMOVE_NON_MEMBER (400): 일반회원만 강제 탈퇴할 수 있습니다.

@@ -85,6 +85,7 @@ public class ClubMemberManagementService {
 
         String studentNumber = request.studentNumber();
         String name = request.name();
+        ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
         Integer universityId = club.getUniversity().getId();
 
         Optional<User> existingUser = userRepository.findByUniversityIdAndStudentNumber(
@@ -92,13 +93,13 @@ public class ClubMemberManagementService {
         );
 
         if (existingUser.isPresent()) {
-            return addDirectMember(club, existingUser.get());
+            return addDirectMember(club, existingUser.get(), clubPosition);
         }
 
-        return addPreMemberInternal(club, studentNumber, name);
+        return addPreMemberInternal(club, studentNumber, name, clubPosition);
     }
 
-    private ClubPreMemberAddResponse addDirectMember(Club club, User user) {
+    private ClubPreMemberAddResponse addDirectMember(Club club, User user, ClubPosition clubPosition) {
         Integer clubId = club.getId();
         Integer userId = user.getId();
 
@@ -109,7 +110,7 @@ public class ClubMemberManagementService {
         ClubMember clubMember = ClubMember.builder()
             .club(club)
             .user(user)
-            .clubPosition(MEMBER)
+            .clubPosition(clubPosition)
             .isFeePaid(false)
             .build();
 
@@ -117,7 +118,12 @@ public class ClubMemberManagementService {
         return ClubPreMemberAddResponse.from(savedMember);
     }
 
-    private ClubPreMemberAddResponse addPreMemberInternal(Club club, String studentNumber, String name) {
+    private ClubPreMemberAddResponse addPreMemberInternal(
+        Club club,
+        String studentNumber,
+        String name,
+        ClubPosition clubPosition
+    ) {
         Integer clubId = club.getId();
 
         if (clubPreMemberRepository.existsByClubIdAndStudentNumberAndName(clubId, studentNumber, name)) {
@@ -128,6 +134,7 @@ public class ClubMemberManagementService {
             .club(club)
             .studentNumber(studentNumber)
             .name(name)
+            .clubPosition(clubPosition)
             .build();
 
         ClubPreMember savedPreMember = clubPreMemberRepository.save(preMember);

@@ -1,12 +1,15 @@
 package gg.agit.konect.domain.club.model;
 
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -51,11 +54,17 @@ public class ClubPreMember extends BaseEntity {
     @Column(name = "name", length = 30, nullable = false)
     private String name;
 
+    @NotNull
+    @Enumerated(STRING)
+    @Column(name = "club_position", length = 20, nullable = false)
+    private ClubPosition clubPosition;
+
     @Builder
-    private ClubPreMember(Integer id, Club club, String studentNumber, String name) {
+    private ClubPreMember(Integer id, Club club, String studentNumber, String name, ClubPosition clubPosition) {
         this.id = id;
         this.club = club;
         this.studentNumber = studentNumber;
         this.name = name;
+        this.clubPosition = clubPosition;
     }
 }

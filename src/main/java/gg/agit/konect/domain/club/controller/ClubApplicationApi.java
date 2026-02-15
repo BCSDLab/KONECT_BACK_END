@@ -18,6 +18,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
+import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -144,17 +145,15 @@ public interface ClubApplicationApi {
     );
 
     @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
-        동아리 가입 신청을 완료했거나 동아리 관리자 권한이 있는 사용자만 회비 계좌 정보를 조회할 수 있습니다.
-        
+        동아리의 회비 계좌 정보를 조회합니다.
+
         ## 에러
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
-        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
-        - FORBIDDEN_CLUB_FEE_INFO (403): 회비 정보 조회 권한이 없습니다.
         """)
+    @PublicApi
     @GetMapping("/{clubId}/fee")
     ResponseEntity<ClubFeeInfoResponse> getFeeInfo(
-        @PathVariable(name = "clubId") Integer clubId,
-        @UserId Integer userId
+        @PathVariable(name = "clubId") Integer clubId
     );
 
     @Operation(summary = "동아리 회비 정보를 덮어써서 대체한다.", description = """
