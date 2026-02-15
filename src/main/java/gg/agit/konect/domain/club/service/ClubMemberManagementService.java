@@ -107,6 +107,8 @@ public class ClubMemberManagementService {
             throw CustomException.of(ALREADY_CLUB_MEMBER);
         }
 
+        clubPreMemberRepository.deleteByClubIdAndStudentNumber(clubId, user.getStudentNumber());
+
         ClubMember clubMember = ClubMember.builder()
             .club(club)
             .user(user)
