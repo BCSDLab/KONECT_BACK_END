@@ -79,14 +79,22 @@ public interface ClubMemberApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "서비스 미가입 회원을 동아리에 사전 등록한다.", description = """
-        동아리 회장 또는 부회장만 미가입 회원을 사전 등록할 수 있습니다.
-        서비스에 아직 가입하지 않은 학생을 학번과 이름으로 동아리에 미리 등록합니다.
-        사전 등록된 회원이 서비스에 가입하면 자동으로 동아리 일반회원(MEMBER)으로 전환됩니다.
+    @Operation(summary = "학번으로 회원을 동아리에 등록한다.", description = """
+        동아리 회장 또는 부회장만 회원을 등록할 수 있습니다.
+
+        ## 로직
+        - 해당 학번의 사용자가 이미 서비스에 가입한 경우:
+          - 동아리 회원(ClubMember)에 직접 추가됩니다.
+          - 응답의 `isDirectMember`가 `true`로 반환됩니다.
+        - 해당 학번의 사용자가 서비스에 가입하지 않은 경우:
+          - 사전 회원(ClubPreMember)으로 등록됩니다.
+          - 사전 등록된 회원이 서비스에 가입하면 자동으로 동아리 일반회원(MEMBER)으로 전환됩니다.
+          - 응답의 `isDirectMember`가 `false`로 반환됩니다.
 
         ## 에러
-        - ALREADY_CLUB_PRE_MEMBER (409): 이미 동아리에 사전 등록된 회원입니다.
-        - FORBIDDEN_MEMBER_POSITION_CHANGE (403): 회원 사전 등록 권한이 없습니다.
+        - ALREADY_CLUB_MEMBER (409): 이미 동아리 회원입니다. (서비스 가입자인 경우)
+        - ALREADY_CLUB_PRE_MEMBER (409): 이미 동아리에 사전 등록된 회원입니다. (서비스 미가입자인 경우)
+        - FORBIDDEN_MEMBER_POSITION_CHANGE (403): 회원 등록 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         """)
     @PostMapping("/{clubId}/pre-members")
