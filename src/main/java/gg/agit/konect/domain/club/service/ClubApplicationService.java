@@ -43,6 +43,7 @@ import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
+import gg.agit.konect.global.lock.annotation.PreventDuplicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 
@@ -133,6 +134,7 @@ public class ClubApplicationService {
         clubApplyRepository.delete(clubApply);
     }
 
+    @PreventDuplicate(key = "#clubId + ':' + #userId")
     @Transactional
     public ClubFeeInfoResponse applyClub(Integer clubId, Integer userId, ClubApplyRequest request) {
         Club club = clubRepository.getById(clubId);
