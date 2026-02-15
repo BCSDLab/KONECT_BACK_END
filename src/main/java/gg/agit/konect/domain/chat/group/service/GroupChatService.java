@@ -140,6 +140,7 @@ public class GroupChatService {
             responseMessages.size(),
             totalPage,
             page,
+            clubId,
             responseMessages
         );
     }
