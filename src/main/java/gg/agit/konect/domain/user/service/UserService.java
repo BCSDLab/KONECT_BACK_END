@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.user.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
+import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
@@ -148,10 +148,14 @@ public class UserService {
         }
 
         for (ClubPreMember preMember : preMembers) {
+            if (preMember.getClubPosition() == PRESIDENT) {
+                replaceCurrentPresident(preMember.getClub().getId(), user.getId());
+            }
+
             ClubMember clubMember = ClubMember.builder()
                 .club(preMember.getClub())
                 .user(user)
-                .clubPosition(MEMBER)
+                .clubPosition(preMember.getClubPosition())
                 .isFeePaid(false)
                 .build();
 
@@ -159,6 +163,12 @@ public class UserService {
         }
 
         clubPreMemberRepository.deleteAll(preMembers);
+    }
+
+    private void replaceCurrentPresident(Integer clubId, Integer newPresidentUserId) {
+        clubMemberRepository.findPresidentByClubId(clubId)
+            .filter(currentPresident -> !currentPresident.getId().getUserId().equals(newPresidentUserId))
+            .ifPresent(clubMemberRepository::delete);
     }
 
     public UserInfoResponse getUserInfo(Integer userId) {

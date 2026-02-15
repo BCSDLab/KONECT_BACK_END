@@ -82,7 +82,8 @@ public interface ClubMemberApi {
     @Operation(summary = "서비스 미가입 회원을 동아리에 사전 등록한다.", description = """
         동아리 회장 또는 부회장만 미가입 회원을 사전 등록할 수 있습니다.
         서비스에 아직 가입하지 않은 학생을 학번과 이름으로 동아리에 미리 등록합니다.
-        사전 등록된 회원이 서비스에 가입하면 자동으로 동아리 일반회원(MEMBER)으로 전환됩니다.
+        사전 등록된 회원이 서비스에 가입하면 사전 등록한 직책(clubPosition)으로 자동 전환됩니다.
+        clubPosition이 PRESIDENT인 경우, 기존 회장 회원 정보는 제거되고 새 가입자가 회장으로 등록됩니다.
 
         ## 에러
         - ALREADY_CLUB_PRE_MEMBER (409): 이미 동아리에 사전 등록된 회원입니다.

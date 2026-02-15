@@ -82,6 +82,7 @@ public class ClubMemberManagementService {
 
         String studentNumber = request.studentNumber();
         String name = request.name();
+        ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
 
         if (clubPreMemberRepository.existsByClubIdAndStudentNumberAndName(clubId, studentNumber, name)) {
             throw CustomException.of(ALREADY_CLUB_PRE_MEMBER);
@@ -91,6 +92,7 @@ public class ClubMemberManagementService {
             .club(club)
             .studentNumber(studentNumber)
             .name(name)
+            .clubPosition(clubPosition)
             .build();
 
         ClubPreMember savedPreMember = clubPreMemberRepository.save(preMember);
