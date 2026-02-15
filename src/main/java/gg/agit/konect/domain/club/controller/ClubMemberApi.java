@@ -95,7 +95,7 @@ public interface ClubMemberApi {
         ## 에러
         - ALREADY_CLUB_MEMBER (409): 이미 동아리 회원입니다. (서비스 가입자인 경우)
         - ALREADY_CLUB_PRE_MEMBER (409): 이미 동아리에 사전 등록된 회원입니다. (서비스 미가입자인 경우)
-        - FORBIDDEN_MEMBER_POSITION_CHANGE (403): 회원 등록 권한이 없습니다.
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         """)
     @PostMapping("/{clubId}/pre-members")
