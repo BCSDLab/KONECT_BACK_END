@@ -90,7 +90,6 @@ public class GroupChatService {
         validateClubMember(clubId, userId);
 
         GroupChatRoom room = groupChatRoomRepository.getByClubId(clubId);
-        LocalDateTime joinedAt = clubMemberRepository.getJoinedAtByClubIdAndUserId(clubId, userId);
         Integer roomId = room.getId();
 
         chatPresenceService.recordPresence(roomId, userId);
@@ -98,9 +97,9 @@ public class GroupChatService {
         updateLastReadAt(roomId, userId, LocalDateTime.now());
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
-        long totalCount = groupChatMessageRepository.countByRoomIdAndCreatedAtGreaterThanEqual(roomId, joinedAt);
+        long totalCount = groupChatMessageRepository.countByRoomId(roomId);
         Page<GroupChatMessage> messagePage = groupChatMessageRepository
-            .findByRoomIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(roomId, joinedAt, pageable);
+            .findByRoomIdOrderByCreatedAtDesc(roomId, pageable);
         List<GroupChatMessage> messages = messagePage.getContent();
 
         List<ClubMember> members = clubMemberRepository.findAllByClubId(clubId);

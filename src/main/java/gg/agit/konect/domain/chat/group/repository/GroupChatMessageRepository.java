@@ -1,6 +1,5 @@
 package gg.agit.konect.domain.chat.group.repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,12 +22,10 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
         FROM GroupChatMessage m
         JOIN FETCH m.sender
         WHERE m.room.id = :roomId
-        AND m.createdAt >= :joinedAt
         ORDER BY m.createdAt DESC
         """)
-    Page<GroupChatMessage> findByRoomIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+    Page<GroupChatMessage> findByRoomIdOrderByCreatedAtDesc(
         @Param("roomId") Integer roomId,
-        @Param("joinedAt") LocalDateTime joinedAt,
         Pageable pageable
     );
 
@@ -36,12 +33,8 @@ public interface GroupChatMessageRepository extends Repository<GroupChatMessage,
         SELECT COUNT(m)
         FROM GroupChatMessage m
         WHERE m.room.id = :roomId
-        AND m.createdAt >= :joinedAt
         """)
-    long countByRoomIdAndCreatedAtGreaterThanEqual(
-        @Param("roomId") Integer roomId,
-        @Param("joinedAt") LocalDateTime joinedAt
-    );
+    long countByRoomId(@Param("roomId") Integer roomId);
 
     @Query("""
         SELECT m
