@@ -87,6 +87,9 @@ public class User extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @Column(name = "apple_refresh_token", length = 1024)
+    private String appleRefreshToken;
+
     @Builder
     private User(
         Integer id,
@@ -99,7 +102,8 @@ public class User extends BaseEntity {
         String providerId,
         UserRole role,
         Boolean isMarketingAgreement,
-        String imageUrl
+        String imageUrl,
+        String appleRefreshToken
     ) {
         this.id = id;
         this.university = university;
@@ -112,6 +116,7 @@ public class User extends BaseEntity {
         this.role = role == null ? UserRole.USER : role;
         this.isMarketingAgreement = isMarketingAgreement;
         this.imageUrl = imageUrl;
+        this.appleRefreshToken = appleRefreshToken;
     }
 
     public static User of(
@@ -131,6 +136,7 @@ public class User extends BaseEntity {
             .providerId(tempUser.getProviderId())
             .isMarketingAgreement(isMarketingAgreement)
             .imageUrl(imageUrl)
+            .appleRefreshToken(tempUser.getAppleRefreshToken())
             .build();
     }
 
@@ -160,5 +166,9 @@ public class User extends BaseEntity {
 
     public boolean isAdmin() {
         return this.role.equals(UserRole.ADMIN);
+    }
+
+    public void updateAppleRefreshToken(String appleRefreshToken) {
+        this.appleRefreshToken = appleRefreshToken;
     }
 }
