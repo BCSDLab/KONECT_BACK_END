@@ -21,7 +21,9 @@ import gg.agit.konect.global.auth.jwt.JwtProperties;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -74,6 +76,7 @@ public class RefreshTokenService {
     }
 
     private Integer validateAndExtractUserId(String refreshToken) {
+        log.info("refreshToken: {}", refreshToken);
         if (!StringUtils.hasText(refreshToken)) {
             throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
         }
