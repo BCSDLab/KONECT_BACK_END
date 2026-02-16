@@ -39,3 +39,11 @@ server:
   tomcat:
     mbeanregistry:
       enabled: true
+
+  servlet:
+    session:
+      cookie:
+        domain: agit.gg
+        same-site: none
+        secure: true
+        http-only: true
