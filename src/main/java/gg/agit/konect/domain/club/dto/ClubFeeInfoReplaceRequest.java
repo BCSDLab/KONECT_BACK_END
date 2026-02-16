@@ -16,7 +16,7 @@ public record ClubFeeInfoReplaceRequest(
     @Schema(description = "회비 금액", example = "10000", requiredMode = NOT_REQUIRED)
     Integer amount,
 
-    @NotNull
+    @NotNull(message = "은행은 필수로 입력해야 합니다.")
     @Schema(description = "은행 고유 ID", example = "1", requiredMode = NOT_REQUIRED)
     Integer bankId,
 
