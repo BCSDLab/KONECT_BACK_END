@@ -35,6 +35,7 @@ import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
+import gg.agit.konect.infrastructure.oauth.AppleTokenRevocationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,6 +57,7 @@ public class UserService {
     private final CouncilNoticeReadRepository councilNoticeReadRepository;
     private final StudyTimeQueryService studyTimeQueryService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final AppleTokenRevocationService appleTokenRevocationService;
 
     @Transactional
     public Integer signup(String email, String providerId, Provider provider, SignupRequest request) {
@@ -186,6 +188,11 @@ public class UserService {
 
         validateNotClubPresident(userId);
         validatePaidFees(userId);
+
+        if (user.getProvider() == Provider.APPLE) {
+            appleTokenRevocationService.revoke(user.getAppleRefreshToken());
+        }
+
         userRepository.delete(user);
 
         applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
