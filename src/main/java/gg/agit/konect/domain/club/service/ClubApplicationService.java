@@ -148,6 +148,15 @@ public class ClubApplicationService {
         );
     }
 
+    /**
+     * Submits a club application for a user and returns the club's fee information.
+     *
+     * @param clubId the id of the club to apply to
+     * @param userId the id of the applicant user
+     * @param request the application payload containing answers and an optional fee payment image URL
+     * @return a ClubFeeInfoResponse built from the club
+     * @throws CustomException if the user has already applied to the club (ALREADY_APPLIED_CLUB) or if the club requires a fee but no fee payment image is provided (FEE_PAYMENT_IMAGE_REQUIRED)
+     */
     @Transactional
     public ClubFeeInfoResponse applyClub(Integer clubId, Integer userId, ClubApplyRequest request) {
         Club club = clubRepository.getById(clubId);
@@ -184,6 +193,13 @@ public class ClubApplicationService {
         return ClubFeeInfoResponse.from(club);
     }
 
+    /**
+     * Validate that a fee payment image is provided when the club requires a fee.
+     *
+     * @param club the club whose fee requirement flag is checked
+     * @param feePaymentImageUrl the fee payment image URL to validate (may be null or empty)
+     * @throws CustomException with code {@code FEE_PAYMENT_IMAGE_REQUIRED} if the club requires a fee and the image URL is blank
+     */
     private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
         if (Boolean.TRUE.equals(club.getIsFeeRequired())
             && !StringUtils.hasText(feePaymentImageUrl)) {
@@ -320,6 +336,17 @@ public class ClubApplicationService {
         return ClubFeeInfoResponse.from(club);
     }
 
+    /**
+     * Replace a club's fee configuration with the provided values and return the updated fee information.
+     *
+     * <p>Requires the requesting user to have manager access to the club; loads the bank name from the
+     * provided bank ID and persists the new fee fields on the club.</p>
+     *
+     * @param clubId the identifier of the club to update
+     * @param userId the identifier of the user performing the update (must have manager access)
+     * @param request the new fee information to apply
+     * @return the club's updated fee information
+     */
     @Transactional
     public ClubFeeInfoResponse replaceFeeInfo(Integer clubId, Integer userId, ClubFeeInfoReplaceRequest request) {
         userRepository.getById(userId);

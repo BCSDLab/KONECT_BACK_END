@@ -49,6 +49,13 @@ public record ClubRecruitmentResponse(
         }
     }
 
+    /**
+     * Create a ClubRecruitmentResponse DTO from a ClubRecruitment entity and an application flag.
+     *
+     * @param recruitment the source ClubRecruitment entity used to populate response fields
+     * @param isApplied   `true` if the current user has applied to the recruitment, `false` otherwise
+     * @return a ClubRecruitmentResponse populated with values from the given recruitment and the isApplied flag
+     */
     public static ClubRecruitmentResponse of(ClubRecruitment recruitment, Boolean isApplied) {
         return new ClubRecruitmentResponse(
             recruitment.getId(),

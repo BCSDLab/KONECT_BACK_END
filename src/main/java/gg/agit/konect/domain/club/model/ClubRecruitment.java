@@ -63,6 +63,16 @@ public class ClubRecruitment extends BaseEntity {
     @OneToMany(mappedBy = "clubRecruitment", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private final List<ClubRecruitmentImage> images = new ArrayList<>();
 
+    /**
+     * Constructs a ClubRecruitment instance with the given properties.
+     *
+     * @param id                 the entity identifier (may be null for new instances)
+     * @param startDate          the recruitment start date; may be null when `isAlwaysRecruiting` is true
+     * @param endDate            the recruitment end date; may be null when `isAlwaysRecruiting` is true
+     * @param content            the recruitment description content
+     * @param isAlwaysRecruiting whether the club is recruiting indefinitely
+     * @param club               the associated Club entity
+     */
     @Builder
     private ClubRecruitment(
         Integer id,
@@ -80,6 +90,20 @@ public class ClubRecruitment extends BaseEntity {
         this.club = club;
     }
 
+    /**
+     * Create a ClubRecruitment with the given dates, recruitment mode, content, and associated club.
+     *
+     * Validates dates according to the recruitment mode: when `isAlwaysRecruiting` is `true`, both
+     * `startDate` and `endDate` must be null; otherwise both dates must be non-null and
+     * `startDate` must be on or before `endDate`.
+     *
+     * @param startDate the recruitment start date, or null if recruitment is perpetual
+     * @param endDate the recruitment end date, or null if recruitment is perpetual
+     * @param isAlwaysRecruiting whether the recruitment is perpetual (no start/end dates)
+     * @param content the recruitment content text
+     * @param club the club associated with this recruitment
+     * @return a new ClubRecruitment initialized with the provided values
+     */
     public static ClubRecruitment of(
         LocalDate startDate,
         LocalDate endDate,
@@ -125,6 +149,14 @@ public class ClubRecruitment extends BaseEntity {
         this.images.add(image);
     }
 
+    /**
+     * Updates the recruitment period, perpetual-recruitment flag, and content for this recruitment.
+     *
+     * @param startDate           the recruitment start date; may be null when `isAlwaysRecruiting` is true
+     * @param endDate             the recruitment end date; may be null when `isAlwaysRecruiting` is true
+     * @param isAlwaysRecruiting  if true, recruitment is perpetual and both dates must be null; if false, both dates are required and startDate must be on or before endDate
+     * @param content             the recruitment content/description
+     */
     public void update(
         LocalDate startDate,
         LocalDate endDate,

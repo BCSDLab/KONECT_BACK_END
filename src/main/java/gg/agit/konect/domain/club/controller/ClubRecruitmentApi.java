@@ -18,6 +18,16 @@ import jakarta.validation.Valid;
 @RequestMapping("/clubs")
 public interface ClubRecruitmentApi {
 
+    /**
+     * Retrieve detailed recruitment information for a club.
+     *
+     * <p>Response includes the recruitment details, the recruitment period status (`BEFORE`, `ONGOING`, `CLOSED`),
+     * and an `isApplied` flag that is `true` when the user is a club member or has an application record.</p>
+     *
+     * @param clubId the id of the club to query
+     * @param userId the id of the requesting user (injected via authentication)
+     * @return a response containing the club's recruitment details, status, and `isApplied` flag
+     */
     @Operation(summary = "동아리 모집 정보를 조회한다.", description = """
         동아리의 모집 공고 상세 정보를 조회합니다.
 
@@ -35,6 +45,15 @@ public interface ClubRecruitmentApi {
         @UserId Integer userId
     );
 
+    /**
+     * Create or update a club recruitment posting.
+     *
+     * Saves the club recruitment data from the given request: creates a new posting if none exists,
+     * or updates the existing posting if one is present.
+     *
+     * @param request the recruitment details to save
+     * @param clubId  the identifier of the target club
+     */
     @Operation(summary = "동아리 모집 정보를 생성/수정한다.", description = """
         요청 값을 기준으로 동아리 모집 공고를 저장합니다.
         - 모집 공고가 없으면 생성

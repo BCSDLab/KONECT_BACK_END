@@ -81,6 +81,16 @@ public class Club extends BaseEntity {
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
 
+    /**
+     * Constructs a Club instance populated with all its properties.
+     *
+     * @param feeAmount         the fee amount for the club or {@code null} if not set
+     * @param feeBank           the bank name for fee payments or {@code null} if not set
+     * @param feeAccountNumber  the account number for fee payments or {@code null} if not set
+     * @param feeAccountHolder  the account holder name for fee payments or {@code null} if not set
+     * @param isFeeRequired     {@code true} if the club requires a fee, {@code false} if it does not, or {@code null} if unspecified
+     * @param clubRecruitment   the associated ClubRecruitment entity or {@code null} if none
+     */
     @Builder
     private Club(
         Integer id,
@@ -126,6 +136,20 @@ public class Club extends BaseEntity {
             .build();
     }
 
+    /**
+     * Replaces the club's fee information according to the provided fee fields.
+     *
+     * If all fee fields are null, existing fee information is cleared. If some but not all
+     * required fee fields are provided, a validation exception is thrown. Otherwise the
+     * fee fields are updated together with the `isFeeRequired` flag.
+     *
+     * @param feeAmount         the fee amount in smallest currency unit, or {@code null} to omit
+     * @param feeBank           the bank name for fee payment, or {@code null} to omit
+     * @param feeAccountNumber  the bank account number for fee payment, or {@code null} to omit
+     * @param feeAccountHolder  the account holder name for fee payment, or {@code null} to omit
+     * @param isFeeRequired     whether a fee is required for the club, or {@code null} to omit
+     * @throws CustomException  with ApiResponseCode.INVALID_REQUEST_BODY when fee fields are partially provided
+     */
     public void replaceFeeInfo(
         Integer feeAmount,
         String feeBank,
@@ -145,6 +169,14 @@ public class Club extends BaseEntity {
         updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, isFeeRequired);
     }
 
+    /**
+     * Updates the club's description, image URL, location, and introduction.
+     *
+     * @param description brief description of the club
+     * @param imageUrl URL of the club's image
+     * @param location meeting place or address for the club
+     * @param introduce detailed introduction text for the club
+     */
     public void updateInfo(String description, String imageUrl, String location, String introduce) {
         this.description = description;
         this.imageUrl = imageUrl;
@@ -157,6 +189,15 @@ public class Club extends BaseEntity {
         this.clubCategory = clubCategory;
     }
 
+    /**
+     * Determines whether all fee-related inputs are absent.
+     *
+     * @param feeAmount the fee amount value to check
+     * @param feeBank the fee recipient bank name to check
+     * @param feeAccountNumber the fee recipient account number to check
+     * @param feeAccountHolder the fee recipient account holder name to check
+     * @return `true` if all four fee fields are `null`, `false` otherwise
+     */
     private boolean isFeeInfoEmpty(
         Integer feeAmount,
         String feeBank,
@@ -169,6 +210,15 @@ public class Club extends BaseEntity {
             && feeAccountHolder == null;
     }
 
+    /**
+     * Determines whether all fee-related fields are provided.
+     *
+     * @param feeAmount        the fee amount (may be null)
+     * @param feeBank          the bank name for the fee account
+     * @param feeAccountNumber the account number for the fee
+     * @param feeAccountHolder the account holder name for the fee
+     * @return                 `true` if `feeAmount` is non-null and all string parameters contain non-whitespace text, `false` otherwise
+     */
     private boolean isFeeInfoComplete(
         Integer feeAmount,
         String feeBank,
@@ -181,6 +231,15 @@ public class Club extends BaseEntity {
             && StringUtils.hasText(feeAccountHolder);
     }
 
+    /**
+     * Set the club's fee details.
+     *
+     * @param feeAmount        the fee amount in the smallest currency unit (nullable)
+     * @param feeBank          the name of the bank for fee payment (nullable)
+     * @param feeAccountNumber the account number for fee payment (nullable)
+     * @param feeAccountHolder the account holder name for fee payment (nullable)
+     * @param isFeeRequired    `true` if the club requires a fee, `false` if not, or `null` if unspecified
+     */
     private void updateFeeInfo(
         Integer feeAmount,
         String feeBank,
@@ -195,6 +254,11 @@ public class Club extends BaseEntity {
         this.isFeeRequired = isFeeRequired;
     }
 
+    /**
+     * Clears all stored fee-related information from this club.
+     *
+     * Sets feeAmount, feeBank, feeAccountNumber, feeAccountHolder, and isFeeRequired to null.
+     */
     private void clearFeeInfo() {
         this.feeAmount = null;
         this.feeBank = null;

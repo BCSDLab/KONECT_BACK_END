@@ -21,6 +21,12 @@ public record ClubFeeInfoResponse(
     @Schema(description = "회비 납부 필요 여부", example = "true", requiredMode = REQUIRED)
     Boolean isFeeRequired
 ) {
+    /**
+     * Create a ClubFeeInfoResponse containing fee information extracted from the given Club.
+     *
+     * @param club the source Club from which fee fields are read
+     * @return a ClubFeeInfoResponse populated with the club's fee amount, bank, account number, account holder, and fee-required flag
+     */
     public static ClubFeeInfoResponse from(Club club) {
         return new ClubFeeInfoResponse(
             club.getFeeAmount(),

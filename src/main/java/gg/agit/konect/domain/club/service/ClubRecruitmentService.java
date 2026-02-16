@@ -40,6 +40,17 @@ public class ClubRecruitmentService {
         return ClubRecruitmentResponse.of(recruitment, isApplied);
     }
 
+    /**
+     * Create or update the recruitment entry for a club and replace its images.
+     *
+     * Validates that the user has manager access for the club. If a recruitment exists for the club, updates its start/end dates,
+     * always-recruiting flag, and content, clears existing images and attaches images from the request. If no recruitment exists,
+     * creates a new one with the request data and persists it.
+     *
+     * @param clubId the identifier of the club whose recruitment is being created or updated
+     * @param userId the identifier of the user performing the operation (used for authorization)
+     * @param request the recruitment data to apply, including start/end dates, always-recruiting flag, content, and image URLs
+     */
     @Transactional
     public void upsertRecruitment(Integer clubId, Integer userId, ClubRecruitmentUpsertRequest request) {
         Club club = clubRepository.getById(clubId);
@@ -74,6 +85,12 @@ public class ClubRecruitmentService {
         }
     }
 
+    /**
+     * Attaches images to the given ClubRecruitment using the provided URLs, preserving their order.
+     *
+     * @param clubRecruitment the recruitment entity to which images will be added
+     * @param imageUrls an ordered list of image URLs; each URL is added as a ClubRecruitmentImage with its list index as the image order
+     */
     private void addImages(ClubRecruitment clubRecruitment, List<String> imageUrls) {
         for (int index = 0; index < imageUrls.size(); index++) {
             ClubRecruitmentImage image = ClubRecruitmentImage.of(
