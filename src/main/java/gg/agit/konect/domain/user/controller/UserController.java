@@ -25,9 +25,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/users")
 public class UserController implements UserApi {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final UserService userService;
     private final SignupTokenService signupTokenService;
     private final JwtProvider jwtProvider;
@@ -67,9 +64,6 @@ public class UserController implements UserApi {
     @Override
     @PublicApi
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = authCookieService.getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
-        refreshTokenService.revoke(refreshToken);
-
         authCookieService.clearRefreshToken(request, response);
         authCookieService.clearSignupToken(request, response);
 
@@ -86,14 +80,6 @@ public class UserController implements UserApi {
         authCookieService.setRefreshToken(request, response, rotated.refreshToken(), refreshTokenService.refreshTtl());
 
         return ResponseEntity.ok(new UserAccessTokenResponse(accessToken));
-    }
-
-    private String resolveBearerToken(HttpServletRequest request) {
-        String authorization = request.getHeader(AUTHORIZATION_HEADER);
-        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
-            return null;
-        }
-        return authorization.substring(BEARER_PREFIX.length());
     }
 
     @Override
