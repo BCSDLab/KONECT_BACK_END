@@ -7,14 +7,20 @@ import java.util.Optional;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
+import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.global.auth.web.AuthCookieService;
@@ -24,7 +30,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
@@ -37,6 +45,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final SignupTokenService signupTokenService;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
+    private final OAuth2AuthorizedClientService authorizedClientService;
+    private final UserRepository userRepository;
+    private final UnRegisteredUserRepository unRegisteredUserRepository;
 
     @Override
     public void onAuthenticationSuccess(
@@ -60,6 +71,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             }
         }
 
+        String appleRefreshTokenValue = extractAppleRefreshToken(oauthToken);
+
         user = oauthLoginHelper.findUserByProvider(provider, email, providerId);
 
         if (user.isEmpty()) {
@@ -71,10 +84,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 }
             }
 
+            saveAppleRefreshTokenForUnRegisteredUser(provider, providerId, email, appleRefreshTokenValue);
             sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId);
             return;
         }
 
+        saveAppleRefreshTokenForUser(provider, user.get(), appleRefreshTokenValue);
         sendLoginSuccessResponse(request, response, user.get());
     }
 
@@ -157,5 +172,54 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return providerId;
+    }
+
+    private String extractAppleRefreshToken(OAuth2AuthenticationToken oauthToken) {
+        String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+
+        if (!Provider.APPLE.name().equalsIgnoreCase(registrationId)) {
+            return null;
+        }
+
+        OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+            registrationId, oauthToken.getName()
+        );
+
+        if (client == null) {
+            return null;
+        }
+
+        OAuth2RefreshToken refreshToken = client.getRefreshToken();
+        return refreshToken != null ? refreshToken.getTokenValue() : null;
+    }
+
+    private void saveAppleRefreshTokenForUser(Provider provider, User user, String appleRefreshToken) {
+        if (provider != Provider.APPLE || !StringUtils.hasText(appleRefreshToken)) {
+            return;
+        }
+
+        user.updateAppleRefreshToken(appleRefreshToken);
+        userRepository.save(user);
+    }
+
+    private void saveAppleRefreshTokenForUnRegisteredUser(
+        Provider provider, String providerId, String email, String appleRefreshToken
+    ) {
+        if (provider != Provider.APPLE || !StringUtils.hasText(appleRefreshToken)) {
+            return;
+        }
+
+        Optional<UnRegisteredUser> unRegisteredUser;
+
+        if (StringUtils.hasText(providerId)) {
+            unRegisteredUser = unRegisteredUserRepository.findByProviderIdAndProvider(providerId, Provider.APPLE);
+        } else {
+            unRegisteredUser = unRegisteredUserRepository.findByEmailAndProvider(email, Provider.APPLE);
+        }
+
+        unRegisteredUser.ifPresent(u -> {
+            u.updateAppleRefreshToken(appleRefreshToken);
+            unRegisteredUserRepository.save(u);
+        });
     }
 }
