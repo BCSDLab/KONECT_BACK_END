@@ -323,6 +323,11 @@ public class NotificationService {
         sendNotification(receiverId, clubName, "동아리 지원이 승인되었어요.", "clubs/" + clubId);
     }
 
+    @Async
+    public void sendClubApplicationRejectedNotification(Integer receiverId, Integer clubId, String clubName) {
+        sendNotification(receiverId, clubName, "동아리 지원이 거절되었어요.", "clubs/" + clubId);
+    }
+
     private void sendNotification(Integer receiverId, String title, String body, String path) {
         try {
             List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(receiverId);
