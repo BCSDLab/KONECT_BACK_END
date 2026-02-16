@@ -26,10 +26,6 @@ public record ClubRecruitmentUpsertRequest(
     @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)
     Boolean isAlwaysRecruiting,
 
-    @NotNull(message = "회비 납부 필요 여부는 필수 입력입니다.")
-    @Schema(description = "회비 납부 필요 여부", example = "true", requiredMode = REQUIRED)
-    Boolean isFeeRequired,
-
     @NotEmpty(message = "모집 공고 내용은 필수 입력입니다.")
     @Schema(description = "모집 공고 내용", example = "BCSD 2025학년도 2학기 신입 부원 모집...", requiredMode = REQUIRED)
     String content,
