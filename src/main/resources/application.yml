@@ -40,6 +40,10 @@ server:
     mbeanregistry:
       enabled: true
 
-logging:
-  level:
-    org.springframework.web.servlet.DispatcherServlet: DEBUG
+  servlet:
+    session:
+      cookie:
+        domain: agit.gg
+        same-site: none
+        secure: true
+        http-only: true
