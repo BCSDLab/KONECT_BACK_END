@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
@@ -39,13 +40,12 @@ import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
-import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -133,12 +133,19 @@ public class ClubApplicationService {
 
     @Transactional
     public void rejectClubApplication(Integer clubId, Integer applicationId, Integer userId) {
-        clubRepository.getById(clubId);
+        Club club = clubRepository.getById(clubId);
 
         clubPermissionValidator.validateLeaderAccess(clubId, userId);
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        User applicant = clubApply.getUser();
         clubApplyRepository.delete(clubApply);
+
+        notificationService.sendClubApplicationRejectedNotification(
+            applicant.getId(),
+            clubId,
+            club.getName()
+        );
     }
 
     @Transactional
