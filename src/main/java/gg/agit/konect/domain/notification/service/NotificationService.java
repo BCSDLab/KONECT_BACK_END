@@ -307,6 +307,85 @@ public class NotificationService {
         }
     }
 
+    @Async
+    public void sendClubApplicationSubmittedNotification(
+        Integer receiverId,
+        Integer clubId,
+        String clubName,
+        String applicantName
+    ) {
+        String body = applicantName + "님이 동아리 가입을 신청했어요.";
+        sendNotification(receiverId, clubName, body, "clubs/" + clubId + "/applications");
+    }
+
+    @Async
+    public void sendClubApplicationApprovedNotification(Integer receiverId, Integer clubId, String clubName) {
+        sendNotification(receiverId, clubName, "동아리 지원이 승인되었어요.", "clubs/" + clubId);
+    }
+
+    private void sendNotification(Integer receiverId, String title, String body, String path) {
+        try {
+            List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(receiverId);
+            if (tokens.isEmpty()) {
+                log.debug("No device tokens found for user: receiverId={}", receiverId);
+                return;
+            }
+
+            Map<String, Object> data = buildData(null, path);
+
+            List<ExpoPushMessage> messages = tokens.stream()
+                .map(token -> new ExpoPushMessage(token, title, body, data))
+                .toList();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+            HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
+            ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
+                EXPO_PUSH_URL,
+                HttpMethod.POST,
+                entity,
+                ExpoPushResponse.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error(
+                    "Expo push response not successful: receiverId={}, status={}",
+                    receiverId,
+                    response.getStatusCode()
+                );
+                return;
+            }
+
+            ExpoPushResponse responseBody = response.getBody();
+            if (responseBody == null || responseBody.data == null) {
+                log.error("Expo push response body missing: receiverId={}", receiverId);
+                return;
+            }
+
+            for (int i = 0; i < responseBody.data.size(); i += 1) {
+                ExpoPushTicket ticket = responseBody.data.get(i);
+                if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
+                    continue;
+                }
+                String token = i < tokens.size() ? tokens.get(i) : "unknown";
+                log.error(
+                    "Expo push failed: receiverId={}, token={}, status={}, message={}, details={}",
+                    receiverId,
+                    token,
+                    ticket.status(),
+                    ticket.message(),
+                    ticket.details()
+                );
+            }
+
+            log.debug("Notification sent: receiverId={}, tokenCount={}", receiverId, tokens.size());
+        } catch (Exception e) {
+            log.error("Failed to send notification: receiverId={}", receiverId, e);
+        }
+    }
+
     private Map<String, Object> buildData(Map<String, String> data, String path) {
         Map<String, Object> payload = new HashMap<>();
         if (data != null && !data.isEmpty()) {
