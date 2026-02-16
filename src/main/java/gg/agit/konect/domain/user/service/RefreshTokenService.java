@@ -1,14 +1,23 @@
 package gg.agit.konect.domain.user.service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
 
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import gg.agit.konect.global.auth.util.SecureTokenGenerator;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import gg.agit.konect.global.auth.jwt.JwtProperties;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -18,20 +27,12 @@ import lombok.RequiredArgsConstructor;
 public class RefreshTokenService {
 
     private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
+    private static final int MIN_HS256_SECRET_BYTES = 32;
+    private static final String CLAIM_USER_ID = "id";
+    private static final String CLAIM_TOKEN_TYPE = "token_type";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
-    private static final String ACTIVE_PREFIX = "auth:refresh:active:";
-    private static final String USER_SET_PREFIX = "auth:refresh:user:";
-
-    private static final DefaultRedisScript<String> GET_DEL_SCRIPT =
-        new DefaultRedisScript<>(
-            "local v = redis.call('GET', KEYS[1]); " +
-                "if v then redis.call('DEL', KEYS[1]); end; " +
-                "return v;",
-            String.class
-        );
-
-    private final StringRedisTemplate redis;
-    private final SecureTokenGenerator secureTokenGenerator;
+    private final JwtProperties jwtProperties;
 
     public Duration refreshTtl() {
         return REFRESH_TOKEN_TTL;
@@ -42,93 +43,106 @@ public class RefreshTokenService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        String token = secureTokenGenerator.generate();
-        Duration ttl = refreshTtl();
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(refreshTtl());
 
-        redis.opsForValue().set(activeKey(token), userId.toString(), ttl);
-        redis.opsForSet().add(userSetKey(userId), token);
-        redis.expire(userSetKey(userId), ttl);
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+            .issuer(resolveIssuer())
+            .issueTime(Date.from(now))
+            .expirationTime(Date.from(expiresAt))
+            .jwtID(UUID.randomUUID().toString())
+            .claim(CLAIM_USER_ID, userId)
+            .claim(CLAIM_TOKEN_TYPE, REFRESH_TOKEN_TYPE)
+            .build();
 
-        return token;
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+
+        try {
+            jwt.sign(new MACSigner(resolveSecretBytes()));
+        } catch (JOSEException e) {
+            throw new IllegalStateException("Failed to sign refresh token.", e);
+        }
+
+        return jwt.serialize();
     }
 
     public Rotated rotate(String refreshToken) {
-        if (!StringUtils.hasText(refreshToken)) {
-            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
-        }
-
-        Integer userId = consumeActive(refreshToken);
-        if (userId == null) {
-            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
-        }
+        Integer userId = validateAndExtractUserId(refreshToken);
 
         String newToken = issue(userId);
         return new Rotated(userId, newToken);
     }
 
-    public void revoke(String refreshToken) {
+    private Integer validateAndExtractUserId(String refreshToken) {
         if (!StringUtils.hasText(refreshToken)) {
-            return;
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
         }
 
-        String value = redis.execute(GET_DEL_SCRIPT, List.of(activeKey(refreshToken)));
-        Integer userId = parseUserId(value);
-        if (userId == null) {
-            return;
-        }
-
-        redis.opsForSet().remove(userSetKey(userId), refreshToken);
-    }
-
-    public void revokeAll(Integer userId) {
-        if (userId == null) {
-            return;
-        }
-
-        String setKey = userSetKey(userId);
-        var tokens = redis.opsForSet().members(setKey);
-
-        if (tokens == null || tokens.isEmpty()) {
-            redis.delete(setKey);
-            return;
-        }
-
-        for (String token : tokens) {
-            redis.delete(activeKey(token));
-        }
-
-        redis.delete(setKey);
-    }
-
-    private Integer consumeActive(String token) {
-        String value = redis.execute(GET_DEL_SCRIPT, List.of(activeKey(token)));
-        Integer userId = parseUserId(value);
-        if (userId == null) {
-            return null;
-        }
-
-        redis.opsForSet().remove(userSetKey(userId), token);
-        return userId;
-    }
-
-    private String activeKey(String token) {
-        return ACTIVE_PREFIX + token;
-    }
-
-    private String userSetKey(Integer userId) {
-        return USER_SET_PREFIX + userId;
-    }
-
-    private Integer parseUserId(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
+        SignedJWT jwt;
+        try {
+            jwt = SignedJWT.parse(refreshToken);
+        } catch (Exception e) {
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
         }
 
         try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return null;
+            if (!jwt.verify(new MACVerifier(resolveSecretBytes()))) {
+                throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
+            }
+        } catch (JOSEException e) {
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
         }
+
+        JWTClaimsSet claims;
+        try {
+            claims = jwt.getJWTClaimsSet();
+        } catch (Exception e) {
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
+        }
+
+        if (!resolveIssuer().equals(claims.getIssuer())) {
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
+        }
+
+        Date exp = claims.getExpirationTime();
+        if (exp == null || Instant.now().isAfter(exp.toInstant())) {
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
+        }
+
+        Object tokenType = claims.getClaim(CLAIM_TOKEN_TYPE);
+        if (!(tokenType instanceof String tokenTypeValue) || !REFRESH_TOKEN_TYPE.equals(tokenTypeValue)) {
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
+        }
+
+        Object id = claims.getClaim(CLAIM_USER_ID);
+        if (!(id instanceof Number number)) {
+            throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
+        }
+
+        return number.intValue();
+    }
+
+    private String resolveIssuer() {
+        String issuer = jwtProperties.issuer();
+        if (!StringUtils.hasText(issuer)) {
+            throw new IllegalStateException("app.jwt.issuer is required");
+        }
+
+        return issuer;
+    }
+
+    private byte[] resolveSecretBytes() {
+        String secret = jwtProperties.secret();
+        if (!StringUtils.hasText(secret)) {
+            throw new IllegalStateException("app.jwt.secret is required");
+        }
+
+        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < MIN_HS256_SECRET_BYTES) {
+            throw new IllegalStateException("app.jwt.secret must be at least 32 bytes");
+        }
+
+        return bytes;
     }
 
     public record Rotated(Integer userId, String refreshToken) {
