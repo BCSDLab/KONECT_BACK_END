@@ -52,7 +52,7 @@ public class ChatController implements ChatApi {
     public ResponseEntity<UnifiedChatMessagesResponse> getChatRoomMessages(
         @RequestParam(name = "type") ChatType type,
         @RequestParam(name = "page", defaultValue = "1") Integer page,
-        @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
+        @RequestParam(name = "limit", defaultValue = "30", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
