@@ -2,7 +2,9 @@ package gg.agit.konect.domain.chat.unified.service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,9 @@ import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
 import gg.agit.konect.domain.chat.unified.enums.ChatType;
+import gg.agit.konect.domain.notification.enums.NotificationTargetType;
+import gg.agit.konect.domain.notification.model.NotificationMuteSetting;
+import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -28,10 +33,25 @@ public class UnifiedChatService {
 
     private final ChatService chatService;
     private final GroupChatService groupChatService;
+    private final NotificationMuteSettingRepository notificationMuteSettingRepository;
 
     public UnifiedChatRoomsResponse getChatRooms(Integer userId) {
         ChatRoomsResponse directRooms = chatService.getChatRooms(userId);
         GroupChatRoomsResponse groupRooms = groupChatService.getChatRooms(userId);
+        Map<Integer, Boolean> directMuteMap = getMuteMap(
+            NotificationTargetType.DIRECT_CHAT_ROOM,
+            directRooms.chatRooms().stream()
+                .map(ChatRoomsResponse.InnerChatRoomResponse::chatRoomId)
+                .toList(),
+            userId
+        );
+        Map<Integer, Boolean> groupMuteMap = getMuteMap(
+            NotificationTargetType.GROUP_CHAT_ROOM,
+            groupRooms.groupChatRooms().stream()
+                .map(GroupChatRoomsResponse.InnerGroupChatRoomResponse::groupChatRoomId)
+                .toList(),
+            userId
+        );
 
         List<UnifiedChatRoomResponse> rooms = new ArrayList<>();
 
@@ -42,7 +62,8 @@ public class UnifiedChatService {
             room.chatPartnerProfileImage(),
             room.lastMessage(),
             room.lastSentTime(),
-            room.unreadCount()
+            room.unreadCount(),
+            directMuteMap.getOrDefault(room.chatRoomId(), false)
         )));
 
         groupRooms.groupChatRooms().forEach(room -> rooms.add(new UnifiedChatRoomResponse(
@@ -52,7 +73,8 @@ public class UnifiedChatService {
             room.clubImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
-            room.unreadMessageCount()
+            room.unreadMessageCount(),
+            groupMuteMap.getOrDefault(room.groupChatRoomId(), false)
         )));
 
         rooms.sort(
@@ -61,6 +83,29 @@ public class UnifiedChatService {
         );
 
         return new UnifiedChatRoomsResponse(rooms);
+    }
+
+    private Map<Integer, Boolean> getMuteMap(
+        NotificationTargetType targetType,
+        List<Integer> roomIds,
+        Integer userId
+    ) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<NotificationMuteSetting> settings = notificationMuteSettingRepository
+            .findByTargetTypeAndTargetIdsAndUserId(targetType, roomIds, userId);
+
+        Map<Integer, Boolean> muteMap = new HashMap<>();
+        for (NotificationMuteSetting setting : settings) {
+            Integer targetId = setting.getTargetId();
+            if (targetId != null) {
+                muteMap.put(targetId, setting.getIsMuted());
+            }
+        }
+
+        return muteMap;
     }
 
     public UnifiedChatMessagesResponse getMessages(

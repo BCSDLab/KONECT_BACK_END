@@ -31,6 +31,9 @@ public record UnifiedChatRoomResponse(
     LocalDateTime lastSentAt,
 
     @Schema(description = "읽지 않은 메시지 수", example = "12", requiredMode = REQUIRED)
-    Integer unreadCount
+    Integer unreadCount,
+
+    @Schema(description = "채팅방 알림 뮤트 여부", example = "false", requiredMode = REQUIRED)
+    Boolean isMuted
 ) {
 }
