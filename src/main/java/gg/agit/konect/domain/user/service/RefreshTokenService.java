@@ -76,7 +76,6 @@ public class RefreshTokenService {
     }
 
     private Integer validateAndExtractUserId(String refreshToken) {
-        log.info("refreshToken: {}", refreshToken);
         if (!StringUtils.hasText(refreshToken)) {
             throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);
         }

@@ -44,7 +44,6 @@ public class AuthCookieService {
             .maxAge(ttl)
             .build();
         response.addHeader("Set-Cookie", cookie.toString());
-        log.info("Set-Cookie: {}", cookie);
     }
 
     public void clearSignupToken(HttpServletRequest request, HttpServletResponse response) {
