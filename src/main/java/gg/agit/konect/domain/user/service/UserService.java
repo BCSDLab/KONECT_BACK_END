@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.user.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
+import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import gg.agit.konect.domain.chat.model.ChatMessage;
-import gg.agit.konect.domain.chat.model.ChatRoom;
-import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
-import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.direct.model.ChatMessage;
+import gg.agit.konect.domain.chat.direct.model.ChatRoom;
+import gg.agit.konect.domain.chat.direct.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
@@ -150,10 +150,14 @@ public class UserService {
         }
 
         for (ClubPreMember preMember : preMembers) {
+            if (preMember.getClubPosition() == PRESIDENT) {
+                replaceCurrentPresident(preMember.getClub().getId(), user.getId());
+            }
+
             ClubMember clubMember = ClubMember.builder()
                 .club(preMember.getClub())
                 .user(user)
-                .clubPosition(MEMBER)
+                .clubPosition(preMember.getClubPosition())
                 .isFeePaid(false)
                 .build();
 
@@ -161,6 +165,12 @@ public class UserService {
         }
 
         clubPreMemberRepository.deleteAll(preMembers);
+    }
+
+    private void replaceCurrentPresident(Integer clubId, Integer newPresidentUserId) {
+        clubMemberRepository.findPresidentByClubId(clubId)
+            .filter(currentPresident -> !currentPresident.getId().getUserId().equals(newPresidentUserId))
+            .ifPresent(clubMemberRepository::delete);
     }
 
     public UserInfoResponse getUserInfo(Integer userId) {

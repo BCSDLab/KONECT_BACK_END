@@ -2,6 +2,7 @@ package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.user.model.User;
@@ -35,6 +36,17 @@ public record MyManagedClubResponse(
             user.getName(),
             user.getStudentNumber(),
             clubMember.getClubPosition().getDescription()
+        );
+    }
+
+    public static MyManagedClubResponse forAdmin(Club club, User user) {
+        return new MyManagedClubResponse(
+            club.getId(),
+            club.getImageUrl(),
+            club.getName(),
+            user.getName(),
+            user.getStudentNumber(),
+            ClubPosition.PRESIDENT.getDescription()
         );
     }
 }

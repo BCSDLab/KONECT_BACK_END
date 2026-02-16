@@ -29,5 +29,7 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
 
     boolean existsByClubIdAndStudentNumberAndName(Integer clubId, String studentNumber, String name);
 
+    void deleteByClubIdAndStudentNumber(Integer clubId, String studentNumber);
+
     ClubPreMember save(ClubPreMember preMember);
 }

@@ -14,6 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.chat.group.model.GroupChatRoom;
+import gg.agit.konect.domain.chat.group.repository.GroupChatRoomRepository;
 import gg.agit.konect.domain.club.dto.ClubBasicInfoUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
@@ -49,6 +51,7 @@ public class ClubService {
     private final ClubApplyRepository clubApplyRepository;
     private final UserRepository userRepository;
     private final ClubPermissionValidator clubPermissionValidator;
+    private final GroupChatRoomRepository groupChatRoomRepository;
 
     public ClubsResponse getClubs(ClubCondition condition, Integer userId) {
         User user = userRepository.getById(userId);
@@ -104,6 +107,8 @@ public class ClubService {
 
         Club savedClub = clubRepository.save(club);
 
+        groupChatRoomRepository.save(GroupChatRoom.of(savedClub));
+
         ClubMember president = ClubMember.builder()
             .club(savedClub)
             .user(user)
@@ -145,6 +150,12 @@ public class ClubService {
     }
 
     public ClubMembershipsResponse getManagedClubs(Integer userId) {
+        User user = userRepository.getById(userId);
+        if (user.isAdmin()) {
+            List<Club> clubs = clubRepository.findAll();
+            return ClubMembershipsResponse.forAdmin(clubs);
+        }
+
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPositions(
             userId,
             MANAGERS
@@ -154,6 +165,10 @@ public class ClubService {
 
     public MyManagedClubResponse getManagedClubDetail(Integer clubId, Integer userId) {
         Club club = clubRepository.getById(clubId);
+        User user = userRepository.getById(userId);
+        if (user.isAdmin()) {
+            return MyManagedClubResponse.forAdmin(club, user);
+        }
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
@@ -162,9 +177,12 @@ public class ClubService {
     }
 
     public ClubMembersResponse getClubMembers(Integer clubId, Integer userId, ClubMemberCondition condition) {
-        boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
-        if (!isMember) {
-            throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
+        User user = userRepository.getById(userId);
+        if (!user.isAdmin()) {
+            boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
+            if (!isMember) {
+                throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
+            }
         }
 
         List<ClubMember> clubMembers;

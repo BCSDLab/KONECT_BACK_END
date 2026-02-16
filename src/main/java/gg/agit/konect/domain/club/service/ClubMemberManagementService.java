@@ -22,6 +22,8 @@ import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class ClubMemberManagementService {
     private final ClubMemberRepository clubMemberRepository;
     private final ClubPreMemberRepository clubPreMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
+    private final UserRepository userRepository;
 
     @Transactional
     public ClubMember changeMemberPosition(
@@ -82,6 +85,48 @@ public class ClubMemberManagementService {
 
         String studentNumber = request.studentNumber();
         String name = request.name();
+        ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
+        Integer universityId = club.getUniversity().getId();
+
+        Optional<User> existingUser = userRepository.findByUniversityIdAndStudentNumber(
+            universityId, studentNumber
+        );
+
+        if (existingUser.isPresent()) {
+            return addDirectMember(club, existingUser.get(), clubPosition);
+        }
+
+        return addPreMemberInternal(club, studentNumber, name, clubPosition);
+    }
+
+    private ClubPreMemberAddResponse addDirectMember(Club club, User user, ClubPosition clubPosition) {
+        Integer clubId = club.getId();
+        Integer userId = user.getId();
+
+        if (clubMemberRepository.existsByClubIdAndUserId(clubId, userId)) {
+            throw CustomException.of(ALREADY_CLUB_MEMBER);
+        }
+
+        clubPreMemberRepository.deleteByClubIdAndStudentNumber(clubId, user.getStudentNumber());
+
+        ClubMember clubMember = ClubMember.builder()
+            .club(club)
+            .user(user)
+            .clubPosition(clubPosition)
+            .isFeePaid(false)
+            .build();
+
+        ClubMember savedMember = clubMemberRepository.save(clubMember);
+        return ClubPreMemberAddResponse.from(savedMember);
+    }
+
+    private ClubPreMemberAddResponse addPreMemberInternal(
+        Club club,
+        String studentNumber,
+        String name,
+        ClubPosition clubPosition
+    ) {
+        Integer clubId = club.getId();
 
         if (clubPreMemberRepository.existsByClubIdAndStudentNumberAndName(clubId, studentNumber, name)) {
             throw CustomException.of(ALREADY_CLUB_PRE_MEMBER);
@@ -91,6 +136,7 @@ public class ClubMemberManagementService {
             .club(club)
             .studentNumber(studentNumber)
             .name(name)
+            .clubPosition(clubPosition)
             .build();
 
         ClubPreMember savedPreMember = clubPreMemberRepository.save(preMember);
