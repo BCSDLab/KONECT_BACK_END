@@ -85,8 +85,8 @@ public class ChatService {
             );
 
             for (ChatRoom chatRoom : adminChatRooms) {
-                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.from(
-                    chatRoom, user, adminUnreadCountMap, ChatRoomType.ADMIN
+                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.fromForAdmin(
+                    chatRoom, adminUnreadCountMap
                 ));
 
                 addedChatRoomIds.add(chatRoom.getId());
