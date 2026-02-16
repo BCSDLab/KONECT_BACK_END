@@ -39,6 +39,7 @@ import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
+import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
@@ -61,6 +62,7 @@ public class ClubApplicationService {
     private final UserRepository userRepository;
     private final BankRepository bankRepository;
     private final ClubPermissionValidator clubPermissionValidator;
+    private final NotificationService notificationService;
 
     public ClubAppliedClubsResponse getAppliedClubs(Integer userId) {
         List<ClubApply> clubApplies = clubApplyRepository.findAllPendingByUserIdWithClub(userId);
@@ -121,6 +123,12 @@ public class ClubApplicationService {
 
         clubMemberRepository.save(newMember);
         clubApplyRepository.delete(clubApply);
+
+        notificationService.sendClubApplicationApprovedNotification(
+            applicant.getId(),
+            clubId,
+            club.getName()
+        );
     }
 
     @Transactional
@@ -157,6 +165,14 @@ public class ClubApplicationService {
         if (!applyAnswers.isEmpty()) {
             clubApplyAnswerRepository.saveAll(applyAnswers);
         }
+
+        clubMemberRepository.findPresidentByClubId(clubId)
+            .ifPresent(president -> notificationService.sendClubApplicationSubmittedNotification(
+                president.getUser().getId(),
+                clubId,
+                club.getName(),
+                user.getName()
+            ));
 
         return ClubFeeInfoResponse.from(club);
     }
