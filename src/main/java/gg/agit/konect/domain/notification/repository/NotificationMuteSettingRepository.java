@@ -31,6 +31,19 @@ public interface NotificationMuteSettingRepository extends Repository<Notificati
         SELECT s
         FROM NotificationMuteSetting s
         WHERE s.targetType = :targetType
+        AND s.user.id = :userId
+        AND s.targetId IN :targetIds
+        """)
+    List<NotificationMuteSetting> findByTargetTypeAndTargetIdsAndUserId(
+        @Param("targetType") NotificationTargetType targetType,
+        @Param("targetIds") List<Integer> targetIds,
+        @Param("userId") Integer userId
+    );
+
+    @Query("""
+        SELECT s
+        FROM NotificationMuteSetting s
+        WHERE s.targetType = :targetType
         AND ((:targetId IS NULL AND s.targetId IS NULL) OR s.targetId = :targetId)
         AND s.isMuted = true
         """)
