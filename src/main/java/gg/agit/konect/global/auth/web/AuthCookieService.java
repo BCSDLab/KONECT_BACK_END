@@ -43,8 +43,8 @@ public class AuthCookieService {
         ResponseCookie cookie = baseCookie(request, SIGNUP_TOKEN_COOKIE, token)
             .maxAge(ttl)
             .build();
-
         response.addHeader("Set-Cookie", cookie.toString());
+        log.info("Set-Cookie: {}", cookie);
     }
 
     public void clearSignupToken(HttpServletRequest request, HttpServletResponse response) {
