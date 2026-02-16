@@ -25,7 +25,9 @@ import gg.agit.konect.infrastructure.oauth.AppleClientSecretProvider;
 import gg.agit.konect.infrastructure.oauth.AppleOAuthServiceImpl;
 import gg.agit.konect.infrastructure.oauth.CustomRequestEntityConverter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -76,6 +78,7 @@ public class SecurityConfig {
                 )
                 .successHandler(oAuth2LoginSuccessHandler)
                 .failureHandler((request, response, exception) -> {
+                    log.error("OAuth2 로그인 실패", exception);
                     response.sendRedirect(frontendBaseUrl);
                 })
             );
