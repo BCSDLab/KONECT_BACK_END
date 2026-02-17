@@ -172,6 +172,7 @@ public class GroupChatService {
             roomId,
             senderId,
             clubName,
+            senderName,
             messageContent,
             filteredRecipients
         );

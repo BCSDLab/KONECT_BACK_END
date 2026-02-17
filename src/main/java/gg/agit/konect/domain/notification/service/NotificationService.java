@@ -198,6 +198,7 @@ public class NotificationService {
         Integer roomId,
         Integer senderId,
         String clubName,
+        String senderName,
         String messageContent,
         List<Integer> recipientUserIds
     ) {
@@ -213,6 +214,7 @@ public class NotificationService {
             }
 
             String truncatedBody = buildPreview(messageContent);
+            String previewBody = senderName + ": " + truncatedBody;
             Map<String, Object> data = new HashMap<>();
             data.put("path", "chats/rooms/" + roomId + "?type=GROUP");
 
@@ -235,7 +237,7 @@ public class NotificationService {
                     }
 
                     List<ExpoPushMessage> messages = tokens.stream()
-                        .map(token -> new ExpoPushMessage(token, clubName, truncatedBody, data))
+                        .map(token -> new ExpoPushMessage(token, clubName, previewBody, data))
                         .toList();
 
                     HttpHeaders headers = new HttpHeaders();
