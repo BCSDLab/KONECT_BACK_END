@@ -7,6 +7,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,25 +20,40 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
+import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
+import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomListResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomsResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
+import gg.agit.konect.domain.chat.dto.ClubMessagePageResponse;
+import gg.agit.konect.domain.chat.dto.ClubMessageResponse;
+import gg.agit.konect.domain.chat.dto.ClubRoomListResponse;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
-import gg.agit.konect.domain.chat.enums.ChatRoomType;
+import gg.agit.konect.domain.chat.enums.ChatType;
+import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
-import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
-import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
-import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
+import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.repository.RoomUnreadCountProjection;
+import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.notification.enums.NotificationTargetType;
+import gg.agit.konect.domain.notification.model.NotificationMuteSetting;
+import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
@@ -49,6 +65,8 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final NotificationMuteSettingRepository notificationMuteSettingRepository;
+    private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final NotificationService notificationService;
@@ -73,9 +91,131 @@ public class ChatService {
         return ChatRoomResponse.from(chatRoom);
     }
 
-    public ChatRoomsResponse getChatRooms(Integer userId) {
+    @Transactional
+    public ChatRoomListResponse getChatRooms(Integer userId) {
+        List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
+        ClubRoomListResponse clubRooms = getClubChatRooms(userId);
+
+        List<Integer> roomIds = new ArrayList<>();
+        roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
+        roomIds.addAll(clubRooms.clubRooms().stream().map(ClubRoomListResponse.InnerClubRoomResponse::roomId).toList());
+
+        Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
+        List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
+
+        directRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
+            room.roomId(),
+            room.chatType(),
+            room.roomName(),
+            room.roomImageUrl(),
+            room.lastMessage(),
+            room.lastSentAt(),
+            room.unreadCount(),
+            muteMap.getOrDefault(room.roomId(), false)
+        )));
+
+        clubRooms.clubRooms().forEach(room -> rooms.add(new ChatRoomSummaryResponse(
+            room.roomId(),
+            ChatType.GROUP,
+            room.clubName(),
+            room.clubImageUrl(),
+            room.lastMessage(),
+            room.lastSentAt(),
+            room.unreadMessageCount(),
+            muteMap.getOrDefault(room.roomId(), false)
+        )));
+
+        rooms.sort(
+            Comparator.comparing(ChatRoomSummaryResponse::lastSentAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ChatRoomSummaryResponse::roomId)
+        );
+
+        return new ChatRoomListResponse(rooms);
+    }
+
+    @Transactional
+    public ChatMessagePageResponse getMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+
+        if (room.isDirectRoom()) {
+            return toMessagePageResponse(getDirectChatRoomMessages(userId, roomId, page, limit));
+        }
+
+        return toMessagePageResponse(getClubMessagesByRoomId(roomId, userId, page, limit));
+    }
+
+    @Transactional
+    public ChatMessageDetailResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+
+        if (room.isDirectRoom()) {
+            ChatMessageResponse response = sendDirectMessage(userId, roomId, request);
+            return new ChatMessageDetailResponse(
+                response.messageId(),
+                response.senderId(),
+                null,
+                response.content(),
+                response.createdAt(),
+                response.isRead(),
+                null,
+                response.isMine()
+            );
+        }
+
+        ClubMessageResponse response = sendClubMessageByRoomId(roomId, userId, request.content());
+        return new ChatMessageDetailResponse(
+            response.messageId(),
+            response.senderId(),
+            response.senderName(),
+            response.content(),
+            response.createdAt(),
+            null,
+            response.unreadCount(),
+            response.isMine()
+        );
+    }
+
+    @Transactional
+    public ChatMuteResponse toggleMute(Integer userId, Integer roomId) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CHAT_ROOM));
+
+        if (room.isGroupRoom()) {
+            ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
+            ensureRoomMember(room, member.getUser(), member.getCreatedAt());
+        } else {
+            validateDirectAccess(room, userId);
+        }
+
         User user = userRepository.getById(userId);
-        List<ChatRoomsResponse.InnerChatRoomResponse> chatRoomResponses = new ArrayList<>();
+        Boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                NotificationTargetType.CHAT_ROOM,
+                roomId,
+                userId
+            )
+            .map(setting -> {
+                setting.toggleMute();
+                notificationMuteSettingRepository.save(setting);
+                return setting.getIsMuted();
+            })
+            .orElseGet(() -> {
+                notificationMuteSettingRepository.save(NotificationMuteSetting.of(
+                    NotificationTargetType.CHAT_ROOM,
+                    roomId,
+                    user,
+                    true
+                ));
+                return true;
+            });
+
+        return new ChatMuteResponse(isMuted);
+    }
+
+    private List<ChatRoomSummaryResponse> getDirectChatRooms(Integer userId) {
+        User user = userRepository.getById(userId);
+        List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
 
         List<ChatRoom> personalChatRooms = chatRoomRepository.findByUserId(userId);
         Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(extractChatRoomIds(personalChatRooms), userId);
@@ -86,37 +226,56 @@ public class ChatService {
             Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminChatRooms));
 
             for (ChatRoom chatRoom : adminChatRooms) {
-                chatRoomResponses.add(
-                    ChatRoomsResponse.InnerChatRoomResponse.fromForAdmin(chatRoom, adminUnreadCountMap)
-                );
+                User nonAdminUser = chatRoom.getNonAdminUser();
+                roomSummaries.add(new ChatRoomSummaryResponse(
+                    chatRoom.getId(),
+                    ChatType.DIRECT,
+                    nonAdminUser.getName(),
+                    nonAdminUser.getImageUrl(),
+                    chatRoom.getLastMessageContent(),
+                    chatRoom.getLastMessageSentAt(),
+                    adminUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
+                    false
+                ));
                 addedChatRoomIds.add(chatRoom.getId());
             }
         }
 
         for (ChatRoom chatRoom : personalChatRooms) {
             if (!addedChatRoomIds.contains(chatRoom.getId())) {
-                ChatRoomType type = isAdminChatRoom(chatRoom) ? ChatRoomType.ADMIN : ChatRoomType.NORMAL;
-                chatRoomResponses.add(
-                    ChatRoomsResponse.InnerChatRoomResponse.from(chatRoom, user, personalUnreadCountMap, type)
-                );
+                User chatPartner = chatRoom.getChatPartner(user);
+                roomSummaries.add(new ChatRoomSummaryResponse(
+                    chatRoom.getId(),
+                    ChatType.DIRECT,
+                    chatPartner.getName(),
+                    chatPartner.getImageUrl(),
+                    chatRoom.getLastMessageContent(),
+                    chatRoom.getLastMessageSentAt(),
+                    personalUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
+                    false
+                ));
             }
         }
 
-        chatRoomResponses.sort(Comparator
+        roomSummaries.sort(Comparator
             .comparing(
-                ChatRoomsResponse.InnerChatRoomResponse::lastSentTime,
+                ChatRoomSummaryResponse::lastSentAt,
                 Comparator.nullsLast(Comparator.reverseOrder())
             )
-            .thenComparing(ChatRoomsResponse.InnerChatRoomResponse::chatRoomId));
+            .thenComparing(ChatRoomSummaryResponse::roomId));
 
-        return ChatRoomsResponse.of(chatRoomResponses);
+        return roomSummaries;
     }
 
-    @Transactional
-    public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
+    private ChatMessagesResponse getDirectChatRoomMessages(
+        Integer userId,
+        Integer roomId,
+        Integer page,
+        Integer limit
+    ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User user = userRepository.getById(userId);
-        validateChatRoomAccess(userId, chatRoom);
+        validateDirectAccess(chatRoom, userId);
 
         ChatRoomMember member = getRoomMember(roomId, userId);
         LocalDateTime readAt = LocalDateTime.now();
@@ -130,11 +289,10 @@ public class ChatService {
         return ChatMessagesResponse.from(messages, userId, maskedAdminId, readAt);
     }
 
-    @Transactional
-    public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
+    private ChatMessageResponse sendDirectMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User sender = userRepository.getById(userId);
-        validateChatRoomAccess(userId, chatRoom);
+        validateDirectAccess(chatRoom, userId);
 
         User receiver = getMessageReceiver(sender, chatRoom);
 
@@ -150,6 +308,134 @@ public class ChatService {
         return ChatMessageResponse.from(chatMessage, userId);
     }
 
+    private ClubRoomListResponse getClubChatRooms(Integer userId) {
+        List<ClubMember> memberships = clubMemberRepository.findAllByUserId(userId);
+        if (memberships.isEmpty()) {
+            return ClubRoomListResponse.from(List.of(), Map.of(), Map.of());
+        }
+
+        Map<Integer, ClubMember> membershipByClubId = memberships.stream()
+            .collect(Collectors.toMap(cm -> cm.getClub().getId(), cm -> cm, (a, b) -> a));
+
+        List<ChatRoom> rooms = memberships.stream()
+            .map(ClubMember::getClub)
+            .map(this::resolveOrCreateClubRoom)
+            .toList();
+
+        for (ChatRoom room : rooms) {
+            ClubMember member = membershipByClubId.get(room.getClub().getId());
+            if (member != null) {
+                ensureRoomMember(room, member.getUser(), member.getCreatedAt());
+            }
+        }
+
+        List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
+        Map<Integer, ChatMessage> lastMessageMap = getLastMessageMap(roomIds);
+        Map<Integer, Integer> unreadCountMap = getRoomUnreadCountMap(roomIds, userId);
+
+        return ClubRoomListResponse.from(rooms, lastMessageMap, unreadCountMap);
+    }
+
+    private ClubMessagePageResponse getClubMessagesByRoomId(
+        Integer roomId,
+        Integer userId,
+        Integer page,
+        Integer limit
+    ) {
+        ChatRoom room = getClubRoom(roomId);
+        ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
+        ensureRoomMember(room, member.getUser(), member.getCreatedAt());
+        syncClubMembers(room);
+
+        chatPresenceService.recordPresence(roomId, userId);
+        updateLastReadAt(roomId, userId, LocalDateTime.now());
+
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        long totalCount = chatMessageRepository.countByChatRoomId(roomId);
+        Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomId(roomId, pageable);
+        List<ChatMessage> messages = messagePage.getContent();
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+
+        List<ClubMessageResponse> responseMessages = messages.stream()
+            .map(message -> {
+                int unreadCount = getUnreadCount(message, members);
+                return new ClubMessageResponse(
+                    message.getId(),
+                    message.getSender().getId(),
+                    message.getSender().getName(),
+                    message.getContent(),
+                    message.getCreatedAt(),
+                    unreadCount,
+                    message.isSentBy(userId)
+                );
+            })
+            .toList();
+
+        int totalPage = limit > 0 ? (int)Math.ceil((double)totalCount / (double)limit) : 0;
+        return new ClubMessagePageResponse(
+            totalCount,
+            responseMessages.size(),
+            totalPage,
+            page,
+            room.getClub().getId(),
+            responseMessages
+        );
+    }
+
+    private ClubMessageResponse sendClubMessageByRoomId(Integer roomId, Integer userId, String content) {
+        ChatRoom room = getClubRoom(roomId);
+        ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
+        User sender = member.getUser();
+
+        ensureRoomMember(room, sender, member.getCreatedAt());
+        syncClubMembers(room);
+
+        ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
+        room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        updateLastReadAt(roomId, userId, message.getCreatedAt());
+
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        List<Integer> recipientUserIds = members.stream().map(ChatRoomMember::getUserId).toList();
+
+        notificationService.sendGroupChatNotification(
+            roomId,
+            sender.getId(),
+            room.getClub().getName(),
+            sender.getName(),
+            message.getContent(),
+            recipientUserIds
+        );
+
+        return new ClubMessageResponse(
+            message.getId(),
+            sender.getId(),
+            sender.getName(),
+            message.getContent(),
+            message.getCreatedAt(),
+            getUnreadCount(message, members),
+            true
+        );
+    }
+
+    private Map<Integer, Boolean> getMuteMap(List<Integer> roomIds, Integer userId) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<NotificationMuteSetting> settings = notificationMuteSettingRepository
+            .findByTargetTypeAndTargetIdsAndUserId(NotificationTargetType.CHAT_ROOM, roomIds, userId);
+
+        Map<Integer, Boolean> muteMap = new HashMap<>();
+        for (NotificationMuteSetting setting : settings) {
+            Integer targetId = setting.getTargetId();
+            if (targetId != null) {
+                muteMap.put(targetId, setting.getIsMuted());
+            }
+        }
+
+        return muteMap;
+    }
+
     private ChatRoom getDirectRoom(Integer roomId) {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
@@ -159,6 +445,27 @@ public class ChatService {
         }
 
         return chatRoom;
+    }
+
+    private ChatRoom getClubRoom(Integer roomId) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CHAT_ROOM));
+        if (!room.isGroupRoom() || room.getClub() == null) {
+            throw CustomException.of(ApiResponseCode.NOT_FOUND_GROUP_CHAT_ROOM);
+        }
+        return room;
+    }
+
+    private ChatRoom resolveOrCreateClubRoom(Club club) {
+        return chatRoomRepository.findByClubId(club.getId())
+            .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(club)));
+    }
+
+    private void syncClubMembers(ChatRoom room) {
+        List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(room.getClub().getId());
+        for (ClubMember clubMember : clubMembers) {
+            ensureRoomMember(room, clubMember.getUser(), clubMember.getCreatedAt());
+        }
     }
 
     private List<Integer> extractChatRoomIds(List<ChatRoom> chatRooms) {
@@ -220,12 +527,6 @@ public class ChatService {
             || chatRoom.getReceiver().getRole() == UserRole.ADMIN;
     }
 
-    private void validateChatRoomAccess(Integer userId, ChatRoom chatRoom) {
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), userId)) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
-    }
-
     private User getMessageReceiver(User sender, ChatRoom chatRoom) {
         if (sender.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
             return chatRoom.getNonAdminUser();
@@ -244,11 +545,13 @@ public class ChatService {
             .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
     }
 
-    private void ensureRoomMember(ChatRoom room, User user, LocalDateTime lastReadAt) {
+    private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
-            .ifPresentOrElse(member -> member.updateLastReadAt(lastReadAt), () -> {
-                chatRoomMemberRepository.save(ChatRoomMember.of(room, user, lastReadAt));
-            });
+            .ifPresentOrElse(member -> {
+                if (member.getLastReadAt().isBefore(joinedAt)) {
+                    member.updateLastReadAt(joinedAt);
+                }
+            }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, joinedAt)));
     }
 
     private void updateMemberLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
@@ -259,5 +562,118 @@ public class ChatService {
             User user = userRepository.getById(userId);
             ensureRoomMember(room, user, lastReadAt);
         }
+    }
+
+    private void updateLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
+        int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
+        if (updated == 0) {
+            ChatRoom room = getClubRoom(roomId);
+            ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
+            ensureRoomMember(room, member.getUser(), member.getCreatedAt());
+        }
+    }
+
+    private int getUnreadCount(ChatMessage message, List<ChatRoomMember> members) {
+        LocalDateTime createdAt = message.getCreatedAt();
+        int unreadCount = 0;
+
+        for (ChatRoomMember member : members) {
+            LocalDateTime baseline = member.getLastReadAt();
+            if (baseline == null || baseline.isBefore(member.getCreatedAt())) {
+                baseline = member.getCreatedAt();
+            }
+            if (baseline.isBefore(createdAt)) {
+                unreadCount += 1;
+            }
+        }
+
+        return unreadCount;
+    }
+
+    private Map<Integer, ChatMessage> getLastMessageMap(List<Integer> roomIds) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return chatMessageRepository.findLatestMessagesByRoomIds(roomIds).stream()
+            .collect(Collectors.toMap(message -> message.getChatRoom().getId(), message -> message));
+    }
+
+    private Map<Integer, Integer> getRoomUnreadCountMap(List<Integer> roomIds, Integer userId) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Integer, Integer> unreadCountMap = new HashMap<>();
+        List<RoomUnreadCountProjection> projections = chatRoomMemberRepository.countUnreadByRoomIdsAndUserId(
+            roomIds,
+            userId
+        );
+        for (RoomUnreadCountProjection projection : projections) {
+            unreadCountMap.put(projection.getRoomId(), projection.getUnreadCount().intValue());
+        }
+
+        Set<Integer> existingRoomIds = unreadCountMap.keySet();
+        for (Integer roomId : roomIds) {
+            if (!existingRoomIds.contains(roomId)) {
+                unreadCountMap.put(roomId, 0);
+            }
+        }
+
+        return unreadCountMap;
+    }
+
+    private void validateDirectAccess(ChatRoom chatRoom, Integer userId) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), userId)) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+    }
+
+    private ChatMessagePageResponse toMessagePageResponse(ChatMessagesResponse response) {
+        List<ChatMessageDetailResponse> messages = response.messages().stream()
+            .map(message -> new ChatMessageDetailResponse(
+                message.messageId(),
+                message.senderId(),
+                null,
+                message.content(),
+                message.createdAt(),
+                message.isRead(),
+                null,
+                message.isMine()
+            ))
+            .toList();
+
+        return new ChatMessagePageResponse(
+            response.totalCount(),
+            response.currentCount(),
+            response.totalPage(),
+            response.currentPage(),
+            null,
+            messages
+        );
+    }
+
+    private ChatMessagePageResponse toMessagePageResponse(ClubMessagePageResponse response) {
+        List<ChatMessageDetailResponse> messages = response.messages().stream()
+            .map(message -> new ChatMessageDetailResponse(
+                message.messageId(),
+                message.senderId(),
+                message.senderName(),
+                message.content(),
+                message.createdAt(),
+                null,
+                message.unreadCount(),
+                message.isMine()
+            ))
+            .toList();
+
+        return new ChatMessagePageResponse(
+            response.totalCount(),
+            response.currentCount(),
+            response.totalPage(),
+            response.currentPage(),
+            response.clubId(),
+            messages
+        );
     }
 }

@@ -14,7 +14,7 @@ import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomListResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
-import gg.agit.konect.domain.chat.service.ChatCoordinatorService;
+import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +24,14 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/chats")
 public class ChatController implements ChatApi {
 
-    private final ChatCoordinatorService chatCoordinatorService;
+    private final ChatService chatService;
 
     @Override
     public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
         @Valid @RequestBody ChatRoomCreateRequest request,
         @UserId Integer userId
     ) {
-        ChatRoomResponse response = chatCoordinatorService.createOrGetChatRoom(userId, request);
+        ChatRoomResponse response = chatService.createOrGetChatRoom(userId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -39,7 +39,7 @@ public class ChatController implements ChatApi {
     public ResponseEntity<ChatRoomListResponse> getChatRooms(
         @UserId Integer userId
     ) {
-        ChatRoomListResponse response = chatCoordinatorService.getChatRooms(userId);
+        ChatRoomListResponse response = chatService.getChatRooms(userId);
         return ResponseEntity.ok(response);
     }
 
@@ -50,7 +50,7 @@ public class ChatController implements ChatApi {
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
-        ChatMessagePageResponse response = chatCoordinatorService.getMessages(userId, chatRoomId, page, limit);
+        ChatMessagePageResponse response = chatService.getMessages(userId, chatRoomId, page, limit);
         return ResponseEntity.ok(response);
     }
 
@@ -60,7 +60,7 @@ public class ChatController implements ChatApi {
         @Valid @RequestBody ChatMessageSendRequest request,
         @UserId Integer userId
     ) {
-        ChatMessageDetailResponse response = chatCoordinatorService.sendMessage(userId, chatRoomId, request);
+        ChatMessageDetailResponse response = chatService.sendMessage(userId, chatRoomId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -69,6 +69,6 @@ public class ChatController implements ChatApi {
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     ) {
-        return ResponseEntity.ok(chatCoordinatorService.toggleMute(userId, chatRoomId));
+        return ResponseEntity.ok(chatService.toggleMute(userId, chatRoomId));
     }
 }
