@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
+import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;

@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import gg.agit.konect.domain.chat.direct.model.ChatMessage;
-import gg.agit.konect.domain.chat.direct.model.ChatRoom;
-import gg.agit.konect.domain.chat.direct.repository.ChatMessageRepository;
-import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.model.ChatMessage;
+import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
