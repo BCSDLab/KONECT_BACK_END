@@ -22,9 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
-import gg.agit.konect.domain.chat.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
-import gg.agit.konect.domain.chat.dto.ChatMessagesResponse;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomListResponse;
@@ -136,7 +134,7 @@ public class ChatService {
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
 
         if (room.isDirectRoom()) {
-            return toMessagePageResponse(getDirectChatRoomMessages(userId, roomId, page, limit));
+            return getDirectChatRoomMessages(userId, roomId, page, limit);
         }
 
         return getClubMessagesByRoomId(roomId, userId, page, limit);
@@ -148,17 +146,7 @@ public class ChatService {
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
 
         if (room.isDirectRoom()) {
-            ChatMessageResponse response = sendDirectMessage(userId, roomId, request);
-            return new ChatMessageDetailResponse(
-                response.messageId(),
-                response.senderId(),
-                null,
-                response.content(),
-                response.createdAt(),
-                response.isRead(),
-                null,
-                response.isMine()
-            );
+            return sendDirectMessage(userId, roomId, request);
         }
 
         return sendClubMessageByRoomId(roomId, userId, request.content());
@@ -254,7 +242,7 @@ public class ChatService {
         return roomSummaries;
     }
 
-    private ChatMessagesResponse getDirectChatRoomMessages(
+    private ChatMessagePageResponse getDirectChatRoomMessages(
         Integer userId,
         Integer roomId,
         Integer page,
@@ -273,10 +261,35 @@ public class ChatService {
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
 
         Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
-        return ChatMessagesResponse.from(messages, userId, maskedAdminId, readAt);
+        List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
+            .map(message -> {
+                Integer senderId = resolveDirectSenderId(message, maskedAdminId);
+                boolean isMine = message.isSentBy(userId);
+                boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
+                return new ChatMessageDetailResponse(
+                    message.getId(),
+                    senderId,
+                    null,
+                    message.getContent(),
+                    message.getCreatedAt(),
+                    isRead,
+                    null,
+                    isMine
+                );
+            })
+            .toList();
+
+        return new ChatMessagePageResponse(
+            messages.getTotalElements(),
+            messages.getNumberOfElements(),
+            messages.getTotalPages(),
+            messages.getNumber() + 1,
+            null,
+            responseMessages
+        );
     }
 
-    private ChatMessageResponse sendDirectMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
+    private ChatMessageDetailResponse sendDirectMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User sender = userRepository.getById(userId);
         validateDirectAccess(chatRoom, userId);
@@ -292,7 +305,16 @@ public class ChatService {
         notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
         publishAdminChatEventIfNeeded(receiver, sender, request.content());
 
-        return ChatMessageResponse.from(chatMessage, userId);
+        return new ChatMessageDetailResponse(
+            chatMessage.getId(),
+            chatMessage.getSender().getId(),
+            null,
+            chatMessage.getContent(),
+            chatMessage.getCreatedAt(),
+            true,
+            null,
+            true
+        );
     }
 
     private List<ChatRoomSummaryResponse> getClubChatRooms(Integer userId) {
@@ -632,28 +654,11 @@ public class ChatService {
         }
     }
 
-    private ChatMessagePageResponse toMessagePageResponse(ChatMessagesResponse response) {
-        List<ChatMessageDetailResponse> messages = response.messages().stream()
-            .map(message -> new ChatMessageDetailResponse(
-                message.messageId(),
-                message.senderId(),
-                null,
-                message.content(),
-                message.createdAt(),
-                message.isRead(),
-                null,
-                message.isMine()
-            ))
-            .toList();
-
-        return new ChatMessagePageResponse(
-            response.totalCount(),
-            response.currentCount(),
-            response.totalPage(),
-            response.currentPage(),
-            null,
-            messages
-        );
+    private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
+        if (maskedAdminId != null && message.getSender().getRole() == UserRole.ADMIN) {
+            return maskedAdminId;
+        }
+        return message.getSender().getId();
     }
 
 }
