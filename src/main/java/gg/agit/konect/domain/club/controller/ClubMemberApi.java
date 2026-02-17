@@ -82,8 +82,8 @@ public interface ClubMemberApi {
     );
 
     @Operation(summary = "학번으로 회원을 동아리에 등록한다.", description = """
-        동아리 회장 또는 부회장만 회원을 등록할 수 있습니다.
-
+        운영진 이상만 사전 등록 회원 리스트를 조회할 수 있습니다.
+        
         ## 로직
         - 해당 학번의 사용자가 이미 서비스에 가입한 경우:
           - 동아리 회원(ClubMember)에 지정한 직책(clubPosition)으로 직접 추가됩니다.
@@ -108,7 +108,7 @@ public interface ClubMemberApi {
     );
 
     @Operation(summary = "동아리 사전 등록 회원 리스트를 조회한다.", description = """
-        동아리 회장 또는 부회장만 사전 등록 회원 리스트를 조회할 수 있습니다.
+        운영진 이상만 사전 등록 회원을 삭제할 수 있습니다.
 
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
