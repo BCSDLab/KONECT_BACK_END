@@ -11,9 +11,9 @@ import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomListResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -36,10 +36,10 @@ public class ChatController implements ChatApi {
     }
 
     @Override
-    public ResponseEntity<ChatRoomListResponse> getChatRooms(
+    public ResponseEntity<ChatRoomsSummaryResponse> getChatRooms(
         @UserId Integer userId
     ) {
-        ChatRoomListResponse response = chatService.getChatRooms(userId);
+        ChatRoomsSummaryResponse response = chatService.getChatRooms(userId);
         return ResponseEntity.ok(response);
     }
 

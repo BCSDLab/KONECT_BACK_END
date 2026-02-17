@@ -25,9 +25,9 @@ import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
-import gg.agit.konect.domain.chat.dto.ChatRoomListResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
@@ -87,7 +87,7 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatRoomListResponse getChatRooms(Integer userId) {
+    public ChatRoomsSummaryResponse getChatRooms(Integer userId) {
         List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
         List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
 
@@ -125,7 +125,7 @@ public class ChatService {
                 .thenComparing(ChatRoomSummaryResponse::roomId)
         );
 
-        return new ChatRoomListResponse(rooms);
+        return new ChatRoomsSummaryResponse(rooms);
     }
 
     @Transactional
@@ -289,7 +289,11 @@ public class ChatService {
         );
     }
 
-    private ChatMessageDetailResponse sendDirectMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
+    private ChatMessageDetailResponse sendDirectMessage(
+        Integer userId,
+        Integer roomId,
+        ChatMessageSendRequest request
+    ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User sender = userRepository.getById(userId);
         validateDirectAccess(chatRoom, userId);

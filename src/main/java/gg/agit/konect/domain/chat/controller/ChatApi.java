@@ -13,7 +13,7 @@ import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomListResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,7 +53,7 @@ public interface ChatApi {
         - 최근 메시지가 있는 순서대로 정렬됩니다.
         """)
     @GetMapping("/rooms")
-    ResponseEntity<ChatRoomListResponse> getChatRooms(
+    ResponseEntity<ChatRoomsSummaryResponse> getChatRooms(
         @UserId Integer userId
     );
 

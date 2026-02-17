@@ -6,7 +6,7 @@ import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record ChatRoomListResponse(
+public record ChatRoomsSummaryResponse(
     @Schema(description = "채팅방 리스트", requiredMode = REQUIRED)
     List<ChatRoomSummaryResponse> rooms
 ) {
