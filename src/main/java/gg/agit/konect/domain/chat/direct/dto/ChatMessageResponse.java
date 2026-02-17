@@ -30,12 +30,22 @@ public record ChatMessageResponse(
     Boolean isMine
 ) {
     public static ChatMessageResponse from(ChatMessage message, Integer currentUserId) {
+        return from(message, currentUserId, null);
+    }
+
+    public static ChatMessageResponse from(
+        ChatMessage message,
+        Integer currentUserId,
+        LocalDateTime lastReadAt
+    ) {
+        boolean isRead = message.isSentBy(currentUserId)
+            || lastReadAt != null && !message.getCreatedAt().isAfter(lastReadAt);
         return new ChatMessageResponse(
             message.getId(),
             message.getSender().getId(),
             message.getContent(),
             message.getCreatedAt(),
-            message.getIsRead(),
+            isRead,
             message.isSentBy(currentUserId)
         );
     }

@@ -1,8 +1,10 @@
 package gg.agit.konect.domain.chat.direct.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
+import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -30,6 +32,8 @@ import gg.agit.konect.domain.chat.direct.model.ChatRoom;
 import gg.agit.konect.domain.chat.direct.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
+import gg.agit.konect.domain.chat.unified.model.ChatRoomMember;
+import gg.agit.konect.domain.chat.unified.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.enums.UserRole;
@@ -45,6 +49,7 @@ public class ChatService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final NotificationService notificationService;
@@ -60,10 +65,11 @@ public class ChatService {
         }
 
         ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), targetUser.getId())
-            .orElseGet(() -> {
-                ChatRoom newChatRoom = ChatRoom.of(currentUser, targetUser);
-                return chatRoomRepository.save(newChatRoom);
-            });
+            .orElseGet(() -> chatRoomRepository.save(ChatRoom.of(currentUser, targetUser)));
+
+        LocalDateTime joinedAt = chatRoom.getCreatedAt() != null ? chatRoom.getCreatedAt() : LocalDateTime.now();
+        ensureRoomMember(chatRoom, currentUser, joinedAt);
+        ensureRoomMember(chatRoom, targetUser, joinedAt);
 
         return ChatRoomResponse.from(chatRoom);
     }
@@ -73,22 +79,17 @@ public class ChatService {
         List<ChatRoomsResponse.InnerChatRoomResponse> chatRoomResponses = new ArrayList<>();
 
         List<ChatRoom> personalChatRooms = chatRoomRepository.findByUserId(userId);
-        Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(
-            extractChatRoomIds(personalChatRooms), userId
-        );
+        Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(extractChatRoomIds(personalChatRooms), userId);
 
         Set<Integer> addedChatRoomIds = new HashSet<>();
         if (user.getRole() == UserRole.ADMIN) {
             List<ChatRoom> adminChatRooms = chatRoomRepository.findAdminChatRoomsWithUserReply(UserRole.ADMIN);
-            Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(
-                extractChatRoomIds(adminChatRooms)
-            );
+            Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminChatRooms));
 
             for (ChatRoom chatRoom : adminChatRooms) {
-                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.fromForAdmin(
-                    chatRoom, adminUnreadCountMap
-                ));
-
+                chatRoomResponses.add(
+                    ChatRoomsResponse.InnerChatRoomResponse.fromForAdmin(chatRoom, adminUnreadCountMap)
+                );
                 addedChatRoomIds.add(chatRoom.getId());
             }
         }
@@ -96,18 +97,69 @@ public class ChatService {
         for (ChatRoom chatRoom : personalChatRooms) {
             if (!addedChatRoomIds.contains(chatRoom.getId())) {
                 ChatRoomType type = isAdminChatRoom(chatRoom) ? ChatRoomType.ADMIN : ChatRoomType.NORMAL;
-                chatRoomResponses.add(ChatRoomsResponse.InnerChatRoomResponse.from(
-                    chatRoom, user, personalUnreadCountMap, type
-                ));
+                chatRoomResponses.add(
+                    ChatRoomsResponse.InnerChatRoomResponse.from(chatRoom, user, personalUnreadCountMap, type)
+                );
             }
         }
 
         chatRoomResponses.sort(Comparator
-            .comparing(ChatRoomsResponse.InnerChatRoomResponse::lastSentTime,
-                Comparator.nullsLast(Comparator.reverseOrder()))
+            .comparing(
+                ChatRoomsResponse.InnerChatRoomResponse::lastSentTime,
+                Comparator.nullsLast(Comparator.reverseOrder())
+            )
             .thenComparing(ChatRoomsResponse.InnerChatRoomResponse::chatRoomId));
 
         return ChatRoomsResponse.of(chatRoomResponses);
+    }
+
+    @Transactional
+    public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
+        ChatRoom chatRoom = getDirectRoom(roomId);
+        User user = userRepository.getById(userId);
+        validateChatRoomAccess(userId, chatRoom);
+
+        ChatRoomMember member = getRoomMember(roomId, userId);
+        LocalDateTime readAt = LocalDateTime.now();
+        chatPresenceService.recordPresence(roomId, userId);
+        member.updateLastReadAt(readAt);
+
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
+
+        Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
+        return ChatMessagesResponse.from(messages, userId, maskedAdminId, readAt);
+    }
+
+    @Transactional
+    public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
+        ChatRoom chatRoom = getDirectRoom(roomId);
+        User sender = userRepository.getById(userId);
+        validateChatRoomAccess(userId, chatRoom);
+
+        User receiver = getMessageReceiver(sender, chatRoom);
+
+        ChatMessage chatMessage = chatMessageRepository.save(
+            ChatMessage.of(chatRoom, sender, request.content())
+        );
+        chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        updateMemberLastReadAt(roomId, userId, chatMessage.getCreatedAt());
+
+        notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
+        publishAdminChatEventIfNeeded(receiver, sender, request.content());
+
+        return ChatMessageResponse.from(chatMessage, userId);
+    }
+
+    private ChatRoom getDirectRoom(Integer roomId) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+
+        if (!chatRoom.isDirectRoom()) {
+            throw CustomException.of(NOT_FOUND_CHAT_ROOM);
+        }
+
+        return chatRoom;
     }
 
     private List<Integer> extractChatRoomIds(List<ChatRoom> chatRooms) {
@@ -122,7 +174,8 @@ public class ChatService {
         }
 
         List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesByChatRoomIdsAndUserId(
-            chatRoomIds, userId
+            chatRoomIds,
+            userId
         );
 
         return unreadMessageCounts.stream()
@@ -138,7 +191,8 @@ public class ChatService {
         }
 
         List<UnreadMessageCount> unreadMessageCounts = chatMessageRepository.countUnreadMessagesForAdmin(
-            chatRoomIds, UserRole.ADMIN
+            chatRoomIds,
+            UserRole.ADMIN
         );
 
         return unreadMessageCounts.stream()
@@ -146,23 +200,6 @@ public class ChatService {
                 UnreadMessageCount::chatRoomId,
                 unreadMessageCount -> unreadMessageCount.unreadCount().intValue()
             ));
-    }
-
-    @Transactional
-    public ChatMessagesResponse getChatRoomMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-        User user = userRepository.getById(userId);
-        validateChatRoomAccess(user, chatRoom);
-
-        chatPresenceService.recordPresence(roomId, userId);
-        markUnreadMessagesAsRead(user, roomId, chatRoom);
-
-        PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
-
-        Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
-        return ChatMessagesResponse.from(messages, userId, maskedAdminId);
     }
 
     private Integer getMaskedAdminId(User user, ChatRoom chatRoom) {
@@ -179,48 +216,15 @@ public class ChatService {
         return chatRoom.getReceiver();
     }
 
-    private void markUnreadMessagesAsRead(User user, Integer roomId, ChatRoom chatRoom) {
-        List<ChatMessage> unreadMessages;
-
-        if (user.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
-            unreadMessages = chatMessageRepository.findUnreadMessagesForAdmin(roomId, UserRole.ADMIN);
-        } else {
-            unreadMessages = chatMessageRepository.findUnreadMessagesByChatRoomIdAndUserId(roomId, user.getId());
-        }
-
-        unreadMessages.forEach(ChatMessage::markAsRead);
-    }
-
     private boolean isAdminChatRoom(ChatRoom chatRoom) {
         return chatRoom.getSender().getRole() == UserRole.ADMIN
             || chatRoom.getReceiver().getRole() == UserRole.ADMIN;
     }
 
-    private void validateChatRoomAccess(User user, ChatRoom chatRoom) {
-        if (user.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
-            return;
+    private void validateChatRoomAccess(Integer userId, ChatRoom chatRoom) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), userId)) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
-        chatRoom.validateIsParticipant(user.getId());
-    }
-
-    @Transactional
-    public ChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-        User sender = userRepository.getById(userId);
-        validateChatRoomAccess(sender, chatRoom);
-
-        User receiver = getMessageReceiver(sender, chatRoom);
-
-        ChatMessage chatMessage = chatMessageRepository.save(
-            ChatMessage.of(chatRoom, sender, receiver, request.content())
-        );
-        chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-
-        notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
-        publishAdminChatEventIfNeeded(receiver, sender, request.content());
-
-        return ChatMessageResponse.from(chatMessage, userId);
     }
 
     private User getMessageReceiver(User sender, ChatRoom chatRoom) {
@@ -233,6 +237,28 @@ public class ChatService {
     private void publishAdminChatEventIfNeeded(User receiver, User sender, String content) {
         if (receiver.getRole() == UserRole.ADMIN) {
             eventPublisher.publishEvent(AdminChatReceivedEvent.of(sender.getId(), sender.getName(), content));
+        }
+    }
+
+    private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
+        return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
+            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
+    }
+
+    private void ensureRoomMember(ChatRoom room, User user, LocalDateTime lastReadAt) {
+        chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
+            .ifPresentOrElse(member -> member.updateLastReadAt(lastReadAt), () -> {
+                chatRoomMemberRepository.save(ChatRoomMember.of(room, user, lastReadAt));
+            });
+    }
+
+    private void updateMemberLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
+        int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
+        if (updated == 0) {
+            ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+            User user = userRepository.getById(userId);
+            ensureRoomMember(room, user, lastReadAt);
         }
     }
 }

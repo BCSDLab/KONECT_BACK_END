@@ -52,16 +52,19 @@ public record ChatMessagesResponse(
         public static InnerChatMessageResponse from(
             ChatMessage message,
             Integer currentUserId,
-            Integer maskedAdminId
+            Integer maskedAdminId,
+            LocalDateTime lastReadAt
         ) {
             Integer senderId = resolveSenderId(message, maskedAdminId);
+            boolean isMine = message.isSentBy(currentUserId);
+            boolean isRead = isMine || lastReadAt != null && !message.getCreatedAt().isAfter(lastReadAt);
             return new InnerChatMessageResponse(
                 message.getId(),
                 senderId,
                 message.getContent(),
                 message.getCreatedAt(),
-                message.getIsRead(),
-                message.isSentBy(currentUserId)
+                isRead,
+                isMine
             );
         }
 
@@ -76,7 +79,8 @@ public record ChatMessagesResponse(
     public static ChatMessagesResponse from(
         Page<ChatMessage> page,
         Integer currentUserId,
-        Integer maskedAdminId
+        Integer maskedAdminId,
+        LocalDateTime lastReadAt
     ) {
         return new ChatMessagesResponse(
             page.getTotalElements(),
@@ -84,7 +88,19 @@ public record ChatMessagesResponse(
             page.getTotalPages(),
             page.getNumber() + 1,
             page.stream()
-                .map(message -> InnerChatMessageResponse.from(message, currentUserId, maskedAdminId))
+                .map(message -> {
+                    Integer senderId = InnerChatMessageResponse.resolveSenderId(message, maskedAdminId);
+                    boolean isMine = message.isSentBy(currentUserId);
+                    boolean isRead = isMine || lastReadAt != null && !message.getCreatedAt().isAfter(lastReadAt);
+                    return new InnerChatMessageResponse(
+                        message.getId(),
+                        senderId,
+                        message.getContent(),
+                        message.getCreatedAt(),
+                        isRead,
+                        isMine
+                    );
+                })
                 .toList()
         );
     }

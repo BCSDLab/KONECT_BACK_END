@@ -119,7 +119,7 @@ public class UserService {
                 .orElseGet(() -> chatRoomRepository.save(ChatRoom.of(operator, newUser)));
 
             ChatMessage chatMessage = chatMessageRepository.save(
-                ChatMessage.of(chatRoom, operator, newUser, DEFAULT_WELCOME_MESSAGE)
+                ChatMessage.of(chatRoom, operator, DEFAULT_WELCOME_MESSAGE)
             );
 
             chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
