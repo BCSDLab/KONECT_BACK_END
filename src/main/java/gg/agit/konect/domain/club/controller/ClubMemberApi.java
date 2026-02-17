@@ -2,6 +2,7 @@ package gg.agit.konect.domain.club.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberChangesResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -80,8 +82,8 @@ public interface ClubMemberApi {
     );
 
     @Operation(summary = "학번으로 회원을 동아리에 등록한다.", description = """
-        동아리 회장 또는 부회장만 회원을 등록할 수 있습니다.
-
+        운영진 이상만 사전 등록 회원 리스트를 조회할 수 있습니다.
+        
         ## 로직
         - 해당 학번의 사용자가 이미 서비스에 가입한 경우:
           - 동아리 회원(ClubMember)에 지정한 직책(clubPosition)으로 직접 추가됩니다.
@@ -103,6 +105,34 @@ public interface ClubMemberApi {
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubPreMemberAddRequest request,
         @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 사전 등록 회원 리스트를 조회한다.", description = """
+        운영진 이상만 사전 등록 회원을 삭제할 수 있습니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        """)
+    @GetMapping("/{clubId}/pre-members")
+    ResponseEntity<ClubPreMembersResponse> getPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "동아리 사전 등록 회원을 삭제한다.", description = """
+        동아리 회장 또는 부회장만 사전 등록 회원을 삭제할 수 있습니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_PRE_MEMBER (404): 사전 등록 회원을 찾을 수 없습니다.
+        """)
+    @DeleteMapping("/{clubId}/pre-members/{preMemberId}")
+    ResponseEntity<Void> removePreMember(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "preMemberId") Integer preMemberId,
+        @UserId Integer requesterId
     );
 
     @Operation(summary = "동아리 회원을 강제 탈퇴시킨다.", description = """

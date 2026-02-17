@@ -73,6 +73,7 @@ public enum ApiResponseCode {
     NOT_FOUND_CHAT_ROOM(HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
     NOT_FOUND_CLUB(HttpStatus.NOT_FOUND, "동아리를 찾을 수 없습니다."),
     NOT_FOUND_CLUB_MEMBER(HttpStatus.NOT_FOUND, "해당하는 동아리 원을 찾을 수 없습니다."),
+    NOT_FOUND_CLUB_PRE_MEMBER(HttpStatus.NOT_FOUND, "사전 등록 회원을 찾을 수 없습니다."),
     NOT_FOUND_CLUB_PRESIDENT(HttpStatus.NOT_FOUND, "동아리 회장을 찾을 수 없습니다."),
     NOT_FOUND_CLUB_POSITION(HttpStatus.NOT_FOUND, "동아리 직책을 찾을 수 없습니다."),
     NOT_FOUND_CLUB_RECRUITMENT(HttpStatus.NOT_FOUND, "동아리 모집 공고를 찾을 수 없습니다."),
