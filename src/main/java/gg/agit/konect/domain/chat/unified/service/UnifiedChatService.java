@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.chat.unified.service;
 
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -11,7 +13,10 @@ import org.springframework.stereotype.Service;
 import gg.agit.konect.domain.chat.direct.dto.ChatMessageResponse;
 import gg.agit.konect.domain.chat.direct.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.direct.dto.ChatMessagesResponse;
+import gg.agit.konect.domain.chat.direct.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.direct.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.direct.dto.ChatRoomsResponse;
+import gg.agit.konect.domain.chat.direct.model.ChatRoom;
 import gg.agit.konect.domain.chat.direct.service.ChatService;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessageResponse;
 import gg.agit.konect.domain.chat.group.dto.GroupChatMessagesResponse;
@@ -22,37 +27,51 @@ import gg.agit.konect.domain.chat.unified.dto.UnifiedChatMessagesResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomResponse;
 import gg.agit.konect.domain.chat.unified.dto.UnifiedChatRoomsResponse;
 import gg.agit.konect.domain.chat.unified.enums.ChatType;
+import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationMuteSetting;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
-import lombok.RequiredArgsConstructor;
+import gg.agit.konect.global.exception.CustomException;
 
 @Service
-@RequiredArgsConstructor
 public class UnifiedChatService {
 
     private final ChatService chatService;
     private final GroupChatService groupChatService;
+    private final ChatRoomRepository chatRoomRepository;
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
+
+    public UnifiedChatService(
+        ChatService chatService,
+        GroupChatService groupChatService,
+        ChatRoomRepository chatRoomRepository,
+        NotificationMuteSettingRepository notificationMuteSettingRepository
+    ) {
+        this.chatService = chatService;
+        this.groupChatService = groupChatService;
+        this.chatRoomRepository = chatRoomRepository;
+        this.notificationMuteSettingRepository = notificationMuteSettingRepository;
+    }
+
+    public ChatRoomResponse createOrGetChatRoom(Integer userId, ChatRoomCreateRequest request) {
+        return chatService.createOrGetChatRoom(userId, request);
+    }
 
     public UnifiedChatRoomsResponse getChatRooms(Integer userId) {
         ChatRoomsResponse directRooms = chatService.getChatRooms(userId);
         GroupChatRoomsResponse groupRooms = groupChatService.getChatRooms(userId);
-        Map<Integer, Boolean> directMuteMap = getMuteMap(
-            NotificationTargetType.DIRECT_CHAT_ROOM,
-            directRooms.chatRooms().stream()
-                .map(ChatRoomsResponse.InnerChatRoomResponse::chatRoomId)
-                .toList(),
-            userId
+
+        List<Integer> roomIds = new ArrayList<>();
+        roomIds.addAll(
+            directRooms.chatRooms().stream().map(ChatRoomsResponse.InnerChatRoomResponse::chatRoomId).toList()
         );
-        Map<Integer, Boolean> groupMuteMap = getMuteMap(
-            NotificationTargetType.GROUP_CHAT_ROOM,
+        roomIds.addAll(
             groupRooms.groupChatRooms().stream()
                 .map(GroupChatRoomsResponse.InnerGroupChatRoomResponse::groupChatRoomId)
-                .toList(),
-            userId
+                .toList()
         );
 
+        Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
         List<UnifiedChatRoomResponse> rooms = new ArrayList<>();
 
         directRooms.chatRooms().forEach(room -> rooms.add(new UnifiedChatRoomResponse(
@@ -63,7 +82,7 @@ public class UnifiedChatService {
             room.lastMessage(),
             room.lastSentTime(),
             room.unreadCount(),
-            directMuteMap.getOrDefault(room.chatRoomId(), false)
+            muteMap.getOrDefault(room.chatRoomId(), false)
         )));
 
         groupRooms.groupChatRooms().forEach(room -> rooms.add(new UnifiedChatRoomResponse(
@@ -74,7 +93,7 @@ public class UnifiedChatService {
             room.lastMessage(),
             room.lastSentAt(),
             room.unreadMessageCount(),
-            groupMuteMap.getOrDefault(room.groupChatRoomId(), false)
+            muteMap.getOrDefault(room.groupChatRoomId(), false)
         )));
 
         rooms.sort(
@@ -85,52 +104,22 @@ public class UnifiedChatService {
         return new UnifiedChatRoomsResponse(rooms);
     }
 
-    private Map<Integer, Boolean> getMuteMap(
-        NotificationTargetType targetType,
-        List<Integer> roomIds,
-        Integer userId
-    ) {
-        if (roomIds.isEmpty()) {
-            return Map.of();
+    public UnifiedChatMessagesResponse getMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+
+        if (room.isDirectRoom()) {
+            return toUnifiedResponse(chatService.getChatRoomMessages(userId, roomId, page, limit));
         }
 
-        List<NotificationMuteSetting> settings = notificationMuteSettingRepository
-            .findByTargetTypeAndTargetIdsAndUserId(targetType, roomIds, userId);
-
-        Map<Integer, Boolean> muteMap = new HashMap<>();
-        for (NotificationMuteSetting setting : settings) {
-            Integer targetId = setting.getTargetId();
-            if (targetId != null) {
-                muteMap.put(targetId, setting.getIsMuted());
-            }
-        }
-
-        return muteMap;
+        return toUnifiedResponse(groupChatService.getMessagesByRoomId(roomId, userId, page, limit));
     }
 
-    public UnifiedChatMessagesResponse getMessages(
-        Integer userId,
-        ChatType chatType,
-        Integer roomId,
-        Integer page,
-        Integer limit
-    ) {
-        if (chatType == ChatType.DIRECT) {
-            ChatMessagesResponse response = chatService.getChatRoomMessages(userId, roomId, page, limit);
-            return toUnifiedResponse(response);
-        }
+    public UnifiedChatMessageResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
 
-        GroupChatMessagesResponse response = groupChatService.getMessagesByRoomId(roomId, userId, page, limit);
-        return toUnifiedResponse(response);
-    }
-
-    public UnifiedChatMessageResponse sendMessage(
-        Integer userId,
-        ChatType chatType,
-        Integer roomId,
-        ChatMessageSendRequest request
-    ) {
-        if (chatType == ChatType.DIRECT) {
+        if (room.isDirectRoom()) {
             ChatMessageResponse response = chatService.sendMessage(userId, roomId, request);
             return new UnifiedChatMessageResponse(
                 response.messageId(),
@@ -155,6 +144,25 @@ public class UnifiedChatService {
             response.unreadCount(),
             response.isMine()
         );
+    }
+
+    private Map<Integer, Boolean> getMuteMap(List<Integer> roomIds, Integer userId) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<NotificationMuteSetting> settings = notificationMuteSettingRepository
+            .findByTargetTypeAndTargetIdsAndUserId(NotificationTargetType.CHAT_ROOM, roomIds, userId);
+
+        Map<Integer, Boolean> muteMap = new HashMap<>();
+        for (NotificationMuteSetting setting : settings) {
+            Integer targetId = setting.getTargetId();
+            if (targetId != null) {
+                muteMap.put(targetId, setting.getIsMuted());
+            }
+        }
+
+        return muteMap;
     }
 
     private UnifiedChatMessagesResponse toUnifiedResponse(ChatMessagesResponse response) {
