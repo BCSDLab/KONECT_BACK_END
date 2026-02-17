@@ -131,7 +131,7 @@ public class NotificationService {
 
             String truncatedBody = buildPreview(messageContent);
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/rooms/" + roomId + "?type=DIRECT");
+            data.put("path", "chats/rooms/" + roomId);
 
             List<ExpoPushMessage> messages = tokens.stream()
                 .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
@@ -216,7 +216,7 @@ public class NotificationService {
             String truncatedBody = buildPreview(messageContent);
             String previewBody = senderName + ": " + truncatedBody;
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/rooms/" + roomId + "?type=GROUP");
+            data.put("path", "chats/rooms/" + roomId);
 
             for (Integer recipientId : filteredRecipients) {
                 try {
