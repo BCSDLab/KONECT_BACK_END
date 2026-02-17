@@ -193,15 +193,23 @@ public class ChatService {
         List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
 
         List<ChatRoom> personalChatRooms = chatRoomRepository.findByUserId(userId);
+        Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMap(personalChatRooms);
         Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(extractChatRoomIds(personalChatRooms), userId);
 
         Set<Integer> addedChatRoomIds = new HashSet<>();
         if (user.getRole() == UserRole.ADMIN) {
-            List<ChatRoom> adminChatRooms = chatRoomRepository.findAdminChatRoomsWithUserReply(UserRole.ADMIN);
-            Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminChatRooms));
+            Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(personalChatRooms));
 
-            for (ChatRoom chatRoom : adminChatRooms) {
-                User nonAdminUser = chatRoom.getNonAdminUser();
+            for (ChatRoom chatRoom : personalChatRooms) {
+                List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
+                User nonAdminUser = findNonAdminMember(members);
+                if (nonAdminUser == null) {
+                    continue;
+                }
+                if (!chatMessageRepository.existsUserReplyByRoomId(chatRoom.getId(), UserRole.ADMIN)) {
+                    continue;
+                }
+
                 roomSummaries.add(new ChatRoomSummaryResponse(
                     chatRoom.getId(),
                     ChatType.DIRECT,
@@ -218,7 +226,12 @@ public class ChatService {
 
         for (ChatRoom chatRoom : personalChatRooms) {
             if (!addedChatRoomIds.contains(chatRoom.getId())) {
-                User chatPartner = chatRoom.getChatPartner(user);
+                List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
+                User chatPartner = findDirectPartner(members, user.getId());
+                if (chatPartner == null) {
+                    continue;
+                }
+
                 roomSummaries.add(new ChatRoomSummaryResponse(
                     chatRoom.getId(),
                     ChatType.DIRECT,
@@ -298,7 +311,8 @@ public class ChatService {
         User sender = userRepository.getById(userId);
         validateDirectAccess(chatRoom, userId);
 
-        User receiver = getMessageReceiver(sender, chatRoom);
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        User receiver = resolveMessageReceiver(sender, members);
 
         ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, request.content())
@@ -538,29 +552,17 @@ public class ChatService {
     }
 
     private Integer getMaskedAdminId(User user, ChatRoom chatRoom) {
-        if (user.getRole() == UserRole.ADMIN || !isAdminChatRoom(chatRoom)) {
+        if (user.getRole() == UserRole.ADMIN) {
             return null;
         }
-        return getAdminFromChatRoom(chatRoom).getId();
-    }
 
-    private User getAdminFromChatRoom(ChatRoom chatRoom) {
-        if (chatRoom.getSender().getRole() == UserRole.ADMIN) {
-            return chatRoom.getSender();
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(chatRoom.getId());
+        User adminUser = findAdminMember(members);
+        if (adminUser == null) {
+            return null;
         }
-        return chatRoom.getReceiver();
-    }
 
-    private boolean isAdminChatRoom(ChatRoom chatRoom) {
-        return chatRoom.getSender().getRole() == UserRole.ADMIN
-            || chatRoom.getReceiver().getRole() == UserRole.ADMIN;
-    }
-
-    private User getMessageReceiver(User sender, ChatRoom chatRoom) {
-        if (sender.getRole() == UserRole.ADMIN && isAdminChatRoom(chatRoom)) {
-            return chatRoom.getNonAdminUser();
-        }
-        return chatRoom.getChatPartner(sender);
+        return adminUser.getId();
     }
 
     private void publishAdminChatEventIfNeeded(User receiver, User sender, String content) {
@@ -663,6 +665,51 @@ public class ChatService {
             return maskedAdminId;
         }
         return message.getSender().getId();
+    }
+
+    private Map<Integer, List<ChatRoomMember>> getRoomMembersMap(List<ChatRoom> rooms) {
+        if (rooms.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
+        return chatRoomMemberRepository.findByChatRoomIds(roomIds).stream()
+            .collect(Collectors.groupingBy(ChatRoomMember::getChatRoomId));
+    }
+
+    private User findDirectPartner(List<ChatRoomMember> members, Integer userId) {
+        return members.stream()
+            .map(ChatRoomMember::getUser)
+            .filter(memberUser -> !memberUser.getId().equals(userId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private User findNonAdminMember(List<ChatRoomMember> members) {
+        return members.stream()
+            .map(ChatRoomMember::getUser)
+            .filter(memberUser -> memberUser.getRole() != UserRole.ADMIN)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private User findAdminMember(List<ChatRoomMember> members) {
+        return members.stream()
+            .map(ChatRoomMember::getUser)
+            .filter(memberUser -> memberUser.getRole() == UserRole.ADMIN)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private User resolveMessageReceiver(User sender, List<ChatRoomMember> members) {
+        if (sender.getRole() == UserRole.ADMIN) {
+            User nonAdminUser = findNonAdminMember(members);
+            if (nonAdminUser != null) {
+                return nonAdminUser;
+            }
+        }
+
+        return findDirectPartner(members, sender.getId());
     }
 
 }

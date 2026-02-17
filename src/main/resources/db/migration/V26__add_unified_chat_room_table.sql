@@ -74,18 +74,58 @@ WHERE cr.receiver_id IS NOT NULL
 ON DUPLICATE KEY UPDATE
     last_read_at = GREATEST(chat_room_member.last_read_at, VALUES(last_read_at));
 
+SET @chat_room_sender_fk_name = (
+    SELECT kcu.CONSTRAINT_NAME
+    FROM information_schema.KEY_COLUMN_USAGE kcu
+    WHERE kcu.TABLE_SCHEMA = DATABASE()
+      AND kcu.TABLE_NAME = 'chat_room'
+      AND kcu.COLUMN_NAME = 'sender_id'
+      AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+    LIMIT 1
+);
+
+SET @drop_chat_room_sender_fk_sql = IF(
+    @chat_room_sender_fk_name IS NULL,
+    'SELECT 1',
+    CONCAT('ALTER TABLE chat_room DROP FOREIGN KEY `', @chat_room_sender_fk_name, '`')
+);
+
+PREPARE drop_chat_room_sender_fk_stmt FROM @drop_chat_room_sender_fk_sql;
+EXECUTE drop_chat_room_sender_fk_stmt;
+DEALLOCATE PREPARE drop_chat_room_sender_fk_stmt;
+
+SET @chat_room_receiver_fk_name = (
+    SELECT kcu.CONSTRAINT_NAME
+    FROM information_schema.KEY_COLUMN_USAGE kcu
+    WHERE kcu.TABLE_SCHEMA = DATABASE()
+      AND kcu.TABLE_NAME = 'chat_room'
+      AND kcu.COLUMN_NAME = 'receiver_id'
+      AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+    LIMIT 1
+);
+
+SET @drop_chat_room_receiver_fk_sql = IF(
+    @chat_room_receiver_fk_name IS NULL,
+    'SELECT 1',
+    CONCAT('ALTER TABLE chat_room DROP FOREIGN KEY `', @chat_room_receiver_fk_name, '`')
+);
+
+PREPARE drop_chat_room_receiver_fk_stmt FROM @drop_chat_room_receiver_fk_sql;
+EXECUTE drop_chat_room_receiver_fk_stmt;
+DEALLOCATE PREPARE drop_chat_room_receiver_fk_stmt;
+
+ALTER TABLE chat_room
+    DROP COLUMN sender_id,
+    DROP COLUMN receiver_id;
+
 INSERT INTO chat_room (
-    sender_id,
-    receiver_id,
     last_message_content,
     last_message_sent_at,
     club_id,
     created_at,
     updated_at
 )
-SELECT NULL,
-       NULL,
-       gm.content,
+SELECT gm.content,
        gm.created_at,
        gcr.club_id,
        gcr.created_at,

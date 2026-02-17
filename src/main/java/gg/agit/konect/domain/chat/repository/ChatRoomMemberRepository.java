@@ -48,6 +48,14 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
     @Query("""
         SELECT crm
         FROM ChatRoomMember crm
+        JOIN FETCH crm.user
+        WHERE crm.id.chatRoomId IN :chatRoomIds
+        """)
+    List<ChatRoomMember> findByChatRoomIds(@Param("chatRoomIds") List<Integer> chatRoomIds);
+
+    @Query("""
+        SELECT crm
+        FROM ChatRoomMember crm
         WHERE crm.id.userId = :userId
         """)
     List<ChatRoomMember> findByUserId(@Param("userId") Integer userId);

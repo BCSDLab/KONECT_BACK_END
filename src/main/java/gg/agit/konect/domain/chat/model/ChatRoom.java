@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.chat.model;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
-import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
@@ -9,7 +8,6 @@ import static lombok.AccessLevel.PROTECTED;
 import java.time.LocalDateTime;
 
 import gg.agit.konect.domain.club.model.Club;
-import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.model.BaseEntity;
@@ -42,31 +40,18 @@ public class ChatRoom extends BaseEntity {
     private LocalDateTime lastMessageSentAt;
 
     @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "sender_id")
-    private User sender;
-
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "receiver_id")
-    private User receiver;
-
-    @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "club_id")
     private Club club;
 
     @Builder
-    private ChatRoom(Integer id, User sender, User receiver, Club club) {
+    private ChatRoom(Integer id, Club club) {
         this.id = id;
-        this.sender = sender;
-        this.receiver = receiver;
         this.club = club;
     }
 
     public static ChatRoom of(User sender, User receiver) {
         validateIsNotSameParticipant(sender, receiver);
-        return ChatRoom.builder()
-            .sender(sender)
-            .receiver(receiver)
-            .build();
+        return ChatRoom.builder().build();
     }
 
     public static ChatRoom groupOf(Club club) {
@@ -81,36 +66,12 @@ public class ChatRoom extends BaseEntity {
         }
     }
 
-    public void validateIsParticipant(Integer userId) {
-        if (!isParticipant(userId)) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
-    }
-
-    public boolean isParticipant(Integer userId) {
-        if (sender == null || receiver == null) {
-            return false;
-        }
-        return sender.getId().equals(userId) || receiver.getId().equals(userId);
-    }
-
-    public User getChatPartner(User currentUser) {
-        return sender.getId().equals(currentUser.getId()) ? receiver : sender;
-    }
-
     public boolean isDirectRoom() {
         return club == null;
     }
 
     public boolean isGroupRoom() {
         return club != null;
-    }
-
-    public User getNonAdminUser() {
-        if (sender.getRole() != UserRole.ADMIN) {
-            return sender;
-        }
-        return receiver;
     }
 
     public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {

@@ -63,6 +63,17 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
     );
 
     @Query("""
+        SELECT COUNT(cm) > 0
+        FROM ChatMessage cm
+        WHERE cm.chatRoom.id = :chatRoomId
+          AND cm.sender.role != :adminRole
+        """)
+    boolean existsUserReplyByRoomId(
+        @Param("chatRoomId") Integer chatRoomId,
+        @Param("adminRole") UserRole adminRole
+    );
+
+    @Query("""
         SELECT m
         FROM ChatMessage m
         JOIN FETCH m.sender
