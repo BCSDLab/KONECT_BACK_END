@@ -197,7 +197,7 @@ public class NotificationService {
     public void sendGroupChatNotification(
         Integer roomId,
         Integer senderId,
-        String senderName,
+        String clubName,
         String messageContent,
         List<Integer> recipientUserIds
     ) {
@@ -235,7 +235,7 @@ public class NotificationService {
                     }
 
                     List<ExpoPushMessage> messages = tokens.stream()
-                        .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
+                        .map(token -> new ExpoPushMessage(token, clubName, truncatedBody, data))
                         .toList();
 
                     HttpHeaders headers = new HttpHeaders();
