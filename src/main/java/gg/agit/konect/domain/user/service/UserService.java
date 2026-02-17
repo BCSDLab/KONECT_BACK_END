@@ -4,6 +4,7 @@ import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -117,8 +118,13 @@ public class UserService {
                 return;
             }
 
+            ChatRoom.validateIsNotSameParticipant(operator, newUser);
+
             ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(operator.getId(), newUser.getId())
-                .orElseGet(() -> chatRoomRepository.save(ChatRoom.of(operator, newUser)));
+                .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
+
+            LocalDateTime joinedAt = chatRoom.getCreatedAt() != null ? chatRoom.getCreatedAt() : LocalDateTime.now();
+            chatRoomMembershipService.addDirectMembers(chatRoom, operator, newUser, joinedAt);
 
             ChatMessage chatMessage = chatMessageRepository.save(
                 ChatMessage.of(chatRoom, operator, DEFAULT_WELCOME_MESSAGE)

@@ -49,8 +49,7 @@ public class ChatRoom extends BaseEntity {
         this.club = club;
     }
 
-    public static ChatRoom of(User sender, User receiver) {
-        validateIsNotSameParticipant(sender, receiver);
+    public static ChatRoom directOf() {
         return ChatRoom.builder().build();
     }
 

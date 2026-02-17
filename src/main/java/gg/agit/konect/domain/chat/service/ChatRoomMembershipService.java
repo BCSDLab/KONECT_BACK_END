@@ -28,12 +28,23 @@ public class ChatRoomMembershipService {
     }
 
     @Transactional
+    public void addDirectMembers(ChatRoom room, User firstUser, User secondUser, LocalDateTime joinedAt) {
+        LocalDateTime baseline = joinedAt != null ? joinedAt : LocalDateTime.now();
+        ensureMember(room, firstUser, baseline);
+        ensureMember(room, secondUser, baseline);
+    }
+
+    @Transactional
     public void addClubMember(Club club, User user, LocalDateTime joinedAt) {
         ChatRoom room = chatRoomRepository.findByClubId(club.getId())
             .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(club)));
 
         LocalDateTime baseline = joinedAt != null ? joinedAt : LocalDateTime.now();
 
+        ensureMember(room, user, baseline);
+    }
+
+    private void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
                 if (member.getLastReadAt().isBefore(baseline)) {

@@ -75,9 +75,10 @@ public class ChatService {
         if (currentUser.getId().equals(targetUser.getId())) {
             throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
         }
+        ChatRoom.validateIsNotSameParticipant(currentUser, targetUser);
 
         ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), targetUser.getId())
-            .orElseGet(() -> chatRoomRepository.save(ChatRoom.of(currentUser, targetUser)));
+            .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
 
         LocalDateTime joinedAt = chatRoom.getCreatedAt() != null ? chatRoom.getCreatedAt() : LocalDateTime.now();
         ensureRoomMember(chatRoom, currentUser, joinedAt);
