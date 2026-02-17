@@ -711,7 +711,11 @@ public class ChatService {
             }
         }
 
-        return findDirectPartner(members, sender.getId());
+        User partner = findDirectPartner(members, sender.getId());
+        if (partner == null) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+        return partner;
     }
 
 }
