@@ -30,9 +30,6 @@ import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomListResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
-import gg.agit.konect.domain.chat.dto.ClubMessagePageResponse;
-import gg.agit.konect.domain.chat.dto.ClubMessageResponse;
-import gg.agit.konect.domain.chat.dto.ClubRoomListResponse;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
@@ -94,11 +91,11 @@ public class ChatService {
     @Transactional
     public ChatRoomListResponse getChatRooms(Integer userId) {
         List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
-        ClubRoomListResponse clubRooms = getClubChatRooms(userId);
+        List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
 
         List<Integer> roomIds = new ArrayList<>();
         roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
-        roomIds.addAll(clubRooms.clubRooms().stream().map(ClubRoomListResponse.InnerClubRoomResponse::roomId).toList());
+        roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
 
         Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
         List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
@@ -114,14 +111,14 @@ public class ChatService {
             muteMap.getOrDefault(room.roomId(), false)
         )));
 
-        clubRooms.clubRooms().forEach(room -> rooms.add(new ChatRoomSummaryResponse(
+        clubRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
             room.roomId(),
-            ChatType.GROUP,
-            room.clubName(),
-            room.clubImageUrl(),
+            room.chatType(),
+            room.roomName(),
+            room.roomImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
-            room.unreadMessageCount(),
+            room.unreadCount(),
             muteMap.getOrDefault(room.roomId(), false)
         )));
 
@@ -142,7 +139,7 @@ public class ChatService {
             return toMessagePageResponse(getDirectChatRoomMessages(userId, roomId, page, limit));
         }
 
-        return toMessagePageResponse(getClubMessagesByRoomId(roomId, userId, page, limit));
+        return getClubMessagesByRoomId(roomId, userId, page, limit);
     }
 
     @Transactional
@@ -164,17 +161,7 @@ public class ChatService {
             );
         }
 
-        ClubMessageResponse response = sendClubMessageByRoomId(roomId, userId, request.content());
-        return new ChatMessageDetailResponse(
-            response.messageId(),
-            response.senderId(),
-            response.senderName(),
-            response.content(),
-            response.createdAt(),
-            null,
-            response.unreadCount(),
-            response.isMine()
-        );
+        return sendClubMessageByRoomId(roomId, userId, request.content());
     }
 
     @Transactional
@@ -308,10 +295,10 @@ public class ChatService {
         return ChatMessageResponse.from(chatMessage, userId);
     }
 
-    private ClubRoomListResponse getClubChatRooms(Integer userId) {
+    private List<ChatRoomSummaryResponse> getClubChatRooms(Integer userId) {
         List<ClubMember> memberships = clubMemberRepository.findAllByUserId(userId);
         if (memberships.isEmpty()) {
-            return ClubRoomListResponse.from(List.of(), Map.of(), Map.of());
+            return List.of();
         }
 
         Map<Integer, ClubMember> membershipByClubId = memberships.stream()
@@ -333,10 +320,24 @@ public class ChatService {
         Map<Integer, ChatMessage> lastMessageMap = getLastMessageMap(roomIds);
         Map<Integer, Integer> unreadCountMap = getRoomUnreadCountMap(roomIds, userId);
 
-        return ClubRoomListResponse.from(rooms, lastMessageMap, unreadCountMap);
+        return rooms.stream()
+            .map(room -> {
+                ChatMessage lastMessage = lastMessageMap.get(room.getId());
+                return new ChatRoomSummaryResponse(
+                    room.getId(),
+                    ChatType.GROUP,
+                    room.getClub().getName(),
+                    room.getClub().getImageUrl(),
+                    lastMessage != null ? lastMessage.getContent() : null,
+                    lastMessage != null ? lastMessage.getCreatedAt() : null,
+                    unreadCountMap.getOrDefault(room.getId(), 0),
+                    false
+                );
+            })
+            .toList();
     }
 
-    private ClubMessagePageResponse getClubMessagesByRoomId(
+    private ChatMessagePageResponse getClubMessagesByRoomId(
         Integer roomId,
         Integer userId,
         Integer page,
@@ -356,15 +357,16 @@ public class ChatService {
         List<ChatMessage> messages = messagePage.getContent();
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
 
-        List<ClubMessageResponse> responseMessages = messages.stream()
+        List<ChatMessageDetailResponse> responseMessages = messages.stream()
             .map(message -> {
                 int unreadCount = getUnreadCount(message, members);
-                return new ClubMessageResponse(
+                return new ChatMessageDetailResponse(
                     message.getId(),
                     message.getSender().getId(),
                     message.getSender().getName(),
                     message.getContent(),
                     message.getCreatedAt(),
+                    null,
                     unreadCount,
                     message.isSentBy(userId)
                 );
@@ -372,7 +374,7 @@ public class ChatService {
             .toList();
 
         int totalPage = limit > 0 ? (int)Math.ceil((double)totalCount / (double)limit) : 0;
-        return new ClubMessagePageResponse(
+        return new ChatMessagePageResponse(
             totalCount,
             responseMessages.size(),
             totalPage,
@@ -382,7 +384,7 @@ public class ChatService {
         );
     }
 
-    private ClubMessageResponse sendClubMessageByRoomId(Integer roomId, Integer userId, String content) {
+    private ChatMessageDetailResponse sendClubMessageByRoomId(Integer roomId, Integer userId, String content) {
         ChatRoom room = getClubRoom(roomId);
         ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
         User sender = member.getUser();
@@ -406,12 +408,13 @@ public class ChatService {
             recipientUserIds
         );
 
-        return new ClubMessageResponse(
+        return new ChatMessageDetailResponse(
             message.getId(),
             sender.getId(),
             sender.getName(),
             message.getContent(),
             message.getCreatedAt(),
+            null,
             getUnreadCount(message, members),
             true
         );
@@ -653,27 +656,4 @@ public class ChatService {
         );
     }
 
-    private ChatMessagePageResponse toMessagePageResponse(ClubMessagePageResponse response) {
-        List<ChatMessageDetailResponse> messages = response.messages().stream()
-            .map(message -> new ChatMessageDetailResponse(
-                message.messageId(),
-                message.senderId(),
-                message.senderName(),
-                message.content(),
-                message.createdAt(),
-                null,
-                message.unreadCount(),
-                message.isMine()
-            ))
-            .toList();
-
-        return new ChatMessagePageResponse(
-            response.totalCount(),
-            response.currentCount(),
-            response.totalPage(),
-            response.currentPage(),
-            response.clubId(),
-            messages
-        );
-    }
 }
