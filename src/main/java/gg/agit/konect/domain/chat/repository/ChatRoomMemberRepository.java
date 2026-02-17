@@ -66,6 +66,17 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
         @Param("lastReadAt") LocalDateTime lastReadAt
     );
 
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        DELETE FROM ChatRoomMember crm
+        WHERE crm.id.chatRoomId = :chatRoomId
+          AND crm.id.userId = :userId
+        """)
+    int deleteByChatRoomIdAndUserId(
+        @Param("chatRoomId") Integer chatRoomId,
+        @Param("userId") Integer userId
+    );
+
     @Query(value = """
         SELECT crm.chat_room_id AS roomId, COUNT(cm.id) AS unreadCount
         FROM chat_room_member crm

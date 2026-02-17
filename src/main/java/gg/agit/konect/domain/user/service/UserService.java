@@ -15,6 +15,7 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
@@ -58,6 +59,7 @@ public class UserService {
     private final StudyTimeQueryService studyTimeQueryService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final AppleTokenRevocationService appleTokenRevocationService;
+    private final ChatRoomMembershipService chatRoomMembershipService;
 
     @Transactional
     public Integer signup(String email, String providerId, Provider provider, SignupRequest request) {
@@ -161,7 +163,8 @@ public class UserService {
                 .isFeePaid(false)
                 .build();
 
-            clubMemberRepository.save(clubMember);
+            ClubMember savedMember = clubMemberRepository.save(clubMember);
+            chatRoomMembershipService.addClubMember(savedMember);
         }
 
         clubPreMemberRepository.deleteAll(preMembers);
@@ -170,7 +173,10 @@ public class UserService {
     private void replaceCurrentPresident(Integer clubId, Integer newPresidentUserId) {
         clubMemberRepository.findPresidentByClubId(clubId)
             .filter(currentPresident -> !currentPresident.getId().getUserId().equals(newPresidentUserId))
-            .ifPresent(clubMemberRepository::delete);
+            .ifPresent(currentPresident -> {
+                clubMemberRepository.delete(currentPresident);
+                chatRoomMembershipService.removeClubMember(clubId, currentPresident.getUser().getId());
+            });
     }
 
     public UserInfoResponse getUserInfo(Integer userId) {
