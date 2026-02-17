@@ -12,6 +12,7 @@ import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberChangesResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -73,6 +74,25 @@ public class ClubMemberController implements ClubMemberApi {
     ) {
         ClubPreMemberAddResponse response = clubMemberManagementService.addPreMember(clubId, userId, request);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ClubPreMembersResponse> getPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer userId
+    ) {
+        ClubPreMembersResponse response = clubMemberManagementService.getPreMembers(clubId, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> removePreMember(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "preMemberId") Integer preMemberId,
+        @UserId Integer requesterId
+    ) {
+        clubMemberManagementService.removePreMember(clubId, preMemberId, requesterId);
+        return ResponseEntity.noContent().build();
     }
 
     @Override
