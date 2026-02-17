@@ -580,7 +580,8 @@ public class ChatService {
     private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
-                if (member.getLastReadAt().isBefore(joinedAt)) {
+                LocalDateTime lastReadAt = member.getLastReadAt();
+                if (lastReadAt == null || lastReadAt.isBefore(joinedAt)) {
                     member.updateLastReadAt(joinedAt);
                 }
             }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, joinedAt)));
