@@ -9,8 +9,8 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import gg.agit.konect.domain.chat.group.model.GroupChatMessage;
-import gg.agit.konect.domain.chat.group.model.GroupChatRoom;
+import gg.agit.konect.domain.chat.direct.model.ChatMessage;
+import gg.agit.konect.domain.chat.direct.model.ChatRoom;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record GroupChatRoomsResponse(
@@ -38,8 +38,8 @@ public record GroupChatRoomsResponse(
         Integer unreadMessageCount
     ) {
         public static InnerGroupChatRoomResponse from(
-            GroupChatRoom room,
-            GroupChatMessage lastMessage,
+            ChatRoom room,
+            ChatMessage lastMessage,
             Map<Integer, Integer> unreadCountMap
         ) {
             return new InnerGroupChatRoomResponse(
@@ -54,8 +54,8 @@ public record GroupChatRoomsResponse(
     }
 
     public static GroupChatRoomsResponse from(
-        List<GroupChatRoom> rooms,
-        Map<Integer, GroupChatMessage> lastMessageMap,
+        List<ChatRoom> rooms,
+        Map<Integer, ChatMessage> lastMessageMap,
         Map<Integer, Integer> unreadCountMap
     ) {
         return new GroupChatRoomsResponse(
