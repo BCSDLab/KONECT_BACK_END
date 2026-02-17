@@ -131,7 +131,7 @@ public class NotificationService {
 
             String truncatedBody = buildPreview(messageContent);
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/rooms/" + roomId + "?type=DIRECT");
+            data.put("path", "chats/rooms/" + roomId);
 
             List<ExpoPushMessage> messages = tokens.stream()
                 .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
@@ -197,6 +197,7 @@ public class NotificationService {
     public void sendGroupChatNotification(
         Integer roomId,
         Integer senderId,
+        String clubName,
         String senderName,
         String messageContent,
         List<Integer> recipientUserIds
@@ -213,8 +214,9 @@ public class NotificationService {
             }
 
             String truncatedBody = buildPreview(messageContent);
+            String previewBody = senderName + ": " + truncatedBody;
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/rooms/" + roomId + "?type=GROUP");
+            data.put("path", "chats/rooms/" + roomId);
 
             for (Integer recipientId : filteredRecipients) {
                 try {
@@ -235,7 +237,7 @@ public class NotificationService {
                     }
 
                     List<ExpoPushMessage> messages = tokens.stream()
-                        .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
+                        .map(token -> new ExpoPushMessage(token, clubName, previewBody, data))
                         .toList();
 
                     HttpHeaders headers = new HttpHeaders();

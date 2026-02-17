@@ -158,6 +158,7 @@ public class GroupChatService {
         Integer messageId = message.getId();
         Integer senderId = sender.getId();
         String senderName = sender.getName();
+        String clubName = room.getClub().getName();
         String messageContent = message.getContent();
         LocalDateTime createdAt = message.getCreatedAt();
 
@@ -170,6 +171,7 @@ public class GroupChatService {
         notificationService.sendGroupChatNotification(
             roomId,
             senderId,
+            clubName,
             senderName,
             messageContent,
             filteredRecipients
