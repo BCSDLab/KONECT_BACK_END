@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -81,7 +82,7 @@ public class ClubMemberManagementService {
     ) {
         Club club = clubRepository.getById(clubId);
 
-        clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         String studentNumber = request.studentNumber();
         String name = request.name();
@@ -141,6 +142,25 @@ public class ClubMemberManagementService {
 
         ClubPreMember savedPreMember = clubPreMemberRepository.save(preMember);
         return ClubPreMemberAddResponse.from(savedPreMember);
+    }
+
+    public ClubPreMembersResponse getPreMembers(Integer clubId, Integer requesterId) {
+        clubRepository.getById(clubId);
+
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        List<ClubPreMember> preMembers = clubPreMemberRepository.findAllByClubId(clubId);
+        return ClubPreMembersResponse.from(preMembers);
+    }
+
+    @Transactional
+    public void removePreMember(Integer clubId, Integer preMemberId, Integer requesterId) {
+        clubRepository.getById(clubId);
+
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        ClubPreMember preMember = clubPreMemberRepository.getByIdAndClubId(preMemberId, clubId);
+        clubPreMemberRepository.delete(preMember);
     }
 
     @Transactional
