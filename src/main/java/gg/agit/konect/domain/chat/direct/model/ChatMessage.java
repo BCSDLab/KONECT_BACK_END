@@ -2,7 +2,6 @@ package gg.agit.konect.domain.chat.direct.model;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
-import static java.lang.Boolean.FALSE;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.user.model.User;
@@ -34,9 +33,6 @@ public class ChatMessage extends BaseEntity {
     @Column(name = "content", nullable = false, length = 1000)
     private String content;
 
-    @Column(name = "is_read", nullable = false)
-    private Boolean isRead = FALSE;
-
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "chat_room_id", nullable = false)
     private ChatRoom chatRoom;
@@ -45,34 +41,24 @@ public class ChatMessage extends BaseEntity {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "receiver_id", nullable = false)
-    private User receiver;
-
     @Builder
     private ChatMessage(
         Integer id,
         String content,
-        Boolean isRead,
         ChatRoom chatRoom,
-        User sender,
-        User receiver
+        User sender
     ) {
         this.id = id;
         this.content = content;
-        this.isRead = isRead;
         this.chatRoom = chatRoom;
         this.sender = sender;
-        this.receiver = receiver;
     }
 
-    public static ChatMessage of(ChatRoom chatRoom, User sender, User receiver, String content) {
+    public static ChatMessage of(ChatRoom chatRoom, User sender, String content) {
         return ChatMessage.builder()
             .content(content)
             .chatRoom(chatRoom)
             .sender(sender)
-            .receiver(receiver)
-            .isRead(FALSE)
             .build();
     }
 
@@ -80,7 +66,4 @@ public class ChatMessage extends BaseEntity {
         return sender.getId().equals(userId);
     }
 
-    public void markAsRead() {
-        this.isRead = true;
-    }
 }

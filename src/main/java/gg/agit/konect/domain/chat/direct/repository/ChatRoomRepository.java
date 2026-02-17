@@ -17,9 +17,12 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     @Query("""
         SELECT DISTINCT cr
         FROM ChatRoom cr
-        JOIN FETCH cr.sender
-        JOIN FETCH cr.receiver
-        WHERE cr.sender.id = :userId OR cr.receiver.id = :userId
+        JOIN ChatRoomMember crm ON crm.chatRoomId = cr.id
+        LEFT JOIN FETCH cr.sender
+        LEFT JOIN FETCH cr.receiver
+        LEFT JOIN FETCH cr.club
+        WHERE crm.userId = :userId
+          AND cr.club IS NULL
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
     List<ChatRoom> findByUserId(@Param("userId") Integer userId);
@@ -27,8 +30,9 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     @Query("""
         SELECT cr
         FROM ChatRoom cr
-        JOIN FETCH cr.sender
-        JOIN FETCH cr.receiver
+        LEFT JOIN FETCH cr.sender
+        LEFT JOIN FETCH cr.receiver
+        LEFT JOIN FETCH cr.club
         WHERE cr.id = :chatRoomId
         """)
     Optional<ChatRoom> findById(@Param("chatRoomId") Integer chatRoomId);
@@ -36,17 +40,20 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     @Query("""
         SELECT cr
         FROM ChatRoom cr
-        WHERE (cr.sender.id = :userId1 AND cr.receiver.id = :userId2)
-           OR (cr.sender.id = :userId2 AND cr.receiver.id = :userId1)
+        WHERE cr.club IS NULL
+          AND ((cr.sender.id = :userId1 AND cr.receiver.id = :userId2)
+            OR (cr.sender.id = :userId2 AND cr.receiver.id = :userId1))
         """)
     Optional<ChatRoom> findByTwoUsers(@Param("userId1") Integer userId1, @Param("userId2") Integer userId2);
 
     @Query("""
         SELECT DISTINCT cr
         FROM ChatRoom cr
+        JOIN ChatRoomMember crm ON crm.chatRoomId = cr.id
         JOIN FETCH cr.sender s
         JOIN FETCH cr.receiver r
-        WHERE s.role = :adminRole OR r.role = :adminRole
+        WHERE cr.club IS NULL
+          AND (s.role = :adminRole OR r.role = :adminRole)
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
     List<ChatRoom> findAllAdminChatRooms(@Param("adminRole") UserRole adminRole);
@@ -54,9 +61,11 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     @Query("""
         SELECT DISTINCT cr
         FROM ChatRoom cr
+        JOIN ChatRoomMember crm ON crm.chatRoomId = cr.id
         JOIN FETCH cr.sender s
         JOIN FETCH cr.receiver r
-        WHERE (s.role = :adminRole OR r.role = :adminRole)
+        WHERE cr.club IS NULL
+        AND (s.role = :adminRole OR r.role = :adminRole)
         AND EXISTS (
             SELECT 1 FROM ChatMessage cm
             WHERE cm.chatRoom = cr
@@ -69,13 +78,37 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     @Query("""
         SELECT cr
         FROM ChatRoom cr
+        JOIN ChatRoomMember crm ON crm.chatRoomId = cr.id
         JOIN FETCH cr.sender s
         JOIN FETCH cr.receiver r
-        WHERE (s.id = :userId AND r.role = :adminRole)
+        WHERE cr.club IS NULL
+           AND ((s.id = :userId AND r.role = :adminRole)
            OR (s.role = :adminRole AND r.id = :userId)
+           )
         """)
     Optional<ChatRoom> findByUserIdAndAdminRole(
         @Param("userId") Integer userId,
         @Param("adminRole") UserRole adminRole
     );
+
+    @Query("""
+        SELECT cr
+        FROM ChatRoom cr
+        LEFT JOIN FETCH cr.club c
+        WHERE c.id = :clubId
+        """)
+    Optional<ChatRoom> findByClubId(@Param("clubId") Integer clubId);
+
+    @Query("""
+        SELECT DISTINCT cr
+        FROM ChatRoom cr
+        JOIN ChatRoomMember crm ON crm.chatRoomId = cr.id
+        LEFT JOIN FETCH cr.club
+        LEFT JOIN FETCH cr.sender
+        LEFT JOIN FETCH cr.receiver
+        WHERE crm.userId = :userId
+          AND cr.club IS NOT NULL
+        ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
+        """)
+    List<ChatRoom> findGroupRoomsByUserId(@Param("userId") Integer userId);
 }

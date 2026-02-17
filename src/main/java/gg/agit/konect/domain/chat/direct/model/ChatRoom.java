@@ -8,6 +8,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDateTime;
 
+import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.exception.CustomException;
@@ -48,11 +49,16 @@ public class ChatRoom extends BaseEntity {
     @JoinColumn(name = "receiver_id")
     private User receiver;
 
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "club_id")
+    private Club club;
+
     @Builder
-    private ChatRoom(Integer id, User sender, User receiver) {
+    private ChatRoom(Integer id, User sender, User receiver, Club club) {
         this.id = id;
         this.sender = sender;
         this.receiver = receiver;
+        this.club = club;
     }
 
     public static ChatRoom of(User sender, User receiver) {
@@ -60,6 +66,12 @@ public class ChatRoom extends BaseEntity {
         return ChatRoom.builder()
             .sender(sender)
             .receiver(receiver)
+            .build();
+    }
+
+    public static ChatRoom groupOf(Club club) {
+        return ChatRoom.builder()
+            .club(club)
             .build();
     }
 
@@ -76,11 +88,22 @@ public class ChatRoom extends BaseEntity {
     }
 
     public boolean isParticipant(Integer userId) {
+        if (sender == null || receiver == null) {
+            return false;
+        }
         return sender.getId().equals(userId) || receiver.getId().equals(userId);
     }
 
     public User getChatPartner(User currentUser) {
         return sender.getId().equals(currentUser.getId()) ? receiver : sender;
+    }
+
+    public boolean isDirectRoom() {
+        return club == null;
+    }
+
+    public boolean isGroupRoom() {
+        return club != null;
     }
 
     public User getNonAdminUser() {

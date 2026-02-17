@@ -18,14 +18,16 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
 
     @Query("""
         SELECT new gg.agit.konect.domain.chat.direct.dto.UnreadMessageCount(
-            cm.chatRoom.id,
+            crm.chatRoomId,
             COUNT(cm)
         )
-        FROM ChatMessage cm
-        WHERE cm.chatRoom.id IN :chatRoomIds
-        AND cm.receiver.id = :receiverId
-        AND cm.isRead = false
-        GROUP BY cm.chatRoom.id
+        FROM ChatRoomMember crm
+        LEFT JOIN ChatMessage cm ON cm.chatRoom.id = crm.chatRoomId
+            AND cm.sender.id <> :receiverId
+            AND cm.createdAt > crm.lastReadAt
+        WHERE crm.chatRoomId IN :chatRoomIds
+          AND crm.userId = :receiverId
+        GROUP BY crm.chatRoomId
         """)
     List<UnreadMessageCount> countUnreadMessagesByChatRoomIdsAndUserId(
         @Param("chatRoomIds") List<Integer> chatRoomIds,
@@ -42,42 +44,41 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
     Page<ChatMessage> findByChatRoomId(@Param("chatRoomId") Integer chatRoomId, Pageable pageable);
 
     @Query("""
-        SELECT cm
-        FROM ChatMessage cm
-        WHERE cm.chatRoom.id = :chatRoomId
-        AND cm.receiver.id = :receiverId
-        AND cm.isRead = false
-        """)
-    List<ChatMessage> findUnreadMessagesByChatRoomIdAndUserId(
-        @Param("chatRoomId") Integer chatRoomId,
-        @Param("receiverId") Integer receiverId
-    );
-
-    @Query("""
-        SELECT cm
-        FROM ChatMessage cm
-        WHERE cm.chatRoom.id = :chatRoomId
-        AND cm.receiver.role = :adminRole
-        AND cm.isRead = false
-        """)
-    List<ChatMessage> findUnreadMessagesForAdmin(
-        @Param("chatRoomId") Integer chatRoomId,
-        @Param("adminRole") UserRole adminRole
-    );
-
-    @Query("""
         SELECT new gg.agit.konect.domain.chat.direct.dto.UnreadMessageCount(
-            cm.chatRoom.id,
+            crm.chatRoomId,
             COUNT(cm)
         )
-        FROM ChatMessage cm
-        WHERE cm.chatRoom.id IN :chatRoomIds
-        AND cm.receiver.role = :adminRole
-        AND cm.isRead = false
-        GROUP BY cm.chatRoom.id
+        FROM ChatRoomMember crm
+        JOIN crm.user u
+        LEFT JOIN ChatMessage cm ON cm.chatRoom.id = crm.chatRoomId
+            AND cm.sender.role != :adminRole
+            AND cm.createdAt > crm.lastReadAt
+        WHERE crm.chatRoomId IN :chatRoomIds
+          AND u.role = :adminRole
+        GROUP BY crm.chatRoomId
         """)
     List<UnreadMessageCount> countUnreadMessagesForAdmin(
         @Param("chatRoomIds") List<Integer> chatRoomIds,
         @Param("adminRole") UserRole adminRole
     );
+
+    @Query("""
+        SELECT m
+        FROM ChatMessage m
+        JOIN FETCH m.sender
+        WHERE m.id IN (
+            SELECT MAX(m2.id)
+            FROM ChatMessage m2
+            WHERE m2.chatRoom.id IN :roomIds
+            GROUP BY m2.chatRoom.id
+        )
+        """)
+    List<ChatMessage> findLatestMessagesByRoomIds(@Param("roomIds") List<Integer> roomIds);
+
+    @Query("""
+        SELECT COUNT(m)
+        FROM ChatMessage m
+        WHERE m.chatRoom.id = :chatRoomId
+        """)
+    long countByChatRoomId(@Param("chatRoomId") Integer chatRoomId);
 }
