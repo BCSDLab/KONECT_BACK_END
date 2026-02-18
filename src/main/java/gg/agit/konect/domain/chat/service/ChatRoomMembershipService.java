@@ -24,7 +24,7 @@ public class ChatRoomMembershipService {
 
     @Transactional
     public void addClubMember(ClubMember clubMember) {
-        LocalDateTime baseline = Objects.requireNonNull(clubMember.getCreatedAt(), "clubMember.createdAt must not be null");
+        LocalDateTime baseline = Objects.requireNonNull(clubMember.getCreatedAt());
         ChatRoom room = chatRoomRepository.findByClubId(clubMember.getClub().getId())
             .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(clubMember.getClub())));
         ensureMember(room, clubMember.getUser(), baseline);
@@ -32,7 +32,7 @@ public class ChatRoomMembershipService {
 
     @Transactional
     public void addDirectMembers(ChatRoom room, User firstUser, User secondUser, LocalDateTime joinedAt) {
-        LocalDateTime baseline = Objects.requireNonNull(joinedAt, "joinedAt must not be null");
+        LocalDateTime baseline = Objects.requireNonNull(joinedAt);
         ensureMember(room, firstUser, baseline);
         ensureMember(room, secondUser, baseline);
     }
