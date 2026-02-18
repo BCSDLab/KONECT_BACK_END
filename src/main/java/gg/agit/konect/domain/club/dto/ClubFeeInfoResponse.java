@@ -10,8 +10,8 @@ import gg.agit.konect.domain.club.model.Club;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubFeeInfoResponse(
-    @Schema(description = "회비 금액", example = "10000", requiredMode = REQUIRED)
-    Integer amount,
+    @Schema(description = "회비 금액", example = "3만원", requiredMode = REQUIRED)
+    String amount,
 
     @Schema(description = "은행명", example = "국민은행", requiredMode = REQUIRED)
     String bank,
