@@ -52,6 +52,7 @@ public class ClubRecruitmentService {
                 request.startDate(),
                 request.endDate(),
                 request.isAlwaysRecruiting(),
+                request.isFeeRequired(),
                 request.content(),
                 club
             ));
@@ -61,20 +62,14 @@ public class ClubRecruitmentService {
                 request.startDate(),
                 request.endDate(),
                 request.isAlwaysRecruiting(),
+                request.isFeeRequired(),
                 request.content()
             );
 
             clubRecruitment.getImages().clear();
         }
 
-        addImages(clubRecruitment, request.getImageUrls());
-
-        if (clubRecruitment.getId() == null) {
-            clubRecruitmentRepository.save(clubRecruitment);
-        }
-    }
-
-    private void addImages(ClubRecruitment clubRecruitment, List<String> imageUrls) {
+        List<String> imageUrls = request.getImageUrls();
         for (int index = 0; index < imageUrls.size(); index++) {
             ClubRecruitmentImage image = ClubRecruitmentImage.of(
                 imageUrls.get(index),
@@ -82,6 +77,10 @@ public class ClubRecruitmentService {
                 clubRecruitment
             );
             clubRecruitment.addImage(image);
+        }
+
+        if (clubRecruitment.getId() == null) {
+            clubRecruitmentRepository.save(clubRecruitment);
         }
     }
 }
