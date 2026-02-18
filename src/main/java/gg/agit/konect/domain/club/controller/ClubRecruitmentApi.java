@@ -20,10 +20,10 @@ public interface ClubRecruitmentApi {
 
     @Operation(summary = "동아리 모집 정보를 조회한다.", description = """
         동아리의 모집 공고 상세 정보를 조회합니다.
-
+        
         - status는 모집 기간에 따라 BEFORE(모집 전), ONGOING(모집 중), CLOSED(모집 마감)으로 반환됩니다.
         - 동아리 멤버이거나 지원 이력이 존재할 경우 isApplied는 true로 반환됩니다.
-
+        
         ## 에러
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
@@ -39,7 +39,6 @@ public interface ClubRecruitmentApi {
         요청 값을 기준으로 동아리 모집 공고를 저장합니다.
         - 모집 공고가 없으면 생성
         - 모집 공고가 있으면 수정
-
         ## 에러
         - INVALID_RECRUITMENT_DATE_NOT_ALLOWED (400): 상시 모집인 경우 모집 시작일과 마감일을 지정할 수 없습니다.
         - INVALID_RECRUITMENT_DATE_REQUIRED (400): 상시 모집이 아닐 경우 모집 시작일과 마감일이 필수입니다.
