@@ -388,7 +388,6 @@ public class ChatService {
         ChatRoom room = getClubRoom(roomId);
         ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
         ensureRoomMember(room, member.getUser(), member.getCreatedAt());
-        syncClubMembers(room);
 
         chatPresenceService.recordPresence(roomId, userId);
         updateLastReadAt(roomId, userId, LocalDateTime.now());
@@ -433,7 +432,6 @@ public class ChatService {
         User sender = member.getUser();
 
         ensureRoomMember(room, sender, member.getCreatedAt());
-        syncClubMembers(room);
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
         room.updateLastMessage(message.getContent(), message.getCreatedAt());
@@ -506,13 +504,6 @@ public class ChatService {
     private ChatRoom resolveOrCreateClubRoom(Club club) {
         return chatRoomRepository.findByClubId(club.getId())
             .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(club)));
-    }
-
-    private void syncClubMembers(ChatRoom room) {
-        List<ClubMember> clubMembers = clubMemberRepository.findAllByClubId(room.getClub().getId());
-        for (ClubMember clubMember : clubMembers) {
-            ensureRoomMember(room, clubMember.getUser(), clubMember.getCreatedAt());
-        }
     }
 
     private List<Integer> extractChatRoomIds(List<ChatRoom> chatRooms) {
