@@ -184,7 +184,8 @@ public class ClubApplicationService {
                 user.getName()
             ));
 
-        return ClubFeeInfoResponse.from(club);
+        Integer bankId = resolveBankId(club.getFeeBank());
+        return ClubFeeInfoResponse.of(club, bankId, club.getFeeBank());
     }
 
     private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
@@ -320,7 +321,15 @@ public class ClubApplicationService {
 
     public ClubFeeInfoResponse getFeeInfo(Integer clubId) {
         Club club = clubRepository.getById(clubId);
-        return ClubFeeInfoResponse.from(club);
+        Integer bankId = resolveBankId(club.getFeeBank());
+        return ClubFeeInfoResponse.of(club, bankId, club.getFeeBank());
+    }
+
+    private Integer resolveBankId(String bankName) {
+        if (!StringUtils.hasText(bankName)) {
+            return null;
+        }
+        return bankRepository.getByName(bankName).getId();
     }
 
     @Transactional
@@ -340,6 +349,6 @@ public class ClubApplicationService {
             request.isFeeRequired()
         );
 
-        return ClubFeeInfoResponse.from(club);
+        return ClubFeeInfoResponse.of(club, request.bankId(), bankName);
     }
 }

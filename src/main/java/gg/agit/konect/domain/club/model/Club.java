@@ -7,6 +7,8 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.time.LocalDate;
+
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
@@ -63,8 +65,8 @@ public class Club extends BaseEntity {
     @Column(name = "location", length = 255, nullable = false)
     private String location;
 
-    @Column(name = "fee_amount")
-    private Integer feeAmount;
+    @Column(name = "fee_amount", length = 100)
+    private String feeAmount;
 
     @Column(name = "fee_bank", length = 100)
     private String feeBank;
@@ -75,8 +77,8 @@ public class Club extends BaseEntity {
     @Column(name = "fee_account_holder", length = 100)
     private String feeAccountHolder;
 
-    @Column(name = "is_fee_required", columnDefinition = "TINYINT(1)")
-    private Boolean isFeeRequired;
+    @Column(name = "fee_deadline")
+    private LocalDate feeDeadline;
 
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
@@ -91,11 +93,11 @@ public class Club extends BaseEntity {
         String introduce,
         String imageUrl,
         String location,
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        Boolean isFeeRequired,
+        LocalDate feeDeadline,
         ClubRecruitment clubRecruitment
     ) {
         this.id = id;
@@ -110,7 +112,7 @@ public class Club extends BaseEntity {
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
-        this.isFeeRequired = isFeeRequired;
+        this.feeDeadline = feeDeadline;
         this.clubRecruitment = clubRecruitment;
     }
 
@@ -127,22 +129,22 @@ public class Club extends BaseEntity {
     }
 
     public void replaceFeeInfo(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        Boolean isFeeRequired
+        LocalDate feeDeadline
     ) {
-        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
+        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
             clearFeeInfo();
             return;
         }
 
-        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
+        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
             throw CustomException.of(INVALID_REQUEST_BODY);
         }
 
-        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, isFeeRequired);
+        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline);
     }
 
     public void updateInfo(String description, String imageUrl, String location, String introduce) {
@@ -158,41 +160,45 @@ public class Club extends BaseEntity {
     }
 
     private boolean isFeeInfoEmpty(
-        Integer feeAmount,
-        String feeBank,
-        String feeAccountNumber,
-        String feeAccountHolder
-    ) {
-        return feeAmount == null
-            && feeBank == null
-            && feeAccountNumber == null
-            && feeAccountHolder == null;
-    }
-
-    private boolean isFeeInfoComplete(
-        Integer feeAmount,
-        String feeBank,
-        String feeAccountNumber,
-        String feeAccountHolder
-    ) {
-        return feeAmount != null
-            && StringUtils.hasText(feeBank)
-            && StringUtils.hasText(feeAccountNumber)
-            && StringUtils.hasText(feeAccountHolder);
-    }
-
-    private void updateFeeInfo(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        Boolean isFeeRequired
+        LocalDate feeDeadline
+    ) {
+        return !StringUtils.hasText(feeAmount)
+            && !StringUtils.hasText(feeBank)
+            && !StringUtils.hasText(feeAccountNumber)
+            && !StringUtils.hasText(feeAccountHolder)
+            && feeDeadline == null;
+    }
+
+    private boolean isFeeInfoComplete(
+        String feeAmount,
+        String feeBank,
+        String feeAccountNumber,
+        String feeAccountHolder,
+        LocalDate feeDeadline
+    ) {
+        return StringUtils.hasText(feeAmount)
+            && StringUtils.hasText(feeBank)
+            && StringUtils.hasText(feeAccountNumber)
+            && StringUtils.hasText(feeAccountHolder)
+            && feeDeadline != null;
+    }
+
+    private void updateFeeInfo(
+        String feeAmount,
+        String feeBank,
+        String feeAccountNumber,
+        String feeAccountHolder,
+        LocalDate feeDeadline
     ) {
         this.feeAmount = feeAmount;
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
-        this.isFeeRequired = isFeeRequired;
+        this.feeDeadline = feeDeadline;
     }
 
     private void clearFeeInfo() {
@@ -200,6 +206,6 @@ public class Club extends BaseEntity {
         this.feeBank = null;
         this.feeAccountNumber = null;
         this.feeAccountHolder = null;
-        this.isFeeRequired = null;
+        this.feeDeadline = null;
     }
 }

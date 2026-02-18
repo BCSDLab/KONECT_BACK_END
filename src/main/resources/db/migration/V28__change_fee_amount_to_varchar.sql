@@ -1,0 +1,1 @@
+ALTER TABLE club MODIFY COLUMN fee_amount VARCHAR(100);

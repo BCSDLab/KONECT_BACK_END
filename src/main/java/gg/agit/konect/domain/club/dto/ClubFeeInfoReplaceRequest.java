@@ -5,13 +5,12 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record ClubFeeInfoReplaceRequest(
-    @PositiveOrZero(message = "회비 금액은 0 이상이어야 합니다.")
-    @Schema(description = "회비 금액", example = "10000", requiredMode = NOT_REQUIRED)
-    Integer amount,
+    @Size(max = 100, message = "회비 금액은 최대 100자 입니다.")
+    @Schema(description = "회비 금액", example = "3만원", requiredMode = NOT_REQUIRED)
+    String amount,
 
     @NotNull(message = "은행은 필수로 입력해야 합니다.")
     @Schema(description = "은행 고유 ID", example = "1", requiredMode = NOT_REQUIRED)
