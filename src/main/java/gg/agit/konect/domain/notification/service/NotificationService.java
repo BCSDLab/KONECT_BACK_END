@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
+import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
@@ -111,7 +111,7 @@ public class NotificationService {
             }
 
             boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
-                    NotificationTargetType.DIRECT_CHAT_ROOM,
+                    NotificationTargetType.CHAT_ROOM,
                     roomId,
                     receiverId
                 )
@@ -224,6 +224,23 @@ public class NotificationService {
                     if (chatPresenceService.isUserInChatRoom(roomId, recipientId)) {
                         log.debug(
                             "User in group chat room, skipping notification: roomId={}, recipientId={}",
+                            roomId,
+                            recipientId
+                        );
+                        continue;
+                    }
+
+                    boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                            NotificationTargetType.CHAT_ROOM,
+                            roomId,
+                            recipientId
+                        )
+                        .map(setting -> Boolean.TRUE.equals(setting.getIsMuted()))
+                        .orElse(false);
+
+                    if (isMuted) {
+                        log.debug(
+                            "Group chat muted, skipping notification: roomId={}, recipientId={}",
                             roomId,
                             recipientId
                         );

@@ -17,7 +17,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -51,7 +50,6 @@ public class NotificationMuteSetting extends BaseEntity {
     @Column(name = "is_muted", nullable = false)
     private Boolean isMuted;
 
-    @Builder
     private NotificationMuteSetting(
         Integer id,
         NotificationTargetType targetType,
@@ -72,12 +70,7 @@ public class NotificationMuteSetting extends BaseEntity {
         User user,
         Boolean isMuted
     ) {
-        return NotificationMuteSetting.builder()
-            .targetType(targetType)
-            .targetId(targetId)
-            .user(user)
-            .isMuted(isMuted)
-            .build();
+        return new NotificationMuteSetting(null, targetType, targetId, user, isMuted);
     }
 
     public void toggleMute() {

@@ -4,17 +4,20 @@ import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import gg.agit.konect.domain.chat.direct.model.ChatMessage;
-import gg.agit.konect.domain.chat.direct.model.ChatRoom;
-import gg.agit.konect.domain.chat.direct.repository.ChatMessageRepository;
-import gg.agit.konect.domain.chat.direct.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.model.ChatMessage;
+import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
@@ -58,6 +61,7 @@ public class UserService {
     private final StudyTimeQueryService studyTimeQueryService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final AppleTokenRevocationService appleTokenRevocationService;
+    private final ChatRoomMembershipService chatRoomMembershipService;
 
     @Transactional
     public Integer signup(String email, String providerId, Provider provider, SignupRequest request) {
@@ -115,11 +119,19 @@ public class UserService {
                 return;
             }
 
+            ChatRoom.validateIsNotSameParticipant(operator, newUser);
+
             ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(operator.getId(), newUser.getId())
-                .orElseGet(() -> chatRoomRepository.save(ChatRoom.of(operator, newUser)));
+                .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
+
+            LocalDateTime joinedAt = Objects.requireNonNull(
+                chatRoom.getCreatedAt(),
+                "chatRoom.createdAt must not be null"
+            );
+            chatRoomMembershipService.addDirectMembers(chatRoom, operator, newUser, joinedAt);
 
             ChatMessage chatMessage = chatMessageRepository.save(
-                ChatMessage.of(chatRoom, operator, newUser, DEFAULT_WELCOME_MESSAGE)
+                ChatMessage.of(chatRoom, operator, DEFAULT_WELCOME_MESSAGE)
             );
 
             chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
@@ -161,7 +173,8 @@ public class UserService {
                 .isFeePaid(false)
                 .build();
 
-            clubMemberRepository.save(clubMember);
+            ClubMember savedMember = clubMemberRepository.save(clubMember);
+            chatRoomMembershipService.addClubMember(savedMember);
         }
 
         clubPreMemberRepository.deleteAll(preMembers);
@@ -170,7 +183,10 @@ public class UserService {
     private void replaceCurrentPresident(Integer clubId, Integer newPresidentUserId) {
         clubMemberRepository.findPresidentByClubId(clubId)
             .filter(currentPresident -> !currentPresident.getId().getUserId().equals(newPresidentUserId))
-            .ifPresent(clubMemberRepository::delete);
+            .ifPresent(currentPresident -> {
+                clubMemberRepository.delete(currentPresident);
+                chatRoomMembershipService.removeClubMember(clubId, currentPresident.getUser().getId());
+            });
     }
 
     public UserInfoResponse getUserInfo(Integer userId) {
