@@ -1,9 +1,7 @@
 package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
-import java.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -27,8 +25,8 @@ public record ClubFeeInfoReplaceRequest(
     @Schema(description = "예금주", example = "BCSD", requiredMode = NOT_REQUIRED)
     String accountHolder,
 
-    @Schema(description = "납부 기한", example = "2025.12.31", requiredMode = NOT_REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd")
-    LocalDate deadLine
+    @NotNull(message = "회비 납부 필요 여부는 필수로 입력해야 합니다.")
+    @Schema(description = "회비 납부 필요 여부", example = "true", requiredMode = REQUIRED)
+    Boolean isFeeRequired
 ) {
 }
