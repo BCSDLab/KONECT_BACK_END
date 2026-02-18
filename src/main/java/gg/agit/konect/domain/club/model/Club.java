@@ -140,19 +140,18 @@ public class Club extends BaseEntity {
         String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        Boolean isFeeRequired
+        String feeAccountHolder
     ) {
-        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, isFeeRequired)) {
+        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
             clearFeeInfo();
             return;
         }
 
-        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, isFeeRequired)) {
+        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
             throw CustomException.of(INVALID_REQUEST_BODY);
         }
 
-        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, isFeeRequired);
+        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder);
     }
 
     public void updateInfo(String description, String imageUrl, String location, String introduce) {
@@ -187,42 +186,36 @@ public class Club extends BaseEntity {
         String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        Boolean isFeeRequired
+        String feeAccountHolder
     ) {
         return !StringUtils.hasText(feeAmount)
             && !StringUtils.hasText(feeBank)
             && !StringUtils.hasText(feeAccountNumber)
-            && !StringUtils.hasText(feeAccountHolder)
-            && isFeeRequired == null;
+            && !StringUtils.hasText(feeAccountHolder);
     }
 
     private boolean isFeeInfoComplete(
         String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        Boolean isFeeRequired
+        String feeAccountHolder
     ) {
         return StringUtils.hasText(feeAmount)
             && StringUtils.hasText(feeBank)
             && StringUtils.hasText(feeAccountNumber)
-            && StringUtils.hasText(feeAccountHolder)
-            && isFeeRequired != null;
+            && StringUtils.hasText(feeAccountHolder);
     }
 
     private void updateFeeInfo(
         String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        Boolean isFeeRequired
+        String feeAccountHolder
     ) {
         this.feeAmount = feeAmount;
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
-        this.isFeeRequired = isFeeRequired;
     }
 
     private void clearFeeInfo() {
@@ -230,6 +223,5 @@ public class Club extends BaseEntity {
         this.feeBank = null;
         this.feeAccountNumber = null;
         this.feeAccountHolder = null;
-        this.isFeeRequired = null;
     }
 }

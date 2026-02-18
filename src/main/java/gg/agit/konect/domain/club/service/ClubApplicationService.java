@@ -345,8 +345,7 @@ public class ClubApplicationService {
             request.amount(),
             bankName,
             request.accountNumber(),
-            request.accountHolder(),
-            request.isFeeRequired()
+            request.accountHolder()
         );
 
         return ClubFeeInfoResponse.of(club, request.bankId(), bankName);

@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
-import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -22,10 +21,6 @@ public record ClubFeeInfoReplaceRequest(
 
     @Size(max = 100, message = "예금주는 최대 100자 입니다.")
     @Schema(description = "예금주", example = "BCSD", requiredMode = NOT_REQUIRED)
-    String accountHolder,
-
-    @NotNull(message = "회비 납부 필요 여부는 필수로 입력해야 합니다.")
-    @Schema(description = "회비 납부 필요 여부", example = "true", requiredMode = REQUIRED)
-    Boolean isFeeRequired
+    String accountHolder
 ) {
 }
