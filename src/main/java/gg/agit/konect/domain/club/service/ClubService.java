@@ -119,7 +119,7 @@ public class ClubService {
             .build();
 
         ClubMember savedPresident = clubMemberRepository.save(president);
-        chatRoomMembershipService.addClubMember(savedClub, user, savedPresident.getCreatedAt());
+        chatRoomMembershipService.addClubMember(savedPresident);
 
         return getClubDetail(savedClub.getId(), userId);
     }

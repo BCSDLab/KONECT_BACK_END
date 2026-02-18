@@ -6,6 +6,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -123,7 +124,10 @@ public class UserService {
             ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(operator.getId(), newUser.getId())
                 .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
 
-            LocalDateTime joinedAt = chatRoom.getCreatedAt() != null ? chatRoom.getCreatedAt() : LocalDateTime.now();
+            LocalDateTime joinedAt = Objects.requireNonNull(
+                chatRoom.getCreatedAt(),
+                "chatRoom.createdAt must not be null"
+            );
             chatRoomMembershipService.addDirectMembers(chatRoom, operator, newUser, joinedAt);
 
             ChatMessage chatMessage = chatMessageRepository.save(

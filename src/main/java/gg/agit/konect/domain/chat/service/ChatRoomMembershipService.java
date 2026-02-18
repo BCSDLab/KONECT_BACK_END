@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.chat.service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,7 +10,6 @@ import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.user.model.User;
 import lombok.RequiredArgsConstructor;
@@ -24,24 +24,17 @@ public class ChatRoomMembershipService {
 
     @Transactional
     public void addClubMember(ClubMember clubMember) {
-        addClubMember(clubMember.getClub(), clubMember.getUser(), clubMember.getCreatedAt());
+        LocalDateTime baseline = Objects.requireNonNull(clubMember.getCreatedAt(), "clubMember.createdAt must not be null");
+        ChatRoom room = chatRoomRepository.findByClubId(clubMember.getClub().getId())
+            .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(clubMember.getClub())));
+        ensureMember(room, clubMember.getUser(), baseline);
     }
 
     @Transactional
     public void addDirectMembers(ChatRoom room, User firstUser, User secondUser, LocalDateTime joinedAt) {
-        LocalDateTime baseline = joinedAt != null ? joinedAt : LocalDateTime.now();
+        LocalDateTime baseline = Objects.requireNonNull(joinedAt, "joinedAt must not be null");
         ensureMember(room, firstUser, baseline);
         ensureMember(room, secondUser, baseline);
-    }
-
-    @Transactional
-    public void addClubMember(Club club, User user, LocalDateTime joinedAt) {
-        ChatRoom room = chatRoomRepository.findByClubId(club.getId())
-            .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(club)));
-
-        LocalDateTime baseline = joinedAt != null ? joinedAt : LocalDateTime.now();
-
-        ensureMember(room, user, baseline);
     }
 
     private void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {

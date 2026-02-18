@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,7 +81,7 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), targetUser.getId())
             .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
 
-        LocalDateTime joinedAt = chatRoom.getCreatedAt() != null ? chatRoom.getCreatedAt() : LocalDateTime.now();
+        LocalDateTime joinedAt = Objects.requireNonNull(chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null");
         ensureRoomMember(chatRoom, currentUser, joinedAt);
         ensureRoomMember(chatRoom, targetUser, joinedAt);
 
