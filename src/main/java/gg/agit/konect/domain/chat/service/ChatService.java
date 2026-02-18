@@ -233,7 +233,7 @@ public class ChatService {
     private List<ChatRoomSummaryResponse> getAdminDirectChatRooms() {
         List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
 
-        List<ChatRoom> adminUserRooms = chatRoomRepository.findAllAdminUserDirectRooms();
+        List<ChatRoom> adminUserRooms = chatRoomRepository.findAllAdminUserDirectRooms(UserRole.ADMIN);
         Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMap(adminUserRooms);
         Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminUserRooms));
 

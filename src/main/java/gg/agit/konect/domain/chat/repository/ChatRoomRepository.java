@@ -8,6 +8,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.user.enums.UserRole;
 
 public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
 
@@ -72,15 +73,15 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
               SELECT 1 FROM ChatRoomMember adminMember
               JOIN adminMember.user adminUser
               WHERE adminMember.id.chatRoomId = cr.id
-                AND adminUser.role = 'ADMIN'
+                AND adminUser.role = :adminRole
           )
           AND EXISTS (
               SELECT 1 FROM ChatRoomMember userMember
               JOIN userMember.user normalUser
               WHERE userMember.id.chatRoomId = cr.id
-                AND normalUser.role != 'ADMIN'
+                AND normalUser.role != :adminRole
           )
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
-    List<ChatRoom> findAllAdminUserDirectRooms();
+    List<ChatRoom> findAllAdminUserDirectRooms(@Param("adminRole") UserRole adminRole);
 }
