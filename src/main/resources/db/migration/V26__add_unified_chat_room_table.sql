@@ -53,26 +53,40 @@ CREATE INDEX idx_chat_room_member_room_last_read
     ON chat_room_member (chat_room_id, last_read_at);
 
 INSERT INTO chat_room_member (chat_room_id, user_id, last_read_at, created_at, updated_at)
-SELECT cr.id,
-       cr.sender_id,
-       COALESCE(cr.last_message_sent_at, cr.created_at),
-       cr.created_at,
-       NOW()
-FROM chat_room cr
-WHERE cr.sender_id IS NOT NULL
+SELECT src.chat_room_id,
+       src.user_id,
+       src.last_read_at,
+       src.created_at,
+       src.updated_at
+FROM (
+         SELECT cr.id AS chat_room_id,
+                cr.sender_id AS user_id,
+                COALESCE(cr.last_message_sent_at, cr.created_at) AS last_read_at,
+                cr.created_at AS created_at,
+                NOW() AS updated_at
+         FROM chat_room cr
+         WHERE cr.sender_id IS NOT NULL
+     ) src
 ON DUPLICATE KEY UPDATE
-    last_read_at = GREATEST(chat_room_member.last_read_at, VALUES(last_read_at));
+    last_read_at = GREATEST(chat_room_member.last_read_at, src.last_read_at);
 
 INSERT INTO chat_room_member (chat_room_id, user_id, last_read_at, created_at, updated_at)
-SELECT cr.id,
-       cr.receiver_id,
-       COALESCE(cr.last_message_sent_at, cr.created_at),
-       cr.created_at,
-       NOW()
-FROM chat_room cr
-WHERE cr.receiver_id IS NOT NULL
+SELECT src.chat_room_id,
+       src.user_id,
+       src.last_read_at,
+       src.created_at,
+       src.updated_at
+FROM (
+         SELECT cr.id AS chat_room_id,
+                cr.receiver_id AS user_id,
+                COALESCE(cr.last_message_sent_at, cr.created_at) AS last_read_at,
+                cr.created_at AS created_at,
+                NOW() AS updated_at
+         FROM chat_room cr
+         WHERE cr.receiver_id IS NOT NULL
+     ) src
 ON DUPLICATE KEY UPDATE
-    last_read_at = GREATEST(chat_room_member.last_read_at, VALUES(last_read_at));
+    last_read_at = GREATEST(chat_room_member.last_read_at, src.last_read_at);
 
 SET @chat_room_sender_fk_name = (
     SELECT kcu.CONSTRAINT_NAME
@@ -146,19 +160,26 @@ FROM group_chat_room gcr
 WHERE cr.id IS NULL;
 
 INSERT INTO chat_room_member (chat_room_id, user_id, last_read_at, created_at, updated_at)
-SELECT cr.id,
-       cm.user_id,
-       COALESCE(grs.last_read_at, cm.created_at),
-       cm.created_at,
-       NOW()
-FROM chat_room cr
-         JOIN club_member cm ON cm.club_id = cr.club_id
-         LEFT JOIN group_chat_room gcr ON gcr.club_id = cr.club_id
-         LEFT JOIN group_chat_read_status grs ON grs.room_id = gcr.id
-    AND grs.user_id = cm.user_id
-WHERE cr.club_id IS NOT NULL
+SELECT src.chat_room_id,
+       src.user_id,
+       src.last_read_at,
+       src.created_at,
+       src.updated_at
+FROM (
+         SELECT cr.id AS chat_room_id,
+                cm.user_id AS user_id,
+                COALESCE(grs.last_read_at, cm.created_at) AS last_read_at,
+                cm.created_at AS created_at,
+                NOW() AS updated_at
+         FROM chat_room cr
+                  JOIN club_member cm ON cm.club_id = cr.club_id
+                  LEFT JOIN group_chat_room gcr ON gcr.club_id = cr.club_id
+                  LEFT JOIN group_chat_read_status grs ON grs.room_id = gcr.id
+             AND grs.user_id = cm.user_id
+         WHERE cr.club_id IS NOT NULL
+     ) src
 ON DUPLICATE KEY UPDATE
-    last_read_at = GREATEST(chat_room_member.last_read_at, VALUES(last_read_at));
+    last_read_at = GREATEST(chat_room_member.last_read_at, src.last_read_at);
 
 INSERT INTO chat_message (
     chat_room_id,
