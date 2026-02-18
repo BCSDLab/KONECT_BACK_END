@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
-
 import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
