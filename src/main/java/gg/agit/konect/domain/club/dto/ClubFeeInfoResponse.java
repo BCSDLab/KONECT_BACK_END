@@ -19,10 +19,7 @@ public record ClubFeeInfoResponse(
     String accountNumber,
 
     @Schema(description = "예금주", example = "BCSD", requiredMode = REQUIRED)
-    String accountHolder,
-
-    @Schema(description = "회비 납부 필요 여부", example = "true", requiredMode = REQUIRED)
-    Boolean isFeeRequired
+    String accountHolder
 ) {
     public static ClubFeeInfoResponse of(Club club, Integer bankId, String bankName) {
         return new ClubFeeInfoResponse(
@@ -30,8 +27,7 @@ public record ClubFeeInfoResponse(
             bankId,
             bankName,
             club.getFeeAccountNumber(),
-            club.getFeeAccountHolder(),
-            club.getIsFeeRequired()
+            club.getFeeAccountHolder()
         );
     }
 }
