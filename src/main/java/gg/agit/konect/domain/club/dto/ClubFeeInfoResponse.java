@@ -16,6 +16,9 @@ public record ClubFeeInfoResponse(
     @Schema(description = "은행 고유 ID", example = "1", requiredMode = REQUIRED)
     Integer bankId,
 
+    @Schema(description = "은행명", example = "국민은행", requiredMode = REQUIRED)
+    String bankName,
+
     @Schema(description = "계좌번호", example = "123-456-7890", requiredMode = REQUIRED)
     String accountNumber,
 
@@ -26,10 +29,11 @@ public record ClubFeeInfoResponse(
     @JsonFormat(pattern = "yyyy.MM.dd")
     LocalDate deadLine
 ) {
-    public static ClubFeeInfoResponse of(Club club, Integer bankId) {
+    public static ClubFeeInfoResponse of(Club club, Integer bankId, String bankName) {
         return new ClubFeeInfoResponse(
             club.getFeeAmount(),
             bankId,
+            bankName,
             club.getFeeAccountNumber(),
             club.getFeeAccountHolder(),
             club.getFeeDeadline()
