@@ -71,7 +71,11 @@ public class ChatRoomMember extends BaseEntity {
     }
 
     public void updateLastReadAt(LocalDateTime lastReadAt) {
-        if (this.lastReadAt.isBefore(lastReadAt)) {
+        if (lastReadAt == null) {
+            return;
+        }
+
+        if (this.lastReadAt == null || this.lastReadAt.isBefore(lastReadAt)) {
             this.lastReadAt = lastReadAt;
         }
     }
