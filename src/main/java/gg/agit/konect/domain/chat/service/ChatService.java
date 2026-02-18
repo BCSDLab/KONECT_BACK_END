@@ -613,9 +613,6 @@ public class ChatService {
 
         for (ChatRoomMember member : members) {
             LocalDateTime baseline = member.getLastReadAt();
-            if (baseline == null || baseline.isBefore(member.getCreatedAt())) {
-                baseline = member.getCreatedAt();
-            }
             if (baseline.isBefore(createdAt)) {
                 unreadCount += 1;
             }
