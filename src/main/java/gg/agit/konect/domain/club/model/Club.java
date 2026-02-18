@@ -65,8 +65,8 @@ public class Club extends BaseEntity {
     @Column(name = "location", length = 255, nullable = false)
     private String location;
 
-    @Column(name = "fee_amount")
-    private Integer feeAmount;
+    @Column(name = "fee_amount", length = 100)
+    private String feeAmount;
 
     @Column(name = "fee_bank", length = 100)
     private String feeBank;
@@ -93,7 +93,7 @@ public class Club extends BaseEntity {
         String introduce,
         String imageUrl,
         String location,
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
@@ -129,7 +129,7 @@ public class Club extends BaseEntity {
     }
 
     public void replaceFeeInfo(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
@@ -160,27 +160,27 @@ public class Club extends BaseEntity {
     }
 
     private boolean isFeeInfoEmpty(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
         LocalDate feeDeadline
     ) {
-        return feeAmount == null
-            && feeBank == null
-            && feeAccountNumber == null
-            && feeAccountHolder == null
+        return !StringUtils.hasText(feeAmount)
+            && !StringUtils.hasText(feeBank)
+            && !StringUtils.hasText(feeAccountNumber)
+            && !StringUtils.hasText(feeAccountHolder)
             && feeDeadline == null;
     }
 
     private boolean isFeeInfoComplete(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
         LocalDate feeDeadline
     ) {
-        return feeAmount != null
+        return StringUtils.hasText(feeAmount)
             && StringUtils.hasText(feeBank)
             && StringUtils.hasText(feeAccountNumber)
             && StringUtils.hasText(feeAccountHolder)
@@ -188,7 +188,7 @@ public class Club extends BaseEntity {
     }
 
     private void updateFeeInfo(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,

@@ -277,9 +277,7 @@ public class ChatService {
     ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User user = userRepository.getById(userId);
-        validateDirectAccess(chatRoom, userId);
-
-        ChatRoomMember member = getRoomMember(roomId, userId);
+        ChatRoomMember member = getOrCreateDirectRoomMember(chatRoom, userId);
         LocalDateTime readAt = LocalDateTime.now();
         chatPresenceService.recordPresence(roomId, userId);
         member.updateLastReadAt(readAt);
@@ -578,11 +576,6 @@ public class ChatService {
         }
     }
 
-    private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
-        return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
-            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
-    }
-
     private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
@@ -671,22 +664,20 @@ public class ChatService {
         return unreadCountMap;
     }
 
+    private ChatRoomMember getOrCreateDirectRoomMember(ChatRoom chatRoom, Integer userId) {
+        return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), userId)
+            .orElseGet(() -> {
+                User user = userRepository.getById(userId);
+                if (user.getRole() == UserRole.ADMIN && isAdminUserRoom(chatRoom)) {
+                    LocalDateTime joinedAt = LocalDateTime.now();
+                    return chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt));
+                }
+                throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+            });
+    }
+
     private void validateDirectAccess(ChatRoom chatRoom, Integer userId) {
-        if (chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), userId)) {
-            return;
-        }
-
-        User user = userRepository.getById(userId);
-        if (user.getRole() == UserRole.ADMIN && isAdminUserRoom(chatRoom)) {
-            LocalDateTime joinedAt = Objects.requireNonNull(
-                chatRoom.getCreatedAt(),
-                "chatRoom.createdAt must not be null"
-            );
-            chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt));
-            return;
-        }
-
-        throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        getOrCreateDirectRoomMember(chatRoom, userId);
     }
 
     private boolean isAdminUserRoom(ChatRoom chatRoom) {
