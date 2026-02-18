@@ -185,7 +185,7 @@ public class ClubApplicationService {
             ));
 
         Integer bankId = resolveBankId(club.getFeeBank());
-        return ClubFeeInfoResponse.of(club, bankId);
+        return ClubFeeInfoResponse.of(club, bankId, club.getFeeBank());
     }
 
     private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
@@ -326,7 +326,7 @@ public class ClubApplicationService {
     public ClubFeeInfoResponse getFeeInfo(Integer clubId) {
         Club club = clubRepository.getById(clubId);
         Integer bankId = resolveBankId(club.getFeeBank());
-        return ClubFeeInfoResponse.of(club, bankId);
+        return ClubFeeInfoResponse.of(club, bankId, club.getFeeBank());
     }
 
     private Integer resolveBankId(String bankName) {
@@ -353,6 +353,6 @@ public class ClubApplicationService {
             request.deadLine()
         );
 
-        return ClubFeeInfoResponse.of(club, request.bankId());
+        return ClubFeeInfoResponse.of(club, request.bankId(), bankName);
     }
 }
