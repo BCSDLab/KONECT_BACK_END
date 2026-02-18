@@ -398,10 +398,11 @@ public class ChatService {
         Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomId(roomId, pageable);
         List<ChatMessage> messages = messagePage.getContent();
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
         List<ChatMessageDetailResponse> responseMessages = messages.stream()
             .map(message -> {
-                int unreadCount = getUnreadCount(message, members);
+                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
                 return new ChatMessageDetailResponse(
                     message.getId(),
                     message.getSender().getId(),
@@ -440,6 +441,7 @@ public class ChatService {
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
         List<Integer> recipientUserIds = members.stream().map(ChatRoomMember::getUserId).toList();
+        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
         notificationService.sendGroupChatNotification(
             roomId,
@@ -457,7 +459,7 @@ public class ChatService {
             message.getContent(),
             message.getCreatedAt(),
             null,
-            getUnreadCount(message, members),
+            countUnreadSince(message.getCreatedAt(), sortedReadBaselines),
             true
         );
     }
@@ -607,18 +609,30 @@ public class ChatService {
         }
     }
 
-    private int getUnreadCount(ChatMessage message, List<ChatRoomMember> members) {
-        LocalDateTime createdAt = message.getCreatedAt();
-        int unreadCount = 0;
+    private List<LocalDateTime> toSortedReadBaselines(List<ChatRoomMember> members) {
+        List<LocalDateTime> baselines = members.stream()
+            .map(ChatRoomMember::getLastReadAt)
+            .sorted()
+            .toList();
+        return baselines;
+    }
 
-        for (ChatRoomMember member : members) {
-            LocalDateTime baseline = member.getLastReadAt();
-            if (baseline.isBefore(createdAt)) {
-                unreadCount += 1;
+    private int countUnreadSince(LocalDateTime messageCreatedAt, List<LocalDateTime> sortedReadBaselines) {
+        int left = 0;
+        int right = sortedReadBaselines.size();
+
+        while (left < right) {
+            int mid = (left + right) >>> 1;
+            LocalDateTime baseline = sortedReadBaselines.get(mid);
+
+            if (baseline.isBefore(messageCreatedAt)) {
+                left = mid + 1;
+            } else {
+                right = mid;
             }
         }
 
-        return unreadCount;
+        return left;
     }
 
     private Map<Integer, ChatMessage> getLastMessageMap(List<Integer> roomIds) {
