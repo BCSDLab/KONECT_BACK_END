@@ -188,7 +188,11 @@ public class ClubApplicationService {
     }
 
     private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
-        if (Boolean.TRUE.equals(club.getIsFeeRequired())
+        ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(club.getId())
+            .orElse(null);
+
+        if (recruitment != null
+            && Boolean.TRUE.equals(recruitment.getIsFeeRequired())
             && !StringUtils.hasText(feePaymentImageUrl)) {
             throw CustomException.of(FEE_PAYMENT_IMAGE_REQUIRED);
         }
@@ -337,7 +341,7 @@ public class ClubApplicationService {
             bankName,
             request.accountNumber(),
             request.accountHolder(),
-            request.isFeeRequired()
+            request.deadLine()
         );
 
         return ClubFeeInfoResponse.from(club);

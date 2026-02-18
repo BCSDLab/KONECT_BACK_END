@@ -7,6 +7,8 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.time.LocalDate;
+
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
@@ -75,8 +77,8 @@ public class Club extends BaseEntity {
     @Column(name = "fee_account_holder", length = 100)
     private String feeAccountHolder;
 
-    @Column(name = "is_fee_required", columnDefinition = "TINYINT(1)")
-    private Boolean isFeeRequired;
+    @Column(name = "fee_deadline")
+    private LocalDate feeDeadline;
 
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
@@ -95,7 +97,7 @@ public class Club extends BaseEntity {
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        Boolean isFeeRequired,
+        LocalDate feeDeadline,
         ClubRecruitment clubRecruitment
     ) {
         this.id = id;
@@ -110,7 +112,7 @@ public class Club extends BaseEntity {
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
-        this.isFeeRequired = isFeeRequired;
+        this.feeDeadline = feeDeadline;
         this.clubRecruitment = clubRecruitment;
     }
 
@@ -131,18 +133,18 @@ public class Club extends BaseEntity {
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        Boolean isFeeRequired
+        LocalDate feeDeadline
     ) {
-        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
+        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
             clearFeeInfo();
             return;
         }
 
-        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
+        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
             throw CustomException.of(INVALID_REQUEST_BODY);
         }
 
-        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, isFeeRequired);
+        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline);
     }
 
     public void updateInfo(String description, String imageUrl, String location, String introduce) {
@@ -161,24 +163,28 @@ public class Club extends BaseEntity {
         Integer feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder
+        String feeAccountHolder,
+        LocalDate feeDeadline
     ) {
         return feeAmount == null
             && feeBank == null
             && feeAccountNumber == null
-            && feeAccountHolder == null;
+            && feeAccountHolder == null
+            && feeDeadline == null;
     }
 
     private boolean isFeeInfoComplete(
         Integer feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder
+        String feeAccountHolder,
+        LocalDate feeDeadline
     ) {
         return feeAmount != null
             && StringUtils.hasText(feeBank)
             && StringUtils.hasText(feeAccountNumber)
-            && StringUtils.hasText(feeAccountHolder);
+            && StringUtils.hasText(feeAccountHolder)
+            && feeDeadline != null;
     }
 
     private void updateFeeInfo(
@@ -186,13 +192,13 @@ public class Club extends BaseEntity {
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        Boolean isFeeRequired
+        LocalDate feeDeadline
     ) {
         this.feeAmount = feeAmount;
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
-        this.isFeeRequired = isFeeRequired;
+        this.feeDeadline = feeDeadline;
     }
 
     private void clearFeeInfo() {
@@ -200,6 +206,6 @@ public class Club extends BaseEntity {
         this.feeBank = null;
         this.feeAccountNumber = null;
         this.feeAccountHolder = null;
-        this.isFeeRequired = null;
+        this.feeDeadline = null;
     }
 }
