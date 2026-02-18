@@ -14,8 +14,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.chat.group.model.GroupChatRoom;
-import gg.agit.konect.domain.chat.group.repository.GroupChatRoomRepository;
+import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubBasicInfoUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
@@ -51,7 +52,8 @@ public class ClubService {
     private final ClubApplyRepository clubApplyRepository;
     private final UserRepository userRepository;
     private final ClubPermissionValidator clubPermissionValidator;
-    private final GroupChatRoomRepository groupChatRoomRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMembershipService chatRoomMembershipService;
 
     public ClubsResponse getClubs(ClubCondition condition, Integer userId) {
         User user = userRepository.getById(userId);
@@ -107,7 +109,7 @@ public class ClubService {
 
         Club savedClub = clubRepository.save(club);
 
-        groupChatRoomRepository.save(GroupChatRoom.of(savedClub));
+        chatRoomRepository.save(ChatRoom.groupOf(savedClub));
 
         ClubMember president = ClubMember.builder()
             .club(savedClub)
@@ -116,7 +118,8 @@ public class ClubService {
             .isFeePaid(false)
             .build();
 
-        clubMemberRepository.save(president);
+        ClubMember savedPresident = clubMemberRepository.save(president);
+        chatRoomMembershipService.addClubMember(savedPresident);
 
         return getClubDetail(savedClub.getId(), userId);
     }

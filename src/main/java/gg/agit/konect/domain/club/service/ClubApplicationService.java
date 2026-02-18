@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.bank.repository.BankRepository;
+import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
@@ -63,6 +64,7 @@ public class ClubApplicationService {
     private final BankRepository bankRepository;
     private final ClubPermissionValidator clubPermissionValidator;
     private final NotificationService notificationService;
+    private final ChatRoomMembershipService chatRoomMembershipService;
 
     public ClubAppliedClubsResponse getAppliedClubs(Integer userId) {
         List<ClubApply> clubApplies = clubApplyRepository.findAllPendingByUserIdWithClub(userId);
@@ -121,7 +123,8 @@ public class ClubApplicationService {
             .isFeePaid(true)
             .build();
 
-        clubMemberRepository.save(newMember);
+        ClubMember savedMember = clubMemberRepository.save(newMember);
+        chatRoomMembershipService.addClubMember(savedMember);
         clubApplyRepository.delete(clubApply);
 
         notificationService.sendClubApplicationApprovedNotification(
@@ -185,11 +188,7 @@ public class ClubApplicationService {
     }
 
     private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
-        ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(club.getId())
-            .orElse(null);
-
-        if (recruitment != null
-            && Boolean.TRUE.equals(recruitment.getIsFeeRequired())
+        if (Boolean.TRUE.equals(club.getIsFeeRequired())
             && !StringUtils.hasText(feePaymentImageUrl)) {
             throw CustomException.of(FEE_PAYMENT_IMAGE_REQUIRED);
         }
@@ -338,7 +337,7 @@ public class ClubApplicationService {
             bankName,
             request.accountNumber(),
             request.accountHolder(),
-            request.deadLine()
+            request.isFeeRequired()
         );
 
         return ClubFeeInfoResponse.from(club);

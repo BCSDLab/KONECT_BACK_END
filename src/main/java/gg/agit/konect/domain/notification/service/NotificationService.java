@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import gg.agit.konect.domain.chat.unified.service.ChatPresenceService;
+import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
@@ -111,7 +111,7 @@ public class NotificationService {
             }
 
             boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
-                    NotificationTargetType.DIRECT_CHAT_ROOM,
+                    NotificationTargetType.CHAT_ROOM,
                     roomId,
                     receiverId
                 )
@@ -131,7 +131,7 @@ public class NotificationService {
 
             String truncatedBody = buildPreview(messageContent);
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/rooms/" + roomId + "?type=DIRECT");
+            data.put("path", "chats/" + roomId);
 
             List<ExpoPushMessage> messages = tokens.stream()
                 .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
@@ -197,6 +197,7 @@ public class NotificationService {
     public void sendGroupChatNotification(
         Integer roomId,
         Integer senderId,
+        String clubName,
         String senderName,
         String messageContent,
         List<Integer> recipientUserIds
@@ -213,8 +214,9 @@ public class NotificationService {
             }
 
             String truncatedBody = buildPreview(messageContent);
+            String previewBody = senderName + ": " + truncatedBody;
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/rooms/" + roomId + "?type=GROUP");
+            data.put("path", "chats/" + roomId);
 
             for (Integer recipientId : filteredRecipients) {
                 try {
@@ -228,6 +230,23 @@ public class NotificationService {
                         continue;
                     }
 
+                    boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                            NotificationTargetType.CHAT_ROOM,
+                            roomId,
+                            recipientId
+                        )
+                        .map(setting -> Boolean.TRUE.equals(setting.getIsMuted()))
+                        .orElse(false);
+
+                    if (isMuted) {
+                        log.debug(
+                            "Group chat muted, skipping notification: roomId={}, recipientId={}",
+                            roomId,
+                            recipientId
+                        );
+                        continue;
+                    }
+
                     List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(recipientId);
                     if (tokens.isEmpty()) {
                         log.debug("No device tokens found for user: recipientId={}", recipientId);
@@ -235,7 +254,7 @@ public class NotificationService {
                     }
 
                     List<ExpoPushMessage> messages = tokens.stream()
-                        .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
+                        .map(token -> new ExpoPushMessage(token, clubName, previewBody, data))
                         .toList();
 
                     HttpHeaders headers = new HttpHeaders();

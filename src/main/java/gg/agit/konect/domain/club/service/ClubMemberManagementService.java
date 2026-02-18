@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
 import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
@@ -40,6 +41,7 @@ public class ClubMemberManagementService {
     private final ClubPreMemberRepository clubPreMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
     private final UserRepository userRepository;
+    private final ChatRoomMembershipService chatRoomMembershipService;
 
     @Transactional
     public ClubMember changeMemberPosition(
@@ -118,6 +120,7 @@ public class ClubMemberManagementService {
             .build();
 
         ClubMember savedMember = clubMemberRepository.save(clubMember);
+        chatRoomMembershipService.addClubMember(savedMember);
         return ClubPreMemberAddResponse.from(savedMember);
     }
 
@@ -257,6 +260,7 @@ public class ClubMemberManagementService {
         }
 
         clubMemberRepository.delete(target);
+        chatRoomMembershipService.removeClubMember(clubId, targetUserId);
     }
 
     private void validateNotSelf(Integer userId1, Integer userId2, ApiResponseCode errorCode) {
