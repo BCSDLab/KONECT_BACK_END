@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -192,59 +191,72 @@ public class ChatService {
 
     private List<ChatRoomSummaryResponse> getDirectChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
-        List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
 
+        if (user.getRole() == UserRole.ADMIN) {
+            return getAdminDirectChatRooms();
+        }
+
+        List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
         List<ChatRoom> personalChatRooms = chatRoomRepository.findByUserId(userId);
         Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMap(personalChatRooms);
         Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(extractChatRoomIds(personalChatRooms), userId);
 
-        Set<Integer> addedChatRoomIds = new HashSet<>();
-        if (user.getRole() == UserRole.ADMIN) {
-            Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(personalChatRooms));
-
-            for (ChatRoom chatRoom : personalChatRooms) {
-                List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
-                User nonAdminUser = findNonAdminMember(members);
-                if (nonAdminUser == null) {
-                    continue;
-                }
-                if (!chatMessageRepository.existsUserReplyByRoomId(chatRoom.getId(), UserRole.ADMIN)) {
-                    continue;
-                }
-
-                roomSummaries.add(new ChatRoomSummaryResponse(
-                    chatRoom.getId(),
-                    ChatType.DIRECT,
-                    nonAdminUser.getName(),
-                    nonAdminUser.getImageUrl(),
-                    chatRoom.getLastMessageContent(),
-                    chatRoom.getLastMessageSentAt(),
-                    adminUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
-                    false
-                ));
-                addedChatRoomIds.add(chatRoom.getId());
+        for (ChatRoom chatRoom : personalChatRooms) {
+            List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
+            User chatPartner = findDirectPartner(members, user.getId());
+            if (chatPartner == null) {
+                continue;
             }
+
+            roomSummaries.add(new ChatRoomSummaryResponse(
+                chatRoom.getId(),
+                ChatType.DIRECT,
+                chatPartner.getName(),
+                chatPartner.getImageUrl(),
+                chatRoom.getLastMessageContent(),
+                chatRoom.getLastMessageSentAt(),
+                personalUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
+                false
+            ));
         }
 
-        for (ChatRoom chatRoom : personalChatRooms) {
-            if (!addedChatRoomIds.contains(chatRoom.getId())) {
-                List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
-                User chatPartner = findDirectPartner(members, user.getId());
-                if (chatPartner == null) {
-                    continue;
-                }
+        roomSummaries.sort(Comparator
+            .comparing(
+                ChatRoomSummaryResponse::lastSentAt,
+                Comparator.nullsLast(Comparator.reverseOrder())
+            )
+            .thenComparing(ChatRoomSummaryResponse::roomId));
 
-                roomSummaries.add(new ChatRoomSummaryResponse(
-                    chatRoom.getId(),
-                    ChatType.DIRECT,
-                    chatPartner.getName(),
-                    chatPartner.getImageUrl(),
-                    chatRoom.getLastMessageContent(),
-                    chatRoom.getLastMessageSentAt(),
-                    personalUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
-                    false
-                ));
+        return roomSummaries;
+    }
+
+    private List<ChatRoomSummaryResponse> getAdminDirectChatRooms() {
+        List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
+
+        List<ChatRoom> adminUserRooms = chatRoomRepository.findAllAdminUserDirectRooms(UserRole.ADMIN);
+        Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMap(adminUserRooms);
+        Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminUserRooms));
+
+        for (ChatRoom chatRoom : adminUserRooms) {
+            List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
+            User nonAdminUser = findNonAdminMember(members);
+            if (nonAdminUser == null) {
+                continue;
             }
+            if (!chatMessageRepository.existsUserReplyByRoomId(chatRoom.getId(), UserRole.ADMIN)) {
+                continue;
+            }
+
+            roomSummaries.add(new ChatRoomSummaryResponse(
+                chatRoom.getId(),
+                ChatType.DIRECT,
+                nonAdminUser.getName(),
+                nonAdminUser.getImageUrl(),
+                chatRoom.getLastMessageContent(),
+                chatRoom.getLastMessageSentAt(),
+                adminUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
+                false
+            ));
         }
 
         roomSummaries.sort(Comparator
@@ -660,9 +672,30 @@ public class ChatService {
     }
 
     private void validateDirectAccess(ChatRoom chatRoom, Integer userId) {
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), userId)) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        if (chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), userId)) {
+            return;
         }
+
+        User user = userRepository.getById(userId);
+        if (user.getRole() == UserRole.ADMIN && isAdminUserRoom(chatRoom)) {
+            LocalDateTime joinedAt = Objects.requireNonNull(
+                chatRoom.getCreatedAt(),
+                "chatRoom.createdAt must not be null"
+            );
+            chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt));
+            return;
+        }
+
+        throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+    }
+
+    private boolean isAdminUserRoom(ChatRoom chatRoom) {
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(chatRoom.getId());
+        boolean hasAdmin = members.stream()
+            .anyMatch(m -> m.getUser().getRole() == UserRole.ADMIN);
+        boolean hasNonAdmin = members.stream()
+            .anyMatch(m -> m.getUser().getRole() != UserRole.ADMIN);
+        return hasAdmin && hasNonAdmin;
     }
 
     private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
