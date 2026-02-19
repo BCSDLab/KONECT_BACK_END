@@ -68,6 +68,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Backup prod MySQL before deploy
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.PROD_SERVER_IP }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          port: ${{ secrets.PROD_SERVER_PORT }}
+          script: |
+            set -euo pipefail
+
+            WORK_DIR="${{ secrets.PROD_WORK_DIR }}"
+            MYSQL_CONTAINER="mysql-prod"
+
+            set -a
+            source "$WORK_DIR/.env"
+            set +a
+
+            BACKUP_DIR="$WORK_DIR/db-backups/"
+
+            mkdir -p "$BACKUP_DIR"
+
+            DUMP_FILE="$BACKUP_DIR/$(date '+%Y%m%d_%H%M%S').sql"
+            docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" "$MYSQL_CONTAINER" \
+              mysqldump -u"$MYSQL_USERNAME" "$MYSQL_DATABASE" > "$DUMP_FILE"
+
+            find "$BACKUP_DIR" -type f -name '*.sql' -mtime +5 -delete
+
       - name: Deploy to prod server
         uses: appleboy/ssh-action@v0.1.8
         with:
