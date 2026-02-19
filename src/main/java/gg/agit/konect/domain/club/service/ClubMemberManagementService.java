@@ -244,15 +244,18 @@ public class ClubMemberManagementService {
 
         clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
+        User requesterUser = userRepository.getById(requesterId);
         ClubMember target = clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
 
         if (target.isPresident()) {
             throw CustomException.of(CANNOT_DELETE_CLUB_PRESIDENT);
         }
 
-        if (!requester.canManage(target)) {
-            throw CustomException.of(CANNOT_MANAGE_HIGHER_POSITION);
+        if (!requesterUser.isAdmin()) {
+            ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
+            if (!requester.canManage(target)) {
+                throw CustomException.of(CANNOT_MANAGE_HIGHER_POSITION);
+            }
         }
 
         if (target.getClubPosition() != MEMBER) {
