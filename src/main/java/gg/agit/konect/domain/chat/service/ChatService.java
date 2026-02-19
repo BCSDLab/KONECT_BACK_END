@@ -157,15 +157,14 @@ public class ChatService {
     public ChatMuteResponse toggleMute(Integer userId, Integer roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CHAT_ROOM));
+        User user = userRepository.getById(userId);
 
         if (room.isGroupRoom()) {
             ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
             ensureRoomMember(room, member.getUser(), member.getCreatedAt());
         } else {
-            validateDirectAccess(room, userId);
+            getOrCreateDirectRoomMember(room, user);
         }
-
-        User user = userRepository.getById(userId);
         Boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
                 NotificationTargetType.CHAT_ROOM,
                 roomId,
@@ -277,7 +276,8 @@ public class ChatService {
     ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User user = userRepository.getById(userId);
-        ChatRoomMember member = getOrCreateDirectRoomMember(chatRoom, userId);
+        ChatRoomMember member = getOrCreateDirectRoomMember(chatRoom, user);
+
         LocalDateTime readAt = LocalDateTime.now();
         chatPresenceService.recordPresence(roomId, userId);
         member.updateLastReadAt(readAt);
@@ -321,7 +321,7 @@ public class ChatService {
     ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User sender = userRepository.getById(userId);
-        validateDirectAccess(chatRoom, userId);
+        getOrCreateDirectRoomMember(chatRoom, sender);
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
         User receiver = resolveMessageReceiver(sender, members);
@@ -576,6 +576,11 @@ public class ChatService {
         }
     }
 
+    private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
+        return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
+            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
+    }
+
     private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
@@ -664,20 +669,15 @@ public class ChatService {
         return unreadCountMap;
     }
 
-    private ChatRoomMember getOrCreateDirectRoomMember(ChatRoom chatRoom, Integer userId) {
-        return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), userId)
+    private ChatRoomMember getOrCreateDirectRoomMember(ChatRoom chatRoom, User user) {
+        return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
             .orElseGet(() -> {
-                User user = userRepository.getById(userId);
                 if (user.getRole() == UserRole.ADMIN && isAdminUserRoom(chatRoom)) {
                     LocalDateTime joinedAt = LocalDateTime.now();
                     return chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt));
                 }
                 throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
             });
-    }
-
-    private void validateDirectAccess(ChatRoom chatRoom, Integer userId) {
-        getOrCreateDirectRoomMember(chatRoom, userId);
     }
 
     private boolean isAdminUserRoom(ChatRoom chatRoom) {
