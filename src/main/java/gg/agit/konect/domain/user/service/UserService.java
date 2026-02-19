@@ -94,7 +94,7 @@ public class UserService {
             request.name(),
             request.studentNumber(),
             request.isMarketingAgreement(),
-            "https://stage-static.koreatech.in/konect/user/2026-02-17-3becf512-a747-4f2c-beda-e48abd4a1f8f.png"
+            "https://stage-static.koreatech.in/konect/User_02.png"
         );
 
         User savedUser = userRepository.save(newUser);
