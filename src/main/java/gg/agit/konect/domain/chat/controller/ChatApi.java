@@ -43,6 +43,22 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "어드민과의 채팅방을 생성하거나 기존 채팅방을 반환한다.", description = """
+        ## 설명
+        - 문의하기 버튼에서 즉시 어드민과의 1:1 채팅으로 이동할 때 사용합니다.
+
+        ## 로직
+        - 시스템의 기준 어드민 계정을 찾아 해당 계정과의 채팅방을 생성하거나 기존 채팅방을 반환합니다.
+
+        ## 에러
+        - NOT_FOUND_USER (404): 어드민 계정을 찾을 수 없습니다.
+        - CANNOT_CREATE_CHAT_ROOM_WITH_SELF (400): 자기 자신과는 채팅방을 만들 수 없습니다.
+        """)
+    @PostMapping("/rooms/admin")
+    ResponseEntity<Integer> createOrGetAdminChatRoom(
+        @UserId Integer userId
+    );
+
     @Operation(summary = "채팅방 리스트를 조회한다.", description = """
         ## 설명
         - 현재 사용자가 참여 중인 모든 채팅방 목록을 조회합니다.

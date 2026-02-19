@@ -36,6 +36,14 @@ public class ChatController implements ChatApi {
     }
 
     @Override
+    public ResponseEntity<Integer> createOrGetAdminChatRoom(
+        @UserId Integer userId
+    ) {
+        Integer chatRoomId = chatService.createOrGetAdminChatRoom(userId);
+        return ResponseEntity.ok(chatRoomId);
+    }
+
+    @Override
     public ResponseEntity<ChatRoomsSummaryResponse> getChatRooms(
         @UserId Integer userId
     ) {
