@@ -245,9 +245,20 @@ public class ChatService {
         Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMap(adminUserRooms);
         Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminUserRooms));
 
+        List<Integer> allUserIds = roomMembersMap.values().stream()
+            .flatMap(List::stream)
+            .map(ChatRoomMember::getUserId)
+            .distinct()
+            .toList();
+
+        Map<Integer, User> userMap = allUserIds.isEmpty()
+            ? Map.of()
+            : userRepository.findAllByIdIn(allUserIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
         for (ChatRoom chatRoom : adminUserRooms) {
             List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
-            User nonAdminUser = findNonAdminMember(members);
+            User nonAdminUser = findNonAdminMemberByUserMap(members, userMap);
             if (nonAdminUser == null) {
                 continue;
             }
@@ -726,6 +737,15 @@ public class ChatService {
     private User findNonAdminMember(List<ChatRoomMember> members) {
         return members.stream()
             .map(ChatRoomMember::getUser)
+            .filter(memberUser -> memberUser.getRole() != UserRole.ADMIN)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private User findNonAdminMemberByUserMap(List<ChatRoomMember> members, Map<Integer, User> userMap) {
+        return members.stream()
+            .map(member -> userMap.get(member.getUserId()))
+            .filter(Objects::nonNull)
             .filter(memberUser -> memberUser.getRole() != UserRole.ADMIN)
             .findFirst()
             .orElse(null);
