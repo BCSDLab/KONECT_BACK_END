@@ -251,8 +251,10 @@ public class ChatService {
             .distinct()
             .toList();
 
-        Map<Integer, User> userMap = userRepository.findAllByIdIn(allUserIds).stream()
-            .collect(Collectors.toMap(User::getId, user -> user));
+        Map<Integer, User> userMap = allUserIds.isEmpty()
+            ? Map.of()
+            : userRepository.findAllByIdIn(allUserIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
 
         for (ChatRoom chatRoom : adminUserRooms) {
             List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
