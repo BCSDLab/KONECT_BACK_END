@@ -7,12 +7,12 @@ public enum SlackMessageTemplate {
 
     USER_REGISTER(
         """
-        `%s님이 가입하셨습니다.`
+        `%s님이 가입하셨습니다. Provider : %s`
         """
     ),
     USER_WITHDRAWAL(
         """
-        `%s님이 탈퇴하셨습니다.`
+        `%s님이 탈퇴하셨습니다. Provider : %s`
         """
     ),
     INQUIRY(
