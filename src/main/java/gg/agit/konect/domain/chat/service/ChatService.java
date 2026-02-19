@@ -3,6 +3,7 @@ package gg.agit.konect.domain.chat.service;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -85,6 +86,14 @@ public class ChatService {
         ensureRoomMember(chatRoom, targetUser, joinedAt);
 
         return ChatRoomResponse.from(chatRoom);
+    }
+
+    @Transactional
+    public ChatRoomResponse createOrGetAdminChatRoom(Integer currentUserId) {
+        User adminUser = userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_USER));
+
+        return createOrGetChatRoom(currentUserId, new ChatRoomCreateRequest(adminUser.getId()));
     }
 
     @Transactional
