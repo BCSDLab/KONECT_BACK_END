@@ -30,6 +30,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.event.ClubApplicationApprovedEvent;
+import gg.agit.konect.domain.club.event.ClubApplicationSubmittedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
@@ -180,12 +181,12 @@ public class ClubApplicationService {
         }
 
         clubMemberRepository.findPresidentByClubId(clubId)
-            .ifPresent(president -> notificationService.sendClubApplicationSubmittedNotification(
+            .ifPresent(president -> applicationEventPublisher.publishEvent(ClubApplicationSubmittedEvent.of(
                 president.getUser().getId(),
                 clubId,
                 club.getName(),
                 user.getName()
-            ));
+            )));
 
         Integer bankId = resolveBankId(club.getFeeBank());
         return ClubFeeInfoResponse.of(club, bankId, club.getFeeBank());
