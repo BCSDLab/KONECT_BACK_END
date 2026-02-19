@@ -105,7 +105,9 @@ public class UserService {
 
         unRegisteredUserRepository.delete(tempUser);
 
-        applicationEventPublisher.publishEvent(UserRegisteredEvent.from(savedUser.getEmail()));
+        applicationEventPublisher.publishEvent(
+            UserRegisteredEvent.from(savedUser.getEmail(), savedUser.getProvider().name())
+        );
         return savedUser.getId();
     }
 
@@ -221,7 +223,9 @@ public class UserService {
 
         userRepository.delete(user);
 
-        applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
+        applicationEventPublisher.publishEvent(
+            UserWithdrawnEvent.from(user.getEmail(), user.getProvider().name())
+        );
     }
 
     private void validateNotClubPresident(Integer userId) {
