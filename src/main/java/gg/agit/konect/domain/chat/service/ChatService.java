@@ -89,11 +89,11 @@ public class ChatService {
     }
 
     @Transactional
-    public Integer createOrGetAdminChatRoom(Integer currentUserId) {
+    public ChatRoomResponse createOrGetAdminChatRoom(Integer currentUserId) {
         User adminUser = userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_USER));
 
-        return createOrGetChatRoom(currentUserId, new ChatRoomCreateRequest(adminUser.getId())).chatRoomId();
+        return createOrGetChatRoom(currentUserId, new ChatRoomCreateRequest(adminUser.getId()));
     }
 
     @Transactional

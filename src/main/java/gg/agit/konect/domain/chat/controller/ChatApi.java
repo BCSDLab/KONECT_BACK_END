@@ -55,7 +55,7 @@ public interface ChatApi {
         - CANNOT_CREATE_CHAT_ROOM_WITH_SELF (400): 자기 자신과는 채팅방을 만들 수 없습니다.
         """)
     @PostMapping("/rooms/admin")
-    ResponseEntity<Integer> createOrGetAdminChatRoom(
+    ResponseEntity<ChatRoomResponse> createOrGetAdminChatRoom(
         @UserId Integer userId
     );
 
