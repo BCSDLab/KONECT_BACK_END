@@ -1,0 +1,1 @@
+ALTER TABLE club ADD COLUMN is_fee_required TINYINT(1) DEFAULT NULL;

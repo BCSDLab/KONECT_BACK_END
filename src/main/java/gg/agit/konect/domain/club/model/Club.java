@@ -7,8 +7,6 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-import java.time.LocalDate;
-
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
@@ -65,8 +63,8 @@ public class Club extends BaseEntity {
     @Column(name = "location", length = 255, nullable = false)
     private String location;
 
-    @Column(name = "fee_amount")
-    private Integer feeAmount;
+    @Column(name = "fee_amount", length = 100)
+    private String feeAmount;
 
     @Column(name = "fee_bank", length = 100)
     private String feeBank;
@@ -77,8 +75,14 @@ public class Club extends BaseEntity {
     @Column(name = "fee_account_holder", length = 100)
     private String feeAccountHolder;
 
-    @Column(name = "fee_deadline")
-    private LocalDate feeDeadline;
+    @Column(name = "is_fee_required")
+    private Boolean isFeeRequired;
+
+    @Column(name = "is_recruitment_enabled")
+    private Boolean isRecruitmentEnabled;
+
+    @Column(name = "is_application_enabled")
+    private Boolean isApplicationEnabled;
 
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
@@ -93,11 +97,13 @@ public class Club extends BaseEntity {
         String introduce,
         String imageUrl,
         String location,
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
         String feeAccountHolder,
-        LocalDate feeDeadline,
+        Boolean isFeeRequired,
+        Boolean isRecruitmentEnabled,
+        Boolean isApplicationEnabled,
         ClubRecruitment clubRecruitment
     ) {
         this.id = id;
@@ -112,7 +118,9 @@ public class Club extends BaseEntity {
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
-        this.feeDeadline = feeDeadline;
+        this.isFeeRequired = isFeeRequired;
+        this.isRecruitmentEnabled = isRecruitmentEnabled;
+        this.isApplicationEnabled = isApplicationEnabled;
         this.clubRecruitment = clubRecruitment;
     }
 
@@ -129,22 +137,21 @@ public class Club extends BaseEntity {
     }
 
     public void replaceFeeInfo(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        LocalDate feeDeadline
+        String feeAccountHolder
     ) {
-        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
+        if (isFeeInfoEmpty(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
             clearFeeInfo();
             return;
         }
 
-        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline)) {
+        if (!isFeeInfoComplete(feeAmount, feeBank, feeAccountNumber, feeAccountHolder)) {
             throw CustomException.of(INVALID_REQUEST_BODY);
         }
 
-        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder, feeDeadline);
+        updateFeeInfo(feeAmount, feeBank, feeAccountNumber, feeAccountHolder);
     }
 
     public void updateInfo(String description, String imageUrl, String location, String introduce) {
@@ -159,46 +166,56 @@ public class Club extends BaseEntity {
         this.clubCategory = clubCategory;
     }
 
+    public void updateSettings(
+        Boolean isRecruitmentEnabled,
+        Boolean isApplicationEnabled,
+        Boolean isFeeRequired
+    ) {
+        if (isRecruitmentEnabled != null) {
+            this.isRecruitmentEnabled = isRecruitmentEnabled;
+        }
+        if (isApplicationEnabled != null) {
+            this.isApplicationEnabled = isApplicationEnabled;
+        }
+        if (isFeeRequired != null) {
+            this.isFeeRequired = isFeeRequired;
+        }
+    }
+
     private boolean isFeeInfoEmpty(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        LocalDate feeDeadline
+        String feeAccountHolder
     ) {
-        return feeAmount == null
-            && feeBank == null
-            && feeAccountNumber == null
-            && feeAccountHolder == null
-            && feeDeadline == null;
+        return !StringUtils.hasText(feeAmount)
+            && !StringUtils.hasText(feeBank)
+            && !StringUtils.hasText(feeAccountNumber)
+            && !StringUtils.hasText(feeAccountHolder);
     }
 
     private boolean isFeeInfoComplete(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        LocalDate feeDeadline
+        String feeAccountHolder
     ) {
-        return feeAmount != null
+        return StringUtils.hasText(feeAmount)
             && StringUtils.hasText(feeBank)
             && StringUtils.hasText(feeAccountNumber)
-            && StringUtils.hasText(feeAccountHolder)
-            && feeDeadline != null;
+            && StringUtils.hasText(feeAccountHolder);
     }
 
     private void updateFeeInfo(
-        Integer feeAmount,
+        String feeAmount,
         String feeBank,
         String feeAccountNumber,
-        String feeAccountHolder,
-        LocalDate feeDeadline
+        String feeAccountHolder
     ) {
         this.feeAmount = feeAmount;
         this.feeBank = feeBank;
         this.feeAccountNumber = feeAccountNumber;
         this.feeAccountHolder = feeAccountHolder;
-        this.feeDeadline = feeDeadline;
     }
 
     private void clearFeeInfo() {
@@ -206,6 +223,5 @@ public class Club extends BaseEntity {
         this.feeBank = null;
         this.feeAccountNumber = null;
         this.feeAccountHolder = null;
-        this.feeDeadline = null;
     }
 }
