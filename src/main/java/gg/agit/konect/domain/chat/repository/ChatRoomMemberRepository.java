@@ -61,7 +61,7 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
         """)
     List<ChatRoomMember> findByUserId(@Param("userId") Integer userId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("""
         UPDATE ChatRoomMember crm
         SET crm.lastReadAt = :lastReadAt
@@ -75,7 +75,7 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
         @Param("lastReadAt") LocalDateTime lastReadAt
     );
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("""
         DELETE FROM ChatRoomMember crm
         WHERE crm.id.chatRoomId = :chatRoomId
