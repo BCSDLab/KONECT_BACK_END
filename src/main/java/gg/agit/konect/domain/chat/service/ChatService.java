@@ -78,7 +78,10 @@ public class ChatService {
         if (currentUser.getId().equals(targetUser.getId())) {
             throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
         }
-        ChatRoom.validateIsNotSameParticipant(currentUser, targetUser);
+
+        if (currentUser.getRole() == UserRole.ADMIN && targetUser.getRole() != UserRole.ADMIN) {
+            return getOrCreateSystemAdminChatRoomForUser(targetUser, currentUser);
+        }
 
         ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), targetUser.getId())
             .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
@@ -86,6 +89,27 @@ public class ChatService {
         LocalDateTime joinedAt = Objects.requireNonNull(chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null");
         ensureRoomMember(chatRoom, currentUser, joinedAt);
         ensureRoomMember(chatRoom, targetUser, joinedAt);
+
+        return ChatRoomResponse.from(chatRoom);
+    }
+
+    private ChatRoomResponse getOrCreateSystemAdminChatRoomForUser(User targetUser, User adminUser) {
+        ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(SYSTEM_ADMIN_ID, targetUser.getId())
+            .orElseGet(() -> {
+                ChatRoom newRoom = chatRoomRepository.save(ChatRoom.directOf());
+                User systemAdmin = userRepository.getById(SYSTEM_ADMIN_ID);
+                LocalDateTime joinedAt = Objects.requireNonNull(
+                    newRoom.getCreatedAt(), "chatRoom.createdAt must not be null"
+                );
+                ensureRoomMember(newRoom, systemAdmin, joinedAt);
+                ensureRoomMember(newRoom, targetUser, joinedAt);
+                return newRoom;
+            });
+
+        LocalDateTime joinedAt = Objects.requireNonNull(
+            chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null"
+        );
+        ensureRoomMember(chatRoom, adminUser, joinedAt);
 
         return ChatRoomResponse.from(chatRoom);
     }
