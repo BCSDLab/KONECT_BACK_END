@@ -116,7 +116,6 @@ public class ClubMemberManagementService {
             .club(club)
             .user(user)
             .clubPosition(clubPosition)
-            .isFeePaid(false)
             .build();
 
         ClubMember savedMember = clubMemberRepository.save(clubMember);

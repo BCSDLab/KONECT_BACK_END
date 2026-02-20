@@ -115,7 +115,6 @@ public class ClubService {
             .club(savedClub)
             .user(user)
             .clubPosition(PRESIDENT)
-            .isFeePaid(false)
             .build();
 
         ClubMember savedPresident = clubMemberRepository.save(president);

@@ -2,7 +2,6 @@ package gg.agit.konect.domain.user.service;
 
 import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
-import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -172,7 +171,6 @@ public class UserService {
                 .club(preMember.getClub())
                 .user(user)
                 .clubPosition(preMember.getClubPosition())
-                .isFeePaid(false)
                 .build();
 
             ClubMember savedMember = clubMemberRepository.save(clubMember);
@@ -215,7 +213,6 @@ public class UserService {
         User user = userRepository.getById(userId);
 
         validateNotClubPresident(userId);
-        validatePaidFees(userId);
 
         if (user.getProvider() == Provider.APPLE) {
             appleTokenRevocationService.revoke(user.getAppleRefreshToken());
@@ -236,13 +233,4 @@ public class UserService {
         }
     }
 
-    private void validatePaidFees(Integer userId) {
-        List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
-        boolean hasUnpaidFee = clubMembers.stream()
-            .anyMatch(ClubMember::hasUnpaidFee);
-
-        if (hasUnpaidFee) {
-            throw CustomException.of(CANNOT_DELETE_USER_WITH_UNPAID_FEE);
-        }
-    }
 }
