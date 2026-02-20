@@ -242,7 +242,7 @@ public class ChatService {
         List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
 
         List<ChatRoom> adminUserRooms = chatRoomRepository.findAllAdminUserDirectRooms(UserRole.ADMIN);
-        Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMap(adminUserRooms);
+        Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMapWithoutUser(adminUserRooms);
         Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminUserRooms));
 
         List<Integer> allUserIds = roomMembersMap.values().stream()
@@ -723,6 +723,16 @@ public class ChatService {
 
         List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
         return chatRoomMemberRepository.findByChatRoomIds(roomIds).stream()
+            .collect(Collectors.groupingBy(ChatRoomMember::getChatRoomId));
+    }
+
+    private Map<Integer, List<ChatRoomMember>> getRoomMembersMapWithoutUser(List<ChatRoom> rooms) {
+        if (rooms.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
+        return chatRoomMemberRepository.findByChatRoomIdsWithoutUser(roomIds).stream()
             .collect(Collectors.groupingBy(ChatRoomMember::getChatRoomId));
     }
 
