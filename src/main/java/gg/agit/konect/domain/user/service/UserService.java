@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.user.service;
 
 import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
+import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 
 import java.time.LocalDateTime;
@@ -192,7 +193,8 @@ public class UserService {
     public UserInfoResponse getUserInfo(Integer userId) {
         User user = userRepository.getById(userId);
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(user.getId());
-        boolean isClubManager = clubMembers.stream().anyMatch(ClubMember::isPresident);
+        boolean isClubManager = clubMembers.stream()
+            .anyMatch(clubMember -> MANAGERS.contains(clubMember.getClubPosition()));
         int joinedClubCount = clubMembers.size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
         Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);
