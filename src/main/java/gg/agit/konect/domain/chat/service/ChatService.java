@@ -354,8 +354,16 @@ public class ChatService {
         User sender = userRepository.getById(userId);
         getOrCreateDirectRoomMember(chatRoom, sender);
 
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        User receiver = resolveMessageReceiver(sender, members);
+        List<Object[]> memberResults = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(roomId));
+        List<MemberInfo> memberInfos = memberResults.stream()
+            .map(row -> new MemberInfo((Integer)row[1], (LocalDateTime)row[2]))
+            .toList();
+
+        List<Integer> memberUserIds = memberInfos.stream().map(MemberInfo::userId).toList();
+        Map<Integer, User> userMap = userRepository.findAllByIdIn(memberUserIds).stream()
+            .collect(Collectors.toMap(User::getId, u -> u));
+
+        User receiver = resolveMessageReceiverFromMemberInfo(sender, memberInfos, userMap);
 
         ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, request.content())
@@ -592,8 +600,22 @@ public class ChatService {
             return null;
         }
 
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(chatRoom.getId());
-        User adminUser = findAdminMember(members);
+        List<Object[]> memberResults = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
+            List.of(chatRoom.getId())
+        );
+        List<MemberInfo> memberInfos = memberResults.stream()
+            .map(row -> new MemberInfo((Integer)row[1], (LocalDateTime)row[2]))
+            .toList();
+
+        List<Integer> memberUserIds = memberInfos.stream().map(MemberInfo::userId).toList();
+        if (memberUserIds.isEmpty()) {
+            return null;
+        }
+
+        Map<Integer, User> userMap = userRepository.findAllByIdIn(memberUserIds).stream()
+            .collect(Collectors.toMap(User::getId, u -> u));
+
+        User adminUser = findAdminUserFromMemberInfo(memberInfos, userMap);
         if (adminUser == null) {
             return null;
         }
@@ -806,6 +828,16 @@ public class ChatService {
             .orElse(null);
     }
 
+    private User findAdminUserFromMemberInfo(List<MemberInfo> memberInfos, Map<Integer, User> userMap) {
+        return memberInfos.stream()
+            .sorted(Comparator.comparing(MemberInfo::createdAt))
+            .map(info -> userMap.get(info.userId()))
+            .filter(Objects::nonNull)
+            .filter(user -> user.getRole() == UserRole.ADMIN)
+            .findFirst()
+            .orElse(null);
+    }
+
     private User findAdminMember(List<ChatRoomMember> members) {
         return members.stream()
             .map(ChatRoomMember::getUser)
@@ -823,6 +855,25 @@ public class ChatService {
         }
 
         User partner = findDirectPartner(members, sender.getId());
+        if (partner == null) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+        return partner;
+    }
+
+    private User resolveMessageReceiverFromMemberInfo(
+        User sender,
+        List<MemberInfo> memberInfos,
+        Map<Integer, User> userMap
+    ) {
+        if (sender.getRole() == UserRole.ADMIN) {
+            User nonAdminUser = findNonAdminUserFromMemberInfo(memberInfos, userMap);
+            if (nonAdminUser != null) {
+                return nonAdminUser;
+            }
+        }
+
+        User partner = findDirectPartnerFromMemberInfo(memberInfos, sender.getId(), userMap);
         if (partner == null) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
