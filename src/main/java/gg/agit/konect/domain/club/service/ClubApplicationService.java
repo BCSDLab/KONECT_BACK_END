@@ -124,7 +124,6 @@ public class ClubApplicationService {
             .club(club)
             .user(applicant)
             .clubPosition(MEMBER)
-            .isFeePaid(true)
             .build();
 
         ClubMember savedMember = clubMemberRepository.save(newMember);
