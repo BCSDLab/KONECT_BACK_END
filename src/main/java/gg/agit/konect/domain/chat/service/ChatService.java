@@ -83,8 +83,6 @@ public class ChatService {
             return getOrCreateSystemAdminChatRoomForUser(targetUser, currentUser);
         }
 
-        ChatRoom.validateIsNotSameParticipant(currentUser, targetUser);
-
         ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(currentUser.getId(), targetUser.getId())
             .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
 
