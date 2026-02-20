@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,8 @@ import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
+import gg.agit.konect.domain.club.event.ClubApplicationApprovedEvent;
+import gg.agit.konect.domain.club.event.ClubApplicationSubmittedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
@@ -63,6 +66,7 @@ public class ClubApplicationService {
     private final UserRepository userRepository;
     private final BankRepository bankRepository;
     private final ClubPermissionValidator clubPermissionValidator;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final NotificationService notificationService;
     private final ChatRoomMembershipService chatRoomMembershipService;
 
@@ -120,18 +124,17 @@ public class ClubApplicationService {
             .club(club)
             .user(applicant)
             .clubPosition(MEMBER)
-            .isFeePaid(true)
             .build();
 
         ClubMember savedMember = clubMemberRepository.save(newMember);
         chatRoomMembershipService.addClubMember(savedMember);
         clubApplyRepository.delete(clubApply);
 
-        notificationService.sendClubApplicationApprovedNotification(
+        applicationEventPublisher.publishEvent(ClubApplicationApprovedEvent.of(
             applicant.getId(),
             clubId,
             club.getName()
-        );
+        ));
     }
 
     @Transactional
@@ -177,23 +180,19 @@ public class ClubApplicationService {
         }
 
         clubMemberRepository.findPresidentByClubId(clubId)
-            .ifPresent(president -> notificationService.sendClubApplicationSubmittedNotification(
+            .ifPresent(president -> applicationEventPublisher.publishEvent(ClubApplicationSubmittedEvent.of(
                 president.getUser().getId(),
                 clubId,
                 club.getName(),
                 user.getName()
-            ));
+            )));
 
         Integer bankId = resolveBankId(club.getFeeBank());
         return ClubFeeInfoResponse.of(club, bankId, club.getFeeBank());
     }
 
     private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
-        ClubRecruitment recruitment = clubRecruitmentRepository.findByClubId(club.getId())
-            .orElse(null);
-
-        if (recruitment != null
-            && Boolean.TRUE.equals(recruitment.getIsFeeRequired())
+        if (Boolean.TRUE.equals(club.getIsFeeRequired())
             && !StringUtils.hasText(feePaymentImageUrl)) {
             throw CustomException.of(FEE_PAYMENT_IMAGE_REQUIRED);
         }
@@ -349,8 +348,7 @@ public class ClubApplicationService {
             request.amount(),
             bankName,
             request.accountNumber(),
-            request.accountHolder(),
-            request.deadLine()
+            request.accountHolder()
         );
 
         return ClubFeeInfoResponse.of(club, request.bankId(), bankName);

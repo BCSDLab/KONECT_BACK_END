@@ -45,17 +45,22 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
 
     @Query("""
         SELECT new gg.agit.konect.domain.chat.dto.UnreadMessageCount(
-            crm.id.chatRoomId,
-            COUNT(cm)
+            cr.id,
+            (SELECT COUNT(cm)
+             FROM ChatMessage cm
+             WHERE cm.chatRoom.id = cr.id
+               AND cm.sender.role != :adminRole
+               AND cm.createdAt > (
+                   SELECT COALESCE(MAX(crm.lastReadAt), cr.createdAt)
+                   FROM ChatRoomMember crm
+                   JOIN crm.user u
+                   WHERE crm.id.chatRoomId = cr.id
+                     AND u.role = :adminRole
+               )
+            )
         )
-        FROM ChatRoomMember crm
-        JOIN crm.user u
-        LEFT JOIN ChatMessage cm ON cm.chatRoom.id = crm.id.chatRoomId
-            AND cm.sender.role != :adminRole
-            AND cm.createdAt > crm.lastReadAt
-        WHERE crm.id.chatRoomId IN :chatRoomIds
-          AND u.role = :adminRole
-        GROUP BY crm.id.chatRoomId
+        FROM ChatRoom cr
+        WHERE cr.id IN :chatRoomIds
         """)
     List<UnreadMessageCount> countUnreadMessagesForAdmin(
         @Param("chatRoomIds") List<Integer> chatRoomIds,

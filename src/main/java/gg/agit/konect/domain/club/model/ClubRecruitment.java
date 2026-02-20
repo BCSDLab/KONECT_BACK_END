@@ -56,9 +56,6 @@ public class ClubRecruitment extends BaseEntity {
     @Column(name = "is_always_recruiting", columnDefinition = "TINYINT(1)")
     private Boolean isAlwaysRecruiting;
 
-    @Column(name = "is_fee_required", nullable = false, columnDefinition = "TINYINT(1)")
-    private Boolean isFeeRequired;
-
     @OneToOne(fetch = LAZY)
     @JoinColumn(name = "club_id", nullable = false, updatable = false)
     private Club club;
@@ -73,7 +70,6 @@ public class ClubRecruitment extends BaseEntity {
         LocalDate endDate,
         String content,
         Boolean isAlwaysRecruiting,
-        Boolean isFeeRequired,
         Club club
     ) {
         this.id = id;
@@ -81,7 +77,6 @@ public class ClubRecruitment extends BaseEntity {
         this.endDate = endDate;
         this.content = content;
         this.isAlwaysRecruiting = isAlwaysRecruiting;
-        this.isFeeRequired = isFeeRequired;
         this.club = club;
     }
 
@@ -89,7 +84,6 @@ public class ClubRecruitment extends BaseEntity {
         LocalDate startDate,
         LocalDate endDate,
         Boolean isAlwaysRecruiting,
-        Boolean isFeeRequired,
         String content,
         Club club
     ) {
@@ -106,7 +100,6 @@ public class ClubRecruitment extends BaseEntity {
             .content(content)
             .club(club)
             .isAlwaysRecruiting(isAlwaysRecruiting)
-            .isFeeRequired(isFeeRequired)
             .build();
     }
 
@@ -136,7 +129,6 @@ public class ClubRecruitment extends BaseEntity {
         LocalDate startDate,
         LocalDate endDate,
         Boolean isAlwaysRecruiting,
-        Boolean isFeeRequired,
         String content
     ) {
         if (isAlwaysRecruiting) {
@@ -149,7 +141,6 @@ public class ClubRecruitment extends BaseEntity {
         this.startDate = startDate;
         this.endDate = endDate;
         this.isAlwaysRecruiting = isAlwaysRecruiting;
-        this.isFeeRequired = isFeeRequired;
         this.content = content;
     }
 }

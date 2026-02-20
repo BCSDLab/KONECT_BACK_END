@@ -18,13 +18,13 @@ public class SlackNotificationService {
     private final SlackProperties slackProperties;
     private final SlackClient slackClient;
 
-    public void notifyUserWithdraw(String email) {
-        String message = USER_WITHDRAWAL.format(email);
+    public void notifyUserWithdraw(String email, String provider) {
+        String message = USER_WITHDRAWAL.format(email, provider);
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }
 
-    public void notifyUserRegister(String email) {
-        String message = USER_REGISTER.format(email);
+    public void notifyUserRegister(String email, String provider) {
+        String message = USER_REGISTER.format(email, provider);
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }
 

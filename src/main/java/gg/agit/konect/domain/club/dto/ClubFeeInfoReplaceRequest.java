@@ -1,9 +1,6 @@
 package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
-import java.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -24,10 +21,6 @@ public record ClubFeeInfoReplaceRequest(
 
     @Size(max = 100, message = "예금주는 최대 100자 입니다.")
     @Schema(description = "예금주", example = "BCSD", requiredMode = NOT_REQUIRED)
-    String accountHolder,
-
-    @Schema(description = "납부 기한", example = "2025.12.31", requiredMode = NOT_REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd")
-    LocalDate deadLine
+    String accountHolder
 ) {
 }

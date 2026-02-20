@@ -2,10 +2,6 @@ package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import gg.agit.konect.domain.club.model.Club;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -23,11 +19,7 @@ public record ClubFeeInfoResponse(
     String accountNumber,
 
     @Schema(description = "예금주", example = "BCSD", requiredMode = REQUIRED)
-    String accountHolder,
-
-    @Schema(description = "납부 기한", example = "2025.12.31", requiredMode = REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd")
-    LocalDate deadLine
+    String accountHolder
 ) {
     public static ClubFeeInfoResponse of(Club club, Integer bankId, String bankName) {
         return new ClubFeeInfoResponse(
@@ -35,8 +27,7 @@ public record ClubFeeInfoResponse(
             bankId,
             bankName,
             club.getFeeAccountNumber(),
-            club.getFeeAccountHolder(),
-            club.getFeeDeadline()
+            club.getFeeAccountHolder()
         );
     }
 }

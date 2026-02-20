@@ -42,16 +42,12 @@ public class ClubMember extends BaseEntity {
     @Column(name = "club_position", nullable = false)
     private ClubPosition clubPosition;
 
-    @Column(name = "is_fee_paid")
-    private Boolean isFeePaid;
-
     @Builder
-    private ClubMember(Club club, User user, ClubPosition clubPosition, Boolean isFeePaid) {
+    private ClubMember(Club club, User user, ClubPosition clubPosition) {
         this.id = new ClubMemberId(club.getId(), user.getId());
         this.club = club;
         this.user = user;
         this.clubPosition = clubPosition;
-        this.isFeePaid = isFeePaid;
     }
 
     public boolean isPresident() {
@@ -70,7 +66,4 @@ public class ClubMember extends BaseEntity {
         return this.clubPosition.canManage(target.getClubPosition());
     }
 
-    public boolean hasUnpaidFee() {
-        return Boolean.FALSE.equals(this.isFeePaid);
-    }
 }

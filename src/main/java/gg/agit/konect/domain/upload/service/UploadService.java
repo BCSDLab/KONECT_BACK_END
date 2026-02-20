@@ -29,8 +29,10 @@ public class UploadService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
         "image/png",
+        "image/jpg",
         "image/jpeg",
-        "image/webp"
+        "image/webp",
+        "image/avif"
     );
 
     private final S3Client s3Client;
@@ -113,8 +115,10 @@ public class UploadService {
     private String extensionFromContentType(String contentType) {
         return switch (contentType) {
             case "image/png" -> "png";
+            case "image/jpg" -> "jpg";
             case "image/jpeg" -> "jpg";
             case "image/webp" -> "webp";
+            case "image/avif" -> "avif";
             default -> throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         };
     }

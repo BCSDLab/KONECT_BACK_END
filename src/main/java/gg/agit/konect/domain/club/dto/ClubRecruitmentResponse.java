@@ -37,11 +37,11 @@ public record ClubRecruitmentResponse(
     @Schema(description = "모집 공고 이미지 리스트", requiredMode = REQUIRED)
     List<InnerRecruitmentImage> images,
 
-    @Schema(description = "회비 납부 필요 여부", example = "true", requiredMode = REQUIRED)
-    Boolean isFeeRequired,
-
     @Schema(description = "지원 여부", example = "false", requiredMode = REQUIRED)
-    Boolean isApplied
+    Boolean isApplied,
+
+    @Schema(description = "회비 납부 필요 여부", example = "true", requiredMode = REQUIRED)
+    Boolean isFeeRequired
 ) {
     public record InnerRecruitmentImage(
         @Schema(description = "모집 공고 이미지 URL", example = "https://example.com/image.png", requiredMode = NOT_REQUIRED)
@@ -63,8 +63,8 @@ public record ClubRecruitmentResponse(
             recruitment.getImages().stream()
                 .map(InnerRecruitmentImage::from)
                 .toList(),
-            recruitment.getIsFeeRequired(),
-            isApplied
+            isApplied,
+            recruitment.getClub().getIsFeeRequired()
         );
     }
 }

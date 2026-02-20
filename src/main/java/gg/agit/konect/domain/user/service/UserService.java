@@ -1,8 +1,8 @@
 package gg.agit.konect.domain.user.service;
 
 import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
+import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
-import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_USER_WITH_UNPAID_FEE;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -105,7 +105,9 @@ public class UserService {
 
         unRegisteredUserRepository.delete(tempUser);
 
-        applicationEventPublisher.publishEvent(UserRegisteredEvent.from(savedUser.getEmail()));
+        applicationEventPublisher.publishEvent(
+            UserRegisteredEvent.from(savedUser.getEmail(), savedUser.getProvider().name())
+        );
         return savedUser.getId();
     }
 
@@ -170,7 +172,6 @@ public class UserService {
                 .club(preMember.getClub())
                 .user(user)
                 .clubPosition(preMember.getClubPosition())
-                .isFeePaid(false)
                 .build();
 
             ClubMember savedMember = clubMemberRepository.save(clubMember);
@@ -192,7 +193,8 @@ public class UserService {
     public UserInfoResponse getUserInfo(Integer userId) {
         User user = userRepository.getById(userId);
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserId(user.getId());
-        boolean isClubManager = clubMembers.stream().anyMatch(ClubMember::isPresident);
+        boolean isClubManager = clubMembers.stream()
+            .anyMatch(clubMember -> MANAGERS.contains(clubMember.getClubPosition()));
         int joinedClubCount = clubMembers.size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
         Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);
@@ -213,7 +215,6 @@ public class UserService {
         User user = userRepository.getById(userId);
 
         validateNotClubPresident(userId);
-        validatePaidFees(userId);
 
         if (user.getProvider() == Provider.APPLE) {
             appleTokenRevocationService.revoke(user.getAppleRefreshToken());
@@ -221,7 +222,9 @@ public class UserService {
 
         userRepository.delete(user);
 
-        applicationEventPublisher.publishEvent(UserWithdrawnEvent.from(user.getEmail()));
+        applicationEventPublisher.publishEvent(
+            UserWithdrawnEvent.from(user.getEmail(), user.getProvider().name())
+        );
     }
 
     private void validateNotClubPresident(Integer userId) {
@@ -232,13 +235,4 @@ public class UserService {
         }
     }
 
-    private void validatePaidFees(Integer userId) {
-        List<ClubMember> clubMembers = clubMemberRepository.findByUserId(userId);
-        boolean hasUnpaidFee = clubMembers.stream()
-            .anyMatch(ClubMember::hasUnpaidFee);
-
-        if (hasUnpaidFee) {
-            throw CustomException.of(CANNOT_DELETE_USER_WITH_UNPAID_FEE);
-        }
-    }
 }

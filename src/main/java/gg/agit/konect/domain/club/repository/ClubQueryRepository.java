@@ -106,7 +106,8 @@ public class ClubQueryRepository {
 
     private BooleanExpression createOngoingRecruitmentCondition() {
         LocalDate today = LocalDate.now();
-        return clubRecruitment.id.isNotNull()
+        return club.isRecruitmentEnabled.isTrue()
+            .and(clubRecruitment.id.isNotNull())
             .and(
                 clubRecruitment.isAlwaysRecruiting.isTrue()
                     .or(clubRecruitment.startDate.loe(today).and(clubRecruitment.endDate.goe(today)))
@@ -162,9 +163,13 @@ public class ClubQueryRepository {
         return clubs.stream()
             .map(club -> {
                 ClubRecruitment recruitment = club.getClubRecruitment();
-                RecruitmentStatus status = RecruitmentStatus.of(recruitment);
+                boolean isRecruitmentEnabled = Boolean.TRUE.equals(club.getIsRecruitmentEnabled());
+                RecruitmentStatus status = isRecruitmentEnabled
+                    ? RecruitmentStatus.of(recruitment)
+                    : RecruitmentStatus.CLOSED;
 
-                boolean isAlwaysRecruiting = recruitment != null
+                boolean isAlwaysRecruiting = isRecruitmentEnabled
+                    && recruitment != null
                     && Boolean.TRUE.equals(recruitment.getIsAlwaysRecruiting());
                 LocalDate applicationDeadline = (recruitment != null && !isAlwaysRecruiting)
                     ? recruitment.getEndDate()

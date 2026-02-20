@@ -27,10 +27,7 @@ public record ClubMembershipsResponse(
         String categoryName,
 
         @Schema(description = "직책", example = "회장", requiredMode = REQUIRED)
-        String position,
-
-        @Schema(description = "회비 완납 여부", example = "true", requiredMode = REQUIRED)
-        Boolean isFeePaid
+        String position
     ) {
         public static InnerJoinedClubResponse from(ClubMember clubMember) {
             return new InnerJoinedClubResponse(
@@ -38,8 +35,7 @@ public record ClubMembershipsResponse(
                 clubMember.getClub().getName(),
                 clubMember.getClub().getImageUrl(),
                 clubMember.getClub().getClubCategory().getDescription(),
-                clubMember.getClubPosition().getDescription(),
-                clubMember.getIsFeePaid()
+                clubMember.getClubPosition().getDescription()
             );
         }
 
@@ -49,8 +45,7 @@ public record ClubMembershipsResponse(
                 club.getName(),
                 club.getImageUrl(),
                 club.getClubCategory().getDescription(),
-                ClubPosition.PRESIDENT.getDescription(),
-                true
+                ClubPosition.PRESIDENT.getDescription()
             );
         }
     }
