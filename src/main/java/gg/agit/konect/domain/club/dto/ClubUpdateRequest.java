@@ -8,7 +8,7 @@ public record ClubUpdateRequest(
     @Schema(description = "동아리 한 줄 소개", example = "즐겁게 일하고 열심히 노는 IT 특성화 동아리",
         requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "한 줄 소개는 필수 입력입니다.")
-    @Size(max = 20, message = "한 줄 소개는 20자 이하여야 합니다.")
+    @Size(max = 25, message = "한 줄 소개는 25자 이하여야 합니다.")
     String description,
 
     @Schema(description = "동아리 로고 이미지 URL", example = "https://example.com/logo.png",
