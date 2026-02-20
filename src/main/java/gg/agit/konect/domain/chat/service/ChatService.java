@@ -206,12 +206,23 @@ public class ChatService {
 
         List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
         List<ChatRoom> personalChatRooms = chatRoomRepository.findByUserId(userId);
-        Map<Integer, List<ChatRoomMember>> roomMembersMap = getRoomMembersMap(personalChatRooms);
+        Map<Integer, List<MemberInfo>> roomMemberInfoMap = getRoomMemberInfoMap(personalChatRooms);
         Map<Integer, Integer> personalUnreadCountMap = getUnreadCountMap(extractChatRoomIds(personalChatRooms), userId);
 
+        List<Integer> allUserIds = roomMemberInfoMap.values().stream()
+            .flatMap(List::stream)
+            .map(MemberInfo::userId)
+            .distinct()
+            .toList();
+
+        Map<Integer, User> userMap = allUserIds.isEmpty()
+            ? Map.of()
+            : userRepository.findAllByIdIn(allUserIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
         for (ChatRoom chatRoom : personalChatRooms) {
-            List<ChatRoomMember> members = roomMembersMap.getOrDefault(chatRoom.getId(), List.of());
-            User chatPartner = findDirectPartner(members, user.getId());
+            List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
+            User chatPartner = findDirectPartnerFromMemberInfo(memberInfos, user.getId(), userMap);
             if (chatPartner == null) {
                 continue;
             }
@@ -242,11 +253,12 @@ public class ChatService {
         List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
 
         List<ChatRoom> adminUserRooms = chatRoomRepository.findAllAdminUserDirectRooms(UserRole.ADMIN);
-        Map<Integer, List<Integer>> roomUserIdsMap = getRoomUserIdsMap(adminUserRooms);
+        Map<Integer, List<MemberInfo>> roomMemberInfoMap = getRoomMemberInfoMap(adminUserRooms);
         Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminUserRooms));
 
-        List<Integer> allUserIds = roomUserIdsMap.values().stream()
+        List<Integer> allUserIds = roomMemberInfoMap.values().stream()
             .flatMap(List::stream)
+            .map(MemberInfo::userId)
             .distinct()
             .toList();
 
@@ -256,8 +268,8 @@ public class ChatService {
                 .collect(Collectors.toMap(User::getId, user -> user));
 
         for (ChatRoom chatRoom : adminUserRooms) {
-            List<Integer> memberUserIds = roomUserIdsMap.getOrDefault(chatRoom.getId(), List.of());
-            User nonAdminUser = findNonAdminUserFromIds(memberUserIds, userMap);
+            List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
+            User nonAdminUser = findNonAdminUserFromMemberInfo(memberInfos, userMap);
             if (nonAdminUser == null) {
                 continue;
             }
@@ -700,11 +712,20 @@ public class ChatService {
     }
 
     private boolean isAdminUserRoom(ChatRoom chatRoom) {
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(chatRoom.getId());
-        boolean hasAdmin = members.stream()
-            .anyMatch(m -> m.getUser().getRole() == UserRole.ADMIN);
-        boolean hasNonAdmin = members.stream()
-            .anyMatch(m -> m.getUser().getRole() != UserRole.ADMIN);
+        List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
+            List.of(chatRoom.getId())
+        );
+        List<Integer> userIds = memberIds.stream()
+            .map(row -> (Integer)row[1])
+            .toList();
+
+        if (userIds.isEmpty()) {
+            return false;
+        }
+
+        List<User> users = userRepository.findAllByIdIn(userIds);
+        boolean hasAdmin = users.stream().anyMatch(u -> u.getRole() == UserRole.ADMIN);
+        boolean hasNonAdmin = users.stream().anyMatch(u -> u.getRole() != UserRole.ADMIN);
         return hasAdmin && hasNonAdmin;
     }
 
@@ -725,7 +746,10 @@ public class ChatService {
             .collect(Collectors.groupingBy(ChatRoomMember::getChatRoomId));
     }
 
-    private Map<Integer, List<Integer>> getRoomUserIdsMap(List<ChatRoom> rooms) {
+    private record MemberInfo(Integer userId, LocalDateTime createdAt) {
+    }
+
+    private Map<Integer, List<MemberInfo>> getRoomMemberInfoMap(List<ChatRoom> rooms) {
         if (rooms.isEmpty()) {
             return Map.of();
         }
@@ -733,13 +757,15 @@ public class ChatService {
         List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
         List<Object[]> results = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(roomIds);
 
-        Map<Integer, List<Integer>> roomUserIdsMap = new HashMap<>();
+        Map<Integer, List<MemberInfo>> roomMemberInfoMap = new HashMap<>();
         for (Object[] row : results) {
             Integer chatRoomId = (Integer)row[0];
-            Integer userId = (Integer)row[1];
-            roomUserIdsMap.computeIfAbsent(chatRoomId, k -> new ArrayList<>()).add(userId);
+            Integer memberId = (Integer)row[1];
+            LocalDateTime createdAt = (LocalDateTime)row[2];
+            roomMemberInfoMap.computeIfAbsent(chatRoomId, k -> new ArrayList<>())
+                .add(new MemberInfo(memberId, createdAt));
         }
-        return roomUserIdsMap;
+        return roomMemberInfoMap;
     }
 
     private User findDirectPartner(List<ChatRoomMember> members, Integer userId) {
@@ -747,6 +773,18 @@ public class ChatService {
             .map(ChatRoomMember::getUser)
             .filter(memberUser -> !memberUser.getId().equals(userId))
             .findFirst()
+            .orElse(null);
+    }
+
+    private User findDirectPartnerFromMemberInfo(
+        List<MemberInfo> memberInfos,
+        Integer userId,
+        Map<Integer, User> userMap
+    ) {
+        return memberInfos.stream()
+            .filter(info -> !info.userId().equals(userId))
+            .min(Comparator.comparing(MemberInfo::createdAt))
+            .map(info -> userMap.get(info.userId()))
             .orElse(null);
     }
 
@@ -758,9 +796,10 @@ public class ChatService {
             .orElse(null);
     }
 
-    private User findNonAdminUserFromIds(List<Integer> userIds, Map<Integer, User> userMap) {
-        return userIds.stream()
-            .map(userMap::get)
+    private User findNonAdminUserFromMemberInfo(List<MemberInfo> memberInfos, Map<Integer, User> userMap) {
+        return memberInfos.stream()
+            .sorted(Comparator.comparing(MemberInfo::createdAt))
+            .map(info -> userMap.get(info.userId()))
             .filter(Objects::nonNull)
             .filter(user -> user.getRole() != UserRole.ADMIN)
             .findFirst()

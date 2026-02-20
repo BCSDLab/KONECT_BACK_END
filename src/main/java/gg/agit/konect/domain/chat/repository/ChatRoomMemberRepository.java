@@ -55,7 +55,7 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
     List<ChatRoomMember> findByChatRoomIds(@Param("chatRoomIds") List<Integer> chatRoomIds);
 
     @Query("""
-        SELECT crm.id.chatRoomId, crm.id.userId
+        SELECT crm.id.chatRoomId, crm.id.userId, crm.createdAt
         FROM ChatRoomMember crm
         WHERE crm.id.chatRoomId IN :chatRoomIds
         """)
