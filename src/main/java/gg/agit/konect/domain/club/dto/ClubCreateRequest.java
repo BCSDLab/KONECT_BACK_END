@@ -49,6 +49,9 @@ public record ClubCreateRequest(
             .location(location)
             .clubCategory(clubCategory)
             .university(university)
+            .isRecruitmentEnabled(false)
+            .isApplicationEnabled(false)
+            .isFeeRequired(false)
             .build();
     }
 }

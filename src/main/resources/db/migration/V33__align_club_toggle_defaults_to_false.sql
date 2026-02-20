@@ -1,0 +1,8 @@
+ALTER TABLE club
+    MODIFY COLUMN is_recruitment_enabled TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE club
+    MODIFY COLUMN is_application_enabled TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE club
+    MODIFY COLUMN is_fee_required TINYINT(1) DEFAULT 0;
