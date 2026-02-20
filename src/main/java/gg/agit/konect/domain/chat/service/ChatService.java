@@ -58,6 +58,8 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ChatService {
 
+    private static final int SYSTEM_ADMIN_ID = 1;
+
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
@@ -252,7 +254,9 @@ public class ChatService {
     private List<ChatRoomSummaryResponse> getAdminDirectChatRooms() {
         List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
 
-        List<ChatRoom> adminUserRooms = chatRoomRepository.findAllAdminUserDirectRooms(UserRole.ADMIN);
+        List<ChatRoom> adminUserRooms = chatRoomRepository.findAllSystemAdminDirectRooms(
+            SYSTEM_ADMIN_ID, UserRole.ADMIN
+        );
         Map<Integer, List<MemberInfo>> roomMemberInfoMap = getRoomMemberInfoMap(adminUserRooms);
         Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminUserRooms));
 
@@ -607,20 +611,14 @@ public class ChatService {
             .map(row -> new MemberInfo((Integer)row[1], (LocalDateTime)row[2]))
             .toList();
 
-        List<Integer> memberUserIds = memberInfos.stream().map(MemberInfo::userId).toList();
-        if (memberUserIds.isEmpty()) {
-            return null;
+        boolean hasSystemAdmin = memberInfos.stream()
+            .anyMatch(info -> info.userId().equals(SYSTEM_ADMIN_ID));
+
+        if (hasSystemAdmin) {
+            return SYSTEM_ADMIN_ID;
         }
 
-        Map<Integer, User> userMap = userRepository.findAllByIdIn(memberUserIds).stream()
-            .collect(Collectors.toMap(User::getId, u -> u));
-
-        User adminUser = findAdminUserFromMemberInfo(memberInfos, userMap);
-        if (adminUser == null) {
-            return null;
-        }
-
-        return adminUser.getId();
+        return null;
     }
 
     private void publishAdminChatEventIfNeeded(User receiver, User sender, String content) {
@@ -725,7 +723,7 @@ public class ChatService {
     private ChatRoomMember getOrCreateDirectRoomMember(ChatRoom chatRoom, User user) {
         return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
             .orElseGet(() -> {
-                if (user.getRole() == UserRole.ADMIN && isAdminUserRoom(chatRoom)) {
+                if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom)) {
                     LocalDateTime joinedAt = LocalDateTime.now();
                     return chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt));
                 }
@@ -733,7 +731,7 @@ public class ChatService {
             });
     }
 
-    private boolean isAdminUserRoom(ChatRoom chatRoom) {
+    private boolean isSystemAdminRoom(ChatRoom chatRoom) {
         List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
             List.of(chatRoom.getId())
         );
@@ -741,14 +739,7 @@ public class ChatService {
             .map(row -> (Integer)row[1])
             .toList();
 
-        if (userIds.isEmpty()) {
-            return false;
-        }
-
-        List<User> users = userRepository.findAllByIdIn(userIds);
-        boolean hasAdmin = users.stream().anyMatch(u -> u.getRole() == UserRole.ADMIN);
-        boolean hasNonAdmin = users.stream().anyMatch(u -> u.getRole() != UserRole.ADMIN);
-        return hasAdmin && hasNonAdmin;
+        return userIds.contains(SYSTEM_ADMIN_ID);
     }
 
     private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
@@ -815,13 +806,11 @@ public class ChatService {
         Integer userId,
         Map<Integer, User> userMap
     ) {
-        boolean hasAdminMember = memberInfos.stream()
-            .map(info -> userMap.get(info.userId()))
-            .filter(Objects::nonNull)
-            .anyMatch(user -> user.getRole() == UserRole.ADMIN);
+        boolean hasSystemAdmin = memberInfos.stream()
+            .anyMatch(info -> info.userId().equals(SYSTEM_ADMIN_ID));
 
-        if (hasAdminMember) {
-            return findAdminUserFromMemberInfo(memberInfos, userMap);
+        if (hasSystemAdmin) {
+            return userMap.get(SYSTEM_ADMIN_ID);
         }
 
         return findDirectPartnerFromMemberInfo(memberInfos, userId, userMap);
@@ -841,24 +830,6 @@ public class ChatService {
             .map(info -> userMap.get(info.userId()))
             .filter(Objects::nonNull)
             .filter(user -> user.getRole() != UserRole.ADMIN)
-            .findFirst()
-            .orElse(null);
-    }
-
-    private User findAdminUserFromMemberInfo(List<MemberInfo> memberInfos, Map<Integer, User> userMap) {
-        return memberInfos.stream()
-            .sorted(Comparator.comparing(MemberInfo::createdAt))
-            .map(info -> userMap.get(info.userId()))
-            .filter(Objects::nonNull)
-            .filter(user -> user.getRole() == UserRole.ADMIN)
-            .findFirst()
-            .orElse(null);
-    }
-
-    private User findAdminMember(List<ChatRoomMember> members) {
-        return members.stream()
-            .map(ChatRoomMember::getUser)
-            .filter(memberUser -> memberUser.getRole() == UserRole.ADMIN)
             .findFirst()
             .orElse(null);
     }

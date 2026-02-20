@@ -84,4 +84,26 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
     List<ChatRoom> findAllAdminUserDirectRooms(@Param("adminRole") UserRole adminRole);
+
+    @Query("""
+        SELECT DISTINCT cr
+        FROM ChatRoom cr
+        WHERE cr.club IS NULL
+          AND EXISTS (
+              SELECT 1 FROM ChatRoomMember systemAdminMember
+              WHERE systemAdminMember.id.chatRoomId = cr.id
+                AND systemAdminMember.id.userId = :systemAdminId
+          )
+          AND EXISTS (
+              SELECT 1 FROM ChatRoomMember userMember
+              JOIN userMember.user normalUser
+              WHERE userMember.id.chatRoomId = cr.id
+                AND normalUser.role != :adminRole
+          )
+        ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
+        """)
+    List<ChatRoom> findAllSystemAdminDirectRooms(
+        @Param("systemAdminId") Integer systemAdminId,
+        @Param("adminRole") UserRole adminRole
+    );
 }
