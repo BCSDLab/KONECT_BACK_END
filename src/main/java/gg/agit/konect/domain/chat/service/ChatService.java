@@ -222,7 +222,7 @@ public class ChatService {
 
         for (ChatRoom chatRoom : personalChatRooms) {
             List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
-            User chatPartner = findDirectPartnerFromMemberInfo(memberInfos, user.getId(), userMap);
+            User chatPartner = resolveDirectChatPartner(memberInfos, user.getId(), userMap);
             if (chatPartner == null) {
                 continue;
             }
@@ -808,6 +808,23 @@ public class ChatService {
             .min(Comparator.comparing(MemberInfo::createdAt))
             .map(info -> userMap.get(info.userId()))
             .orElse(null);
+    }
+
+    private User resolveDirectChatPartner(
+        List<MemberInfo> memberInfos,
+        Integer userId,
+        Map<Integer, User> userMap
+    ) {
+        boolean hasAdminMember = memberInfos.stream()
+            .map(info -> userMap.get(info.userId()))
+            .filter(Objects::nonNull)
+            .anyMatch(user -> user.getRole() == UserRole.ADMIN);
+
+        if (hasAdminMember) {
+            return findAdminUserFromMemberInfo(memberInfos, userMap);
+        }
+
+        return findDirectPartnerFromMemberInfo(memberInfos, userId, userMap);
     }
 
     private User findNonAdminMember(List<ChatRoomMember> members) {
