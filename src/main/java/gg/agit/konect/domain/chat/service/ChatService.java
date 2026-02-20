@@ -376,7 +376,7 @@ public class ChatService {
         updateMemberLastReadAt(roomId, userId, chatMessage.getCreatedAt());
 
         notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
-        publishAdminChatEventIfNeeded(receiver, sender, request.content());
+        publishAdminChatEventIfNeeded(chatRoom, sender, request.content());
 
         return new ChatMessageDetailResponse(
             chatMessage.getId(),
@@ -621,8 +621,8 @@ public class ChatService {
         return null;
     }
 
-    private void publishAdminChatEventIfNeeded(User receiver, User sender, String content) {
-        if (receiver.getRole() == UserRole.ADMIN) {
+    private void publishAdminChatEventIfNeeded(ChatRoom chatRoom, User sender, String content) {
+        if (isSystemAdminRoom(chatRoom) && sender.getRole() != UserRole.ADMIN) {
             eventPublisher.publishEvent(AdminChatReceivedEvent.of(sender.getId(), sender.getName(), content));
         }
     }
