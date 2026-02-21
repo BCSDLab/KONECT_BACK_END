@@ -1,6 +1,5 @@
 package gg.agit.konect.domain.notification.service;
 
-import static gg.agit.konect.global.code.ApiResponseCode.DUPLICATE_NOTIFICATION_TOKEN;
 import static gg.agit.konect.global.code.ApiResponseCode.INVALID_NOTIFICATION_TOKEN;
 
 import java.util.HashMap;
@@ -8,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -68,32 +66,11 @@ public class NotificationService {
         String token = request.token();
         validateExpoToken(token);
 
-        Integer existingOwnerId = notificationDeviceTokenRepository.findUserIdByToken(token)
-            .orElse(null);
-        if (existingOwnerId != null) {
-            if (!existingOwnerId.equals(userId)) {
-                throw CustomException.of(DUPLICATE_NOTIFICATION_TOKEN);
-            }
-            return;
-        }
-
-        try {
-            notificationDeviceTokenRepository.save(NotificationDeviceToken.of(user, token));
-        } catch (DataIntegrityViolationException e) {
-            Integer ownerId = notificationDeviceTokenRepository.findUserIdByToken(token)
-                .orElse(null);
-            if (ownerId == null) {
-                log.warn(
-                    "Token uniqueness violation without owner: userId={}, token={}",
-                    userId,
-                    token
-                );
-                throw e;
-            }
-            if (!ownerId.equals(userId)) {
-                throw CustomException.of(DUPLICATE_NOTIFICATION_TOKEN);
-            }
-        }
+        notificationDeviceTokenRepository.findByUserId(userId)
+            .ifPresentOrElse(
+                notificationDeviceToken -> notificationDeviceToken.updateToken(token),
+                () -> notificationDeviceTokenRepository.save(NotificationDeviceToken.of(user, token))
+            );
     }
 
     @Transactional

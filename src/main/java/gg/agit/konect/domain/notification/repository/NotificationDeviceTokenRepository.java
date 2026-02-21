@@ -11,7 +11,7 @@ import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
 
 public interface NotificationDeviceTokenRepository extends Repository<NotificationDeviceToken, Integer> {
 
-    Optional<NotificationDeviceToken> findByToken(String token);
+    Optional<NotificationDeviceToken> findByUserId(Integer userId);
 
     @Query("""
         SELECT ndt
@@ -30,13 +30,6 @@ public interface NotificationDeviceTokenRepository extends Repository<Notificati
         WHERE ndt.user.id = :userId
         """)
     List<String> findTokensByUserId(@Param("userId") Integer userId);
-
-    @Query("""
-        SELECT ndt.user.id
-        FROM NotificationDeviceToken ndt
-        WHERE ndt.token = :token
-        """)
-    Optional<Integer> findUserIdByToken(@Param("token") String token);
 
     void save(NotificationDeviceToken notificationDeviceToken);
 
