@@ -343,6 +343,8 @@ public class ChatService {
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
         Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
         List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
@@ -350,6 +352,7 @@ public class ChatService {
                 Integer senderId = resolveDirectSenderId(message, maskedAdminId);
                 boolean isMine = message.isSentBy(userId);
                 boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
+                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
                 return new ChatMessageDetailResponse(
                     message.getId(),
                     senderId,
@@ -357,7 +360,7 @@ public class ChatService {
                     message.getContent(),
                     message.getCreatedAt(),
                     isRead,
-                    null,
+                    unreadCount,
                     isMine
                 );
             })
@@ -398,6 +401,8 @@ public class ChatService {
         );
         chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
         updateMemberLastReadAt(roomId, userId, chatMessage.getCreatedAt());
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
         notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
 
@@ -412,7 +417,7 @@ public class ChatService {
             chatMessage.getContent(),
             chatMessage.getCreatedAt(),
             true,
-            null,
+            countUnreadSince(chatMessage.getCreatedAt(), sortedReadBaselines),
             true
         );
     }
