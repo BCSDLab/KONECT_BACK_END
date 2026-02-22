@@ -36,6 +36,7 @@ cat > "${TMP_FILE}" <<EOF
 EOF
 
 mv "${TMP_FILE}" "${TARGETS_FILE}"
+chmod 644 "${TARGETS_FILE}"
 
 if ! curl -fsS -X POST "${PROMETHEUS_RELOAD_URL}" >/dev/null; then
   echo "warning: failed to reload Prometheus (${PROMETHEUS_RELOAD_URL})" >&2
