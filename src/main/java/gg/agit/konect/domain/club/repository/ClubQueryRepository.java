@@ -110,7 +110,7 @@ public class ClubQueryRepository {
             .and(clubRecruitment.id.isNotNull())
             .and(
                 clubRecruitment.isAlwaysRecruiting.isTrue()
-                    .or(clubRecruitment.startDate.loe(now).and(clubRecruitment.endDate.goe(now)))
+                    .or(clubRecruitment.startAt.loe(now).and(clubRecruitment.endAt.goe(now)))
             );
     }
 
@@ -139,7 +139,7 @@ public class ClubQueryRepository {
 
         orders.add(
             new CaseBuilder()
-                .when(isOngoingRecruitment.and(clubRecruitment.endDate.isNull()))
+                .when(isOngoingRecruitment.and(clubRecruitment.endAt.isNull()))
                 .then(1)
                 .otherwise(0)
                 .asc()
@@ -148,7 +148,7 @@ public class ClubQueryRepository {
         orders.add(
             new CaseBuilder()
                 .when(isOngoingRecruitment)
-                .then(clubRecruitment.endDate)
+                .then(clubRecruitment.endAt)
                 .otherwise((LocalDateTime)null)
                 .asc()
         );
@@ -172,7 +172,7 @@ public class ClubQueryRepository {
                     && recruitment != null
                     && Boolean.TRUE.equals(recruitment.getIsAlwaysRecruiting());
                 LocalDateTime applicationDeadline = (recruitment != null && !isAlwaysRecruiting)
-                    ? recruitment.getEndDate()
+                    ? recruitment.getEndAt()
                     : null;
 
                 return new ClubSummaryInfo(

@@ -33,11 +33,11 @@ public record ClubSettingsResponse(
     public record RecruitmentSummary(
         @Schema(description = "모집 시작일시", example = "2026.02.02 09:00", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-        LocalDateTime startDate,
+        LocalDateTime startAt,
 
         @Schema(description = "모집 종료일시", example = "2027.02.02 18:00", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-        LocalDateTime endDate,
+        LocalDateTime endAt,
 
         @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)
         Boolean isAlwaysRecruiting

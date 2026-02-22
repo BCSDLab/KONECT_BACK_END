@@ -25,11 +25,11 @@ public record ClubRecruitmentResponse(
 
     @Schema(description = "모집 시작일시", example = "2025.11.30 09:00", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-    LocalDateTime startDate,
+    LocalDateTime startAt,
 
     @Schema(description = "모집 마감일시", example = "2025.12.31 18:00", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-    LocalDateTime endDate,
+    LocalDateTime endAt,
 
     @Schema(description = "모집 공고 내용", example = "BCSD 2025학년도 2학기 신입 부원 모집...", requiredMode = REQUIRED)
     String content,
@@ -57,8 +57,8 @@ public record ClubRecruitmentResponse(
             recruitment.getId(),
             recruitment.getClub().getId(),
             RecruitmentStatus.of(recruitment),
-            recruitment.getStartDate(),
-            recruitment.getEndDate(),
+            recruitment.getStartAt(),
+            recruitment.getEndAt(),
             recruitment.getContent(),
             recruitment.getImages().stream()
                 .map(InnerRecruitmentImage::from)

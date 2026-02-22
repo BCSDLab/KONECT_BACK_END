@@ -16,11 +16,11 @@ import jakarta.validation.constraints.NotNull;
 public record ClubRecruitmentUpsertRequest(
     @Schema(description = "모집 시작일시", example = "2025.11.30 09:00", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-    LocalDateTime startDate,
+    LocalDateTime startAt,
 
     @Schema(description = "모집 마감일시", example = "2025.12.31 18:00", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-    LocalDateTime endDate,
+    LocalDateTime endAt,
 
     @NotNull(message = "상시 모집 여부는 필수 입력입니다.")
     @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)

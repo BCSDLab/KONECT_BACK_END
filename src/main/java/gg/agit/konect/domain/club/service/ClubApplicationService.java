@@ -311,8 +311,8 @@ public class ClubApplicationService {
 
         return clubApplyQueryRepository.findAllByClubIdAndCreatedAtBetween(
             clubId,
-            recruitment.getStartDate(),
-            recruitment.getEndDate(),
+            recruitment.getStartAt(),
+            recruitment.getEndAt(),
             condition
         );
     }

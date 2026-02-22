@@ -25,20 +25,20 @@ public enum RecruitmentStatus {
             return ONGOING;
         }
 
-        LocalDateTime startDate = clubRecruitment.getStartDate();
-        LocalDateTime endDate = clubRecruitment.getEndDate();
+        LocalDateTime startAt = clubRecruitment.getStartAt();
+        LocalDateTime endAt = clubRecruitment.getEndAt();
 
-        if (startDate == null || endDate == null) {
+        if (startAt == null || endAt == null) {
             return CLOSED;
         }
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (now.isBefore(startDate)) {
+        if (now.isBefore(startAt)) {
             return BEFORE;
         }
 
-        if (now.isAfter(endDate)) {
+        if (now.isAfter(endAt)) {
             return CLOSED;
         }
 

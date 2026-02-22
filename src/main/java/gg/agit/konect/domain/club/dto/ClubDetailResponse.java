@@ -70,21 +70,21 @@ public record ClubDetailResponse(
 
         @Schema(description = "동아리 모집 시작일시", example = "2025.11.30 09:00", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-        LocalDateTime startDate,
+        LocalDateTime startAt,
 
         @Schema(description = "동아리 모집 마감일시", example = "2025.12.31 18:00", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-        LocalDateTime endDate
+        LocalDateTime endAt
     ) {
         public static InnerRecruitment from(ClubRecruitment clubRecruitment, Boolean isRecruitmentEnabled) {
             RecruitmentStatus status = Boolean.TRUE.equals(isRecruitmentEnabled)
                 ? RecruitmentStatus.of(clubRecruitment)
                 : RecruitmentStatus.CLOSED;
 
-            LocalDateTime startDate = (clubRecruitment != null) ? clubRecruitment.getStartDate() : null;
-            LocalDateTime endDate = (clubRecruitment != null) ? clubRecruitment.getEndDate() : null;
+            LocalDateTime startAt = (clubRecruitment != null) ? clubRecruitment.getStartAt() : null;
+            LocalDateTime endAt = (clubRecruitment != null) ? clubRecruitment.getEndAt() : null;
 
-            return new InnerRecruitment(status, startDate, endDate);
+            return new InnerRecruitment(status, startAt, endAt);
         }
     }
 
