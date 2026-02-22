@@ -72,8 +72,10 @@ public record ClubDetailResponse(
         @Schema(description = "동아리 모집 마감일", example = "2025-12-31", requiredMode = NOT_REQUIRED)
         LocalDate endDate
     ) {
-        public static InnerRecruitment from(ClubRecruitment clubRecruitment) {
-            RecruitmentStatus status = RecruitmentStatus.of(clubRecruitment);
+        public static InnerRecruitment from(ClubRecruitment clubRecruitment, Boolean isRecruitmentEnabled) {
+            RecruitmentStatus status = Boolean.TRUE.equals(isRecruitmentEnabled)
+                ? RecruitmentStatus.of(clubRecruitment)
+                : RecruitmentStatus.CLOSED;
 
             LocalDate startDate = (clubRecruitment != null) ? clubRecruitment.getStartDate() : null;
             LocalDate endDate = (clubRecruitment != null) ? clubRecruitment.getEndDate() : null;
@@ -101,7 +103,7 @@ public record ClubDetailResponse(
             club.getImageUrl(),
             club.getClubCategory().getDescription(),
             memberCount,
-            InnerRecruitment.from(clubRecruitment),
+            InnerRecruitment.from(clubRecruitment, club.getIsRecruitmentEnabled()),
             presidentUser.getId(),
             presidentUser.getName(),
             isMember,
