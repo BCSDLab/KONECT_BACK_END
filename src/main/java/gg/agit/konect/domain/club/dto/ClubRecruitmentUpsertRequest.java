@@ -2,7 +2,7 @@ package gg.agit.konect.domain.club.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -14,13 +14,13 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 public record ClubRecruitmentUpsertRequest(
-    @Schema(description = "모집 시작일", example = "2025.11.30", requiredMode = REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd")
-    LocalDate startDate,
+    @Schema(description = "모집 시작일시", example = "2025.11.30 09:00", requiredMode = REQUIRED)
+    @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+    LocalDateTime startDate,
 
-    @Schema(description = "모집 마감일", example = "2025.12.31", requiredMode = REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd")
-    LocalDate endDate,
+    @Schema(description = "모집 마감일시", example = "2025.12.31 18:00", requiredMode = REQUIRED)
+    @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+    LocalDateTime endDate,
 
     @NotNull(message = "상시 모집 여부는 필수 입력입니다.")
     @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)

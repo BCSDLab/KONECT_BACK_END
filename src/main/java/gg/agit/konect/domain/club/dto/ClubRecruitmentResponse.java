@@ -3,7 +3,7 @@ package gg.agit.konect.domain.club.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -23,13 +23,13 @@ public record ClubRecruitmentResponse(
     @Schema(description = "모집 상태", example = "ONGOING", requiredMode = REQUIRED)
     RecruitmentStatus status,
 
-    @Schema(description = "모집 시작일", example = "2025.11.30", requiredMode = REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd")
-    LocalDate startDate,
+    @Schema(description = "모집 시작일시", example = "2025.11.30 09:00", requiredMode = REQUIRED)
+    @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+    LocalDateTime startDate,
 
-    @Schema(description = "모집 마감일", example = "2025.12.31", requiredMode = REQUIRED)
-    @JsonFormat(pattern = "yyyy.MM.dd")
-    LocalDate endDate,
+    @Schema(description = "모집 마감일시", example = "2025.12.31 18:00", requiredMode = REQUIRED)
+    @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+    LocalDateTime endDate,
 
     @Schema(description = "모집 공고 내용", example = "BCSD 2025학년도 2학기 신입 부원 모집...", requiredMode = REQUIRED)
     String content,
