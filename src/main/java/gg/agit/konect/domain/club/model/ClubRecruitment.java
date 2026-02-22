@@ -5,7 +5,7 @@ import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,10 +45,10 @@ public class ClubRecruitment extends BaseEntity {
     private Integer id;
 
     @Column(name = "start_date")
-    private LocalDate startDate;
+    private LocalDateTime startDate;
 
     @Column(name = "end_date")
-    private LocalDate endDate;
+    private LocalDateTime endDate;
 
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -66,8 +66,8 @@ public class ClubRecruitment extends BaseEntity {
     @Builder
     private ClubRecruitment(
         Integer id,
-        LocalDate startDate,
-        LocalDate endDate,
+        LocalDateTime startDate,
+        LocalDateTime endDate,
         String content,
         Boolean isAlwaysRecruiting,
         Club club
@@ -81,8 +81,8 @@ public class ClubRecruitment extends BaseEntity {
     }
 
     public static ClubRecruitment of(
-        LocalDate startDate,
-        LocalDate endDate,
+        LocalDateTime startDate,
+        LocalDateTime endDate,
         Boolean isAlwaysRecruiting,
         String content,
         Club club
@@ -103,19 +103,19 @@ public class ClubRecruitment extends BaseEntity {
             .build();
     }
 
-    private static void validateAlwaysRecruitingDates(LocalDate startDate, LocalDate endDate) {
+    private static void validateAlwaysRecruitingDates(LocalDateTime startDate, LocalDateTime endDate) {
         if (startDate != null || endDate != null) {
             throw CustomException.of(INVALID_RECRUITMENT_DATE_NOT_ALLOWED);
         }
     }
 
-    private static void validateRequiredDates(LocalDate startDate, LocalDate endDate) {
+    private static void validateRequiredDates(LocalDateTime startDate, LocalDateTime endDate) {
         if (startDate == null || endDate == null) {
             throw CustomException.of(INVALID_RECRUITMENT_DATE_REQUIRED);
         }
     }
 
-    private static void validateStartDateBeforeEndDate(LocalDate startDate, LocalDate endDate) {
+    private static void validateStartDateBeforeEndDate(LocalDateTime startDate, LocalDateTime endDate) {
         if (startDate.isAfter(endDate)) {
             throw CustomException.of(INVALID_RECRUITMENT_PERIOD);
         }
@@ -126,8 +126,8 @@ public class ClubRecruitment extends BaseEntity {
     }
 
     public void update(
-        LocalDate startDate,
-        LocalDate endDate,
+        LocalDateTime startDate,
+        LocalDateTime endDate,
         Boolean isAlwaysRecruiting,
         String content
     ) {
