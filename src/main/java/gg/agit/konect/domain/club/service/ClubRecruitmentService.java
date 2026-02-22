@@ -49,8 +49,8 @@ public class ClubRecruitmentService {
 
         ClubRecruitment clubRecruitment = clubRecruitmentRepository.findByClubId(clubId)
             .orElseGet(() -> ClubRecruitment.of(
-                request.startDate(),
-                request.endDate(),
+                request.startAt(),
+                request.endAt(),
                 request.isAlwaysRecruiting(),
                 request.content(),
                 club
@@ -58,8 +58,8 @@ public class ClubRecruitmentService {
 
         if (clubRecruitment.getId() != null) {
             clubRecruitment.update(
-                request.startDate(),
-                request.endDate(),
+                request.startAt(),
+                request.endAt(),
                 request.isAlwaysRecruiting(),
                 request.content()
             );

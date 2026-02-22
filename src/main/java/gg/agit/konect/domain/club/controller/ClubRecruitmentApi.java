@@ -41,9 +41,9 @@ public interface ClubRecruitmentApi {
         - 모집 공고가 있으면 수정
 
         ## 에러
-        - INVALID_RECRUITMENT_DATE_NOT_ALLOWED (400): 상시 모집인 경우 모집 시작일과 마감일을 지정할 수 없습니다.
-        - INVALID_RECRUITMENT_DATE_REQUIRED (400): 상시 모집이 아닐 경우 모집 시작일과 마감일이 필수입니다.
-        - INVALID_RECRUITMENT_PERIOD (400): 모집 시작일은 모집 마감일보다 이전이어야 합니다.
+        - INVALID_RECRUITMENT_DATE_NOT_ALLOWED (400): 상시 모집인 경우 모집 시작일시와 마감일시를 지정할 수 없습니다.
+        - INVALID_RECRUITMENT_DATE_REQUIRED (400): 상시 모집이 아닐 경우 모집 시작일시와 마감일시가 필수입니다.
+        - INVALID_RECRUITMENT_PERIOD (400): 모집 시작일시는 모집 마감일시보다 이전이어야 합니다.
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
