@@ -6,6 +6,10 @@ spring:
       - classpath:application-monitoring.yml
       - classpath:application-security.yml
       - optional:file:.env.${spring.profiles.active}[.properties]
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
 
 app:
   allowed-redirect-origins: ${ALLOWED_ORIGINS}
