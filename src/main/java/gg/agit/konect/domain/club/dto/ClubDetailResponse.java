@@ -3,7 +3,9 @@ package gg.agit.konect.domain.club.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.Club;
@@ -66,19 +68,21 @@ public record ClubDetailResponse(
         @Schema(description = "동아리 모집 상태", example = "ONGOING", requiredMode = REQUIRED)
         RecruitmentStatus status,
 
-        @Schema(description = "동아리 모집 시작일", example = "2025-11-30", requiredMode = NOT_REQUIRED)
-        LocalDate startDate,
+        @Schema(description = "동아리 모집 시작일시", example = "2025.11.30 09:00", requiredMode = NOT_REQUIRED)
+        @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+        LocalDateTime startDate,
 
-        @Schema(description = "동아리 모집 마감일", example = "2025-12-31", requiredMode = NOT_REQUIRED)
-        LocalDate endDate
+        @Schema(description = "동아리 모집 마감일시", example = "2025.12.31 18:00", requiredMode = NOT_REQUIRED)
+        @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+        LocalDateTime endDate
     ) {
         public static InnerRecruitment from(ClubRecruitment clubRecruitment, Boolean isRecruitmentEnabled) {
             RecruitmentStatus status = Boolean.TRUE.equals(isRecruitmentEnabled)
                 ? RecruitmentStatus.of(clubRecruitment)
                 : RecruitmentStatus.CLOSED;
 
-            LocalDate startDate = (clubRecruitment != null) ? clubRecruitment.getStartDate() : null;
-            LocalDate endDate = (clubRecruitment != null) ? clubRecruitment.getEndDate() : null;
+            LocalDateTime startDate = (clubRecruitment != null) ? clubRecruitment.getStartDate() : null;
+            LocalDateTime endDate = (clubRecruitment != null) ? clubRecruitment.getEndDate() : null;
 
             return new InnerRecruitment(status, startDate, endDate);
         }
