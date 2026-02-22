@@ -32,7 +32,7 @@ public class OAuthTokenLoginController {
         HttpServletResponse response,
         @RequestBody OAuthTokenLoginRequest body
     ) throws IOException {
-        Provider provider = Provider.valueOf(body.provider().toUpperCase());
+        Provider provider = resolveProvider(body.provider());
 
         OAuthTokenVerifier verifier = verifiers.stream()
             .filter(v -> v.provider() == provider)
@@ -51,5 +51,13 @@ public class OAuthTokenLoginController {
                 body.redirectUri()
             )
         );
+    }
+
+    private Provider resolveProvider(String rawProvider) {
+        try {
+            return Provider.valueOf(rawProvider.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw CustomException.of(ApiResponseCode.UNSUPPORTED_PROVIDER);
+        }
     }
 }
