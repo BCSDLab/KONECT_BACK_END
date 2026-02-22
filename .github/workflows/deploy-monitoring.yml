@@ -23,13 +23,13 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           source: "monitoring"
-          target: ${{ secrets.WORK_DIR }}
+          target: ${{ secrets.PROD_WORK_DIR }}
           rm: false
 
       - name: Deploy monitoring stack
         uses: appleboy/ssh-action@v0.1.8
         env:
-          WORK_DIR: ${{ secrets.WORK_DIR }}
+          WORK_DIR: ${{ secrets.PROD_WORK_DIR }}
           MONITORING_ENV: ${{ secrets.MONITORING_ENV }}
         with:
           host: ${{ secrets.SERVER_IP }}
