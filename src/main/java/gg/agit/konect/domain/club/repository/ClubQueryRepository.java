@@ -3,7 +3,7 @@ package gg.agit.konect.domain.club.repository;
 import static gg.agit.konect.domain.club.model.QClub.club;
 import static gg.agit.konect.domain.club.model.QClubRecruitment.clubRecruitment;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -105,12 +105,12 @@ public class ClubQueryRepository {
     }
 
     private BooleanExpression createOngoingRecruitmentCondition() {
-        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
         return club.isRecruitmentEnabled.isTrue()
             .and(clubRecruitment.id.isNotNull())
             .and(
                 clubRecruitment.isAlwaysRecruiting.isTrue()
-                    .or(clubRecruitment.startDate.loe(today).and(clubRecruitment.endDate.goe(today)))
+                    .or(clubRecruitment.startDate.loe(now).and(clubRecruitment.endDate.goe(now)))
             );
     }
 
@@ -149,7 +149,7 @@ public class ClubQueryRepository {
             new CaseBuilder()
                 .when(isOngoingRecruitment)
                 .then(clubRecruitment.endDate)
-                .otherwise((LocalDate)null)
+                .otherwise((LocalDateTime)null)
                 .asc()
         );
     }
@@ -171,7 +171,7 @@ public class ClubQueryRepository {
                 boolean isAlwaysRecruiting = isRecruitmentEnabled
                     && recruitment != null
                     && Boolean.TRUE.equals(recruitment.getIsAlwaysRecruiting());
-                LocalDate applicationDeadline = (recruitment != null && !isAlwaysRecruiting)
+                LocalDateTime applicationDeadline = (recruitment != null && !isAlwaysRecruiting)
                     ? recruitment.getEndDate()
                     : null;
 

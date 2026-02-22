@@ -3,8 +3,6 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -311,13 +309,10 @@ public class ClubApplicationService {
             return clubApplyQueryRepository.findAllByClubId(clubId, condition);
         }
 
-        LocalDateTime startDateTime = recruitment.getStartDate().atStartOfDay();
-        LocalDateTime endDateTime = recruitment.getEndDate().atTime(LocalTime.MAX);
-
         return clubApplyQueryRepository.findAllByClubIdAndCreatedAtBetween(
             clubId,
-            startDateTime,
-            endDateTime,
+            recruitment.getStartDate(),
+            recruitment.getEndDate(),
             condition
         );
     }
