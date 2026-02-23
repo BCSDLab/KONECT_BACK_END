@@ -58,5 +58,7 @@ public interface UserRepository extends Repository<User, Integer> {
 
     void delete(User user);
 
+    void flush();
+
     List<User> findAllByIdIn(List<Integer> ids);
 }
