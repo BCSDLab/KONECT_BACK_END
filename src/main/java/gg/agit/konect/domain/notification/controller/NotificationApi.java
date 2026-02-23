@@ -2,12 +2,14 @@ package gg.agit.konect.domain.notification.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
+import gg.agit.konect.domain.notification.dto.NotificationTokenResponse;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +18,12 @@ import jakarta.validation.Valid;
 @Tag(name = "(Normal) Notification: 알림", description = "알림 API")
 @RequestMapping("/notifications")
 public interface NotificationApi {
+
+    @Operation(summary = "본인의 등록된 알림 토큰을 조회한다.")
+    @GetMapping("/tokens")
+    ResponseEntity<NotificationTokenResponse> getMyToken(
+        @UserId Integer userId
+    );
 
     @Operation(summary = "알림 토큰을 등록한다.")
     @PostMapping("/tokens")

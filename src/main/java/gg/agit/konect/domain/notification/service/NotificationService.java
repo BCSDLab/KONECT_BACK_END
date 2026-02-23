@@ -20,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
+import gg.agit.konect.domain.notification.dto.NotificationTokenResponse;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
@@ -58,6 +59,12 @@ public class NotificationService {
         this.notificationMuteSettingRepository = notificationMuteSettingRepository;
         this.restTemplate = restTemplate;
         this.chatPresenceService = chatPresenceService;
+    }
+
+    public NotificationTokenResponse getMyToken(Integer userId) {
+        NotificationDeviceToken token = notificationDeviceTokenRepository.getByUserId(userId);
+
+        return NotificationTokenResponse.from(token);
     }
 
     @Transactional
