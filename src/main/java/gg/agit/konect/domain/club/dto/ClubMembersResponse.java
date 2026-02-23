@@ -23,12 +23,14 @@ public record ClubMembersResponse(
         @Schema(description = "동아리 멤버 프로필 사진", example = "https://bcsdlab.com/static/img/logo.d89d9cc.png", requiredMode = REQUIRED)
         String imageUrl,
 
-        @Schema(description = "동아리 멤버 학번", example = "2020136061", requiredMode = REQUIRED)
+        @Schema(description = "마스킹된 동아리 멤버 학번", example = "*******061", requiredMode = REQUIRED)
         String studentNumber,
 
         @Schema(description = "직책", example = "PRESIDENT", requiredMode = REQUIRED)
         ClubPosition position
     ) {
+        private static final int STUDENT_NUMBER_VISIBLE_LENGTH = 3;
+
         public static InnerClubMember from(ClubMember clubMember) {
             User user = clubMember.getUser();
 
@@ -36,9 +38,19 @@ public record ClubMembersResponse(
                 user.getId(),
                 user.getName(),
                 user.getImageUrl(),
-                user.getStudentNumber(),
+                maskStudentNumber(user.getStudentNumber()),
                 clubMember.getClubPosition()
             );
+        }
+
+        private static String maskStudentNumber(String studentNumber) {
+            if (studentNumber == null || studentNumber.length() <= STUDENT_NUMBER_VISIBLE_LENGTH) {
+                return studentNumber;
+            }
+
+            int maskedLength = studentNumber.length() - STUDENT_NUMBER_VISIBLE_LENGTH;
+            return "*".repeat(maskedLength)
+                + studentNumber.substring(maskedLength);
         }
     }
 
