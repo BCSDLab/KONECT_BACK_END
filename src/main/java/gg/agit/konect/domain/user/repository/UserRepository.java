@@ -3,6 +3,7 @@ package gg.agit.konect.domain.user.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -57,6 +58,10 @@ public interface UserRepository extends Repository<User, Integer> {
     User save(User user);
 
     void delete(User user);
+
+    @Modifying
+    @Query("DELETE FROM User u WHERE u.id = :userId")
+    void deleteByUserId(@Param("userId") Integer userId);
 
     List<User> findAllByIdIn(List<Integer> ids);
 }

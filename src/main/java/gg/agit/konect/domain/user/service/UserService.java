@@ -220,7 +220,7 @@ public class UserService {
             appleTokenRevocationService.revoke(user.getAppleRefreshToken());
         }
 
-        userRepository.delete(user);
+        userRepository.deleteByUserId(userId);
 
         applicationEventPublisher.publishEvent(
             UserWithdrawnEvent.from(user.getEmail(), user.getProvider().name())
