@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
+import gg.agit.konect.domain.notification.dto.NotificationTokenResponse;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 
@@ -15,6 +16,13 @@ import lombok.RequiredArgsConstructor;
 public class NotificationController implements NotificationApi {
 
     private final NotificationService notificationService;
+
+    @Override
+    public ResponseEntity<NotificationTokenResponse> getMyToken(Integer userId) {
+        NotificationTokenResponse response = notificationService.getMyToken(userId);
+
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     public ResponseEntity<Void> registerToken(Integer userId, NotificationTokenRegisterRequest request) {
