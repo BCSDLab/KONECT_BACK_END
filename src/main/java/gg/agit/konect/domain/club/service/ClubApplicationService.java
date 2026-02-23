@@ -180,6 +180,7 @@ public class ClubApplicationService {
         clubMemberRepository.findPresidentByClubId(clubId)
             .ifPresent(president -> applicationEventPublisher.publishEvent(ClubApplicationSubmittedEvent.of(
                 president.getUser().getId(),
+                apply.getId(),
                 clubId,
                 club.getName(),
                 user.getName()
