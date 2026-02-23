@@ -313,12 +313,14 @@ public class NotificationService {
     @Async
     public void sendClubApplicationSubmittedNotification(
         Integer receiverId,
+        Integer applicationId,
         Integer clubId,
         String clubName,
         String applicantName
     ) {
         String body = applicantName + "님이 동아리 가입을 신청했어요.";
-        sendNotification(receiverId, clubName, body, "clubs/" + clubId + "/applications");
+        String path = "mypage/manager/" + clubId + "/applications/" + applicationId;
+        sendNotification(receiverId, clubName, body, path);
     }
 
     @Async

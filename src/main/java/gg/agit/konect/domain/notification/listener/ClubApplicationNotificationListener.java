@@ -29,6 +29,7 @@ public class ClubApplicationNotificationListener {
     public void handleClubApplicationSubmitted(ClubApplicationSubmittedEvent event) {
         notificationService.sendClubApplicationSubmittedNotification(
             event.receiverId(),
+            event.applicationId(),
             event.clubId(),
             event.clubName(),
             event.applicantName()
