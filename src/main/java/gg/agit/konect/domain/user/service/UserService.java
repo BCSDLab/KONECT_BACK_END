@@ -210,7 +210,7 @@ public class UserService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = false)
     public void deleteUser(Integer userId) {
         User user = userRepository.getById(userId);
 
