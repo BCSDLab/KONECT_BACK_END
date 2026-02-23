@@ -347,10 +347,11 @@ public class ChatService {
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
         Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
+        boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom);
         List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
             .map(message -> {
                 Integer senderId = resolveDirectSenderId(message, maskedAdminId);
-                boolean isMine = message.isSentBy(userId);
+                boolean isMine = shouldDisplayAsOwnMessage(user, message, isAdminViewingSystemRoom);
                 boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
                 int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
                 return new ChatMessageDetailResponse(
@@ -772,6 +773,17 @@ public class ChatService {
             .toList();
 
         return userIds.contains(SYSTEM_ADMIN_ID);
+    }
+
+    private boolean shouldDisplayAsOwnMessage(
+        User currentUser,
+        ChatMessage message,
+        boolean isAdminViewingSystemRoom
+    ) {
+        if (isAdminViewingSystemRoom) {
+            return message.getSender().getRole() == UserRole.ADMIN;
+        }
+        return message.isSentBy(currentUser.getId());
     }
 
     private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
