@@ -5,7 +5,7 @@ import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PROTECTED;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,11 +44,11 @@ public class ClubRecruitment extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Integer id;
 
-    @Column(name = "start_date")
-    private LocalDate startDate;
+    @Column(name = "start_at")
+    private LocalDateTime startAt;
 
-    @Column(name = "end_date")
-    private LocalDate endDate;
+    @Column(name = "end_at")
+    private LocalDateTime endAt;
 
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -66,57 +66,57 @@ public class ClubRecruitment extends BaseEntity {
     @Builder
     private ClubRecruitment(
         Integer id,
-        LocalDate startDate,
-        LocalDate endDate,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         String content,
         Boolean isAlwaysRecruiting,
         Club club
     ) {
         this.id = id;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.startAt = startAt;
+        this.endAt = endAt;
         this.content = content;
         this.isAlwaysRecruiting = isAlwaysRecruiting;
         this.club = club;
     }
 
     public static ClubRecruitment of(
-        LocalDate startDate,
-        LocalDate endDate,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         Boolean isAlwaysRecruiting,
         String content,
         Club club
     ) {
         if (isAlwaysRecruiting) {
-            validateAlwaysRecruitingDates(startDate, endDate);
+            validateAlwaysRecruitingDates(startAt, endAt);
         } else {
-            validateRequiredDates(startDate, endDate);
-            validateStartDateBeforeEndDate(startDate, endDate);
+            validateRequiredDates(startAt, endAt);
+            validateStartAtBeforeEndAt(startAt, endAt);
         }
 
         return ClubRecruitment.builder()
-            .startDate(startDate)
-            .endDate(endDate)
+            .startAt(startAt)
+            .endAt(endAt)
             .content(content)
             .club(club)
             .isAlwaysRecruiting(isAlwaysRecruiting)
             .build();
     }
 
-    private static void validateAlwaysRecruitingDates(LocalDate startDate, LocalDate endDate) {
-        if (startDate != null || endDate != null) {
+    private static void validateAlwaysRecruitingDates(LocalDateTime startAt, LocalDateTime endAt) {
+        if (startAt != null || endAt != null) {
             throw CustomException.of(INVALID_RECRUITMENT_DATE_NOT_ALLOWED);
         }
     }
 
-    private static void validateRequiredDates(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null || endDate == null) {
+    private static void validateRequiredDates(LocalDateTime startAt, LocalDateTime endAt) {
+        if (startAt == null || endAt == null) {
             throw CustomException.of(INVALID_RECRUITMENT_DATE_REQUIRED);
         }
     }
 
-    private static void validateStartDateBeforeEndDate(LocalDate startDate, LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
+    private static void validateStartAtBeforeEndAt(LocalDateTime startAt, LocalDateTime endAt) {
+        if (startAt.isAfter(endAt)) {
             throw CustomException.of(INVALID_RECRUITMENT_PERIOD);
         }
     }
@@ -126,20 +126,20 @@ public class ClubRecruitment extends BaseEntity {
     }
 
     public void update(
-        LocalDate startDate,
-        LocalDate endDate,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         Boolean isAlwaysRecruiting,
         String content
     ) {
         if (isAlwaysRecruiting) {
-            validateAlwaysRecruitingDates(startDate, endDate);
+            validateAlwaysRecruitingDates(startAt, endAt);
         } else {
-            validateRequiredDates(startDate, endDate);
-            validateStartDateBeforeEndDate(startDate, endDate);
+            validateRequiredDates(startAt, endAt);
+            validateStartAtBeforeEndAt(startAt, endAt);
         }
 
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.startAt = startAt;
+        this.endAt = endAt;
         this.isAlwaysRecruiting = isAlwaysRecruiting;
         this.content = content;
     }

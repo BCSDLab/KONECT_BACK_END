@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.club.enums;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import lombok.Getter;
@@ -25,20 +25,20 @@ public enum RecruitmentStatus {
             return ONGOING;
         }
 
-        LocalDate startDate = clubRecruitment.getStartDate();
-        LocalDate endDate = clubRecruitment.getEndDate();
+        LocalDateTime startAt = clubRecruitment.getStartAt();
+        LocalDateTime endAt = clubRecruitment.getEndAt();
 
-        if (startDate == null || endDate == null) {
+        if (startAt == null || endAt == null) {
             return CLOSED;
         }
 
-        LocalDate now = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
 
-        if (now.isBefore(startDate)) {
+        if (now.isBefore(startAt)) {
             return BEFORE;
         }
 
-        if (now.isAfter(endDate)) {
+        if (now.isAfter(endAt)) {
             return CLOSED;
         }
 

@@ -3,7 +3,7 @@ package gg.agit.konect.domain.club.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -56,9 +56,13 @@ public record ClubsResponse(
         @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)
         Boolean isAlwaysRecruiting,
 
-        @Schema(description = "지원 마감일(상시 모집이거나 모집 공고가 없으면 null)", example = "2025.12.31", requiredMode = NOT_REQUIRED)
-        @JsonFormat(pattern = "yyyy.MM.dd")
-        LocalDate applicationDeadline
+        @Schema(
+            description = "지원 마감일시(상시 모집이거나 모집 공고가 없으면 null)",
+            example = "2025.12.31 18:00",
+            requiredMode = NOT_REQUIRED
+        )
+        @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+        LocalDateTime applicationDeadline
     ) {
         public static InnerClubResponse from(ClubSummaryInfo clubSummaryInfo, boolean isPendingApproval) {
             return new InnerClubResponse(

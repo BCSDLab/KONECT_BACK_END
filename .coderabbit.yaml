@@ -1,0 +1,44 @@
+language: "ko-KR"
+early_access: false
+
+reviews:
+  profile: "assertive"
+  high_level_summary: false
+  review_status: true
+  review_details: true
+  request_changes_workflow: true
+  auto_review:
+    enabled: true
+    drafts: true
+  path_instructions:
+    - path: "src/main/java/**/*.java"
+      instructions: |
+        아래 원칙으로 리뷰 코멘트를 작성한다.
+        - 코멘트는 반드시 한국어로 작성한다.
+        - 반드시 수정이 필요한 항목만 코멘트로 남기고, 단순 취향 차이는 지적하지 않는다.
+        - 각 코멘트 첫 줄에 심각도를 `[LEVEL: high|medium|low]` 형식으로 반드시 표기한다.
+        - 심각도 기준: high=운영 장애 가능, medium=품질 저하, low=개선 권고.
+        - 각 코멘트는 "문제 -> 영향 -> 제안" 순서로 3문장 이내로 간결하게 작성한다.
+        - 가능하면 재현 조건 및 실패 시나리오도 포함한다.
+        - 제안은 현재 코드베이스(Spring Boot + JPA + Flyway) 패턴과 일치해야 한다.
+        - 보안, 트랜잭션 경계, 예외 처리, N+1, 성능 회귀 가능성을 우선 점검한다.
+        - 가독성: 변수/메서드 이름이 의도를 바로 드러내는지, 중첩과 메서드 길이가 과도하지 않은지 점검한다.
+        - 단순화: 불필요한 추상화, 중복 로직, 과한 방어 코드가 있으면 더 단순한 대안을 제시한다.
+        - 확장성: 새 요구사항 추가 시 변경 범위가 최소화되는 구조인지(하드코딩 분기/값 여부 포함) 점검한다.
+    - path: "src/main/resources/db/migration/**/*.sql"
+      instructions: |
+        Flyway 마이그레이션 리뷰 규칙:
+        - 버전 파일명 규칙(V{number}__{description}.sql) 위반 여부를 우선 확인한다.
+        - 이미 배포된 마이그레이션 수정/재번호 부여 위험이 있으면 반드시 차단 코멘트를 남긴다.
+        - 파괴적 변경(drop, rename 등)은 롤백 가능성과 운영 영향 관점에서 검토한다.
+    - path: "**/*"
+      instructions: |
+        공통 리뷰 톤 가이드:
+        - 모든 코멘트는 첫 줄에 `[LEVEL: ...]` 태그를 포함한다.
+        - 과장된 표현 없이 사실 기반으로 작성한다.
+        - 한 코멘트에는 하나의 이슈만 다룬다.
+        - 코드 예시가 필요하면 최소 수정 예시를 제시한다.
+        - 가독성/단순화/확장성 이슈를 발견하면 우선순위를 높여 코멘트한다.
+
+chat:
+  auto_reply: true

@@ -20,13 +20,13 @@ public record ClubApplicationCondition(
     @Schema(description = "정렬 기준", example = "APPLIED_AT", defaultValue = "APPLIED_AT")
     ClubApplicationSortBy sortBy,
 
-    @Schema(description = "정렬 방향", example = "DESC", defaultValue = "DESC")
+    @Schema(description = "정렬 방향", example = "ASC", defaultValue = "ASC")
     Sort.Direction sortDirection
 ) {
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_LIMIT = 10;
     private static final ClubApplicationSortBy DEFAULT_SORT_BY = ClubApplicationSortBy.APPLIED_AT;
-    private static final Sort.Direction DEFAULT_SORT_DIRECTION = Sort.Direction.DESC;
+    private static final Sort.Direction DEFAULT_SORT_DIRECTION = Sort.Direction.ASC;
 
     public ClubApplicationCondition {
         page = page != null ? page : DEFAULT_PAGE;

@@ -83,8 +83,8 @@ public class ClubSettingsService {
     private RecruitmentSummary buildRecruitmentSummary(Integer clubId) {
         return clubRecruitmentRepository.findByClubId(clubId)
             .map(recruitment -> new RecruitmentSummary(
-                recruitment.getStartDate(),
-                recruitment.getEndDate(),
+                recruitment.getStartAt(),
+                recruitment.getEndAt(),
                 Boolean.TRUE.equals(recruitment.getIsAlwaysRecruiting())
             ))
             .orElse(null);

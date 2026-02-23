@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "notification_device_token",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uq_notification_device_token_token", columnNames = "token")
+        @UniqueConstraint(name = "uq_notification_device_token_user_id", columnNames = "user_id")
     }
 )
 @NoArgsConstructor(access = PROTECTED)
@@ -37,7 +37,7 @@ public class NotificationDeviceToken extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "token", length = 255, nullable = false, unique = true)
+    @Column(name = "token", length = 255, nullable = false)
     private String token;
 
     private NotificationDeviceToken(Integer id, User user, String token) {
@@ -50,7 +50,7 @@ public class NotificationDeviceToken extends BaseEntity {
         return new NotificationDeviceToken(null, user, token);
     }
 
-    public void updateUser(User user) {
-        this.user = user;
+    public void updateToken(String token) {
+        this.token = token;
     }
 }
