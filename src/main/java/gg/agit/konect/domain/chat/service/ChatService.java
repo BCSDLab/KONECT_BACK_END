@@ -342,15 +342,15 @@ public class ChatService {
 
         boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom);
 
-        if (isAdminViewingSystemRoom) {
-            updateAllAdminMembersLastReadAt(roomId, readAt);
-        } else {
-            member.updateLastReadAt(readAt);
-        }
-
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+
+        if (isAdminViewingSystemRoom) {
+            updateAllAdminMembersLastReadAt(members, readAt);
+        } else {
+            member.updateLastReadAt(readAt);
+        }
 
         List<LocalDateTime> sortedReadBaselines = isAdminViewingSystemRoom
             ? toAdminChatReadBaselines(members)
@@ -736,8 +736,7 @@ public class ChatService {
         return baselines;
     }
 
-    private void updateAllAdminMembersLastReadAt(Integer roomId, LocalDateTime readAt) {
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+    private void updateAllAdminMembersLastReadAt(List<ChatRoomMember> members, LocalDateTime readAt) {
         for (ChatRoomMember member : members) {
             if (member.getUser().getRole() == UserRole.ADMIN) {
                 member.updateLastReadAt(readAt);
