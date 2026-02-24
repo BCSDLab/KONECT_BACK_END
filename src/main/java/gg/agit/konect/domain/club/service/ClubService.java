@@ -126,7 +126,7 @@ public class ClubService {
         ClubMember savedPresident = clubMemberRepository.save(president);
         chatRoomMembershipService.addClubMember(savedPresident);
 
-        return getClubDetail(savedClub.getId(), request.presidentUserId());
+        return getClubDetail(savedClub.getId(), userId);
     }
 
     @Transactional
