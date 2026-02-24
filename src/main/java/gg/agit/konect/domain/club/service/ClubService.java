@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
 import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CLUB_MEMBER_ACCESS;
+import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_ROLE_ACCESS;
 
 import java.util.HashSet;
 import java.util.List;
@@ -104,8 +105,13 @@ public class ClubService {
 
     @Transactional
     public ClubDetailResponse createClub(Integer userId, ClubCreateRequest request) {
-        User user = userRepository.getById(userId);
-        Club club = request.toEntity(user.getUniversity());
+        User adminUser = userRepository.getById(userId);
+        if (!adminUser.isAdmin()) {
+            throw CustomException.of(FORBIDDEN_ROLE_ACCESS);
+        }
+
+        User presidentUser = userRepository.getById(request.presidentUserId());
+        Club club = request.toEntity(presidentUser.getUniversity());
 
         Club savedClub = clubRepository.save(club);
 
@@ -113,14 +119,14 @@ public class ClubService {
 
         ClubMember president = ClubMember.builder()
             .club(savedClub)
-            .user(user)
+            .user(presidentUser)
             .clubPosition(PRESIDENT)
             .build();
 
         ClubMember savedPresident = clubMemberRepository.save(president);
         chatRoomMembershipService.addClubMember(savedPresident);
 
-        return getClubDetail(savedClub.getId(), userId);
+        return getClubDetail(savedClub.getId(), request.presidentUserId());
     }
 
     @Transactional

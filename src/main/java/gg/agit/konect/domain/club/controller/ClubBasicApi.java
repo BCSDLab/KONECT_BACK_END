@@ -58,10 +58,12 @@ public interface ClubBasicApi {
         @UserId Integer userId
     );
 
-    @Operation(summary = "새로운 동아리를 생성한다.", description = """
-        새로운 동아리를 생성하고, 생성한 사용자를 회장으로 등록합니다.
-        
+    @Operation(summary = "새로운 동아리를 생성한다 (어드민 전용).", description = """
+        어드민만 새로운 동아리를 생성할 수 있습니다.
+        요청 본문의 presidentUserId로 지정된 유저를 회장으로 등록하며, 해당 유저의 대학교에 동아리가 생성됩니다.
+
         ## 에러
+        - FORBIDDEN_ROLE_ACCESS (403): 어드민 권한이 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
         """)
     @PostMapping
