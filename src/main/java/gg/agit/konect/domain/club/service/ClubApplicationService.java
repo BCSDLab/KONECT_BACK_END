@@ -252,7 +252,7 @@ public class ClubApplicationService {
             questionsToCreate.add(ClubApplyQuestion.of(
                 club,
                 questionRequest.question(),
-                questionRequest.isRequired())
+                questionRequest.isRequiredOrDefault())
             );
         }
 
@@ -283,7 +283,7 @@ public class ClubApplicationService {
 
             existingQuestion.update(
                 questionRequest.question(),
-                questionRequest.isRequired()
+                questionRequest.isRequiredOrDefault()
             );
         }
     }

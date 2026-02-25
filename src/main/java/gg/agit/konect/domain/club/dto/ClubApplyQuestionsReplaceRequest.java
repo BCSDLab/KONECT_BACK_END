@@ -26,9 +26,11 @@ public record ClubApplyQuestionsReplaceRequest(
         @Schema(description = "문항 내용", example = "지원 동기를 입력해주세요.", requiredMode = REQUIRED)
         String question,
 
-        @NotNull(message = "필수 여부는 필수 입력입니다.")
-        @Schema(description = "필수 여부", example = "true", requiredMode = REQUIRED)
+        @Schema(description = "필수 여부 (미입력 시 true)", example = "true", requiredMode = NOT_REQUIRED)
         Boolean isRequired
     ) {
+        public boolean isRequiredOrDefault() {
+            return isRequired == null || isRequired;
+        }
     }
 }
