@@ -54,7 +54,7 @@ public record ClubCreateRequest(
             .clubCategory(clubCategory)
             .university(university)
             .isRecruitmentEnabled(false)
-            .isApplicationEnabled(false)
+            .isApplicationEnabled(true)
             .isFeeRequired(false)
             .build();
     }
