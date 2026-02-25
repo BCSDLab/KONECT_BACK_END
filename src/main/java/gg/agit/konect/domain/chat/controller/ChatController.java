@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.chat.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,11 +18,13 @@ import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chats")
+@Validated
 public class ChatController implements ChatApi {
 
     private final ChatService chatService;
@@ -53,7 +56,9 @@ public class ChatController implements ChatApi {
 
     @Override
     public ResponseEntity<ChatMessagePageResponse> getChatRoomMessages(
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
         @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId

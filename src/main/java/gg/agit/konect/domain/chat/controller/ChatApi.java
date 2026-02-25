@@ -19,6 +19,7 @@ import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 
 @Tag(name = "(Normal) Chat: 채팅", description = "채팅 API")
 @RequestMapping("/chats")
@@ -90,7 +91,9 @@ public interface ChatApi {
         """)
     @GetMapping("/rooms/{chatRoomId}")
     ResponseEntity<ChatMessagePageResponse> getChatRoomMessages(
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
         @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
