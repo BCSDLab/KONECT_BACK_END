@@ -45,9 +45,9 @@ public class ClubApplicationController implements ClubApplicationApi {
     @Override
     public ResponseEntity<ClubApplicationsResponse> getClubApplications(
         @PathVariable(name = "clubId") Integer clubId,
-        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다")
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
         @RequestParam(defaultValue = "1") Integer page,
-        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다")
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
         @RequestParam(defaultValue = "10") Integer limit,
         @RequestParam(defaultValue = "APPLIED_AT") ClubApplicationSortBy sortBy,
         @RequestParam(defaultValue = "ASC") Sort.Direction sortDirection,
