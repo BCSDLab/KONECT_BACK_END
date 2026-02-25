@@ -10,6 +10,7 @@ import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
+import gg.agit.konect.domain.user.service.UserActivityService;
 import gg.agit.konect.domain.user.service.UserService;
 import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.annotation.PublicApi;
@@ -29,6 +30,7 @@ public class UserController implements UserApi {
     private final SignupTokenService signupTokenService;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
+    private final UserActivityService userActivityService;
     private final AuthCookieService authCookieService;
 
     @Override
@@ -75,6 +77,7 @@ public class UserController implements UserApi {
     public ResponseEntity<UserAccessTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = authCookieService.getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
         RefreshTokenService.Rotated rotated = refreshTokenService.rotate(refreshToken);
+        userActivityService.updateLastLoginAt(rotated.userId());
 
         String accessToken = jwtProvider.createToken(rotated.userId());
         authCookieService.setRefreshToken(request, response, rotated.refreshToken(), refreshTokenService.refreshTtl());

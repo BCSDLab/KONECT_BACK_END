@@ -4,6 +4,8 @@ import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.time.LocalDateTime;
+
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.enums.UserRole;
@@ -90,6 +92,12 @@ public class User extends BaseEntity {
     @Column(name = "apple_refresh_token", length = 1024)
     private String appleRefreshToken;
 
+    @Column(name = "last_login_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime lastLoginAt;
+
+    @Column(name = "last_activity_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime lastActivityAt;
+
     @Builder
     private User(
         Integer id,
@@ -170,5 +178,14 @@ public class User extends BaseEntity {
 
     public void updateAppleRefreshToken(String appleRefreshToken) {
         this.appleRefreshToken = appleRefreshToken;
+    }
+
+    public void updateLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+        this.lastActivityAt = lastLoginAt;
+    }
+
+    public void updateLastActivityAt(LocalDateTime lastActivityAt) {
+        this.lastActivityAt = lastActivityAt;
     }
 }
