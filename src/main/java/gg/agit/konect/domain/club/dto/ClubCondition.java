@@ -6,12 +6,12 @@ import jakarta.validation.constraints.Min;
 
 public record ClubCondition(
     @Schema(description = "페이지 번호", example = "1", defaultValue = "1")
-    @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다")
+    @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
     Integer page,
 
     @Schema(description = "페이지 당 항목 수", example = "10", defaultValue = "10")
-    @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다")
-    @Max(value = 100, message = "페이지 당 항목 수는 100 이하여야 합니다")
+    @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
+    @Max(value = 100, message = "페이지 당 항목 수는 100 이하여야 합니다.")
     Integer limit,
 
     @Schema(description = "검색 키워드", example = "Bcsd", defaultValue = "")

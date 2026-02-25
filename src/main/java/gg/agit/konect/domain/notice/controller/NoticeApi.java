@@ -17,6 +17,7 @@ import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 
 @Tag(name = "(Normal) Notice: 공지사항", description = "공지사항 API")
 public interface NoticeApi {
@@ -24,7 +25,9 @@ public interface NoticeApi {
     @Operation(summary = "페이지네이션으로 총동아리연합회 공지사항을 조회한다.")
     @GetMapping("/councils/notices")
     ResponseEntity<CouncilNoticesResponse> getNotices(
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
         @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
         @RequestParam(name = "limit", defaultValue = "10", required = false) Integer limit,
         @UserId Integer userId
     );

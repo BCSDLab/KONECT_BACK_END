@@ -30,6 +30,8 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.WebUtils;
 
 import gg.agit.konect.global.code.ApiResponseCode;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -75,6 +77,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Object> handleMethodArgumentTypeMismatchException() {
         return buildErrorResponse(ApiResponseCode.INVALID_TYPE_VALUE);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex) {
+        ApiResponseCode errorCode = ApiResponseCode.INVALID_REQUEST_BODY;
+        String errorTraceId = UUID.randomUUID().toString();
+
+        List<ErrorResponse.FieldError> fieldErrors = ex.getConstraintViolations()
+            .stream()
+            .map(this::toFieldError)
+            .toList();
+
+        ErrorResponse body = new ErrorResponse(
+            errorCode.getCode(),
+            errorCode.getMessage(),
+            errorTraceId,
+            fieldErrors
+        );
+
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(body);
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
@@ -259,6 +281,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String constraint = Objects.requireNonNull(fe.getCode());
         String message = Objects.requireNonNullElse(
             fe.getDefaultMessage(), ApiResponseCode.INVALID_REQUEST_BODY.getMessage()
+        );
+
+        return new ErrorResponse.FieldError(field, message, constraint);
+    }
+
+    private ErrorResponse.FieldError toFieldError(ConstraintViolation<?> violation) {
+        String field = Objects.requireNonNullElse(violation.getPropertyPath(), "").toString();
+        String constraint = violation.getConstraintDescriptor()
+            .getAnnotation()
+            .annotationType()
+            .getSimpleName();
+        String message = Objects.requireNonNullElse(
+            violation.getMessage(), ApiResponseCode.INVALID_REQUEST_BODY.getMessage()
         );
 
         return new ErrorResponse.FieldError(field, message, constraint);
