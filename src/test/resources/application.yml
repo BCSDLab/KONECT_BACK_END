@@ -1,0 +1,14 @@
+spring:
+  profiles:
+    active: test
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+server:
+  forward-headers-strategy: framework
+  tomcat:
+    mbeanregistry:
+      enabled: true
