@@ -88,6 +88,23 @@ public class ClubApplicationService {
         return ClubApplicationsResponse.from(clubAppliesPage);
     }
 
+    public ClubApplicationsResponse getApprovedMemberApplications(
+        Integer clubId,
+        Integer userId,
+        ClubApplicationCondition condition
+    ) {
+        clubRepository.getById(clubId);
+
+        clubPermissionValidator.validateManagerAccess(clubId, userId);
+
+        Page<ClubApply> clubAppliesPage = clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(
+            clubId,
+            condition
+        );
+
+        return ClubApplicationsResponse.from(clubAppliesPage);
+    }
+
     public ClubApplicationAnswersResponse getClubApplicationAnswers(
         Integer clubId,
         Integer applicationId,
