@@ -29,10 +29,12 @@ import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubMembers;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
+import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
@@ -51,6 +53,7 @@ public class ClubService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubApplyRepository clubApplyRepository;
+    private final ClubApplyQuestionRepository clubApplyQuestionRepository;
     private final UserRepository userRepository;
     private final ClubPermissionValidator clubPermissionValidator;
     private final ChatRoomRepository chatRoomRepository;
@@ -126,7 +129,23 @@ public class ClubService {
         ClubMember savedPresident = clubMemberRepository.save(president);
         chatRoomMembershipService.addClubMember(savedPresident);
 
+        createDefaultApplyQuestions(savedClub);
+
         return getClubDetail(savedClub.getId(), userId);
+    }
+
+    private void createDefaultApplyQuestions(Club club) {
+        ClubApplyQuestion phoneQuestion = ClubApplyQuestion.of(
+            club,
+            "본인의 전화번호를 입력해주세요.",
+            true
+        );
+        ClubApplyQuestion motivationQuestion = ClubApplyQuestion.of(
+            club,
+            "지원 동기",
+            false
+        );
+        clubApplyQuestionRepository.saveAll(List.of(phoneQuestion, motivationQuestion));
     }
 
     @Transactional
