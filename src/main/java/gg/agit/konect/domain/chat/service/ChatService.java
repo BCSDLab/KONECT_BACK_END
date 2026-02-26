@@ -339,18 +339,28 @@ public class ChatService {
 
         LocalDateTime readAt = LocalDateTime.now();
         chatPresenceService.recordPresence(roomId, userId);
-        member.updateLastReadAt(readAt);
+
+        boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, pageable);
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
+
+        if (isAdminViewingSystemRoom) {
+            updateAllAdminMembersLastReadAt(members, readAt);
+        } else {
+            member.updateLastReadAt(readAt);
+        }
+
+        List<LocalDateTime> sortedReadBaselines = isAdminViewingSystemRoom
+            ? toAdminChatReadBaselines(members)
+            : toSortedReadBaselines(members);
 
         Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
         List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
             .map(message -> {
                 Integer senderId = resolveDirectSenderId(message, maskedAdminId);
-                boolean isMine = message.isSentBy(userId);
+                boolean isMine = shouldDisplayAsOwnMessage(user, message, isAdminViewingSystemRoom);
                 boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
                 int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
                 return new ChatMessageDetailResponse(
@@ -701,6 +711,39 @@ public class ChatService {
         return baselines;
     }
 
+    private List<LocalDateTime> toAdminChatReadBaselines(List<ChatRoomMember> members) {
+        LocalDateTime adminLastReadAt = null;
+        LocalDateTime userLastReadAt = null;
+
+        for (ChatRoomMember member : members) {
+            if (member.getUser().getRole() == UserRole.ADMIN) {
+                if (adminLastReadAt == null || member.getLastReadAt().isAfter(adminLastReadAt)) {
+                    adminLastReadAt = member.getLastReadAt();
+                }
+            } else {
+                userLastReadAt = member.getLastReadAt();
+            }
+        }
+
+        List<LocalDateTime> baselines = new ArrayList<>();
+        if (adminLastReadAt != null) {
+            baselines.add(adminLastReadAt);
+        }
+        if (userLastReadAt != null) {
+            baselines.add(userLastReadAt);
+        }
+        baselines.sort(Comparator.naturalOrder());
+        return baselines;
+    }
+
+    private void updateAllAdminMembersLastReadAt(List<ChatRoomMember> members, LocalDateTime readAt) {
+        for (ChatRoomMember member : members) {
+            if (member.getUser().getRole() == UserRole.ADMIN) {
+                member.updateLastReadAt(readAt);
+            }
+        }
+    }
+
     private int countUnreadSince(LocalDateTime messageCreatedAt, List<LocalDateTime> sortedReadBaselines) {
         int left = 0;
         int right = sortedReadBaselines.size();
@@ -772,6 +815,17 @@ public class ChatService {
             .toList();
 
         return userIds.contains(SYSTEM_ADMIN_ID);
+    }
+
+    private boolean shouldDisplayAsOwnMessage(
+        User currentUser,
+        ChatMessage message,
+        boolean isAdminViewingSystemRoom
+    ) {
+        if (isAdminViewingSystemRoom) {
+            return message.getSender().getRole() == UserRole.ADMIN;
+        }
+        return message.isSentBy(currentUser.getId());
     }
 
     private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {

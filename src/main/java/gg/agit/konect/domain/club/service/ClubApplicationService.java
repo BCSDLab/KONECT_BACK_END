@@ -126,7 +126,6 @@ public class ClubApplicationService {
 
         ClubMember savedMember = clubMemberRepository.save(newMember);
         chatRoomMembershipService.addClubMember(savedMember);
-        clubApplyRepository.delete(clubApply);
 
         applicationEventPublisher.publishEvent(ClubApplicationApprovedEvent.of(
             applicant.getId(),
@@ -252,7 +251,7 @@ public class ClubApplicationService {
             questionsToCreate.add(ClubApplyQuestion.of(
                 club,
                 questionRequest.question(),
-                questionRequest.isRequired())
+                questionRequest.isRequiredOrDefault())
             );
         }
 
@@ -283,7 +282,7 @@ public class ClubApplicationService {
 
             existingQuestion.update(
                 questionRequest.question(),
-                questionRequest.isRequired()
+                questionRequest.isRequiredOrDefault()
             );
         }
     }

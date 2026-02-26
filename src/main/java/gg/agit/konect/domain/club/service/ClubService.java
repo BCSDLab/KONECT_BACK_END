@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
 import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CLUB_MEMBER_ACCESS;
+import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_ROLE_ACCESS;
 
 import java.util.HashSet;
 import java.util.List;
@@ -28,10 +29,12 @@ import gg.agit.konect.domain.club.dto.ClubUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.dto.MyManagedClubResponse;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubMembers;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.model.ClubSummaryInfo;
+import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubQueryRepository;
@@ -50,6 +53,7 @@ public class ClubService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubApplyRepository clubApplyRepository;
+    private final ClubApplyQuestionRepository clubApplyQuestionRepository;
     private final UserRepository userRepository;
     private final ClubPermissionValidator clubPermissionValidator;
     private final ChatRoomRepository chatRoomRepository;
@@ -104,8 +108,13 @@ public class ClubService {
 
     @Transactional
     public ClubDetailResponse createClub(Integer userId, ClubCreateRequest request) {
-        User user = userRepository.getById(userId);
-        Club club = request.toEntity(user.getUniversity());
+        User adminUser = userRepository.getById(userId);
+        if (!adminUser.isAdmin()) {
+            throw CustomException.of(FORBIDDEN_ROLE_ACCESS);
+        }
+
+        User presidentUser = userRepository.getById(request.presidentUserId());
+        Club club = request.toEntity(presidentUser.getUniversity());
 
         Club savedClub = clubRepository.save(club);
 
@@ -113,14 +122,30 @@ public class ClubService {
 
         ClubMember president = ClubMember.builder()
             .club(savedClub)
-            .user(user)
+            .user(presidentUser)
             .clubPosition(PRESIDENT)
             .build();
 
         ClubMember savedPresident = clubMemberRepository.save(president);
         chatRoomMembershipService.addClubMember(savedPresident);
 
+        createDefaultApplyQuestions(savedClub);
+
         return getClubDetail(savedClub.getId(), userId);
+    }
+
+    private void createDefaultApplyQuestions(Club club) {
+        ClubApplyQuestion phoneQuestion = ClubApplyQuestion.of(
+            club,
+            "본인의 전화번호를 입력해주세요.",
+            true
+        );
+        ClubApplyQuestion motivationQuestion = ClubApplyQuestion.of(
+            club,
+            "지원 동기",
+            false
+        );
+        clubApplyQuestionRepository.saveAll(List.of(phoneQuestion, motivationQuestion));
     }
 
     @Transactional
