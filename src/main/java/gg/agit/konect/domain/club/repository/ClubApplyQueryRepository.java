@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.repository;
 
 import static gg.agit.konect.domain.club.model.QClubApply.clubApply;
+import static gg.agit.konect.domain.club.model.QClubMember.clubMember;
 import static gg.agit.konect.domain.user.model.QUser.user;
 
 import java.time.LocalDateTime;
@@ -13,6 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
@@ -36,10 +39,15 @@ public class ClubApplyQueryRepository {
             condition.sortDirection()
         );
 
+        BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
+
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
             .join(clubApply.user, user).fetchJoin()
-            .where(clubApply.club.id.eq(clubId))
+            .where(
+                clubApply.club.id.eq(clubId),
+                notAlreadyMember
+            )
             .orderBy(orderSpecifier)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
@@ -48,7 +56,10 @@ public class ClubApplyQueryRepository {
         Long total = jpaQueryFactory
             .select(clubApply.count())
             .from(clubApply)
-            .where(clubApply.club.id.eq(clubId))
+            .where(
+                clubApply.club.id.eq(clubId),
+                notAlreadyMember
+            )
             .fetchOne();
 
         return new PageImpl<>(content, pageable, total != null ? total : 0L);
@@ -66,12 +77,15 @@ public class ClubApplyQueryRepository {
             condition.sortDirection()
         );
 
+        BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
+
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
             .join(clubApply.user, user).fetchJoin()
             .where(
                 clubApply.club.id.eq(clubId),
-                clubApply.createdAt.between(startDateTime, endDateTime)
+                clubApply.createdAt.between(startDateTime, endDateTime),
+                notAlreadyMember
             )
             .orderBy(orderSpecifier)
             .offset(pageable.getOffset())
@@ -83,7 +97,8 @@ public class ClubApplyQueryRepository {
             .from(clubApply)
             .where(
                 clubApply.club.id.eq(clubId),
-                clubApply.createdAt.between(startDateTime, endDateTime)
+                clubApply.createdAt.between(startDateTime, endDateTime),
+                notAlreadyMember
             )
             .fetchOne();
 
@@ -106,5 +121,63 @@ public class ClubApplyQueryRepository {
                 ? user.name.asc()
                 : user.name.desc();
         };
+    }
+
+    private BooleanExpression notAlreadyClubMember(Integer clubId) {
+        return JPAExpressions
+            .selectOne()
+            .from(clubMember)
+            .where(
+                clubMember.club.id.eq(clubId),
+                clubMember.user.id.eq(clubApply.user.id)
+            )
+            .notExists();
+    }
+
+    public Page<ClubApply> findApprovedMemberApplicationsByClubId(
+        Integer clubId,
+        ClubApplicationCondition condition
+    ) {
+        PageRequest pageable = PageRequest.of(condition.page() - 1, condition.limit());
+        OrderSpecifier<?> orderSpecifier = createOrderSpecifier(
+            condition.sortBy(),
+            condition.sortDirection()
+        );
+
+        BooleanExpression isClubMember = isAlreadyClubMember(clubId);
+
+        List<ClubApply> content = jpaQueryFactory
+            .selectFrom(clubApply)
+            .join(clubApply.user, user).fetchJoin()
+            .where(
+                clubApply.club.id.eq(clubId),
+                isClubMember
+            )
+            .orderBy(orderSpecifier)
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .fetch();
+
+        Long total = jpaQueryFactory
+            .select(clubApply.count())
+            .from(clubApply)
+            .where(
+                clubApply.club.id.eq(clubId),
+                isClubMember
+            )
+            .fetchOne();
+
+        return new PageImpl<>(content, pageable, total != null ? total : 0L);
+    }
+
+    private BooleanExpression isAlreadyClubMember(Integer clubId) {
+        return JPAExpressions
+            .selectOne()
+            .from(clubMember)
+            .where(
+                clubMember.club.id.eq(clubId),
+                clubMember.user.id.eq(clubApply.user.id)
+            )
+            .exists();
     }
 }
