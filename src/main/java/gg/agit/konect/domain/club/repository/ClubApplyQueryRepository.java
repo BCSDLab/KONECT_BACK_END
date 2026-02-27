@@ -40,12 +40,14 @@ public class ClubApplyQueryRepository {
         );
 
         BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
+        BooleanExpression activeUserOnly = user.deletedAt.isNull();
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
             .join(clubApply.user, user).fetchJoin()
             .where(
                 clubApply.club.id.eq(clubId),
+                activeUserOnly,
                 notAlreadyMember
             )
             .orderBy(orderSpecifier)
@@ -58,6 +60,7 @@ public class ClubApplyQueryRepository {
             .from(clubApply)
             .where(
                 clubApply.club.id.eq(clubId),
+                activeUserOnly,
                 notAlreadyMember
             )
             .fetchOne();
@@ -78,6 +81,7 @@ public class ClubApplyQueryRepository {
         );
 
         BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
+        BooleanExpression activeUserOnly = user.deletedAt.isNull();
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
@@ -85,6 +89,7 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 clubApply.createdAt.between(startDateTime, endDateTime),
+                activeUserOnly,
                 notAlreadyMember
             )
             .orderBy(orderSpecifier)
@@ -98,6 +103,7 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 clubApply.createdAt.between(startDateTime, endDateTime),
+                activeUserOnly,
                 notAlreadyMember
             )
             .fetchOne();
@@ -145,12 +151,14 @@ public class ClubApplyQueryRepository {
         );
 
         BooleanExpression isClubMember = isAlreadyClubMember(clubId);
+        BooleanExpression activeUserOnly = user.deletedAt.isNull();
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
             .join(clubApply.user, user).fetchJoin()
             .where(
                 clubApply.club.id.eq(clubId),
+                activeUserOnly,
                 isClubMember
             )
             .orderBy(orderSpecifier)
@@ -163,6 +171,7 @@ public class ClubApplyQueryRepository {
             .from(clubApply)
             .where(
                 clubApply.club.id.eq(clubId),
+                activeUserOnly,
                 isClubMember
             )
             .fetchOne();
