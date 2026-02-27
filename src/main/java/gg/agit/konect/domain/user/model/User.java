@@ -30,19 +30,19 @@ import lombok.NoArgsConstructor;
     name = "users",
     uniqueConstraints = {
         @UniqueConstraint(name = "uq_users_phone_number",
-            columnNames = {"phone_number"}
+            columnNames = {"phone_number", "active_flag"}
         ),
         @UniqueConstraint(
-            name = "uq_users_email_provider",
-            columnNames = {"email", "provider"}
+            name = "uq_users_email_provider_active",
+            columnNames = {"email", "provider", "active_flag"}
         ),
         @UniqueConstraint(
-            name = "uq_users_university_id_student_number",
-            columnNames = {"university_id", "student_number"}
+            name = "uq_users_university_id_student_number_active",
+            columnNames = {"university_id", "student_number", "active_flag"}
         ),
         @UniqueConstraint(
-            name = "uq_users_provider_provider_id",
-            columnNames = {"provider", "provider_id"}
+            name = "uq_users_provider_provider_id_active",
+            columnNames = {"provider", "provider_id", "active_flag"}
         )
     }
 )
@@ -50,6 +50,7 @@ import lombok.NoArgsConstructor;
 public class User extends BaseEntity {
 
     private static final Integer STUDENT_NUMBER_YEAR_MAX_LENGTH = 4;
+    private static final String WITHDRAWN_USER_NAME = "탈퇴한 사용자";
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -97,6 +98,12 @@ public class User extends BaseEntity {
 
     @Column(name = "last_activity_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime lastActivityAt;
+
+    @Column(name = "deleted_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "active_flag", insertable = false, updatable = false)
+    private Integer activeFlag;
 
     @Builder
     private User(
@@ -172,6 +179,13 @@ public class User extends BaseEntity {
         return studentNumber.substring(0, STUDENT_NUMBER_YEAR_MAX_LENGTH);
     }
 
+    public String getName() {
+        if (deletedAt != null) {
+            return WITHDRAWN_USER_NAME;
+        }
+        return name;
+    }
+
     public boolean isAdmin() {
         return this.role.equals(UserRole.ADMIN);
     }
@@ -187,5 +201,17 @@ public class User extends BaseEntity {
 
     public void updateLastActivityAt(LocalDateTime lastActivityAt) {
         this.lastActivityAt = lastActivityAt;
+    }
+
+    public void withdraw(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public void restore() {
+        this.deletedAt = null;
+    }
+
+    public boolean canRestore(LocalDateTime now, long restoreWindowDays) {
+        return deletedAt != null && !deletedAt.isBefore(now.minusDays(restoreWindowDays));
     }
 }

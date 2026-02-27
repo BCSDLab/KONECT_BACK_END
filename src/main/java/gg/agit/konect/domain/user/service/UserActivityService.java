@@ -30,6 +30,7 @@ public class UserActivityService {
             return;
         }
 
-        userRepository.getById(userId).updateLastActivityAt(LocalDateTime.now());
+        userRepository.findById(userId)
+            .ifPresent(user -> user.updateLastActivityAt(LocalDateTime.now()));
     }
 }
