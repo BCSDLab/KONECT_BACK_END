@@ -50,6 +50,7 @@ import lombok.NoArgsConstructor;
 public class User extends BaseEntity {
 
     private static final Integer STUDENT_NUMBER_YEAR_MAX_LENGTH = 4;
+    private static final String WITHDRAWN_USER_NAME = "탈퇴한 사용자";
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -176,6 +177,13 @@ public class User extends BaseEntity {
 
     public String getStudentNumberYear() {
         return studentNumber.substring(0, STUDENT_NUMBER_YEAR_MAX_LENGTH);
+    }
+
+    public String getName() {
+        if (deletedAt != null) {
+            return WITHDRAWN_USER_NAME;
+        }
+        return name;
     }
 
     public boolean isAdmin() {
