@@ -3,7 +3,6 @@ package gg.agit.konect.domain.user.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -16,13 +15,53 @@ import gg.agit.konect.domain.user.model.User;
 
 public interface UserRepository extends Repository<User, Integer> {
 
-    Optional<User> findByEmailAndProvider(String email, Provider provider);
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.email = :email
+        AND u.provider = :provider
+        AND u.deletedAt IS NULL
+        """)
+    Optional<User> findByEmailAndProvider(@Param("email") String email, @Param("provider") Provider provider);
 
-    Optional<User> findByProviderIdAndProvider(String providerId, Provider provider);
+    Optional<User> findFirstByEmailAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(
+        @Param("email") String email,
+        @Param("provider") Provider provider
+    );
 
-    boolean existsByProviderIdAndProvider(String providerId, Provider provider);
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.providerId = :providerId
+        AND u.provider = :provider
+        AND u.deletedAt IS NULL
+        """)
+    Optional<User> findByProviderIdAndProvider(
+        @Param("providerId") String providerId,
+        @Param("provider") Provider provider
+    );
 
-    Optional<User> findById(Integer id);
+    Optional<User> findFirstByProviderIdAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(
+        @Param("providerId") String providerId,
+        @Param("provider") Provider provider
+    );
+
+    @Query("""
+        SELECT (COUNT(u) > 0)
+        FROM User u
+        WHERE u.providerId = :providerId
+        AND u.provider = :provider
+        AND u.deletedAt IS NULL
+        """)
+    boolean existsByProviderIdAndProvider(@Param("providerId") String providerId, @Param("provider") Provider provider);
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.id = :id
+        AND u.deletedAt IS NULL
+        """)
+    Optional<User> findById(@Param("id") Integer id);
 
     Optional<User> findFirstByRoleOrderByIdAsc(UserRole role);
 
@@ -36,32 +75,72 @@ public interface UserRepository extends Repository<User, Integer> {
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
-    boolean existsByUniversityIdAndStudentNumberAndIdNot(Integer universityId, String studentNumber, Integer id);
+    @Query("""
+        SELECT (COUNT(u) > 0)
+        FROM User u
+        WHERE u.university.id = :universityId
+        AND u.studentNumber = :studentNumber
+        AND u.id <> :id
+        AND u.deletedAt IS NULL
+        """)
+    boolean existsByUniversityIdAndStudentNumberAndIdNot(
+        @Param("universityId") Integer universityId,
+        @Param("studentNumber") String studentNumber,
+        @Param("id") Integer id
+    );
 
-    boolean existsByUniversityIdAndStudentNumber(Integer universityId, String studentNumber);
+    @Query("""
+        SELECT (COUNT(u) > 0)
+        FROM User u
+        WHERE u.university.id = :universityId
+        AND u.studentNumber = :studentNumber
+        AND u.deletedAt IS NULL
+        """)
+    boolean existsByUniversityIdAndStudentNumber(
+        @Param("universityId") Integer universityId,
+        @Param("studentNumber") String studentNumber
+    );
 
-    Optional<User> findByUniversityIdAndStudentNumber(Integer universityId, String studentNumber);
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.university.id = :universityId
+        AND u.studentNumber = :studentNumber
+        AND u.deletedAt IS NULL
+        """)
+    Optional<User> findByUniversityIdAndStudentNumber(
+        @Param("universityId") Integer universityId,
+        @Param("studentNumber") String studentNumber
+    );
 
     @Query("""
         SELECT u
         FROM User u
         WHERE u.university.id = :universityId
         AND u.studentNumber LIKE CONCAT(:year, '%')
+        AND u.deletedAt IS NULL
         """)
     List<User> findUserIdsByUniversityAndStudentYear(
         @Param("universityId") Integer universityId,
         @Param("year") String year
     );
 
-    boolean existsByPhoneNumberAndIdNot(String phoneNumber, Integer id);
+    @Query("""
+        SELECT (COUNT(u) > 0)
+        FROM User u
+        WHERE u.phoneNumber = :phoneNumber
+        AND u.id <> :id
+        AND u.deletedAt IS NULL
+        """)
+    boolean existsByPhoneNumberAndIdNot(@Param("phoneNumber") String phoneNumber, @Param("id") Integer id);
 
     User save(User user);
 
-    void delete(User user);
-
-    @Modifying
-    @Query("DELETE FROM User u WHERE u.id = :userId")
-    void deleteByUserId(@Param("userId") Integer userId);
-
-    List<User> findAllByIdIn(List<Integer> ids);
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.id IN :ids
+        AND u.deletedAt IS NULL
+        """)
+    List<User> findAllByIdIn(@Param("ids") List<Integer> ids);
 }
