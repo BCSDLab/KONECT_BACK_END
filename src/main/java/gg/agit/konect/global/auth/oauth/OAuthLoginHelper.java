@@ -1,6 +1,7 @@
 package gg.agit.konect.global.auth.oauth;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -20,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OAuthLoginHelper {
 
+    private static final long RESTORE_WINDOW_DAYS = 7L;
+
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
@@ -29,9 +32,50 @@ public class OAuthLoginHelper {
 
     public Optional<User> findUserByProvider(Provider provider, String email, String providerId) {
         if (provider == Provider.APPLE) {
-            return userRepository.findByProviderIdAndProvider(providerId, provider);
+            Optional<User> user = userRepository.findByProviderIdAndProvider(providerId, provider);
+            if (user.isPresent()) {
+                return user;
+            }
+
+            if (StringUtils.hasText(providerId)) {
+                Optional<User> restoredByProviderId = restoreWithdrawnByProviderId(provider, providerId);
+                if (restoredByProviderId.isPresent()) {
+                    return restoredByProviderId;
+                }
+            }
+
+            return restoreWithdrawnByEmail(provider, email);
         }
-        return userRepository.findByEmailAndProvider(email, provider);
+
+        Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
+        if (user.isPresent()) {
+            return user;
+        }
+
+        return restoreWithdrawnByEmail(provider, email);
+    }
+
+    private Optional<User> restoreWithdrawnByProviderId(Provider provider, String providerId) {
+        return userRepository
+            .findFirstByProviderIdAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(providerId, provider)
+            .filter(user -> user.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS))
+            .map(user -> {
+                user.restore();
+                return userRepository.save(user);
+            });
+    }
+
+    private Optional<User> restoreWithdrawnByEmail(Provider provider, String email) {
+        if (!StringUtils.hasText(email)) {
+            return Optional.empty();
+        }
+
+        return userRepository.findFirstByEmailAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(email, provider)
+            .filter(user -> user.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS))
+            .map(user -> {
+                user.restore();
+                return userRepository.save(user);
+            });
     }
 
     // Apple 로그인 시 이메일이 누락된 경우, UnRegisteredUser에서 이메일을 조회
