@@ -212,6 +212,6 @@ public class User extends BaseEntity {
     }
 
     public boolean canRestore(LocalDateTime now, long restoreWindowDays) {
-        return deletedAt != null && !deletedAt.isBefore(now.minusDays(restoreWindowDays));
+        return deletedAt != null && deletedAt.isAfter(now.minusDays(restoreWindowDays));
     }
 }
