@@ -25,7 +25,7 @@ public interface ClubApplyQuestionRepository extends Repository<ClubApplyQuestio
         FROM ClubApplyQuestion question
         WHERE question.club.id = :clubId
           AND question.createdAt <= :appliedAt
-          AND (question.deletedAt IS NULL OR question.deletedAt >= :appliedAt)
+          AND (question.deletedAt IS NULL OR question.deletedAt > :appliedAt)
         ORDER BY question.id ASC
         """)
     List<ClubApplyQuestion> findAllVisibleAtApplyTime(
