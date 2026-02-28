@@ -1,13 +1,16 @@
 package gg.agit.konect.domain.club.model;
 
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import gg.agit.konect.domain.club.enums.ClubApplyStatus;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -24,8 +27,8 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "club_apply",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_club_apply_club_id_user_id",
-        columnNames = {"club_id", "user_id"}
+        name = "uq_club_apply_club_id_user_id_pending",
+        columnNames = {"club_id", "user_id", "pending_flag"}
     )
 )
 @NoArgsConstructor(access = PROTECTED)
@@ -49,12 +52,21 @@ public class ClubApply extends BaseEntity {
     @Column(name = "fee_payment_image_url", length = 512)
     private String feePaymentImageUrl;
 
+    @NotNull
+    @Enumerated(STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private ClubApplyStatus status;
+
+    @Column(name = "pending_flag", insertable = false, updatable = false)
+    private Integer pendingFlag;
+
     @Builder
-    private ClubApply(Integer id, Club club, User user, String feePaymentImageUrl) {
+    private ClubApply(Integer id, Club club, User user, String feePaymentImageUrl, ClubApplyStatus status) {
         this.id = id;
         this.club = club;
         this.user = user;
         this.feePaymentImageUrl = feePaymentImageUrl;
+        this.status = status;
     }
 
     public static ClubApply of(Club club, User user, String feePaymentImageUrl) {
@@ -62,6 +74,15 @@ public class ClubApply extends BaseEntity {
             .club(club)
             .user(user)
             .feePaymentImageUrl(feePaymentImageUrl)
+            .status(ClubApplyStatus.PENDING)
             .build();
+    }
+
+    public void approve() {
+        this.status = ClubApplyStatus.APPROVED;
+    }
+
+    public void reject() {
+        this.status = ClubApplyStatus.REJECTED;
     }
 }

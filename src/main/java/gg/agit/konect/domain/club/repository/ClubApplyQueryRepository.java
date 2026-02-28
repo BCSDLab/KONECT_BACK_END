@@ -19,8 +19,10 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
+import gg.agit.konect.domain.club.enums.ClubApplyStatus;
 import gg.agit.konect.domain.club.enums.ClubApplicationSortBy;
 import gg.agit.konect.domain.club.model.ClubApply;
+import gg.agit.konect.domain.club.model.QClubApply;
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -41,12 +43,14 @@ public class ClubApplyQueryRepository {
 
         BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
         BooleanExpression activeUserOnly = user.deletedAt.isNull();
+        BooleanExpression pendingOnly = clubApply.status.eq(ClubApplyStatus.PENDING);
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
             .join(clubApply.user, user).fetchJoin()
             .where(
                 clubApply.club.id.eq(clubId),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -60,6 +64,7 @@ public class ClubApplyQueryRepository {
             .from(clubApply)
             .where(
                 clubApply.club.id.eq(clubId),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -82,6 +87,7 @@ public class ClubApplyQueryRepository {
 
         BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
         BooleanExpression activeUserOnly = user.deletedAt.isNull();
+        BooleanExpression pendingOnly = clubApply.status.eq(ClubApplyStatus.PENDING);
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
@@ -89,6 +95,7 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 clubApply.createdAt.between(startDateTime, endDateTime),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -103,6 +110,7 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 clubApply.createdAt.between(startDateTime, endDateTime),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -152,6 +160,8 @@ public class ClubApplyQueryRepository {
 
         BooleanExpression isClubMember = isAlreadyClubMember(clubId);
         BooleanExpression activeUserOnly = user.deletedAt.isNull();
+        BooleanExpression approvedOnly = clubApply.status.eq(ClubApplyStatus.APPROVED);
+        BooleanExpression latestApprovedApplicationOnly = isLatestApprovedApplicationByUser(clubId);
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
@@ -159,7 +169,9 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 activeUserOnly,
-                isClubMember
+                isClubMember,
+                approvedOnly,
+                latestApprovedApplicationOnly
             )
             .orderBy(orderSpecifier)
             .offset(pageable.getOffset())
@@ -172,7 +184,9 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 activeUserOnly,
-                isClubMember
+                isClubMember,
+                approvedOnly,
+                latestApprovedApplicationOnly
             )
             .fetchOne();
 
@@ -188,5 +202,20 @@ public class ClubApplyQueryRepository {
                 clubMember.user.id.eq(clubApply.user.id)
             )
             .exists();
+    }
+
+    private BooleanExpression isLatestApprovedApplicationByUser(Integer clubId) {
+        QClubApply latestApply = new QClubApply("latestApply");
+
+        return clubApply.id.eq(
+            JPAExpressions
+                .select(latestApply.id.max())
+                .from(latestApply)
+                .where(
+                    latestApply.club.id.eq(clubId),
+                    latestApply.status.eq(ClubApplyStatus.APPROVED),
+                    latestApply.user.id.eq(clubApply.user.id)
+                )
+        );
     }
 }
