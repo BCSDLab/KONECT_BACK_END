@@ -50,18 +50,26 @@ public class UnRegisteredUser extends BaseEntity {
     @Column(name = "provider_id", length = 255)
     private String providerId;
 
+    @Column(name = "name", length = 30)
+    private String name;
+
     @Column(name = "apple_refresh_token", length = 1024)
     private String appleRefreshToken;
 
     @Builder
-    private UnRegisteredUser(Integer id, String email, Provider provider, String providerId) {
+    private UnRegisteredUser(Integer id, String email, Provider provider, String providerId, String name) {
         this.id = id;
         this.email = email;
         this.provider = provider;
         this.providerId = providerId;
+        this.name = name;
     }
 
     public void updateAppleRefreshToken(String appleRefreshToken) {
         this.appleRefreshToken = appleRefreshToken;
+    }
+
+    public void updateName(String name) {
+        this.name = name;
     }
 }
