@@ -16,13 +16,16 @@ public record OAuthTokenLoginResponse(
     String refreshToken,
 
     @Schema(description = "회원가입 토큰", example = "eyJhbGciOiJIUzI1NiJ9...", requiredMode = REQUIRED)
-    String signupToken
+    String signupToken,
+
+    @Schema(description = "OAuth 제공자 계정 이름", example = "홍길동", requiredMode = NOT_REQUIRED)
+    String name
 ) {
     public static OAuthTokenLoginResponse login(String redirectUri, String accessToken, String refreshToken) {
-        return new OAuthTokenLoginResponse(redirectUri, accessToken, refreshToken, null);
+        return new OAuthTokenLoginResponse(redirectUri, accessToken, refreshToken, null, null);
     }
 
-    public static OAuthTokenLoginResponse signup(String redirectUri, String signupToken) {
-        return new OAuthTokenLoginResponse(redirectUri, null, null, signupToken);
+    public static OAuthTokenLoginResponse signup(String redirectUri, String signupToken, String name) {
+        return new OAuthTokenLoginResponse(redirectUri, null, null, signupToken, name);
     }
 }
