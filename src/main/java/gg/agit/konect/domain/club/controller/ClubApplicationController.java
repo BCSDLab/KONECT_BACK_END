@@ -74,6 +74,20 @@ public class ClubApplicationController implements ClubApplicationApi {
     }
 
     @Override
+    public ResponseEntity<ClubApplicationAnswersResponse> getApprovedMemberApplicationAnswers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "userId") Integer targetUserId,
+        @UserId Integer requesterId
+    ) {
+        ClubApplicationAnswersResponse response = clubApplicationService.getApprovedMemberApplicationAnswers(
+            clubId,
+            targetUserId,
+            requesterId
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<ClubApplicationAnswersResponse> getClubApplicationAnswers(
         @PathVariable(name = "clubId") Integer clubId,
         @PathVariable(name = "applicationId") Integer applicationId,

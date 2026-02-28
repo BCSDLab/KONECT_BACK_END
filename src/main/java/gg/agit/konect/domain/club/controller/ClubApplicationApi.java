@@ -98,6 +98,23 @@ public interface ClubApplicationApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "승인된 회원의 동아리 지원 답변을 조회한다.", description = """
+        - 동아리 관리자만 해당 동아리의 승인된 회원 지원 답변을 조회할 수 있습니다.
+        - 사용자 ID(userId) 기준으로 해당 사용자의 지원서를 찾아 문항/답변을 반환합니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        - NOT_FOUND_CLUB_MEMBER (404): 해당 사용자가 동아리 회원이 아닙니다.
+        - NOT_FOUND_CLUB_APPLY (404): 해당 사용자의 동아리 지원 내역을 찾을 수 없습니다.
+        """)
+    @GetMapping("/{clubId}/member-applications/users/{userId}")
+    ResponseEntity<ClubApplicationAnswersResponse> getApprovedMemberApplicationAnswers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @PathVariable(name = "userId") Integer targetUserId,
+        @UserId Integer requesterId
+    );
+
     @Operation(summary = "동아리 지원 답변을 조회한다.", description = """
         - 동아리 관리자만 해당 동아리의 지원 답변을 조회할 수 있습니다.
 
