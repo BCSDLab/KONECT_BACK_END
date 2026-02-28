@@ -15,7 +15,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
@@ -103,19 +102,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String providerId,
         String name
     ) throws IOException {
-        String token = signupTokenService.issue(email, provider, providerId);
+        String token = signupTokenService.issue(email, provider, providerId, name);
         authCookieService.setSignupToken(request, response, token, signupTokenService.signupTtl());
-        response.sendRedirect(buildSignupRedirectUrl(name));
-    }
-
-    private String buildSignupRedirectUrl(String name) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(frontendBaseUrl + "/signup");
-
-        if (StringUtils.hasText(name)) {
-            builder.queryParam("name", name);
-        }
-
-        return builder.build().encode().toUriString();
+        response.sendRedirect(frontendBaseUrl + "/signup");
     }
 
     private void sendLoginSuccessResponse(

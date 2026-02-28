@@ -54,7 +54,7 @@ public class OAuthLoginOrchestrator {
                 }
             }
 
-            String token = signupTokenService.issue(email, provider, providerId);
+            String token = signupTokenService.issue(email, provider, providerId, name);
             authCookieService.setSignupToken(request, response, token, signupTokenService.signupTtl());
 
             return OAuthTokenLoginResponse.signup(frontendBaseUrl + "/signup", token, name);
