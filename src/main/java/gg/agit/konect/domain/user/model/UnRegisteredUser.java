@@ -50,7 +50,7 @@ public class UnRegisteredUser extends BaseEntity {
     @Column(name = "provider_id", length = 255)
     private String providerId;
 
-    @Column(name = "name", length = 30)
+    @Column(name = "name", length = 50)
     private String name;
 
     @Column(name = "apple_refresh_token", length = 1024)
