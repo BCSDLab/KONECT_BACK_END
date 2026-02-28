@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.domain.user.dto.SignupPrefillResponse;
 import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.global.auth.annotation.PublicApi;
@@ -42,6 +43,11 @@ public interface UserApi {
         HttpServletResponse response,
         @RequestBody @Valid SignupRequest signupRequest
     );
+
+    @Operation(summary = "회원가입 사전 입력 정보를 조회한다.")
+    @GetMapping("/signup/prefill")
+    @PublicApi
+    ResponseEntity<SignupPrefillResponse> getSignupPrefill(HttpServletRequest request);
 
     @Operation(summary = "로그인한 사용자의 정보를 조회한다.")
     @GetMapping("/me")
