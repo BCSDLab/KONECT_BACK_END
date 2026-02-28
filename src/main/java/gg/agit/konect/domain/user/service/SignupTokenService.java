@@ -21,7 +21,10 @@ public class SignupTokenService {
     private static final Duration SIGNUP_TOKEN_TTL = Duration.ofMinutes(10);
     private static final String KEY_PREFIX = "auth:signup:";
     private static final String DELIMITER = "|";
-    private static final int EXPECTED_PARTS = 3;
+    private static final int INDEX_PROVIDER_ID = 2;
+    private static final int INDEX_NAME = 3;
+    private static final int EXPECTED_PARTS_WITHOUT_NAME = 3;
+    private static final int EXPECTED_PARTS_WITH_NAME = 4;
 
     private static final DefaultRedisScript<String> GET_DEL_SCRIPT =
         new DefaultRedisScript<>(
@@ -39,13 +42,33 @@ public class SignupTokenService {
     }
 
     public String issue(String email, Provider provider, String providerId) {
+        return issue(email, provider, providerId, null);
+    }
+
+    public String issue(String email, Provider provider, String providerId, String name) {
         if (!StringUtils.hasText(email) || provider == null) {
             throw new IllegalArgumentException("email and provider are required");
         }
 
         String token = secureTokenGenerator.generate();
-        redis.opsForValue().set(key(token), serialize(new SignupClaims(email, provider, providerId)), signupTtl());
+        SignupClaims claims = new SignupClaims(email, provider, providerId, name);
+        redis.opsForValue().set(key(token), serialize(claims), signupTtl());
         return token;
+    }
+
+    public SignupClaims readOrThrow(String token) {
+        if (!StringUtils.hasText(token)) {
+            throw CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN);
+        }
+
+        String value = redis.opsForValue().get(key(token));
+        SignupClaims claims = deserialize(value);
+
+        if (claims == null) {
+            throw CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN);
+        }
+
+        return claims;
     }
 
     public SignupClaims consumeOrThrow(String token) {
@@ -67,7 +90,9 @@ public class SignupTokenService {
 
     private String serialize(SignupClaims claims) {
         String safeProviderId = claims.providerId() == null ? "" : claims.providerId();
-        return claims.email() + DELIMITER + claims.provider().name() + DELIMITER + safeProviderId;
+        String safeName = claims.name() == null ? "" : claims.name();
+        return claims.email() + DELIMITER + claims.provider().name() + DELIMITER
+            + safeProviderId + DELIMITER + safeName;
     }
 
     private SignupClaims deserialize(String value) {
@@ -76,13 +101,14 @@ public class SignupTokenService {
         }
 
         String[] parts = value.split("\\|", -1);
-        if (parts.length != EXPECTED_PARTS) {
+        if (parts.length != EXPECTED_PARTS_WITHOUT_NAME && parts.length != EXPECTED_PARTS_WITH_NAME) {
             return null;
         }
 
         String email = parts[0];
         String provider = parts[1];
-        String providerId = parts[2];
+        String providerId = parts[INDEX_PROVIDER_ID];
+        String name = parts.length == EXPECTED_PARTS_WITH_NAME ? parts[INDEX_NAME] : null;
 
         if (!StringUtils.hasText(email) || !StringUtils.hasText(provider)) {
             return null;
@@ -90,12 +116,17 @@ public class SignupTokenService {
 
         try {
             Provider p = Provider.valueOf(provider);
-            return new SignupClaims(email, p, StringUtils.hasText(providerId) ? providerId : null);
+            return new SignupClaims(
+                email,
+                p,
+                StringUtils.hasText(providerId) ? providerId : null,
+                StringUtils.hasText(name) ? name : null
+            );
         } catch (Exception e) {
             return null;
         }
     }
 
-    public record SignupClaims(String email, Provider provider, String providerId) {
+    public record SignupClaims(String email, Provider provider, String providerId, String name) {
     }
 }

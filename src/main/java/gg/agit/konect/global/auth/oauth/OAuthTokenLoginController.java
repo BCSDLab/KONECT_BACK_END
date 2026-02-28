@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +42,7 @@ public class OAuthTokenLoginController {
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNSUPPORTED_PROVIDER));
 
         VerifiedOAuthUser verified = verifier.verify(body);
+        String oauthName = resolveOAuthName(provider, verified.name(), body.name());
 
         return ResponseEntity.ok(
             orchestrator.loginOrSignup(
@@ -49,9 +51,22 @@ public class OAuthTokenLoginController {
                 provider,
                 verified.email(),
                 verified.providerId(),
+                oauthName,
                 body.redirectUri()
             )
         );
+    }
+
+    private String resolveOAuthName(Provider provider, String verifiedName, String requestName) {
+        if (StringUtils.hasText(verifiedName)) {
+            return verifiedName;
+        }
+
+        if (provider == Provider.APPLE && StringUtils.hasText(requestName)) {
+            return requestName;
+        }
+
+        return null;
     }
 
     private Provider resolveProvider(String rawProvider) {

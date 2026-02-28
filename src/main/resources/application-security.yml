@@ -39,6 +39,7 @@ spring:
             scope:
               - email
               - openid
+              - name
 
         provider:
           naver:

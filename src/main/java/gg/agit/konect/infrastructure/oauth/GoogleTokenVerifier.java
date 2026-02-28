@@ -86,7 +86,7 @@ public class GoogleTokenVerifier implements OAuthTokenVerifier {
                 throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
             }
 
-            return new VerifiedOAuthUser(sub, email);
+            return new VerifiedOAuthUser(sub, email, null);
         } catch (JwtException e) {
             log.error(e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.INVALID_OAUTH_TOKEN);

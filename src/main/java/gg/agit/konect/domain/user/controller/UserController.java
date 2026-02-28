@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.user.dto.SignupRequest;
+import gg.agit.konect.domain.user.dto.SignupPrefillResponse;
 import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
@@ -54,6 +55,15 @@ public class UserController implements UserApi {
         response.setHeader("Authorization", "Bearer " + accessToken);
 
         return ResponseEntity.ok().build();
+    }
+
+    @Override
+    @PublicApi
+    public ResponseEntity<SignupPrefillResponse> getSignupPrefill(HttpServletRequest request) {
+        String signupToken = authCookieService.getCookieValue(request, AuthCookieService.SIGNUP_TOKEN_COOKIE);
+        SignupTokenService.SignupClaims claims = signupTokenService.readOrThrow(signupToken);
+
+        return ResponseEntity.ok(new SignupPrefillResponse(claims.name()));
     }
 
     @Override

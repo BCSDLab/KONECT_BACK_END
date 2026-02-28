@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -42,6 +45,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
     private final OAuthLoginHelper oauthLoginHelper;
+    private final AppleOAuthNameResolver appleOAuthNameResolver;
+    private final ObjectMapper objectMapper;
     private final SignupTokenService signupTokenService;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
@@ -61,6 +66,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String providerId = null;
         String email = extractEmail(oauthUser, provider);
+        String name = resolveAppleName(request, provider, oauthUser);
         Optional<User> user;
 
         if (provider == Provider.APPLE) {
@@ -84,8 +90,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 }
             }
 
-            saveAppleRefreshTokenForUnRegisteredUser(provider, providerId, email, appleRefreshTokenValue);
-            sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId);
+            saveAppleRefreshTokenForUnRegisteredUser(provider, providerId, email, name, appleRefreshTokenValue);
+            sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId, name);
             return;
         }
 
@@ -98,9 +104,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletResponse response,
         String email,
         Provider provider,
-        String providerId
+        String providerId,
+        String name
     ) throws IOException {
-        String token = signupTokenService.issue(email, provider, providerId);
+        String token = signupTokenService.issue(email, provider, providerId, name);
         authCookieService.setSignupToken(request, response, token, signupTokenService.signupTtl());
         response.sendRedirect(frontendBaseUrl + "/signup");
     }
@@ -174,6 +181,60 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         return providerId;
     }
 
+    private String resolveAppleName(HttpServletRequest request, Provider provider, OAuth2User oauthUser) {
+        if (provider != Provider.APPLE) {
+            return null;
+        }
+
+        String extracted = appleOAuthNameResolver.resolve(oauthUser.getAttributes());
+
+        if (StringUtils.hasText(extracted)) {
+            return extracted;
+        }
+
+        return extractAppleNameFromUserPayload(request);
+    }
+
+    private String extractAppleNameFromUserPayload(HttpServletRequest request) {
+        String userPayload = request.getParameter("user");
+
+        if (!StringUtils.hasText(userPayload)) {
+            return null;
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(userPayload);
+            JsonNode name = root.path("name");
+            String firstName = asText(name.path("firstName"));
+            String lastName = asText(name.path("lastName"));
+
+            if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
+                return lastName + firstName;
+            }
+
+            if (StringUtils.hasText(firstName)) {
+                return firstName;
+            }
+
+            if (StringUtils.hasText(lastName)) {
+                return lastName;
+            }
+        } catch (Exception e) {
+            log.debug("Failed to parse Apple user payload", e);
+        }
+
+        return null;
+    }
+
+    private String asText(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+
+        String value = node.asText();
+        return StringUtils.hasText(value) ? value : null;
+    }
+
     private String extractAppleRefreshToken(OAuth2AuthenticationToken oauthToken) {
         String registrationId = oauthToken.getAuthorizedClientRegistrationId();
 
@@ -203,9 +264,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private void saveAppleRefreshTokenForUnRegisteredUser(
-        Provider provider, String providerId, String email, String appleRefreshToken
+        Provider provider, String providerId, String email, String name, String appleRefreshToken
     ) {
-        if (provider != Provider.APPLE || !StringUtils.hasText(appleRefreshToken)) {
+        if (provider != Provider.APPLE) {
             return;
         }
 
@@ -218,7 +279,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         unRegisteredUser.ifPresent(u -> {
-            u.updateAppleRefreshToken(appleRefreshToken);
+            if (StringUtils.hasText(appleRefreshToken)) {
+                u.updateAppleRefreshToken(appleRefreshToken);
+            }
+            if (StringUtils.hasText(name)) {
+                u.updateName(name);
+            }
             unRegisteredUserRepository.save(u);
         });
     }

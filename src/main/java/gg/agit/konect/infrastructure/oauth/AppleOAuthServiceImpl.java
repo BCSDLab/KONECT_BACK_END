@@ -15,6 +15,7 @@ import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.auth.oauth.AppleOAuthNameResolver;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class AppleOAuthServiceImpl extends OidcUserService {
 
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
+    private final AppleOAuthNameResolver appleOAuthNameResolver;
 
     @Transactional
     @Override
@@ -34,6 +36,7 @@ public class AppleOAuthServiceImpl extends OidcUserService {
 
         String email = oidcUser.getAttribute("email");
         String providerId = oidcUser.getSubject();
+        String name = appleOAuthNameResolver.resolve(oidcUser.getAttributes());
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
@@ -59,6 +62,7 @@ public class AppleOAuthServiceImpl extends OidcUserService {
                 .email(email)
                 .provider(provider)
                 .providerId(providerId)
+                .name(name)
                 .build();
 
             unRegisteredUserRepository.save(newUser);
@@ -66,4 +70,5 @@ public class AppleOAuthServiceImpl extends OidcUserService {
 
         return oidcUser;
     }
+
 }
