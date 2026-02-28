@@ -27,8 +27,8 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "club_apply",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_club_apply_club_id_user_id_pending",
-        columnNames = {"club_id", "user_id", "pending_flag"}
+        name = "uq_club_apply_club_id_user_id_state",
+        columnNames = {"club_id", "user_id", "state"}
     )
 )
 @NoArgsConstructor(access = PROTECTED)
@@ -56,9 +56,6 @@ public class ClubApply extends BaseEntity {
     @Enumerated(STRING)
     @Column(name = "status", nullable = false, length = 20)
     private ClubApplyStatus status;
-
-    @Column(name = "pending_flag", insertable = false, updatable = false)
-    private Integer pendingFlag;
 
     @Builder
     private ClubApply(Integer id, Club club, User user, String feePaymentImageUrl, ClubApplyStatus status) {
