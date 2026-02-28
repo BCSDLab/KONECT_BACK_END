@@ -105,6 +105,25 @@ public class ClubApplicationService {
         return ClubApplicationsResponse.from(clubAppliesPage);
     }
 
+    public ClubApplicationAnswersResponse getApprovedMemberApplicationAnswers(
+        Integer clubId,
+        Integer targetUserId,
+        Integer requesterId
+    ) {
+        clubRepository.getById(clubId);
+
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
+
+        ClubApply clubApply = clubApplyRepository.getByClubIdAndUserId(clubId, targetUserId);
+        List<ClubApplyQuestion> questions =
+            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
+
+        return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
+    }
+
     public ClubApplicationAnswersResponse getClubApplicationAnswers(
         Integer clubId,
         Integer applicationId,

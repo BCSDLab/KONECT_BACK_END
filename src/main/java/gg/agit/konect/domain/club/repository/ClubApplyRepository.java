@@ -55,6 +55,23 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
         FROM ClubApply clubApply
         JOIN FETCH clubApply.user user
         WHERE clubApply.club.id = :clubId
+          AND clubApply.user.id = :userId
+        """)
+    Optional<ClubApply> findByClubIdAndUserId(
+        @Param("clubId") Integer clubId,
+        @Param("userId") Integer userId
+    );
+
+    default ClubApply getByClubIdAndUserId(Integer clubId, Integer userId) {
+        return findByClubIdAndUserId(clubId, userId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
+    }
+
+    @Query("""
+        SELECT clubApply
+        FROM ClubApply clubApply
+        JOIN FETCH clubApply.user user
+        WHERE clubApply.club.id = :clubId
         """)
     List<ClubApply> findAllByClubIdWithUser(@Param("clubId") Integer clubId);
 
