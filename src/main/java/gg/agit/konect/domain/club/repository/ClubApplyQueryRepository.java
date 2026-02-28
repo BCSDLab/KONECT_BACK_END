@@ -205,17 +205,21 @@ public class ClubApplyQueryRepository {
     }
 
     private BooleanExpression isLatestApprovedApplicationByUser(Integer clubId) {
-        QClubApply latestApply = new QClubApply("latestApply");
+        QClubApply newerApply = new QClubApply("newerApply");
 
-        return clubApply.id.eq(
-            JPAExpressions
-                .select(latestApply.id.max())
-                .from(latestApply)
-                .where(
-                    latestApply.club.id.eq(clubId),
-                    latestApply.status.eq(ClubApplyStatus.APPROVED),
-                    latestApply.user.id.eq(clubApply.user.id)
-                )
-        );
+        return JPAExpressions
+            .selectOne()
+            .from(newerApply)
+            .where(
+                newerApply.club.id.eq(clubId),
+                newerApply.status.eq(ClubApplyStatus.APPROVED),
+                newerApply.user.id.eq(clubApply.user.id),
+                newerApply.createdAt.gt(clubApply.createdAt)
+                    .or(
+                        newerApply.createdAt.eq(clubApply.createdAt)
+                            .and(newerApply.id.gt(clubApply.id))
+                    )
+            )
+            .notExists();
     }
 }
