@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -43,6 +46,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
     private final OAuthLoginHelper oauthLoginHelper;
     private final AppleOAuthNameResolver appleOAuthNameResolver;
+    private final ObjectMapper objectMapper;
     private final SignupTokenService signupTokenService;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
@@ -62,7 +66,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String providerId = null;
         String email = extractEmail(oauthUser, provider);
-        String name = provider == Provider.APPLE ? appleOAuthNameResolver.resolve(oauthUser.getAttributes()) : null;
+        String name = resolveAppleName(request, provider, oauthUser);
         Optional<User> user;
 
         if (provider == Provider.APPLE) {
@@ -175,6 +179,60 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return providerId;
+    }
+
+    private String resolveAppleName(HttpServletRequest request, Provider provider, OAuth2User oauthUser) {
+        if (provider != Provider.APPLE) {
+            return null;
+        }
+
+        String extracted = appleOAuthNameResolver.resolve(oauthUser.getAttributes());
+
+        if (StringUtils.hasText(extracted)) {
+            return extracted;
+        }
+
+        return extractAppleNameFromUserPayload(request);
+    }
+
+    private String extractAppleNameFromUserPayload(HttpServletRequest request) {
+        String userPayload = request.getParameter("user");
+
+        if (!StringUtils.hasText(userPayload)) {
+            return null;
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(userPayload);
+            JsonNode name = root.path("name");
+            String firstName = asText(name.path("firstName"));
+            String lastName = asText(name.path("lastName"));
+
+            if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
+                return lastName + firstName;
+            }
+
+            if (StringUtils.hasText(firstName)) {
+                return firstName;
+            }
+
+            if (StringUtils.hasText(lastName)) {
+                return lastName;
+            }
+        } catch (Exception e) {
+            log.debug("Failed to parse Apple user payload", e);
+        }
+
+        return null;
+    }
+
+    private String asText(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+
+        String value = node.asText();
+        return StringUtils.hasText(value) ? value : null;
     }
 
     private String extractAppleRefreshToken(OAuth2AuthenticationToken oauthToken) {
