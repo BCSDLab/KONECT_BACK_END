@@ -138,12 +138,14 @@ public class ClubService {
         ClubApplyQuestion phoneQuestion = ClubApplyQuestion.of(
             club,
             "본인의 전화번호를 입력해주세요.",
-            true
+            true,
+            1
         );
         ClubApplyQuestion motivationQuestion = ClubApplyQuestion.of(
             club,
             "지원 동기",
-            false
+            false,
+            2
         );
         clubApplyQuestionRepository.saveAll(List.of(phoneQuestion, motivationQuestion));
     }

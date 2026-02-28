@@ -205,7 +205,7 @@ public class ClubApplicationService {
         validateFeePaymentImage(club, request.feePaymentImageUrl());
 
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
         ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
         ClubApply apply = clubApplyRepository.save(
@@ -240,7 +240,7 @@ public class ClubApplicationService {
 
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
     }
@@ -261,7 +261,7 @@ public class ClubApplicationService {
         List<ClubApplyQuestion> questionsToSoftDelete = new ArrayList<>();
 
         List<ClubApplyQuestion> existingQuestions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
         Map<Integer, ClubApplyQuestion> existingQuestionMap = existingQuestions.stream()
             .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
 
@@ -284,7 +284,7 @@ public class ClubApplicationService {
         }
 
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
     }
@@ -297,14 +297,17 @@ public class ClubApplicationService {
         List<ClubApplyQuestion> questionsToCreate,
         List<ClubApplyQuestion> questionsToSoftDelete
     ) {
-        for (ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest questionRequest : questionRequests) {
+        for (int index = 0; index < questionRequests.size(); index++) {
+            int displayOrder = index + 1;
+            ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest questionRequest = questionRequests.get(index);
             Integer questionId = questionRequest.questionId();
 
             if (questionId == null) {
                 questionsToCreate.add(ClubApplyQuestion.of(
                     club,
                     questionRequest.question(),
-                    questionRequest.isRequiredOrDefault())
+                    questionRequest.isRequiredOrDefault(),
+                    displayOrder)
                 );
                 continue;
             }
@@ -322,11 +325,12 @@ public class ClubApplicationService {
             Boolean isRequired = questionRequest.isRequiredOrDefault();
 
             if (existingQuestion.isSame(questionRequest.question(), isRequired)) {
+                existingQuestion.updateDisplayOrder(displayOrder);
                 continue;
             }
 
             questionsToSoftDelete.add(existingQuestion);
-            questionsToCreate.add(ClubApplyQuestion.of(club, questionRequest.question(), isRequired));
+            questionsToCreate.add(ClubApplyQuestion.of(club, questionRequest.question(), isRequired, displayOrder));
         }
     }
 

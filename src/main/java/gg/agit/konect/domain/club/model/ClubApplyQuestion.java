@@ -47,6 +47,10 @@ public class ClubApplyQuestion extends BaseEntity {
     @Column(name = "is_required", nullable = false)
     private Boolean isRequired;
 
+    @NotNull
+    @Column(name = "display_order", nullable = false)
+    private Integer displayOrder;
+
     @Column(name = "deleted_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime deletedAt;
 
@@ -55,19 +59,22 @@ public class ClubApplyQuestion extends BaseEntity {
         Integer id,
         Club club,
         String question,
-        Boolean isRequired
+        Boolean isRequired,
+        Integer displayOrder
     ) {
         this.id = id;
         this.club = club;
         this.question = question;
         this.isRequired = isRequired;
+        this.displayOrder = displayOrder;
     }
 
-    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired) {
+    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired, Integer displayOrder) {
         return ClubApplyQuestion.builder()
             .club(club)
             .question(question)
             .isRequired(isRequired)
+            .displayOrder(displayOrder)
             .build();
     }
 
@@ -82,6 +89,10 @@ public class ClubApplyQuestion extends BaseEntity {
 
     public void softDelete(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public void updateDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
     }
 
     public boolean isSame(String question, Boolean isRequired) {

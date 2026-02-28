@@ -16,9 +16,9 @@ public interface ClubApplyQuestionRepository extends Repository<ClubApplyQuestio
         FROM ClubApplyQuestion question
         WHERE question.club.id = :clubId
           AND question.deletedAt IS NULL
-        ORDER BY question.id ASC
+        ORDER BY question.displayOrder ASC, question.id ASC
         """)
-    List<ClubApplyQuestion> findAllByClubIdOrderByIdAsc(@Param("clubId") Integer clubId);
+    List<ClubApplyQuestion> findAllByClubIdOrderByDisplayOrderAsc(@Param("clubId") Integer clubId);
 
     @Query("""
         SELECT question
@@ -26,7 +26,7 @@ public interface ClubApplyQuestionRepository extends Repository<ClubApplyQuestio
         WHERE question.club.id = :clubId
           AND question.createdAt <= :appliedAt
           AND (question.deletedAt IS NULL OR question.deletedAt > :appliedAt)
-        ORDER BY question.id ASC
+        ORDER BY question.displayOrder ASC, question.id ASC
         """)
     List<ClubApplyQuestion> findAllVisibleAtApplyTime(
         @Param("clubId") Integer clubId,
