@@ -21,4 +21,4 @@ ALTER TABLE club_apply
     ADD CONSTRAINT uq_club_apply_club_id_user_id_state UNIQUE (club_id, user_id, state);
 
 ALTER TABLE club_apply_question
-    ADD COLUMN deleted_at DATETIME NULL AFTER is_required;
+    ADD COLUMN deleted_at TIMESTAMP NULL AFTER is_required;
