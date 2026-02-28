@@ -57,6 +57,9 @@ public class ClubApply extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private ClubApplyStatus status;
 
+    @Column(name = "state", insertable = false, updatable = false)
+    private Integer state;
+
     @Builder
     private ClubApply(Integer id, Club club, User user, String feePaymentImageUrl, ClubApplyStatus status) {
         this.id = id;
