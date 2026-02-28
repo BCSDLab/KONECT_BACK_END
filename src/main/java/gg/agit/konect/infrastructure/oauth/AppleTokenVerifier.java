@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.global.auth.oauth.AppleOAuthNameResolver;
 import gg.agit.konect.global.auth.oauth.OAuthTokenLoginRequest;
 import gg.agit.konect.global.auth.oauth.OAuthTokenVerifier;
 import gg.agit.konect.global.auth.oauth.VerifiedOAuthUser;
@@ -29,8 +30,12 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
 
     private final JwtDecoder jwtDecoder;
+    private final AppleOAuthNameResolver appleOAuthNameResolver;
 
-    public AppleTokenVerifier(@Value("${OAUTH_APPLE_CLIENT_ID}") String appleClientId) {
+    public AppleTokenVerifier(
+        @Value("${OAUTH_APPLE_CLIENT_ID}") String appleClientId,
+        AppleOAuthNameResolver appleOAuthNameResolver
+    ) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(APPLE_JWKS_URI).build();
 
         OAuth2TokenValidator<Jwt> issuerValidator = token -> {
@@ -52,6 +57,7 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
         ));
 
         this.jwtDecoder = decoder;
+        this.appleOAuthNameResolver = appleOAuthNameResolver;
     }
 
     @Override
@@ -77,11 +83,13 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
             }
 
             String email = jwt.getClaimAsString("email");
+            String name = appleOAuthNameResolver.resolve(jwt.getClaims());
 
-            return new VerifiedOAuthUser(providerId, email);
+            return new VerifiedOAuthUser(providerId, email, name);
         } catch (JwtException e) {
             log.error(e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.INVALID_OAUTH_TOKEN);
         }
     }
+
 }

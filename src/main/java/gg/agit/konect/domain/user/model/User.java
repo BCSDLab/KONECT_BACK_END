@@ -29,7 +29,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "users",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uq_users_phone_number",
+        @UniqueConstraint(name = "uq_users_phone_number_active",
             columnNames = {"phone_number", "active_flag"}
         ),
         @UniqueConstraint(
@@ -212,6 +212,6 @@ public class User extends BaseEntity {
     }
 
     public boolean canRestore(LocalDateTime now, long restoreWindowDays) {
-        return deletedAt != null && !deletedAt.isBefore(now.minusDays(restoreWindowDays));
+        return deletedAt != null && deletedAt.isAfter(now.minusDays(restoreWindowDays));
     }
 }

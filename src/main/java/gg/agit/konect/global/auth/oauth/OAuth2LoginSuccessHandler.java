@@ -42,6 +42,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
     private final OAuthLoginHelper oauthLoginHelper;
+    private final AppleOAuthNameResolver appleOAuthNameResolver;
     private final SignupTokenService signupTokenService;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
@@ -61,6 +62,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String providerId = null;
         String email = extractEmail(oauthUser, provider);
+        String name = provider == Provider.APPLE ? appleOAuthNameResolver.resolve(oauthUser.getAttributes()) : null;
         Optional<User> user;
 
         if (provider == Provider.APPLE) {
@@ -84,8 +86,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 }
             }
 
-            saveAppleRefreshTokenForUnRegisteredUser(provider, providerId, email, appleRefreshTokenValue);
-            sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId);
+            saveAppleRefreshTokenForUnRegisteredUser(provider, providerId, email, name, appleRefreshTokenValue);
+            sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId, name);
             return;
         }
 
@@ -98,9 +100,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletResponse response,
         String email,
         Provider provider,
-        String providerId
+        String providerId,
+        String name
     ) throws IOException {
-        String token = signupTokenService.issue(email, provider, providerId);
+        String token = signupTokenService.issue(email, provider, providerId, name);
         authCookieService.setSignupToken(request, response, token, signupTokenService.signupTtl());
         response.sendRedirect(frontendBaseUrl + "/signup");
     }
@@ -203,9 +206,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private void saveAppleRefreshTokenForUnRegisteredUser(
-        Provider provider, String providerId, String email, String appleRefreshToken
+        Provider provider, String providerId, String email, String name, String appleRefreshToken
     ) {
-        if (provider != Provider.APPLE || !StringUtils.hasText(appleRefreshToken)) {
+        if (provider != Provider.APPLE) {
             return;
         }
 
@@ -218,7 +221,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         unRegisteredUser.ifPresent(u -> {
-            u.updateAppleRefreshToken(appleRefreshToken);
+            if (StringUtils.hasText(appleRefreshToken)) {
+                u.updateAppleRefreshToken(appleRefreshToken);
+            }
+            if (StringUtils.hasText(name)) {
+                u.updateName(name);
+            }
             unRegisteredUserRepository.save(u);
         });
     }

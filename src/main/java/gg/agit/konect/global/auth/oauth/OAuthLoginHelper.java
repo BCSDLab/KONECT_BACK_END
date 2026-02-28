@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
@@ -30,6 +31,7 @@ public class OAuthLoginHelper {
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
+    @Transactional
     public Optional<User> findUserByProvider(Provider provider, String email, String providerId) {
         if (provider == Provider.APPLE) {
             Optional<User> user = userRepository.findByProviderIdAndProvider(providerId, provider);

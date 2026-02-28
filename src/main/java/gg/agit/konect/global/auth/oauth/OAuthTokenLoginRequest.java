@@ -22,6 +22,9 @@ public record OAuthTokenLoginRequest(
     String idToken,
 
     @Schema(description = "리다이렉트 경로", example = "https://agit.gg", requiredMode = NOT_REQUIRED)
-    String redirectUri
+    String redirectUri,
+
+    @Schema(description = "애플 인증에서 전달된 이름", example = "홍길동", requiredMode = NOT_REQUIRED)
+    String name
 ) {
 }

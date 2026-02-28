@@ -22,6 +22,7 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         FROM ClubMember cm
         JOIN FETCH cm.user
         WHERE cm.club.id = :clubId
+        AND cm.user.deletedAt IS NULL
         ORDER BY
             CASE cm.clubPosition
                 WHEN gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT THEN 0
@@ -39,6 +40,7 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         JOIN FETCH cm.user
         WHERE cm.club.id = :clubId
         AND cm.clubPosition = :position
+        AND cm.user.deletedAt IS NULL
         ORDER BY cm.user.name ASC
         """)
     List<ClubMember> findAllByClubIdAndPosition(
