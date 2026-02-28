@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -24,9 +26,12 @@ public class OAuthLoginHelper {
 
     private static final long RESTORE_WINDOW_DAYS = 7L;
 
+    private static final String STAGE_PROFILE = "stage";
+
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
+    private final Environment environment;
 
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
@@ -58,6 +63,10 @@ public class OAuthLoginHelper {
     }
 
     private Optional<User> restoreWithdrawnByProviderId(Provider provider, String providerId) {
+        if (isStageProfile()) {
+            return Optional.empty();
+        }
+
         return userRepository
             .findFirstByProviderIdAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(providerId, provider)
             .filter(user -> user.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS))
@@ -68,6 +77,10 @@ public class OAuthLoginHelper {
     }
 
     private Optional<User> restoreWithdrawnByEmail(Provider provider, String email) {
+        if (isStageProfile()) {
+            return Optional.empty();
+        }
+
         if (!StringUtils.hasText(email)) {
             return Optional.empty();
         }
@@ -78,6 +91,10 @@ public class OAuthLoginHelper {
                 user.restore();
                 return userRepository.save(user);
             });
+    }
+
+    private boolean isStageProfile() {
+        return environment.acceptsProfiles(Profiles.of(STAGE_PROFILE));
     }
 
     // Apple 로그인 시 이메일이 누락된 경우, UnRegisteredUser에서 이메일을 조회
