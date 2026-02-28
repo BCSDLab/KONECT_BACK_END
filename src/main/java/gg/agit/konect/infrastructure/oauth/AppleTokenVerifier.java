@@ -1,7 +1,5 @@
 package gg.agit.konect.infrastructure.oauth;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -16,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.global.auth.oauth.AppleOAuthNameResolver;
 import gg.agit.konect.global.auth.oauth.OAuthTokenLoginRequest;
 import gg.agit.konect.global.auth.oauth.OAuthTokenVerifier;
 import gg.agit.konect.global.auth.oauth.VerifiedOAuthUser;
@@ -31,8 +30,12 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
 
     private final JwtDecoder jwtDecoder;
+    private final AppleOAuthNameResolver appleOAuthNameResolver;
 
-    public AppleTokenVerifier(@Value("${OAUTH_APPLE_CLIENT_ID}") String appleClientId) {
+    public AppleTokenVerifier(
+        @Value("${OAUTH_APPLE_CLIENT_ID}") String appleClientId,
+        AppleOAuthNameResolver appleOAuthNameResolver
+    ) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(APPLE_JWKS_URI).build();
 
         OAuth2TokenValidator<Jwt> issuerValidator = token -> {
@@ -54,6 +57,7 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
         ));
 
         this.jwtDecoder = decoder;
+        this.appleOAuthNameResolver = appleOAuthNameResolver;
     }
 
     @Override
@@ -79,7 +83,7 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
             }
 
             String email = jwt.getClaimAsString("email");
-            String name = extractName(jwt);
+            String name = appleOAuthNameResolver.resolve(jwt.getClaims());
 
             return new VerifiedOAuthUser(providerId, email, name);
         } catch (JwtException e) {
@@ -88,57 +92,4 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
         }
     }
 
-    private String extractName(Jwt jwt) {
-        String name = jwt.getClaimAsString("name");
-
-        if (StringUtils.hasText(name)) {
-            return name;
-        }
-
-        String givenName = jwt.getClaimAsString("given_name");
-        String familyName = jwt.getClaimAsString("family_name");
-
-        if (StringUtils.hasText(givenName) && StringUtils.hasText(familyName)) {
-            return familyName + givenName;
-        }
-
-        if (StringUtils.hasText(givenName)) {
-            return givenName;
-        }
-
-        if (StringUtils.hasText(familyName)) {
-            return familyName;
-        }
-
-        Object rawName = jwt.getClaims().get("name");
-
-        if (!(rawName instanceof Map<?, ?> nameMap)) {
-            return null;
-        }
-
-        String firstName = asText(nameMap.get("firstName"));
-        String lastName = asText(nameMap.get("lastName"));
-
-        if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
-            return lastName + firstName;
-        }
-
-        if (StringUtils.hasText(firstName)) {
-            return firstName;
-        }
-
-        if (StringUtils.hasText(lastName)) {
-            return lastName;
-        }
-
-        return null;
-    }
-
-    private String asText(Object value) {
-        if (value instanceof String text && StringUtils.hasText(text)) {
-            return text;
-        }
-
-        return null;
-    }
 }

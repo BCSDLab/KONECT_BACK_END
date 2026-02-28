@@ -42,6 +42,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
     private final OAuthLoginHelper oauthLoginHelper;
+    private final AppleOAuthNameResolver appleOAuthNameResolver;
     private final SignupTokenService signupTokenService;
     private final RefreshTokenService refreshTokenService;
     private final AuthCookieService authCookieService;
@@ -61,7 +62,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String providerId = null;
         String email = extractEmail(oauthUser, provider);
-        String name = extractName(oauthUser, provider);
+        String name = provider == Provider.APPLE ? appleOAuthNameResolver.resolve(oauthUser.getAttributes()) : null;
         Optional<User> user;
 
         if (provider == Provider.APPLE) {
@@ -174,63 +175,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return providerId;
-    }
-
-    private String extractName(OAuth2User oauthUser, Provider provider) {
-        if (provider != Provider.APPLE) {
-            return null;
-        }
-
-        String name = oauthUser.getAttribute("name");
-
-        if (StringUtils.hasText(name)) {
-            return name;
-        }
-
-        String givenName = oauthUser.getAttribute("given_name");
-        String familyName = oauthUser.getAttribute("family_name");
-
-        if (StringUtils.hasText(givenName) && StringUtils.hasText(familyName)) {
-            return familyName + givenName;
-        }
-
-        if (StringUtils.hasText(givenName)) {
-            return givenName;
-        }
-
-        if (StringUtils.hasText(familyName)) {
-            return familyName;
-        }
-
-        Object rawName = oauthUser.getAttributes().get("name");
-        if (!(rawName instanceof Map<?, ?> nameMap)) {
-            return null;
-        }
-
-        String firstName = asText(nameMap.get("firstName"));
-        String lastName = asText(nameMap.get("lastName"));
-
-        if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
-            return lastName + firstName;
-        }
-
-        if (StringUtils.hasText(firstName)) {
-            return firstName;
-        }
-
-        if (StringUtils.hasText(lastName)) {
-            return lastName;
-        }
-
-        return null;
-    }
-
-    private String asText(Object value) {
-        if (value instanceof String text && StringUtils.hasText(text)) {
-            return text;
-        }
-
-        return null;
     }
 
     private String extractAppleRefreshToken(OAuth2AuthenticationToken oauthToken) {
