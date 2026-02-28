@@ -12,10 +12,10 @@ public record OAuthTokenLoginResponse(
     @Schema(description = "액세스 토큰", example = "eyJhbGciOiJIUzI1NiJ9...", requiredMode = NOT_REQUIRED)
     String accessToken,
 
-    @Schema(description = "리프레시 토큰", example = "IQxiK3gPhYIP8...", requiredMode = REQUIRED)
+    @Schema(description = "리프레시 토큰", example = "IQxiK3gPhYIP8...", requiredMode = NOT_REQUIRED)
     String refreshToken,
 
-    @Schema(description = "회원가입 토큰", example = "eyJhbGciOiJIUzI1NiJ9...", requiredMode = REQUIRED)
+    @Schema(description = "회원가입 토큰", example = "eyJhbGciOiJIUzI1NiJ9...", requiredMode = NOT_REQUIRED)
     String signupToken,
 
     @Schema(description = "OAuth 제공자 계정 이름", example = "홍길동", requiredMode = NOT_REQUIRED)
