@@ -1,5 +1,7 @@
 package gg.agit.konect.infrastructure.oauth;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -77,11 +79,66 @@ public class AppleTokenVerifier implements OAuthTokenVerifier {
             }
 
             String email = jwt.getClaimAsString("email");
+            String name = extractName(jwt);
 
-            return new VerifiedOAuthUser(providerId, email);
+            return new VerifiedOAuthUser(providerId, email, name);
         } catch (JwtException e) {
             log.error(e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.INVALID_OAUTH_TOKEN);
         }
+    }
+
+    private String extractName(Jwt jwt) {
+        String name = jwt.getClaimAsString("name");
+
+        if (StringUtils.hasText(name)) {
+            return name;
+        }
+
+        String givenName = jwt.getClaimAsString("given_name");
+        String familyName = jwt.getClaimAsString("family_name");
+
+        if (StringUtils.hasText(givenName) && StringUtils.hasText(familyName)) {
+            return familyName + givenName;
+        }
+
+        if (StringUtils.hasText(givenName)) {
+            return givenName;
+        }
+
+        if (StringUtils.hasText(familyName)) {
+            return familyName;
+        }
+
+        Object rawName = jwt.getClaims().get("name");
+
+        if (!(rawName instanceof Map<?, ?> nameMap)) {
+            return null;
+        }
+
+        String firstName = asText(nameMap.get("firstName"));
+        String lastName = asText(nameMap.get("lastName"));
+
+        if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
+            return lastName + firstName;
+        }
+
+        if (StringUtils.hasText(firstName)) {
+            return firstName;
+        }
+
+        if (StringUtils.hasText(lastName)) {
+            return lastName;
+        }
+
+        return null;
+    }
+
+    private String asText(Object value) {
+        if (value instanceof String text && StringUtils.hasText(text)) {
+            return text;
+        }
+
+        return null;
     }
 }

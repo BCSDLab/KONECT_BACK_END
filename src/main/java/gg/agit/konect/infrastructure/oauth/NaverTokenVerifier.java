@@ -67,7 +67,7 @@ public class NaverTokenVerifier implements OAuthTokenVerifier {
                 throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_EMAIL);
             }
 
-            return new VerifiedOAuthUser(providerId, email);
+            return new VerifiedOAuthUser(providerId, email, null);
         } catch (RestClientException e) {
             log.error(e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.INVALID_OAUTH_TOKEN);
