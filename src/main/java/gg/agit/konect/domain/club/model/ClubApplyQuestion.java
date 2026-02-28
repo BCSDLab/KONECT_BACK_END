@@ -6,6 +6,8 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static java.lang.Boolean.TRUE;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.time.LocalDateTime;
+
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.global.exception.CustomException;
@@ -45,6 +47,9 @@ public class ClubApplyQuestion extends BaseEntity {
     @Column(name = "is_required", nullable = false)
     private Boolean isRequired;
 
+    @Column(name = "deleted_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime deletedAt;
+
     @Builder
     private ClubApplyQuestion(
         Integer id,
@@ -73,6 +78,14 @@ public class ClubApplyQuestion extends BaseEntity {
     public void update(String question, Boolean isRequired) {
         this.question = question;
         this.isRequired = isRequired;
+    }
+
+    public void softDelete(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public boolean isSame(String question, Boolean isRequired) {
+        return this.question.equals(question) && this.isRequired.equals(isRequired);
     }
 
     private void validateRequiredAnswer(String answer) {
