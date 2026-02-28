@@ -76,24 +76,14 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
     }
 
-    @Query("""
-        SELECT clubApply
-        FROM ClubApply clubApply
-        JOIN FETCH clubApply.user user
-        WHERE clubApply.club.id = :clubId
-          AND clubApply.user.id = :userId
-          AND clubApply.status = :status
-        ORDER BY clubApply.createdAt DESC
-        """)
-    List<ClubApply> findAllByClubIdAndUserIdAndStatusOrderByCreatedAtDesc(
-        @Param("clubId") Integer clubId,
-        @Param("userId") Integer userId,
-        @Param("status") ClubApplyStatus status
+    Optional<ClubApply> findFirstByClubIdAndUserIdAndStatusOrderByCreatedAtDescIdDesc(
+        Integer clubId,
+        Integer userId,
+        ClubApplyStatus status
     );
 
     default ClubApply getLatestApprovedByClubIdAndUserId(Integer clubId, Integer userId) {
-        return findAllByClubIdAndUserIdAndStatusOrderByCreatedAtDesc(clubId, userId, ClubApplyStatus.APPROVED).stream()
-            .findFirst()
+        return findFirstByClubIdAndUserIdAndStatusOrderByCreatedAtDescIdDesc(clubId, userId, ClubApplyStatus.APPROVED)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
     }
 
