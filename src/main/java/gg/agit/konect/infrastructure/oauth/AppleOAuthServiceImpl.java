@@ -1,6 +1,7 @@
 package gg.agit.konect.infrastructure.oauth;
 
 import java.util.Optional;
+import java.util.Map;
 
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
@@ -34,6 +35,7 @@ public class AppleOAuthServiceImpl extends OidcUserService {
 
         String email = oidcUser.getAttribute("email");
         String providerId = oidcUser.getSubject();
+        String name = extractName(oidcUser);
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
@@ -59,11 +61,65 @@ public class AppleOAuthServiceImpl extends OidcUserService {
                 .email(email)
                 .provider(provider)
                 .providerId(providerId)
+                .name(name)
                 .build();
 
             unRegisteredUserRepository.save(newUser);
         }
 
         return oidcUser;
+    }
+
+    private String extractName(OidcUser oidcUser) {
+        String name = oidcUser.getAttribute("name");
+
+        if (StringUtils.hasText(name)) {
+            return name;
+        }
+
+        String givenName = oidcUser.getAttribute("given_name");
+        String familyName = oidcUser.getAttribute("family_name");
+
+        if (StringUtils.hasText(givenName) && StringUtils.hasText(familyName)) {
+            return familyName + givenName;
+        }
+
+        if (StringUtils.hasText(givenName)) {
+            return givenName;
+        }
+
+        if (StringUtils.hasText(familyName)) {
+            return familyName;
+        }
+
+        Object rawName = oidcUser.getAttributes().get("name");
+        if (!(rawName instanceof Map<?, ?> nameMap)) {
+            return null;
+        }
+
+        String firstName = asText(nameMap.get("firstName"));
+        String lastName = asText(nameMap.get("lastName"));
+
+        if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
+            return lastName + firstName;
+        }
+
+        if (StringUtils.hasText(firstName)) {
+            return firstName;
+        }
+
+        if (StringUtils.hasText(lastName)) {
+            return lastName;
+        }
+
+        return null;
+    }
+
+    private String asText(Object value) {
+        if (value instanceof String text && StringUtils.hasText(text)) {
+            return text;
+        }
+
+        return null;
     }
 }

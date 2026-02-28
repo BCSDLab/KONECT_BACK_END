@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
@@ -61,6 +62,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String providerId = null;
         String email = extractEmail(oauthUser, provider);
+        String name = extractName(oauthUser, provider);
         Optional<User> user;
 
         if (provider == Provider.APPLE) {
@@ -84,8 +86,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 }
             }
 
-            saveAppleRefreshTokenForUnRegisteredUser(provider, providerId, email, appleRefreshTokenValue);
-            sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId);
+            saveAppleRefreshTokenForUnRegisteredUser(provider, providerId, email, name, appleRefreshTokenValue);
+            sendAdditionalInfoRequiredResponse(request, response, email, provider, providerId, name);
             return;
         }
 
@@ -98,11 +100,22 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         HttpServletResponse response,
         String email,
         Provider provider,
-        String providerId
+        String providerId,
+        String name
     ) throws IOException {
         String token = signupTokenService.issue(email, provider, providerId);
         authCookieService.setSignupToken(request, response, token, signupTokenService.signupTtl());
-        response.sendRedirect(frontendBaseUrl + "/signup");
+        response.sendRedirect(buildSignupRedirectUrl(name));
+    }
+
+    private String buildSignupRedirectUrl(String name) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(frontendBaseUrl + "/signup");
+
+        if (StringUtils.hasText(name)) {
+            builder.queryParam("name", name);
+        }
+
+        return builder.build().encode().toUriString();
     }
 
     private void sendLoginSuccessResponse(
@@ -174,6 +187,63 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         return providerId;
     }
 
+    private String extractName(OAuth2User oauthUser, Provider provider) {
+        if (provider != Provider.APPLE) {
+            return null;
+        }
+
+        String name = oauthUser.getAttribute("name");
+
+        if (StringUtils.hasText(name)) {
+            return name;
+        }
+
+        String givenName = oauthUser.getAttribute("given_name");
+        String familyName = oauthUser.getAttribute("family_name");
+
+        if (StringUtils.hasText(givenName) && StringUtils.hasText(familyName)) {
+            return familyName + givenName;
+        }
+
+        if (StringUtils.hasText(givenName)) {
+            return givenName;
+        }
+
+        if (StringUtils.hasText(familyName)) {
+            return familyName;
+        }
+
+        Object rawName = oauthUser.getAttributes().get("name");
+        if (!(rawName instanceof Map<?, ?> nameMap)) {
+            return null;
+        }
+
+        String firstName = asText(nameMap.get("firstName"));
+        String lastName = asText(nameMap.get("lastName"));
+
+        if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
+            return lastName + firstName;
+        }
+
+        if (StringUtils.hasText(firstName)) {
+            return firstName;
+        }
+
+        if (StringUtils.hasText(lastName)) {
+            return lastName;
+        }
+
+        return null;
+    }
+
+    private String asText(Object value) {
+        if (value instanceof String text && StringUtils.hasText(text)) {
+            return text;
+        }
+
+        return null;
+    }
+
     private String extractAppleRefreshToken(OAuth2AuthenticationToken oauthToken) {
         String registrationId = oauthToken.getAuthorizedClientRegistrationId();
 
@@ -203,9 +273,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private void saveAppleRefreshTokenForUnRegisteredUser(
-        Provider provider, String providerId, String email, String appleRefreshToken
+        Provider provider, String providerId, String email, String name, String appleRefreshToken
     ) {
-        if (provider != Provider.APPLE || !StringUtils.hasText(appleRefreshToken)) {
+        if (provider != Provider.APPLE) {
             return;
         }
 
@@ -218,7 +288,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         unRegisteredUser.ifPresent(u -> {
-            u.updateAppleRefreshToken(appleRefreshToken);
+            if (StringUtils.hasText(appleRefreshToken)) {
+                u.updateAppleRefreshToken(appleRefreshToken);
+            }
+            if (StringUtils.hasText(name)) {
+                u.updateName(name);
+            }
             unRegisteredUserRepository.save(u);
         });
     }
