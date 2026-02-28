@@ -22,7 +22,7 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
           AND ca.user.id = :userId
           AND ca.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
         """)
-    boolean existsByClubIdAndUserId(@Param("clubId") Integer clubId, @Param("userId") Integer userId);
+    boolean existsPendingByClubIdAndUserId(@Param("clubId") Integer clubId, @Param("userId") Integer userId);
 
     @Query("""
         SELECT ca.club.id

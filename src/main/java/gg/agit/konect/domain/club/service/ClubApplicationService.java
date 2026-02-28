@@ -194,7 +194,11 @@ public class ClubApplicationService {
         Club club = clubRepository.getById(clubId);
         User user = userRepository.getById(userId);
 
-        if (clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
+        if (clubMemberRepository.existsByClubIdAndUserId(clubId, userId)) {
+            throw CustomException.of(ALREADY_CLUB_MEMBER);
+        }
+
+        if (clubApplyRepository.existsPendingByClubIdAndUserId(clubId, userId)) {
             throw CustomException.of(ALREADY_APPLIED_CLUB);
         }
 

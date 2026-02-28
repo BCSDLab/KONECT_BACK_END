@@ -35,7 +35,7 @@ public class ClubRecruitmentService {
         User user = userRepository.getById(userId);
         ClubRecruitment recruitment = clubRecruitmentRepository.getByClubId(club.getId());
         boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
-        boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(club.getId(), user.getId());
+        boolean isApplied = isMember || clubApplyRepository.existsPendingByClubIdAndUserId(club.getId(), user.getId());
 
         return ClubRecruitmentResponse.of(recruitment, isApplied);
     }

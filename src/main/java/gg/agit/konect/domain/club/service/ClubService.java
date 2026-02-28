@@ -101,7 +101,7 @@ public class ClubService {
         ClubRecruitment recruitment = club.getClubRecruitment();
 
         boolean isMember = clubMembers.contains(userId);
-        Boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
+        Boolean isApplied = isMember || clubApplyRepository.existsPendingByClubIdAndUserId(clubId, userId);
 
         return ClubDetailResponse.of(club, memberCount, recruitment, president, isMember, isApplied);
     }
