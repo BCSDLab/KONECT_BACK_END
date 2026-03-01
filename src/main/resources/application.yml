@@ -12,8 +12,8 @@ spring:
       max-request-size: 20MB
 
   web:
-      resources:
-        add-mappings: false
+    resources:
+      add-mappings: false
 
 app:
   allowed-redirect-origins: ${ALLOWED_ORIGINS}
