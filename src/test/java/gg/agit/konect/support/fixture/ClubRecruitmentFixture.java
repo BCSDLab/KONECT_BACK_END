@@ -7,6 +7,8 @@ import gg.agit.konect.domain.club.model.ClubRecruitment;
 
 public class ClubRecruitmentFixture {
 
+    private static final int RECRUITMENT_PERIOD_DAYS = 30;
+
     public static ClubRecruitment createAlwaysRecruiting(Club club) {
         return ClubRecruitment.of(
             null,
@@ -29,6 +31,6 @@ public class ClubRecruitmentFixture {
 
     public static ClubRecruitment createCurrentlyRecruiting(Club club) {
         LocalDateTime now = LocalDateTime.now();
-        return createWithPeriod(club, now.minusDays(1), now.plusDays(30));
+        return createWithPeriod(club, now.minusDays(1), now.plusDays(RECRUITMENT_PERIOD_DAYS));
     }
 }

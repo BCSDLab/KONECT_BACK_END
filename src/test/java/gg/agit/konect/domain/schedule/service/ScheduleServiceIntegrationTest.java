@@ -24,6 +24,19 @@ import gg.agit.konect.support.fixture.UserFixture;
 @Transactional
 class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
 
+    private static final int TEST_YEAR = 2026;
+    private static final int MARCH = 3;
+    private static final int APRIL = 4;
+    private static final int FEBRUARY = 2;
+    private static final int EXPECTED_SCHEDULE_COUNT = 3;
+    private static final int DAYS_5 = 5;
+    private static final int DAYS_6 = 6;
+    private static final int DAYS_10 = 10;
+    private static final int DAYS_15 = 15;
+    private static final int DAYS_25 = 25;
+    private static final int DAYS_30 = 30;
+    private static final int DAYS_35 = 35;
+
     @Autowired
     private ScheduleService scheduleService;
 
@@ -50,10 +63,10 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
                 "수강신청", now.plusDays(1), now.plusDays(2)
             ));
             Schedule schedule2 = persist(ScheduleFixture.createUniversity(
-                "중간고사", now.plusDays(5), now.plusDays(10)
+                "중간고사", now.plusDays(DAYS_5), now.plusDays(DAYS_10)
             ));
             Schedule schedule3 = persist(ScheduleFixture.createUniversity(
-                "기말고사", now.plusDays(30), now.plusDays(35)
+                "기말고사", now.plusDays(DAYS_30), now.plusDays(DAYS_35)
             ));
 
             persist(ScheduleFixture.createUniversitySchedule(schedule1, university));
@@ -65,7 +78,7 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             SchedulesResponse response = scheduleService.getUpcomingSchedules(user.getId());
 
             // then
-            assertThat(response.schedules()).hasSize(3);
+            assertThat(response.schedules()).hasSize(EXPECTED_SCHEDULE_COUNT);
             assertThat(response.schedules().get(0).title()).isEqualTo("수강신청");
         }
 
@@ -76,10 +89,10 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             LocalDateTime now = LocalDateTime.now();
 
             Schedule pastSchedule = persist(ScheduleFixture.createUniversity(
-                "지난 일정", now.minusDays(10), now.minusDays(5)
+                "지난 일정", now.minusDays(DAYS_10), now.minusDays(DAYS_5)
             ));
             Schedule futureSchedule = persist(ScheduleFixture.createUniversity(
-                "미래 일정", now.plusDays(1), now.plusDays(5)
+                "미래 일정", now.plusDays(1), now.plusDays(DAYS_5)
             ));
 
             persist(ScheduleFixture.createUniversitySchedule(pastSchedule, university));
@@ -102,10 +115,10 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             LocalDateTime now = LocalDateTime.now();
 
             Schedule mySchedule = persist(ScheduleFixture.createUniversity(
-                "우리대학 일정", now.plusDays(1), now.plusDays(5)
+                "우리대학 일정", now.plusDays(1), now.plusDays(DAYS_5)
             ));
             Schedule otherSchedule = persist(ScheduleFixture.createUniversity(
-                "다른대학 일정", now.plusDays(2), now.plusDays(6)
+                "다른대학 일정", now.plusDays(2), now.plusDays(DAYS_6)
             ));
 
             persist(ScheduleFixture.createUniversitySchedule(mySchedule, university));
@@ -129,20 +142,22 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
         @DisplayName("특정 월의 일정을 조회한다")
         void getSchedulesByMonthSuccess() {
             // given
-            LocalDateTime marchStart = LocalDateTime.of(2026, 3, 1, 0, 0);
+            LocalDateTime marchStart = LocalDateTime.of(TEST_YEAR, MARCH, 1, 0, 0);
 
             Schedule marchSchedule = persist(ScheduleFixture.createUniversity(
-                "3월 일정", marchStart.plusDays(5), marchStart.plusDays(10)
+                "3월 일정", marchStart.plusDays(DAYS_5), marchStart.plusDays(DAYS_10)
             ));
             Schedule aprilSchedule = persist(ScheduleFixture.createUniversity(
-                "4월 일정", LocalDateTime.of(2026, 4, 5, 0, 0), LocalDateTime.of(2026, 4, 10, 0, 0)
+                "4월 일정",
+                LocalDateTime.of(TEST_YEAR, APRIL, DAYS_5, 0, 0),
+                LocalDateTime.of(TEST_YEAR, APRIL, DAYS_10, 0, 0)
             ));
 
             persist(ScheduleFixture.createUniversitySchedule(marchSchedule, university));
             persist(ScheduleFixture.createUniversitySchedule(aprilSchedule, university));
             clearPersistenceContext();
 
-            ScheduleCondition condition = new ScheduleCondition(2026, 3, null);
+            ScheduleCondition condition = new ScheduleCondition(TEST_YEAR, MARCH, null);
 
             // when
             SchedulesResponse response = scheduleService.getSchedules(condition, user.getId());
@@ -156,20 +171,20 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
         @DisplayName("검색어로 일정을 필터링한다")
         void getSchedulesWithQuery() {
             // given
-            LocalDateTime marchStart = LocalDateTime.of(2026, 3, 1, 0, 0);
+            LocalDateTime marchStart = LocalDateTime.of(TEST_YEAR, MARCH, 1, 0, 0);
 
             Schedule schedule1 = persist(ScheduleFixture.createUniversity(
-                "수강신청 기간", marchStart.plusDays(1), marchStart.plusDays(3)
+                "수강신청 기간", marchStart.plusDays(1), marchStart.plusDays(EXPECTED_SCHEDULE_COUNT)
             ));
             Schedule schedule2 = persist(ScheduleFixture.createUniversity(
-                "중간고사", marchStart.plusDays(10), marchStart.plusDays(15)
+                "중간고사", marchStart.plusDays(DAYS_10), marchStart.plusDays(DAYS_15)
             ));
 
             persist(ScheduleFixture.createUniversitySchedule(schedule1, university));
             persist(ScheduleFixture.createUniversitySchedule(schedule2, university));
             clearPersistenceContext();
 
-            ScheduleCondition condition = new ScheduleCondition(2026, 3, "수강");
+            ScheduleCondition condition = new ScheduleCondition(TEST_YEAR, MARCH, "수강");
 
             // when
             SchedulesResponse response = scheduleService.getSchedules(condition, user.getId());
@@ -185,14 +200,14 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             // given
             Schedule spanningSchedule = persist(ScheduleFixture.createUniversity(
                 "장기 일정",
-                LocalDateTime.of(2026, 2, 25, 0, 0),
-                LocalDateTime.of(2026, 3, 5, 0, 0)
+                LocalDateTime.of(TEST_YEAR, FEBRUARY, DAYS_25, 0, 0),
+                LocalDateTime.of(TEST_YEAR, MARCH, DAYS_5, 0, 0)
             ));
 
             persist(ScheduleFixture.createUniversitySchedule(spanningSchedule, university));
             clearPersistenceContext();
 
-            ScheduleCondition condition = new ScheduleCondition(2026, 3, null);
+            ScheduleCondition condition = new ScheduleCondition(TEST_YEAR, MARCH, null);
 
             // when
             SchedulesResponse response = scheduleService.getSchedules(condition, user.getId());

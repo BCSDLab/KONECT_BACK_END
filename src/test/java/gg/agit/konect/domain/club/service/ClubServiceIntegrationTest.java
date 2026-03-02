@@ -31,6 +31,8 @@ import gg.agit.konect.support.fixture.UserFixture;
 @Transactional
 class ClubServiceIntegrationTest extends IntegrationTestSupport {
 
+    private static final int DEFAULT_PAGE_SIZE = 10;
+
     @Autowired
     private ClubService clubService;
 
@@ -67,7 +69,7 @@ class ClubServiceIntegrationTest extends IntegrationTestSupport {
             persist(ClubMemberFixture.createPresident(club2, president2));
             clearPersistenceContext();
 
-            ClubCondition condition = new ClubCondition(1, 10, null, null);
+            ClubCondition condition = new ClubCondition(1, DEFAULT_PAGE_SIZE, null, null);
 
             // when
             ClubsResponse response = clubService.getClubs(condition, normalUser.getId());
@@ -89,7 +91,7 @@ class ClubServiceIntegrationTest extends IntegrationTestSupport {
             persist(ClubMemberFixture.createPresident(club2, president2));
             clearPersistenceContext();
 
-            ClubCondition condition = new ClubCondition(1, 10, "BCSD", null);
+            ClubCondition condition = new ClubCondition(1, DEFAULT_PAGE_SIZE, "BCSD", null);
 
             // when
             ClubsResponse response = clubService.getClubs(condition, normalUser.getId());
