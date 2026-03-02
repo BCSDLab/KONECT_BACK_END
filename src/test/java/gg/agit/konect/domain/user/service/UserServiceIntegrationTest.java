@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.model.Club;
-import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.enums.Provider;
@@ -34,9 +33,6 @@ class UserServiceIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private ClubMemberRepository clubMemberRepository;
 
     private University university;
 

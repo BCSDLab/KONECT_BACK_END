@@ -102,13 +102,10 @@ class StudyTimerServiceIntegrationTest extends IntegrationTestSupport {
 
         @Test
         @DisplayName("타이머를 중지하면 타이머가 삭제되고 결과가 반환된다")
-        void stopTimerSuccess() throws InterruptedException {
+        void stopTimerSuccess() {
             // given
             studyTimerService.start(user.getId());
             entityManager.flush();
-
-            // 약간의 시간 경과 시뮬레이션
-            Thread.sleep(100);
 
             StudyTimerStopRequest request = new StudyTimerStopRequest(0L);
 
@@ -117,10 +114,10 @@ class StudyTimerServiceIntegrationTest extends IntegrationTestSupport {
 
             // then
             assertThat(response).isNotNull();
-            assertThat(response.sessionSeconds()).isNotNull();
-            assertThat(response.dailySeconds()).isNotNull();
-            assertThat(response.monthlySeconds()).isNotNull();
-            assertThat(response.totalSeconds()).isNotNull();
+            assertThat(response.sessionSeconds()).isGreaterThanOrEqualTo(0L);
+            assertThat(response.dailySeconds()).isGreaterThanOrEqualTo(0L);
+            assertThat(response.monthlySeconds()).isGreaterThanOrEqualTo(0L);
+            assertThat(response.totalSeconds()).isGreaterThanOrEqualTo(0L);
             assertThat(studyTimerRepository.existsByUserId(user.getId())).isFalse();
         }
 
@@ -137,14 +134,12 @@ class StudyTimerServiceIntegrationTest extends IntegrationTestSupport {
 
         @Test
         @DisplayName("클라이언트 시간과 서버 시간이 크게 차이나면 예외가 발생한다")
-        void stopTimerWithTimeMismatchFails() throws InterruptedException {
+        void stopTimerWithTimeMismatchFails() {
             // given
             studyTimerService.start(user.getId());
             entityManager.flush();
 
-            Thread.sleep(100);
-
-            // 클라이언트가 100초라고 보고 (실제론 0초 정도)
+            // 클라이언트가 100초라고 보고 (실제론 0초)
             StudyTimerStopRequest request = new StudyTimerStopRequest(100L);
 
             // when & then

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.domain.schedule.dto.ScheduleCondition;
 import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
 import gg.agit.konect.domain.schedule.model.Schedule;
-import gg.agit.konect.domain.schedule.model.UniversitySchedule;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.support.IntegrationTestSupport;
@@ -131,7 +130,6 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
         void getSchedulesByMonthSuccess() {
             // given
             LocalDateTime marchStart = LocalDateTime.of(2026, 3, 1, 0, 0);
-            LocalDateTime marchEnd = LocalDateTime.of(2026, 3, 31, 23, 59);
 
             Schedule marchSchedule = persist(ScheduleFixture.createUniversity(
                 "3월 일정", marchStart.plusDays(5), marchStart.plusDays(10)
