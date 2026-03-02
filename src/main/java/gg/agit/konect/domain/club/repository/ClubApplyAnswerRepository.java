@@ -20,4 +20,13 @@ public interface ClubApplyAnswerRepository extends Repository<ClubApplyAnswer, I
         ORDER BY question.displayOrder ASC, question.id ASC
         """)
     List<ClubApplyAnswer> findAllByApplyIdWithQuestion(@Param("applyId") Integer applyId);
+
+    @Query("""
+        SELECT answer
+        FROM ClubApplyAnswer answer
+        JOIN FETCH answer.question question
+        WHERE answer.apply.id IN :applyIds
+        ORDER BY answer.apply.id ASC, question.displayOrder ASC, question.id ASC
+        """)
+    List<ClubApplyAnswer> findAllByApplyIdsWithQuestion(@Param("applyIds") List<Integer> applyIds);
 }

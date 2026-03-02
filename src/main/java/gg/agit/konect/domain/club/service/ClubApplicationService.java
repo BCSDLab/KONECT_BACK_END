@@ -132,8 +132,24 @@ public class ClubApplicationService {
 
         List<ClubApply> approvedApplications =
             clubApplyQueryRepository.findAllApprovedMemberApplicationsByClubId(clubId);
+        if (approvedApplications.isEmpty()) {
+            return ClubMemberApplicationAnswersResponse.from(List.of());
+        }
+
+        List<Integer> applyIds = approvedApplications.stream()
+            .map(ClubApply::getId)
+            .toList();
+        Map<Integer, List<ClubApplyAnswer>> answersByApplyId = clubApplyAnswerRepository
+            .findAllByApplyIdsWithQuestion(applyIds)
+            .stream()
+            .collect(Collectors.groupingBy(answer -> answer.getApply().getId()));
+
         List<ClubApplicationAnswersResponse> responses = approvedApplications.stream()
-            .map(application -> toClubApplicationAnswersResponse(clubId, application))
+            .map(application -> toClubApplicationAnswersResponse(
+                clubId,
+                application,
+                answersByApplyId.getOrDefault(application.getId(), List.of())
+            ))
             .toList();
 
         return ClubMemberApplicationAnswersResponse.from(responses);
@@ -153,9 +169,17 @@ public class ClubApplicationService {
     }
 
     private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(Integer clubId, ClubApply clubApply) {
+        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
+        return toClubApplicationAnswersResponse(clubId, clubApply, answers);
+    }
+
+    private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(
+        Integer clubId,
+        ClubApply clubApply,
+        List<ClubApplyAnswer> answers
+    ) {
         List<ClubApplyQuestion> questions =
             clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
-        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
 
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
     }
