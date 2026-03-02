@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -116,9 +117,9 @@ public class ClubApplicationService {
 
         clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
 
-        ClubApply clubApply = clubApplyRepository.getByClubIdAndUserId(clubId, targetUserId);
+        ClubApply clubApply = clubApplyRepository.getLatestApprovedByClubIdAndUserId(clubId, targetUserId);
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
         List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
 
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
@@ -135,7 +136,7 @@ public class ClubApplicationService {
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
         List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(applicationId);
 
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
@@ -162,6 +163,7 @@ public class ClubApplicationService {
 
         ClubMember savedMember = clubMemberRepository.save(newMember);
         chatRoomMembershipService.addClubMember(savedMember);
+        clubApply.approve();
 
         applicationEventPublisher.publishEvent(ClubApplicationApprovedEvent.of(
             applicant.getId(),
@@ -178,7 +180,7 @@ public class ClubApplicationService {
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
         User applicant = clubApply.getUser();
-        clubApplyRepository.delete(clubApply);
+        clubApply.reject();
 
         notificationService.sendClubApplicationRejectedNotification(
             applicant.getId(),
@@ -192,14 +194,18 @@ public class ClubApplicationService {
         Club club = clubRepository.getById(clubId);
         User user = userRepository.getById(userId);
 
-        if (clubApplyRepository.existsByClubIdAndUserId(clubId, userId)) {
+        if (clubMemberRepository.existsByClubIdAndUserId(clubId, userId)) {
+            throw CustomException.of(ALREADY_CLUB_MEMBER);
+        }
+
+        if (clubApplyRepository.existsPendingByClubIdAndUserId(clubId, userId)) {
             throw CustomException.of(ALREADY_APPLIED_CLUB);
         }
 
         validateFeePaymentImage(club, request.feePaymentImageUrl());
 
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
         ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
         ClubApply apply = clubApplyRepository.save(
@@ -234,7 +240,7 @@ public class ClubApplicationService {
 
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
     }
@@ -251,58 +257,58 @@ public class ClubApplicationService {
 
         List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests = request.questions();
         Set<Integer> requestedQuestionIds = new HashSet<>();
+        List<ClubApplyQuestion> questionsToCreate = new ArrayList<>();
+        List<ClubApplyQuestion> questionsToSoftDelete = new ArrayList<>();
 
         List<ClubApplyQuestion> existingQuestions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
         Map<Integer, ClubApplyQuestion> existingQuestionMap = existingQuestions.stream()
             .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
 
-        updateQuestions(existingQuestionMap, questionRequests, requestedQuestionIds);
+        prepareQuestions(
+            club,
+            existingQuestionMap,
+            questionRequests,
+            requestedQuestionIds,
+            questionsToCreate,
+            questionsToSoftDelete
+        );
 
-        List<ClubApplyQuestion> questionsToCreate = createQuestions(club, questionRequests);
+        deleteQuestions(existingQuestions, requestedQuestionIds, questionsToSoftDelete);
 
-        deleteQuestions(existingQuestions, requestedQuestionIds);
+        LocalDateTime now = LocalDateTime.now();
+        questionsToSoftDelete.forEach(question -> question.softDelete(now));
 
         if (!questionsToCreate.isEmpty()) {
             clubApplyQuestionRepository.saveAll(questionsToCreate);
         }
 
         List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
     }
 
-    private List<ClubApplyQuestion> createQuestions(
+    private void prepareQuestions(
         Club club,
-        List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests
-    ) {
-        List<ClubApplyQuestion> questionsToCreate = new ArrayList<>();
-
-        for (ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest questionRequest : questionRequests) {
-            if (questionRequest.questionId() != null) {
-                continue;
-            }
-
-            questionsToCreate.add(ClubApplyQuestion.of(
-                club,
-                questionRequest.question(),
-                questionRequest.isRequiredOrDefault())
-            );
-        }
-
-        return questionsToCreate;
-    }
-
-    private void updateQuestions(
         Map<Integer, ClubApplyQuestion> existingQuestionMap,
         List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests,
-        Set<Integer> requestedQuestionIds
+        Set<Integer> requestedQuestionIds,
+        List<ClubApplyQuestion> questionsToCreate,
+        List<ClubApplyQuestion> questionsToSoftDelete
     ) {
-        for (ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest questionRequest : questionRequests) {
+        for (int index = 0; index < questionRequests.size(); index++) {
+            int displayOrder = index + 1;
+            ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest questionRequest = questionRequests.get(index);
             Integer questionId = questionRequest.questionId();
 
             if (questionId == null) {
+                questionsToCreate.add(ClubApplyQuestion.of(
+                    club,
+                    questionRequest.question(),
+                    questionRequest.isRequiredOrDefault(),
+                    displayOrder)
+                );
                 continue;
             }
 
@@ -316,23 +322,29 @@ public class ClubApplicationService {
                 throw CustomException.of(NOT_FOUND_CLUB_APPLY_QUESTION);
             }
 
-            existingQuestion.update(
-                questionRequest.question(),
-                questionRequest.isRequiredOrDefault()
-            );
+            Boolean isRequired = questionRequest.isRequiredOrDefault();
+
+            if (existingQuestion.isSame(questionRequest.question(), isRequired)) {
+                existingQuestion.updateDisplayOrder(displayOrder);
+                continue;
+            }
+
+            questionsToSoftDelete.add(existingQuestion);
+            questionsToCreate.add(ClubApplyQuestion.of(club, questionRequest.question(), isRequired, displayOrder));
         }
     }
 
     private void deleteQuestions(
         List<ClubApplyQuestion> existingQuestions,
-        Set<Integer> requestedQuestionIds
+        Set<Integer> requestedQuestionIds,
+        List<ClubApplyQuestion> questionsToSoftDelete
     ) {
         List<ClubApplyQuestion> questionsToDelete = existingQuestions.stream()
             .filter(question -> !requestedQuestionIds.contains(question.getId()))
             .toList();
 
         if (!questionsToDelete.isEmpty()) {
-            clubApplyQuestionRepository.deleteAll(questionsToDelete);
+            questionsToSoftDelete.addAll(questionsToDelete);
         }
     }
 

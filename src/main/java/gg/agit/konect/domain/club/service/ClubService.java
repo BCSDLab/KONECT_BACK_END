@@ -101,7 +101,7 @@ public class ClubService {
         ClubRecruitment recruitment = club.getClubRecruitment();
 
         boolean isMember = clubMembers.contains(userId);
-        Boolean isApplied = isMember || clubApplyRepository.existsByClubIdAndUserId(clubId, userId);
+        Boolean isApplied = isMember || clubApplyRepository.existsPendingByClubIdAndUserId(clubId, userId);
 
         return ClubDetailResponse.of(club, memberCount, recruitment, president, isMember, isApplied);
     }
@@ -138,12 +138,14 @@ public class ClubService {
         ClubApplyQuestion phoneQuestion = ClubApplyQuestion.of(
             club,
             "본인의 전화번호를 입력해주세요.",
-            true
+            true,
+            1
         );
         ClubApplyQuestion motivationQuestion = ClubApplyQuestion.of(
             club,
             "지원 동기",
-            false
+            false,
+            2
         );
         clubApplyQuestionRepository.saveAll(List.of(phoneQuestion, motivationQuestion));
     }

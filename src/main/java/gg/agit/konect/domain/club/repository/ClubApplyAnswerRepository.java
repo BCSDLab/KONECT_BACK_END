@@ -17,7 +17,7 @@ public interface ClubApplyAnswerRepository extends Repository<ClubApplyAnswer, I
         FROM ClubApplyAnswer answer
         JOIN FETCH answer.question question
         WHERE answer.apply.id = :applyId
-        ORDER BY question.id ASC
+        ORDER BY question.displayOrder ASC, question.id ASC
         """)
     List<ClubApplyAnswer> findAllByApplyIdWithQuestion(@Param("applyId") Integer applyId);
 }
