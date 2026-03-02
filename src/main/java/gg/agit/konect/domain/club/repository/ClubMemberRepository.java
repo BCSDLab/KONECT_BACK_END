@@ -190,4 +190,6 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
 
     void deleteByUserId(Integer userId);
 
+    @Query("SELECT COUNT(cm) FROM ClubMember cm")
+    long countAll();
 }

@@ -30,4 +30,12 @@ public interface ClubRecruitmentRepository extends Repository<ClubRecruitment, I
         return findByClubId(clubId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB_RECRUITMENT));
     }
+
+    @Query("""
+        SELECT COUNT(cr)
+        FROM ClubRecruitment cr
+        WHERE cr.isAlwaysRecruiting = true
+           OR (cr.startAt <= CURRENT_TIMESTAMP AND cr.endAt >= CURRENT_TIMESTAMP)
+        """)
+    long countCurrentlyRecruiting();
 }
