@@ -32,6 +32,8 @@ import gg.agit.konect.support.fixture.UserFixture;
 @Transactional
 class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
 
+    private static final int RECRUITMENT_PERIOD_DAYS = 30;
+
     @Autowired
     private ClubRecruitmentService clubRecruitmentService;
 
@@ -85,7 +87,7 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
         void getRecruitmentWithPeriod() {
             // given
             LocalDateTime startAt = LocalDateTime.now().minusDays(1);
-            LocalDateTime endAt = LocalDateTime.now().plusDays(30);
+            LocalDateTime endAt = LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS);
             ClubRecruitment recruitment = persist(
                 ClubRecruitmentFixture.createWithPeriod(club, startAt, endAt)
             );
@@ -139,7 +141,7 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
         void createPeriodRecruitmentByManager() {
             // given
             LocalDateTime startAt = LocalDateTime.now().plusDays(1);
-            LocalDateTime endAt = LocalDateTime.now().plusDays(30);
+            LocalDateTime endAt = LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS);
 
             ClubRecruitmentUpsertRequest request = new ClubRecruitmentUpsertRequest(
                 startAt,
@@ -173,7 +175,7 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             LocalDateTime startAt = LocalDateTime.now().plusDays(1);
-            LocalDateTime endAt = LocalDateTime.now().plusDays(30);
+            LocalDateTime endAt = LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS);
 
             ClubRecruitmentUpsertRequest request = new ClubRecruitmentUpsertRequest(
                 startAt,
@@ -217,7 +219,7 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
             // given
             ClubRecruitmentUpsertRequest request = new ClubRecruitmentUpsertRequest(
                 LocalDateTime.now(),
-                LocalDateTime.now().plusDays(30),
+                LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS),
                 true,
                 "상시 모집인데 날짜가 있음",
                 List.of()

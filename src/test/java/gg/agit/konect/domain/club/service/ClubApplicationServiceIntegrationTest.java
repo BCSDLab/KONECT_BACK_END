@@ -38,6 +38,8 @@ import gg.agit.konect.support.fixture.UserFixture;
 @Transactional
 class ClubApplicationServiceIntegrationTest extends IntegrationTestSupport {
 
+    private static final int DEFAULT_PAGE_SIZE = 10;
+
     @Autowired
     private ClubApplicationService clubApplicationService;
 
@@ -138,7 +140,7 @@ class ClubApplicationServiceIntegrationTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             ClubApplicationCondition condition = new ClubApplicationCondition(
-                1, 10, ClubApplicationSortBy.APPLIED_AT, Sort.Direction.ASC
+                1, DEFAULT_PAGE_SIZE, ClubApplicationSortBy.APPLIED_AT, Sort.Direction.ASC
             );
 
             // when
@@ -168,7 +170,7 @@ class ClubApplicationServiceIntegrationTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             ClubApplicationCondition condition = new ClubApplicationCondition(
-                1, 10, ClubApplicationSortBy.APPLIED_AT, Sort.Direction.ASC
+                1, DEFAULT_PAGE_SIZE, ClubApplicationSortBy.APPLIED_AT, Sort.Direction.ASC
             );
 
             // when
@@ -266,7 +268,7 @@ class ClubApplicationServiceIntegrationTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             ClubApplicationCondition condition = new ClubApplicationCondition(
-                1, 10, ClubApplicationSortBy.APPLIED_AT, Sort.Direction.ASC
+                1, DEFAULT_PAGE_SIZE, ClubApplicationSortBy.APPLIED_AT, Sort.Direction.ASC
             );
 
             // when

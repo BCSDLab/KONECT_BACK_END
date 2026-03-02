@@ -26,6 +26,8 @@ import gg.agit.konect.support.fixture.UserFixture;
 @Transactional
 class StudyTimerServiceIntegrationTest extends IntegrationTestSupport {
 
+    private static final long MISMATCHED_CLIENT_SECONDS = 100L;
+
     @Autowired
     private StudyTimerService studyTimerService;
 
@@ -140,7 +142,7 @@ class StudyTimerServiceIntegrationTest extends IntegrationTestSupport {
             entityManager.flush();
 
             // 클라이언트가 100초라고 보고 (실제론 0초)
-            StudyTimerStopRequest request = new StudyTimerStopRequest(100L);
+            StudyTimerStopRequest request = new StudyTimerStopRequest(MISMATCHED_CLIENT_SECONDS);
 
             // when & then
             assertThatThrownBy(() -> studyTimerService.stop(user.getId(), request))
