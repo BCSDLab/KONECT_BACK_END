@@ -124,16 +124,19 @@ public class ClubApplicationService {
 
     public ClubMemberApplicationAnswersResponse getApprovedMemberApplicationAnswersList(
         Integer clubId,
-        Integer requesterId
+        Integer requesterId,
+        ClubApplicationCondition condition
     ) {
         clubRepository.getById(clubId);
 
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
-        List<ClubApply> approvedApplications =
-            clubApplyQueryRepository.findAllApprovedMemberApplicationsByClubId(clubId);
+        Page<ClubApply> approvedApplicationsPage =
+            clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(clubId, condition);
+        List<ClubApply> approvedApplications = approvedApplicationsPage.getContent();
+
         if (approvedApplications.isEmpty()) {
-            return ClubMemberApplicationAnswersResponse.from(List.of());
+            return ClubMemberApplicationAnswersResponse.from(approvedApplicationsPage, List.of());
         }
 
         List<Integer> applyIds = approvedApplications.stream()
@@ -152,7 +155,7 @@ public class ClubApplicationService {
             ))
             .toList();
 
-        return ClubMemberApplicationAnswersResponse.from(responses);
+        return ClubMemberApplicationAnswersResponse.from(approvedApplicationsPage, responses);
     }
 
     public ClubApplicationAnswersResponse getClubApplicationAnswers(

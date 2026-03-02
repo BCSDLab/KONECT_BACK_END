@@ -119,6 +119,9 @@ public interface ClubApplicationApi {
     @Operation(summary = "승인된 회원들의 지원서를 리스트로 조회한다.", description = """
         - 동아리 관리자만 해당 동아리의 승인된 회원 지원서를 리스트로 조회할 수 있습니다.
         - 승인된 회원별 최신 지원서 답변을 리스트로 반환합니다.
+        - 정렬 기준: APPLIED_AT(신청 일시), STUDENT_NUMBER(학번), NAME(이름)
+        - 정렬 방향: ASC(오름차순), DESC(내림차순)
+        - 기본 정렬: 신청 일시 오래된 순 (APPLIED_AT ASC)
 
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
@@ -127,6 +130,12 @@ public interface ClubApplicationApi {
     @GetMapping("/{clubId}/member-applications/answers")
     ResponseEntity<ClubMemberApplicationAnswersResponse> getApprovedMemberApplicationAnswersList(
         @PathVariable(name = "clubId") Integer clubId,
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
+        @RequestParam(defaultValue = "1") Integer page,
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
+        @RequestParam(defaultValue = "10") Integer limit,
+        @RequestParam(defaultValue = "APPLIED_AT") ClubApplicationSortBy sortBy,
+        @RequestParam(defaultValue = "ASC") Sort.Direction sortDirection,
         @UserId Integer requesterId
     );
 

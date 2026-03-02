@@ -91,10 +91,15 @@ public class ClubApplicationController implements ClubApplicationApi {
     @Override
     public ResponseEntity<ClubMemberApplicationAnswersResponse> getApprovedMemberApplicationAnswersList(
         @PathVariable(name = "clubId") Integer clubId,
+        @RequestParam(defaultValue = "1") Integer page,
+        @RequestParam(defaultValue = "10") Integer limit,
+        @RequestParam(defaultValue = "APPLIED_AT") ClubApplicationSortBy sortBy,
+        @RequestParam(defaultValue = "ASC") Sort.Direction sortDirection,
         @UserId Integer requesterId
     ) {
+        ClubApplicationCondition condition = new ClubApplicationCondition(page, limit, sortBy, sortDirection);
         ClubMemberApplicationAnswersResponse response =
-            clubApplicationService.getApprovedMemberApplicationAnswersList(clubId, requesterId);
+            clubApplicationService.getApprovedMemberApplicationAnswersList(clubId, requesterId, condition);
         return ResponseEntity.ok(response);
     }
 
