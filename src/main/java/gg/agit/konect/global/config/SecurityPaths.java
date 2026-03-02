@@ -10,7 +10,7 @@ public final class SecurityPaths {
         "/v3/api-docs/**",
         "/swagger-resources/**",
         "/error",
-        "/slack/**"
+        "/slack/events"
     };
 
     public static final String[] DENY_PATHS = {};

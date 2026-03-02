@@ -2,12 +2,18 @@ package gg.agit.konect.infrastructure.slack.ai;
 
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gg.agit.konect.infrastructure.slack.config.SlackSignatureVerifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,20 +23,37 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SlackEventController {
 
+    private static final String SLACK_TIMESTAMP_HEADER = "X-Slack-Request-Timestamp";
+    private static final String SLACK_SIGNATURE_HEADER = "X-Slack-Signature";
+
     private final SlackAIService slackAIService;
+    private final SlackSignatureVerifier signatureVerifier;
+    private final ObjectMapper objectMapper;
 
     @PostMapping
     @SuppressWarnings("unchecked")
-    public ResponseEntity<Object> handleSlackEvent(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Object> handleSlackEvent(
+        @RequestHeader(value = SLACK_TIMESTAMP_HEADER, required = false) String timestamp,
+        @RequestHeader(value = SLACK_SIGNATURE_HEADER, required = false) String signature,
+        @RequestBody Map<String, Object> payload
+    ) {
         String type = (String)payload.get("type");
-        log.info("Slack 이벤트 수신: type={}", type);
 
-        // Slack URL 검증 (최초 설정 시 Slack에서 호출)
+        // URL 검증은 서명 검증 없이 처리 (최초 설정 시)
         if ("url_verification".equals(type)) {
             String challenge = (String)payload.get("challenge");
-            log.info("Slack URL 검증 요청: challenge={}", challenge);
+            log.info("Slack URL 검증 요청 처리");
             return ResponseEntity.ok(Map.of("challenge", challenge));
         }
+
+        // 서명 검증
+        String requestBody = toJson(payload);
+        if (!signatureVerifier.isValidRequest(timestamp, signature, requestBody)) {
+            log.warn("Slack 서명 검증 실패");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        log.debug("Slack 이벤트 수신: type={}", type);
 
         // 이벤트 콜백 처리
         if ("event_callback".equals(type)) {
@@ -49,26 +72,35 @@ public class SlackEventController {
         String text = (String)event.get("text");
         String subtype = (String)event.get("subtype");
 
-        log.info("이벤트 처리: eventType={}, text={}", eventType, text);
+        log.debug("이벤트 처리: eventType={}", eventType);
 
         // bot 메시지나 변경 이벤트는 무시
         if (subtype != null) {
-            log.debug("subtype이 있는 이벤트 무시: subtype={}", subtype);
             return;
         }
 
         // 메시지 이벤트 처리
         if ("message".equals(eventType) && text != null) {
             if (slackAIService.isAIQuery(text)) {
-                log.info("AI 질문 감지: {}", text);
+                log.debug("AI 질문 감지");
                 slackAIService.processAIQuery(text);
             }
         }
 
         // 앱 멘션 이벤트 처리
         if ("app_mention".equals(eventType) && text != null) {
-            log.info("앱 멘션 감지: {}", text);
-            slackAIService.processAIQuery(text);
+            String normalizedText = slackAIService.normalizeAppMentionText(text);
+            log.debug("앱 멘션 감지");
+            slackAIService.processAIQuery(normalizedText);
+        }
+    }
+
+    private String toJson(Map<String, Object> payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            log.error("JSON 변환 실패", e);
+            return "";
         }
     }
 }

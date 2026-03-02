@@ -18,10 +18,11 @@ import lombok.extern.slf4j.Slf4j;
 public class SlackAIService {
 
     private static final Pattern AI_PREFIX_PATTERN = Pattern.compile("^[Aa][Ii]\\)\\s*(.+)$");
-    private static final String UNSUPPORTED = "UNSUPPORTED";
+    private static final Pattern MENTION_PATTERN = Pattern.compile("^<@[^>]+>\\s*");
+    private static final String UNKNOWN = "UNKNOWN";
 
     private final GeminiClient geminiClient;
-    private final DynamicQueryExecutor queryExecutor;
+    private final StatisticsQueryExecutor queryExecutor;
     private final SlackClient slackClient;
     private final SlackProperties slackProperties;
 
@@ -40,31 +41,41 @@ public class SlackAIService {
         return text;
     }
 
+    public String normalizeAppMentionText(String text) {
+        if (text == null) {
+            return null;
+        }
+        return MENTION_PATTERN.matcher(text).replaceFirst("").trim();
+    }
+
     @Async
     public void processAIQuery(String text) {
         try {
             String userQuery = extractQuery(text);
-            log.info("AI 질문 처리 시작: {}", userQuery);
+            log.debug("AI 질문 처리 시작");
 
-            // 1. Gemini에게 JPQL 쿼리 생성 요청
-            String jpqlQuery = geminiClient.generateQuery(userQuery);
-            log.info("생성된 JPQL: {}", jpqlQuery);
+            // 1. Gemini에게 의도 분석 요청
+            String queryType = geminiClient.analyzeIntent(userQuery);
+            log.debug("분석된 쿼리 타입: {}", queryType);
 
             String response;
 
             // 2. 지원하지 않는 질문인 경우
-            if (UNSUPPORTED.equalsIgnoreCase(jpqlQuery.trim())) {
+            if (UNKNOWN.equals(queryType)) {
                 response = generateUnsupportedResponse(userQuery);
             } else {
-                // 3. 쿼리 실행
-                String data = queryExecutor.executeQuery(jpqlQuery);
-                log.info("조회된 데이터: {}", data);
+                // 3. 안전한 통계 쿼리 실행
+                String data = queryExecutor.execute(queryType);
 
-                // 4. Gemini에게 자연어 응답 생성 요청
-                response = geminiClient.generateResponse(userQuery, data);
+                if (data == null) {
+                    response = generateUnsupportedResponse(userQuery);
+                } else {
+                    // 4. Gemini에게 자연어 응답 생성 요청
+                    response = geminiClient.generateResponse(userQuery, data);
+                }
             }
 
-            log.info("생성된 응답: {}", response);
+            log.debug("AI 응답 생성 완료");
 
             // 5. Slack에 응답 전송
             String slackMessage = formatSlackResponse(response);
@@ -80,15 +91,12 @@ public class SlackAIService {
     private String generateUnsupportedResponse(String userQuery) {
         return geminiClient.generateResponse(
             userQuery,
-            "이 질문은 KONECT 서비스 데이터와 관련이 없어서 답변하기 어렵습니다. "
-                + "사용자 수, 동아리 정보, 일정, 공부 시간 등 서비스 관련 질문을 해주세요."
+            "이 질문은 현재 지원하지 않는 유형입니다. "
+                + "사용자 수, 동아리 수, 모집 현황, 동아리원 수 등의 통계 질문을 해주세요."
         );
     }
 
     private String formatSlackResponse(String response) {
-        return String.format("""
-            :robot_face: *AI 응답*
-            %s
-            """, response);
+        return String.format(":robot_face: *AI 응답*\n%s", response);
     }
 }
