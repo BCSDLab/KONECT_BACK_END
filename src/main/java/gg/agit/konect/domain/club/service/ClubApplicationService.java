@@ -21,6 +21,7 @@ import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
+import gg.agit.konect.domain.club.dto.ClubMemberApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubAppliedClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
@@ -118,11 +119,24 @@ public class ClubApplicationService {
         clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
 
         ClubApply clubApply = clubApplyRepository.getLatestApprovedByClubIdAndUserId(clubId, targetUserId);
-        List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
-        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
+        return toClubApplicationAnswersResponse(clubId, clubApply);
+    }
 
-        return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
+    public ClubMemberApplicationAnswersResponse getApprovedMemberApplicationAnswersList(
+        Integer clubId,
+        Integer requesterId
+    ) {
+        clubRepository.getById(clubId);
+
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        List<ClubApply> approvedApplications =
+            clubApplyQueryRepository.findAllApprovedMemberApplicationsByClubId(clubId);
+        List<ClubApplicationAnswersResponse> responses = approvedApplications.stream()
+            .map(application -> toClubApplicationAnswersResponse(clubId, application))
+            .toList();
+
+        return ClubMemberApplicationAnswersResponse.from(responses);
     }
 
     public ClubApplicationAnswersResponse getClubApplicationAnswers(
@@ -135,9 +149,13 @@ public class ClubApplicationService {
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        return toClubApplicationAnswersResponse(clubId, clubApply);
+    }
+
+    private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(Integer clubId, ClubApply clubApply) {
         List<ClubApplyQuestion> questions =
             clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
-        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(applicationId);
+        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
 
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
     }

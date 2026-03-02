@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
+import gg.agit.konect.domain.club.dto.ClubMemberApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -112,6 +113,20 @@ public interface ClubApplicationApi {
     ResponseEntity<ClubApplicationAnswersResponse> getApprovedMemberApplicationAnswers(
         @PathVariable(name = "clubId") Integer clubId,
         @PathVariable(name = "userId") Integer targetUserId,
+        @UserId Integer requesterId
+    );
+
+    @Operation(summary = "승인된 회원들의 지원서를 리스트로 조회한다.", description = """
+        - 동아리 관리자만 해당 동아리의 승인된 회원 지원서를 리스트로 조회할 수 있습니다.
+        - 승인된 회원별 최신 지원서 답변을 리스트로 반환합니다.
+
+        ## 에러
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        """)
+    @GetMapping("/{clubId}/member-applications/answers")
+    ResponseEntity<ClubMemberApplicationAnswersResponse> getApprovedMemberApplicationAnswersList(
+        @PathVariable(name = "clubId") Integer clubId,
         @UserId Integer requesterId
     );
 
