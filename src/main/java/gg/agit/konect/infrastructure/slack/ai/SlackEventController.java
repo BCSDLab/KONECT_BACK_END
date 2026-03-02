@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gg.agit.konect.infrastructure.slack.config.SlackSignatureVerifier;
@@ -35,8 +36,14 @@ public class SlackEventController {
     public ResponseEntity<Object> handleSlackEvent(
         @RequestHeader(value = SLACK_TIMESTAMP_HEADER, required = false) String timestamp,
         @RequestHeader(value = SLACK_SIGNATURE_HEADER, required = false) String signature,
-        @RequestBody Map<String, Object> payload
+        @RequestBody String rawBody
     ) {
+        Map<String, Object> payload = parsePayload(rawBody);
+        if (payload == null) {
+            log.warn("Slack 요청 본문 파싱 실패");
+            return ResponseEntity.badRequest().build();
+        }
+
         String type = (String)payload.get("type");
 
         // URL 검증은 서명 검증 없이 처리 (최초 설정 시)
@@ -46,9 +53,8 @@ public class SlackEventController {
             return ResponseEntity.ok(Map.of("challenge", challenge));
         }
 
-        // 서명 검증
-        String requestBody = toJson(payload);
-        if (!signatureVerifier.isValidRequest(timestamp, signature, requestBody)) {
+        // 서명 검증 - 원본 요청 본문 사용
+        if (!signatureVerifier.isValidRequest(timestamp, signature, rawBody)) {
             log.warn("Slack 서명 검증 실패");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -65,6 +71,16 @@ public class SlackEventController {
 
         // Slack은 3초 내 응답을 기대하므로 빠르게 200 반환
         return ResponseEntity.ok().build();
+    }
+
+    private Map<String, Object> parsePayload(String rawBody) {
+        try {
+            return objectMapper.readValue(rawBody, new TypeReference<Map<String, Object>>() {
+            });
+        } catch (JsonProcessingException e) {
+            log.error("JSON 파싱 실패", e);
+            return null;
+        }
     }
 
     private void handleEvent(Map<String, Object> event) {
@@ -92,15 +108,6 @@ public class SlackEventController {
             String normalizedText = slackAIService.normalizeAppMentionText(text);
             log.debug("앱 멘션 감지");
             slackAIService.processAIQuery(normalizedText);
-        }
-    }
-
-    private String toJson(Map<String, Object> payload) {
-        try {
-            return objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
-            log.error("JSON 변환 실패", e);
-            return "";
         }
     }
 }

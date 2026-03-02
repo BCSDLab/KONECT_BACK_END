@@ -52,6 +52,17 @@ public class SlackAIService {
     public void processAIQuery(String text) {
         try {
             String userQuery = extractQuery(text);
+
+            // 빈 질문은 처리하지 않음
+            if (userQuery == null || userQuery.isBlank()) {
+                log.debug("빈 질문으로 처리 중단");
+                String guidanceMessage = formatSlackResponse(
+                    "질문 내용이 비어있습니다. 예: `AI) 가입자 수 알려줘` 또는 `@봇이름 동아리 수는?`"
+                );
+                slackClient.sendMessage(guidanceMessage, slackProperties.webhooks().event());
+                return;
+            }
+
             log.debug("AI 질문 처리 시작");
 
             // 1. Gemini에게 의도 분석 요청

@@ -2,6 +2,7 @@ package gg.agit.konect.infrastructure.slack.config;
 
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.Mac;
@@ -19,9 +20,10 @@ public class SlackSignatureVerifier {
 
     private static final String HMAC_SHA256 = "HmacSHA256";
     private static final String VERSION = "v0";
+    private static final String VERSION_PREFIX = VERSION + "=";
     private static final long TIMESTAMP_TOLERANCE_SECONDS = 300;
     private static final long MILLIS_TO_SECONDS = 1000L;
-    private static final int BYTE_MASK = 0xff;
+    private static final int HEX_RADIX = 16;
 
     private final SlackProperties slackProperties;
 
@@ -37,9 +39,19 @@ public class SlackSignatureVerifier {
             return false;
         }
 
-        // 서명 검증
-        String expectedSignature = calculateSignature(timestamp, requestBody);
-        boolean isValid = signature.equals(expectedSignature);
+        // 서명 검증 (constant-time comparison)
+        byte[] expectedHash = calculateSignatureBytes(timestamp, requestBody);
+        if (expectedHash == null) {
+            return false;
+        }
+
+        byte[] providedHash = parseSignature(signature);
+        if (providedHash == null) {
+            log.warn("Slack 서명 검증 실패: 서명 형식 오류");
+            return false;
+        }
+
+        boolean isValid = MessageDigest.isEqual(expectedHash, providedHash);
 
         if (!isValid) {
             log.warn("Slack 서명 검증 실패: 서명 불일치");
@@ -58,11 +70,11 @@ public class SlackSignatureVerifier {
         }
     }
 
-    private String calculateSignature(String timestamp, String requestBody) {
+    private byte[] calculateSignatureBytes(String timestamp, String requestBody) {
         String signingSecret = slackProperties.signingSecret();
         if (signingSecret == null || signingSecret.isBlank()) {
             log.error("Slack signing secret이 설정되지 않았습니다.");
-            return "";
+            return null;
         }
 
         String baseString = VERSION + ":" + timestamp + ":" + requestBody;
@@ -74,23 +86,36 @@ public class SlackSignatureVerifier {
                 HMAC_SHA256
             );
             mac.init(secretKey);
-            byte[] hash = mac.doFinal(baseString.getBytes(StandardCharsets.UTF_8));
-            return VERSION + "=" + bytesToHex(hash);
+            return mac.doFinal(baseString.getBytes(StandardCharsets.UTF_8));
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             log.error("Slack 서명 계산 실패", e);
-            return "";
+            return null;
         }
     }
 
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder hexString = new StringBuilder();
-        for (byte b : bytes) {
-            String hex = Integer.toHexString(BYTE_MASK & b);
-            if (hex.length() == 1) {
-                hexString.append('0');
-            }
-            hexString.append(hex);
+    private byte[] parseSignature(String signature) {
+        if (!signature.startsWith(VERSION_PREFIX)) {
+            return null;
         }
-        return hexString.toString();
+
+        String hexPart = signature.substring(VERSION_PREFIX.length());
+        return hexToBytes(hexPart);
+    }
+
+    private byte[] hexToBytes(String hex) {
+        if (hex.length() % 2 != 0) {
+            return null;
+        }
+
+        try {
+            byte[] bytes = new byte[hex.length() / 2];
+            for (int i = 0; i < bytes.length; i++) {
+                int index = i * 2;
+                bytes[i] = (byte)Integer.parseInt(hex.substring(index, index + 2), HEX_RADIX);
+            }
+            return bytes;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
