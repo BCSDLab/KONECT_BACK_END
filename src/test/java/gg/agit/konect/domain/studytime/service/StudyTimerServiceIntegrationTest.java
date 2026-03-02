@@ -101,8 +101,8 @@ class StudyTimerServiceIntegrationTest extends IntegrationTestSupport {
     class StopTimer {
 
         @Test
-        @DisplayName("타이머를 중지하면 공부 시간이 누적된다")
-        void stopTimerAccumulatesStudyTime() throws InterruptedException {
+        @DisplayName("타이머를 중지하면 타이머가 삭제되고 결과가 반환된다")
+        void stopTimerSuccess() throws InterruptedException {
             // given
             studyTimerService.start(user.getId());
             entityManager.flush();
@@ -117,6 +117,10 @@ class StudyTimerServiceIntegrationTest extends IntegrationTestSupport {
 
             // then
             assertThat(response).isNotNull();
+            assertThat(response.sessionSeconds()).isNotNull();
+            assertThat(response.dailySeconds()).isNotNull();
+            assertThat(response.monthlySeconds()).isNotNull();
+            assertThat(response.totalSeconds()).isNotNull();
             assertThat(studyTimerRepository.existsByUserId(user.getId())).isFalse();
         }
 

@@ -84,9 +84,7 @@ class UserServiceIntegrationTest extends IntegrationTestSupport {
         @DisplayName("이미 등록된 사용자가 회원가입 시도하면 예외가 발생한다")
         void signupAlreadyRegisteredUserFails() {
             // given
-            String email = "existing@koreatech.ac.kr";
             User existingUser = persist(UserFixture.createUser(university, "기존유저", "2020000001"));
-            UnRegisteredUser unRegisteredUser = persist(UnRegisteredUserFixture.createGoogle(email));
             clearPersistenceContext();
 
             SignupRequest request = new SignupRequest(

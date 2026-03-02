@@ -10,7 +10,7 @@ import gg.agit.konect.domain.university.model.University;
 public class ScheduleFixture {
 
     public static Schedule create(String title, LocalDateTime startedAt, LocalDateTime endedAt) {
-        return Schedule.of(title, startedAt, endedAt, ScheduleType.UNIVERSITY);
+        return createUniversity(title, startedAt, endedAt);
     }
 
     public static Schedule createUniversity(String title, LocalDateTime startedAt, LocalDateTime endedAt) {
