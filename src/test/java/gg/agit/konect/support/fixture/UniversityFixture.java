@@ -15,4 +15,8 @@ public class UniversityFixture {
             .campus(campus)
             .build();
     }
+
+    public static University createWithName(String koreanName) {
+        return create(koreanName, Campus.MAIN);
+    }
 }
