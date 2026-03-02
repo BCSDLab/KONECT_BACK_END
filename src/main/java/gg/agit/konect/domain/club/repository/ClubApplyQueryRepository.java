@@ -193,6 +193,26 @@ public class ClubApplyQueryRepository {
         return new PageImpl<>(content, pageable, total != null ? total : 0L);
     }
 
+    public List<ClubApply> findAllApprovedMemberApplicationsByClubId(Integer clubId) {
+        BooleanExpression isClubMember = isAlreadyClubMember(clubId);
+        BooleanExpression activeUserOnly = user.deletedAt.isNull();
+        BooleanExpression approvedOnly = clubApply.status.eq(ClubApplyStatus.APPROVED);
+        BooleanExpression latestApprovedApplicationOnly = isLatestApprovedApplicationByUser(clubId);
+
+        return jpaQueryFactory
+            .selectFrom(clubApply)
+            .join(clubApply.user, user).fetchJoin()
+            .where(
+                clubApply.club.id.eq(clubId),
+                activeUserOnly,
+                isClubMember,
+                approvedOnly,
+                latestApprovedApplicationOnly
+            )
+            .orderBy(clubApply.createdAt.asc(), clubApply.id.asc())
+            .fetch();
+    }
+
     private BooleanExpression isAlreadyClubMember(Integer clubId) {
         return JPAExpressions
             .selectOne()
