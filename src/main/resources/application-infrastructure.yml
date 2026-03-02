@@ -11,3 +11,9 @@ slack:
   webhooks:
     error: ${SLACK_WEBHOOK_ERROR}
     event: ${SLACK_WEBHOOK_EVENT}
+  signing-secret: ${SLACK_SIGNING_SECRET}
+
+gemini:
+  project-id: ${GEMINI_PROJECT_ID}
+  location: ${GEMINI_LOCATION:us-central1}
+  model: ${GEMINI_MODEL:gemini-1.5-flash}

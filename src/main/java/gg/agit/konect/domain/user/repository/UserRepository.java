@@ -143,4 +143,11 @@ public interface UserRepository extends Repository<User, Integer> {
         AND u.deletedAt IS NULL
         """)
     List<User> findAllByIdIn(@Param("ids") List<Integer> ids);
+
+    @Query("""
+        SELECT COUNT(u)
+        FROM User u
+        WHERE u.deletedAt IS NULL
+        """)
+    long countActiveUsers();
 }

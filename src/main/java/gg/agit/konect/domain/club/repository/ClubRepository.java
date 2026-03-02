@@ -29,4 +29,7 @@ public interface ClubRepository extends Repository<Club, Integer> {
     List<Club> findAll();
 
     Club save(Club club);
+
+    @Query("SELECT COUNT(c) FROM Club c")
+    long countAll();
 }
