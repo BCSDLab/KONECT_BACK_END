@@ -174,12 +174,6 @@ public class ClubApplyQueryRepository {
         return new PageImpl<>(content, pageable, total != null ? total : 0L);
     }
 
-    public List<ClubApply> findAllApprovedMemberApplicationsByClubId(Integer clubId) {
-        return approvedMemberApplicationBaseQuery(clubId)
-            .orderBy(clubApply.createdAt.asc(), clubApply.id.asc())
-            .fetch();
-    }
-
     private JPAQuery<ClubApply> approvedMemberApplicationBaseQuery(Integer clubId) {
         return jpaQueryFactory
             .selectFrom(clubApply)
