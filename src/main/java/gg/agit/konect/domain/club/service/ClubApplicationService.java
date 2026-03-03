@@ -146,7 +146,7 @@ public class ClubApplicationService {
     public void approveClubApplication(Integer clubId, Integer applicationId, Integer userId) {
         Club club = clubRepository.getById(clubId);
 
-        clubPermissionValidator.validateLeaderAccess(clubId, userId);
+        clubPermissionValidator.validateManagerAccess(clubId, userId);
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
         User applicant = clubApply.getUser();
@@ -176,7 +176,7 @@ public class ClubApplicationService {
     public void rejectClubApplication(Integer clubId, Integer applicationId, Integer userId) {
         Club club = clubRepository.getById(clubId);
 
-        clubPermissionValidator.validateLeaderAccess(clubId, userId);
+        clubPermissionValidator.validateManagerAccess(clubId, userId);
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
         User applicant = clubApply.getUser();
