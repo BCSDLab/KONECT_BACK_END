@@ -33,6 +33,20 @@ public interface ClubApplyQuestionRepository extends Repository<ClubApplyQuestio
         @Param("appliedAt") LocalDateTime appliedAt
     );
 
+    @Query("""
+        SELECT question
+        FROM ClubApplyQuestion question
+        WHERE question.club.id = :clubId
+          AND question.createdAt <= :maxAppliedAt
+          AND (question.deletedAt IS NULL OR question.deletedAt > :minAppliedAt)
+        ORDER BY question.displayOrder ASC, question.id ASC
+        """)
+    List<ClubApplyQuestion> findAllCandidatesVisibleBetweenApplyTimes(
+        @Param("clubId") Integer clubId,
+        @Param("minAppliedAt") LocalDateTime minAppliedAt,
+        @Param("maxAppliedAt") LocalDateTime maxAppliedAt
+    );
+
     ClubApplyQuestion save(ClubApplyQuestion question);
 
     List<ClubApplyQuestion> saveAll(Iterable<ClubApplyQuestion> questions);

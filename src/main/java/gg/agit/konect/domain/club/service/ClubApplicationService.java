@@ -21,6 +21,7 @@ import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
+import gg.agit.konect.domain.club.dto.ClubMemberApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubAppliedClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
@@ -118,11 +119,64 @@ public class ClubApplicationService {
         clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
 
         ClubApply clubApply = clubApplyRepository.getLatestApprovedByClubIdAndUserId(clubId, targetUserId);
-        List<ClubApplyQuestion> questions =
-            clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
-        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
+        return toClubApplicationAnswersResponse(clubId, clubApply);
+    }
 
-        return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
+    public ClubMemberApplicationAnswersResponse getApprovedMemberApplicationAnswersList(
+        Integer clubId,
+        Integer requesterId,
+        ClubApplicationCondition condition
+    ) {
+        clubRepository.getById(clubId);
+
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        Page<ClubApply> approvedApplicationsPage =
+            clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(clubId, condition);
+        List<ClubApply> approvedApplications = approvedApplicationsPage.getContent();
+
+        if (approvedApplications.isEmpty()) {
+            return ClubMemberApplicationAnswersResponse.from(approvedApplicationsPage, List.of());
+        }
+
+        List<Integer> applyIds = approvedApplications.stream()
+            .map(ClubApply::getId)
+            .toList();
+        List<LocalDateTime> appliedAts = approvedApplications.stream()
+            .map(ClubApply::getCreatedAt)
+            .distinct()
+            .toList();
+
+        LocalDateTime minAppliedAt = appliedAts.stream()
+            .min(LocalDateTime::compareTo)
+            .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
+        LocalDateTime maxAppliedAt = appliedAts.stream()
+            .max(LocalDateTime::compareTo)
+            .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
+
+        Map<Integer, List<ClubApplyAnswer>> answersByApplyId = clubApplyAnswerRepository
+            .findAllByApplyIdsWithQuestion(applyIds)
+            .stream()
+            .collect(Collectors.groupingBy(answer -> answer.getApply().getId()));
+        List<ClubApplyQuestion> questionCandidates = clubApplyQuestionRepository
+            .findAllCandidatesVisibleBetweenApplyTimes(clubId, minAppliedAt, maxAppliedAt);
+        Map<LocalDateTime, List<ClubApplyQuestion>> questionsByAppliedAt = appliedAts.stream()
+            .collect(Collectors.toMap(
+                appliedAt -> appliedAt,
+                appliedAt -> questionCandidates.stream()
+                    .filter(question -> isVisibleAtApplyTime(question, appliedAt))
+                    .toList()
+            ));
+
+        List<ClubApplicationAnswersResponse> responses = approvedApplications.stream()
+            .map(application -> toClubApplicationAnswersResponse(
+                application,
+                questionsByAppliedAt.getOrDefault(application.getCreatedAt(), List.of()),
+                answersByApplyId.getOrDefault(application.getId(), List.of())
+            ))
+            .toList();
+
+        return ClubMemberApplicationAnswersResponse.from(approvedApplicationsPage, responses);
     }
 
     public ClubApplicationAnswersResponse getClubApplicationAnswers(
@@ -135,11 +189,38 @@ public class ClubApplicationService {
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
         ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        return toClubApplicationAnswersResponse(clubId, clubApply);
+    }
+
+    private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(Integer clubId, ClubApply clubApply) {
+        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(clubApply.getId());
+        return toClubApplicationAnswersResponse(clubId, clubApply, answers);
+    }
+
+    private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(
+        Integer clubId,
+        ClubApply clubApply,
+        List<ClubApplyAnswer> answers
+    ) {
         List<ClubApplyQuestion> questions =
             clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
-        List<ClubApplyAnswer> answers = clubApplyAnswerRepository.findAllByApplyIdWithQuestion(applicationId);
 
+        return toClubApplicationAnswersResponse(clubApply, questions, answers);
+    }
+
+    private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(
+        ClubApply clubApply,
+        List<ClubApplyQuestion> questions,
+        List<ClubApplyAnswer> answers
+    ) {
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
+    }
+
+    private boolean isVisibleAtApplyTime(ClubApplyQuestion question, LocalDateTime appliedAt) {
+        LocalDateTime createdAt = question.getCreatedAt();
+        LocalDateTime deletedAt = question.getDeletedAt();
+        return (createdAt.isBefore(appliedAt) || createdAt.isEqual(appliedAt))
+            && (deletedAt == null || deletedAt.isAfter(appliedAt));
     }
 
     @Transactional

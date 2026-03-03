@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
+import gg.agit.konect.domain.club.dto.ClubMemberApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
@@ -84,6 +85,21 @@ public class ClubApplicationController implements ClubApplicationApi {
             targetUserId,
             requesterId
         );
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ClubMemberApplicationAnswersResponse> getApprovedMemberApplicationAnswersList(
+        @PathVariable(name = "clubId") Integer clubId,
+        @RequestParam(defaultValue = "1") Integer page,
+        @RequestParam(defaultValue = "10") Integer limit,
+        @RequestParam(defaultValue = "APPLIED_AT") ClubApplicationSortBy sortBy,
+        @RequestParam(defaultValue = "ASC") Sort.Direction sortDirection,
+        @UserId Integer requesterId
+    ) {
+        ClubApplicationCondition condition = new ClubApplicationCondition(page, limit, sortBy, sortDirection);
+        ClubMemberApplicationAnswersResponse response =
+            clubApplicationService.getApprovedMemberApplicationAnswersList(clubId, requesterId, condition);
         return ResponseEntity.ok(response);
     }
 
