@@ -15,10 +15,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gg.agit.konect.infrastructure.slack.config.SlackSignatureVerifier;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Hidden
 @RestController
 @RequestMapping("/slack/events")
 @RequiredArgsConstructor
