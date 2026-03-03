@@ -149,7 +149,7 @@ public interface ClubApplicationApi {
 
     @Operation(summary = "동아리 가입 신청을 거절한다.", description = """
         동아리 운영진 권한부터 가입 신청을 거절할 수 있습니다.
-        거절 시 지원 내역은 삭제됩니다.
+        거절 시 상태를 REJECTED로 변경합니다.
         
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
