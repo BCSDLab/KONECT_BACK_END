@@ -142,16 +142,30 @@ public class ClubApplicationService {
         List<Integer> applyIds = approvedApplications.stream()
             .map(ClubApply::getId)
             .toList();
+        List<LocalDateTime> appliedAts = approvedApplications.stream()
+            .map(ClubApply::getCreatedAt)
+            .distinct()
+            .toList();
+
+        LocalDateTime minAppliedAt = appliedAts.stream()
+            .min(LocalDateTime::compareTo)
+            .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
+        LocalDateTime maxAppliedAt = appliedAts.stream()
+            .max(LocalDateTime::compareTo)
+            .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
+
         Map<Integer, List<ClubApplyAnswer>> answersByApplyId = clubApplyAnswerRepository
             .findAllByApplyIdsWithQuestion(applyIds)
             .stream()
             .collect(Collectors.groupingBy(answer -> answer.getApply().getId()));
-        Map<LocalDateTime, List<ClubApplyQuestion>> questionsByAppliedAt = approvedApplications.stream()
-            .map(ClubApply::getCreatedAt)
-            .distinct()
+        List<ClubApplyQuestion> questionCandidates = clubApplyQuestionRepository
+            .findAllCandidatesVisibleBetweenApplyTimes(clubId, minAppliedAt, maxAppliedAt);
+        Map<LocalDateTime, List<ClubApplyQuestion>> questionsByAppliedAt = appliedAts.stream()
             .collect(Collectors.toMap(
                 appliedAt -> appliedAt,
-                appliedAt -> clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, appliedAt)
+                appliedAt -> questionCandidates.stream()
+                    .filter(question -> isVisibleAtApplyTime(question, appliedAt))
+                    .toList()
             ));
 
         List<ClubApplicationAnswersResponse> responses = approvedApplications.stream()
@@ -200,6 +214,12 @@ public class ClubApplicationService {
         List<ClubApplyAnswer> answers
     ) {
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
+    }
+
+    private boolean isVisibleAtApplyTime(ClubApplyQuestion question, LocalDateTime appliedAt) {
+        LocalDateTime deletedAt = question.getDeletedAt();
+        return !question.getCreatedAt().isAfter(appliedAt)
+            && (deletedAt == null || deletedAt.isAfter(appliedAt));
     }
 
     @Transactional
