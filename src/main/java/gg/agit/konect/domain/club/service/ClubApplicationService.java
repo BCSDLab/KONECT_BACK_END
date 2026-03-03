@@ -217,8 +217,9 @@ public class ClubApplicationService {
     }
 
     private boolean isVisibleAtApplyTime(ClubApplyQuestion question, LocalDateTime appliedAt) {
+        LocalDateTime createdAt = question.getCreatedAt();
         LocalDateTime deletedAt = question.getDeletedAt();
-        return !question.getCreatedAt().isAfter(appliedAt)
+        return (createdAt.isBefore(appliedAt) || createdAt.isEqual(appliedAt))
             && (deletedAt == null || deletedAt.isAfter(appliedAt));
     }
 
