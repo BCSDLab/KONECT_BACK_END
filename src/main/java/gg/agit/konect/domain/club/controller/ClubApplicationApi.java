@@ -131,7 +131,7 @@ public interface ClubApplicationApi {
     );
 
     @Operation(summary = "동아리 가입 신청을 승인한다.", description = """
-        동아리 회장 또는 부회장만 가입 신청을 승인할 수 있습니다.
+        동아리 운영진 권한부터 가입 신청을 승인할 수 있습니다.
         승인 시 지원자는 일반회원으로 등록되며, 지원 내역은 보관됩니다.
 
         ## 에러
@@ -148,7 +148,7 @@ public interface ClubApplicationApi {
     );
 
     @Operation(summary = "동아리 가입 신청을 거절한다.", description = """
-        동아리 회장 또는 부회장만 가입 신청을 거절할 수 있습니다.
+        동아리 운영진 권한부터 가입 신청을 거절할 수 있습니다.
         거절 시 지원 내역은 삭제됩니다.
         
         ## 에러
