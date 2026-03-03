@@ -146,11 +146,18 @@ public class ClubApplicationService {
             .findAllByApplyIdsWithQuestion(applyIds)
             .stream()
             .collect(Collectors.groupingBy(answer -> answer.getApply().getId()));
+        Map<LocalDateTime, List<ClubApplyQuestion>> questionsByAppliedAt = approvedApplications.stream()
+            .map(ClubApply::getCreatedAt)
+            .distinct()
+            .collect(Collectors.toMap(
+                appliedAt -> appliedAt,
+                appliedAt -> clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, appliedAt)
+            ));
 
         List<ClubApplicationAnswersResponse> responses = approvedApplications.stream()
             .map(application -> toClubApplicationAnswersResponse(
-                clubId,
                 application,
+                questionsByAppliedAt.getOrDefault(application.getCreatedAt(), List.of()),
                 answersByApplyId.getOrDefault(application.getId(), List.of())
             ))
             .toList();
@@ -184,6 +191,14 @@ public class ClubApplicationService {
         List<ClubApplyQuestion> questions =
             clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
 
+        return toClubApplicationAnswersResponse(clubApply, questions, answers);
+    }
+
+    private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(
+        ClubApply clubApply,
+        List<ClubApplyQuestion> questions,
+        List<ClubApplyAnswer> answers
+    ) {
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
     }
 
