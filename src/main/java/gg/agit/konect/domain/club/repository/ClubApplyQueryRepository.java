@@ -168,6 +168,7 @@ public class ClubApplyQueryRepository {
         Long total = jpaQueryFactory
             .select(clubApply.count())
             .from(clubApply)
+            .join(clubApply.user, user)
             .where(approvedMemberApplicationPredicates(clubId))
             .fetchOne();
 
