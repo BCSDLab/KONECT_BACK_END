@@ -35,7 +35,15 @@ public record ClubMembersResponse(
     ) {
         private static final int STUDENT_NUMBER_VISIBLE_LENGTH = 3;
 
-        public static InnerClubMember from(ClubMember clubMember, boolean shouldMaskStudentNumber) {
+        public static InnerClubMember fromMasked(ClubMember clubMember) {
+            return from(clubMember, true);
+        }
+
+        public static InnerClubMember fromUnmasked(ClubMember clubMember) {
+            return from(clubMember, false);
+        }
+
+        private static InnerClubMember from(ClubMember clubMember, boolean shouldMaskStudentNumber) {
             User user = clubMember.getUser();
 
             return new InnerClubMember(
@@ -61,13 +69,21 @@ public record ClubMembersResponse(
     }
 
     public static ClubMembersResponse from(List<ClubMember> clubMembers) {
-        return from(clubMembers, true);
+        return fromMasked(clubMembers);
     }
 
-    public static ClubMembersResponse from(List<ClubMember> clubMembers, boolean shouldMaskStudentNumber) {
+    public static ClubMembersResponse fromMasked(List<ClubMember> clubMembers) {
         return new ClubMembersResponse(
             clubMembers.stream()
-                .map(clubMember -> InnerClubMember.from(clubMember, shouldMaskStudentNumber))
+                .map(InnerClubMember::fromMasked)
+                .toList()
+        );
+    }
+
+    public static ClubMembersResponse fromUnmasked(List<ClubMember> clubMembers) {
+        return new ClubMembersResponse(
+            clubMembers.stream()
+                .map(InnerClubMember::fromUnmasked)
                 .toList()
         );
     }

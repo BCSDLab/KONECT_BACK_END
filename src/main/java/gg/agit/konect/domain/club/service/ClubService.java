@@ -222,7 +222,9 @@ public class ClubService {
             clubMembers = clubMemberRepository.findAllByClubId(clubId);
         }
 
-        return ClubMembersResponse.from(clubMembers, !canViewUnmaskedStudentNumber);
+        return canViewUnmaskedStudentNumber
+            ? ClubMembersResponse.fromUnmasked(clubMembers)
+            : ClubMembersResponse.fromMasked(clubMembers);
     }
 
 }
