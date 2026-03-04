@@ -31,14 +31,16 @@ public record ClubMembersResponse(
     ) {
         private static final int STUDENT_NUMBER_VISIBLE_LENGTH = 3;
 
-        public static InnerClubMember from(ClubMember clubMember) {
+        public static InnerClubMember from(ClubMember clubMember, boolean shouldMaskStudentNumber) {
             User user = clubMember.getUser();
 
             return new InnerClubMember(
                 user.getId(),
                 user.getName(),
                 user.getImageUrl(),
-                maskStudentNumber(user.getStudentNumber()),
+                shouldMaskStudentNumber
+                    ? maskStudentNumber(user.getStudentNumber())
+                    : user.getStudentNumber(),
                 clubMember.getClubPosition()
             );
         }
@@ -55,9 +57,13 @@ public record ClubMembersResponse(
     }
 
     public static ClubMembersResponse from(List<ClubMember> clubMembers) {
+        return from(clubMembers, true);
+    }
+
+    public static ClubMembersResponse from(List<ClubMember> clubMembers, boolean shouldMaskStudentNumber) {
         return new ClubMembersResponse(
             clubMembers.stream()
-                .map(InnerClubMember::from)
+                .map(clubMember -> InnerClubMember.from(clubMember, shouldMaskStudentNumber))
                 .toList()
         );
     }

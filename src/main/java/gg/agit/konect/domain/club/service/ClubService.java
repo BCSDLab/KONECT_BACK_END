@@ -207,11 +207,16 @@ public class ClubService {
 
     public ClubMembersResponse getClubMembers(Integer clubId, Integer userId, ClubMemberCondition condition) {
         User user = userRepository.getById(userId);
+        boolean canViewUnmaskedStudentNumber = user.isAdmin();
+
         if (!user.isAdmin()) {
             boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
             if (!isMember) {
                 throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
             }
+
+            ClubMember requesterClubMember = clubMemberRepository.getByClubIdAndUserId(clubId, userId);
+            canViewUnmaskedStudentNumber = MANAGERS.contains(requesterClubMember.getClubPosition());
         }
 
         List<ClubMember> clubMembers;
@@ -221,7 +226,7 @@ public class ClubService {
             clubMembers = clubMemberRepository.findAllByClubId(clubId);
         }
 
-        return ClubMembersResponse.from(clubMembers);
+        return ClubMembersResponse.from(clubMembers, !canViewUnmaskedStudentNumber);
     }
 
 }
