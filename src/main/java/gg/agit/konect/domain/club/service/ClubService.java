@@ -210,12 +210,8 @@ public class ClubService {
         boolean canViewUnmaskedStudentNumber = user.isAdmin();
 
         if (!user.isAdmin()) {
-            boolean isMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
-            if (!isMember) {
-                throw CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS);
-            }
-
-            ClubMember requesterClubMember = clubMemberRepository.getByClubIdAndUserId(clubId, userId);
+            ClubMember requesterClubMember = clubMemberRepository.findByClubIdAndUserId(clubId, userId)
+                .orElseThrow(() -> CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS));
             canViewUnmaskedStudentNumber = MANAGERS.contains(requesterClubMember.getClubPosition());
         }
 
