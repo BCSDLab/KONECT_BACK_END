@@ -172,7 +172,7 @@ public class OAuthLoginHelper {
             ? knownOwner
             : userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
         if (owner.isPresent() && !owner.get().getId().equals(user.getId())) {
-            return;
+            throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
         }
 
         Optional<UserOAuthAccount> linked = userOAuthAccountRepository.findByUserIdAndProvider(user.getId(), provider);
@@ -180,7 +180,11 @@ public class OAuthLoginHelper {
         if (linked.isPresent()) {
             UserOAuthAccount account = linked.get();
 
-            if (providerId.equals(account.getProviderId()) && StringUtils.hasText(oauthEmail)) {
+            if (!providerId.equals(account.getProviderId())) {
+                throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+            }
+
+            if (StringUtils.hasText(oauthEmail)) {
                 account.updateOauthEmail(oauthEmail);
                 userOAuthAccountRepository.save(account);
             }
