@@ -100,7 +100,11 @@ public class UserOAuthAccountService {
                 if (!providerId.equals(linkedAccount.getProviderId())) {
                     throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
                 }
+
+                throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
             });
+
+        throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
     }
 
     @Transactional
