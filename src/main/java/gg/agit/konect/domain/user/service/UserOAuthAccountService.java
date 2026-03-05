@@ -57,7 +57,7 @@ public class UserOAuthAccountService {
         userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
             .ifPresent(ownedUser -> {
                 if (!ownedUser.getId().equals(userId)) {
-                    throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
                 }
             });
 
