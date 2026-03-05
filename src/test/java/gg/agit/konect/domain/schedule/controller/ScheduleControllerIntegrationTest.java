@@ -1,6 +1,8 @@
-package gg.agit.konect.domain.schedule.service;
+package gg.agit.konect.domain.schedule.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
 
@@ -8,21 +10,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.schedule.dto.ScheduleCondition;
-import gg.agit.konect.domain.schedule.dto.SchedulesResponse;
 import gg.agit.konect.domain.schedule.model.Schedule;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.ControllerTestSupport;
 import gg.agit.konect.support.fixture.ScheduleFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-@Transactional
-class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
+class ScheduleControllerIntegrationTest extends ControllerTestSupport {
 
     private static final int TEST_YEAR = 2026;
     private static final int MARCH = 3;
@@ -37,25 +34,22 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
     private static final int DAYS_30 = 30;
     private static final int DAYS_35 = 35;
 
-    @Autowired
-    private ScheduleService scheduleService;
-
     private University university;
     private User user;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         university = persist(UniversityFixture.create());
         user = persist(UserFixture.createUser(university, "테스트유저", "2021136001"));
     }
 
     @Nested
-    @DisplayName("다가오는 일정 조회")
+    @DisplayName("GET /schedules/upcoming - 다가오는 일정 조회")
     class GetUpcomingSchedules {
 
         @Test
         @DisplayName("다가오는 일정 3개를 조회한다")
-        void getUpcomingSchedulesSuccess() {
+        void getUpcomingSchedulesSuccess() throws Exception {
             // given
             LocalDateTime now = LocalDateTime.now();
 
@@ -74,17 +68,18 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             persist(ScheduleFixture.createUniversitySchedule(schedule3, university));
             clearPersistenceContext();
 
-            // when
-            SchedulesResponse response = scheduleService.getUpcomingSchedules(user.getId());
+            mockLoginUser(user.getId());
 
-            // then
-            assertThat(response.schedules()).hasSize(EXPECTED_SCHEDULE_COUNT);
-            assertThat(response.schedules().get(0).title()).isEqualTo("수강신청");
+            // when & then
+            performGet("/schedules/upcoming")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(EXPECTED_SCHEDULE_COUNT)))
+                .andExpect(jsonPath("$.schedules[0].title").value("수강신청"));
         }
 
         @Test
         @DisplayName("종료된 일정은 다가오는 일정에 포함되지 않는다")
-        void pastSchedulesNotIncluded() {
+        void pastSchedulesNotIncluded() throws Exception {
             // given
             LocalDateTime now = LocalDateTime.now();
 
@@ -99,17 +94,18 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             persist(ScheduleFixture.createUniversitySchedule(futureSchedule, university));
             clearPersistenceContext();
 
-            // when
-            SchedulesResponse response = scheduleService.getUpcomingSchedules(user.getId());
+            mockLoginUser(user.getId());
 
-            // then
-            assertThat(response.schedules()).hasSize(1);
-            assertThat(response.schedules().get(0).title()).isEqualTo("미래 일정");
+            // when & then
+            performGet("/schedules/upcoming")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(1)))
+                .andExpect(jsonPath("$.schedules[0].title").value("미래 일정"));
         }
 
         @Test
         @DisplayName("다른 대학의 일정은 조회되지 않는다")
-        void otherUniversitySchedulesNotIncluded() {
+        void otherUniversitySchedulesNotIncluded() throws Exception {
             // given
             University otherUniversity = persist(UniversityFixture.createWithName("다른대학교"));
             LocalDateTime now = LocalDateTime.now();
@@ -125,22 +121,23 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             persist(ScheduleFixture.createUniversitySchedule(otherSchedule, otherUniversity));
             clearPersistenceContext();
 
-            // when
-            SchedulesResponse response = scheduleService.getUpcomingSchedules(user.getId());
+            mockLoginUser(user.getId());
 
-            // then
-            assertThat(response.schedules()).hasSize(1);
-            assertThat(response.schedules().get(0).title()).isEqualTo("우리대학 일정");
+            // when & then
+            performGet("/schedules/upcoming")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(1)))
+                .andExpect(jsonPath("$.schedules[0].title").value("우리대학 일정"));
         }
     }
 
     @Nested
-    @DisplayName("월별 일정 조회")
+    @DisplayName("GET /schedules - 월별 일정 조회")
     class GetSchedules {
 
         @Test
         @DisplayName("특정 월의 일정을 조회한다")
-        void getSchedulesByMonthSuccess() {
+        void getSchedulesByMonthSuccess() throws Exception {
             // given
             LocalDateTime marchStart = LocalDateTime.of(TEST_YEAR, MARCH, 1, 0, 0);
 
@@ -157,19 +154,18 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             persist(ScheduleFixture.createUniversitySchedule(aprilSchedule, university));
             clearPersistenceContext();
 
-            ScheduleCondition condition = new ScheduleCondition(TEST_YEAR, MARCH, null);
+            mockLoginUser(user.getId());
 
-            // when
-            SchedulesResponse response = scheduleService.getSchedules(condition, user.getId());
-
-            // then
-            assertThat(response.schedules()).hasSize(1);
-            assertThat(response.schedules().get(0).title()).isEqualTo("3월 일정");
+            // when & then
+            performGet("/schedules?year=" + TEST_YEAR + "&month=" + MARCH)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(1)))
+                .andExpect(jsonPath("$.schedules[0].title").value("3월 일정"));
         }
 
         @Test
         @DisplayName("검색어로 일정을 필터링한다")
-        void getSchedulesWithQuery() {
+        void getSchedulesWithQuery() throws Exception {
             // given
             LocalDateTime marchStart = LocalDateTime.of(TEST_YEAR, MARCH, 1, 0, 0);
 
@@ -184,19 +180,18 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             persist(ScheduleFixture.createUniversitySchedule(schedule2, university));
             clearPersistenceContext();
 
-            ScheduleCondition condition = new ScheduleCondition(TEST_YEAR, MARCH, "수강");
+            mockLoginUser(user.getId());
 
-            // when
-            SchedulesResponse response = scheduleService.getSchedules(condition, user.getId());
-
-            // then
-            assertThat(response.schedules()).hasSize(1);
-            assertThat(response.schedules().get(0).title()).isEqualTo("수강신청 기간");
+            // when & then
+            performGet("/schedules?year=" + TEST_YEAR + "&month=" + MARCH + "&query=수강")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(1)))
+                .andExpect(jsonPath("$.schedules[0].title").value("수강신청 기간"));
         }
 
         @Test
         @DisplayName("월을 걸치는 일정도 조회된다")
-        void getSchedulesSpanningMonths() {
+        void getSchedulesSpanningMonths() throws Exception {
             // given
             Schedule spanningSchedule = persist(ScheduleFixture.createUniversity(
                 "장기 일정",
@@ -207,13 +202,12 @@ class ScheduleServiceIntegrationTest extends IntegrationTestSupport {
             persist(ScheduleFixture.createUniversitySchedule(spanningSchedule, university));
             clearPersistenceContext();
 
-            ScheduleCondition condition = new ScheduleCondition(TEST_YEAR, MARCH, null);
+            mockLoginUser(user.getId());
 
-            // when
-            SchedulesResponse response = scheduleService.getSchedules(condition, user.getId());
-
-            // then
-            assertThat(response.schedules()).hasSize(1);
+            // when & then
+            performGet("/schedules?year=" + TEST_YEAR + "&month=" + MARCH)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(1)));
         }
     }
 }

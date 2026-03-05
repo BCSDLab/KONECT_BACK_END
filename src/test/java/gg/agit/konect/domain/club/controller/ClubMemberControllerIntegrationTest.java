@@ -1,20 +1,17 @@
-package gg.agit.konect.domain.club.service;
+package gg.agit.konect.domain.club.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.List;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
-import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
-import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -22,27 +19,18 @@ import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
-import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.ControllerTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-@Transactional
-class ClubMemberManagementServiceIntegrationTest extends IntegrationTestSupport {
-
-    @Autowired
-    private ClubMemberManagementService clubMemberManagementService;
+class ClubMemberControllerIntegrationTest extends ControllerTestSupport {
 
     @Autowired
     private ClubMemberRepository clubMemberRepository;
-
-    @Autowired
-    private ClubPreMemberRepository clubPreMemberRepository;
 
     private University university;
     private Club club;
@@ -52,7 +40,7 @@ class ClubMemberManagementServiceIntegrationTest extends IntegrationTestSupport 
     private User member;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         university = persist(UniversityFixture.create());
         club = persist(ClubFixture.create(university, "BCSD Lab"));
         president = persist(UserFixture.createUser(university, "회장", "2020000001"));
@@ -67,100 +55,90 @@ class ClubMemberManagementServiceIntegrationTest extends IntegrationTestSupport 
     }
 
     @Nested
-    @DisplayName("멤버 직책 변경")
+    @DisplayName("PATCH /clubs/{clubId}/members/{userId}/position - 멤버 직책 변경")
     class ChangeMemberPosition {
 
         @Test
         @DisplayName("회장이 일반 멤버를 매니저로 변경한다")
-        void changeMemberToManagerByPresident() {
+        void changeMemberToManagerByPresident() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
+
             MemberPositionChangeRequest request = new MemberPositionChangeRequest(ClubPosition.MANAGER);
 
-            // when
-            ClubMember result = clubMemberManagementService.changeMemberPosition(
-                club.getId(),
-                member.getId(),
-                president.getId(),
-                request
-            );
-
-            // then
-            assertThat(result.getClubPosition()).isEqualTo(ClubPosition.MANAGER);
+            // when & then
+            performPatch("/clubs/" + club.getId() + "/members/" + member.getId() + "/position", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.position").value("MANAGER"));
         }
 
         @Test
-        @DisplayName("일반 멤버가 직책 변경을 시도하면 예외가 발생한다")
-        void changeMemberPositionByMemberFails() {
+        @DisplayName("일반 멤버가 직책 변경을 시도하면 403을 반환한다")
+        void changeMemberPositionByMemberFails() throws Exception {
             // given
             User anotherMember = persist(UserFixture.createUser(university, "다른멤버", "2021136002"));
             persist(ClubMemberFixture.createMember(club, anotherMember));
             clearPersistenceContext();
 
+            mockLoginUser(member.getId());
+
             MemberPositionChangeRequest request = new MemberPositionChangeRequest(ClubPosition.MANAGER);
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.changeMemberPosition(
-                club.getId(),
-                anotherMember.getId(),
-                member.getId(),
-                request
-            )).isInstanceOf(CustomException.class);
+            performPatch("/clubs/" + club.getId() + "/members/" + anotherMember.getId() + "/position", request)
+                .andExpect(status().isForbidden());
         }
 
         @Test
         @DisplayName("자기 자신의 직책은 변경할 수 없다")
-        void changeSelfPositionFails() {
+        void changeSelfPositionFails() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
+
             MemberPositionChangeRequest request = new MemberPositionChangeRequest(ClubPosition.MEMBER);
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.changeMemberPosition(
-                club.getId(),
-                president.getId(),
-                president.getId(),
-                request
-            )).isInstanceOf(CustomException.class);
+            performPatch("/clubs/" + club.getId() + "/members/" + president.getId() + "/position", request)
+                .andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("매니저가 자신보다 상위 직책인 부회장을 변경할 수 없다")
-        void managerCannotChangeVicePresident() {
+        @DisplayName("매니저가 자신보다 상위 직책인 부회장을 변경하려 하면 403을 반환한다")
+        void managerCannotChangeVicePresident() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(manager.getId());
+
             MemberPositionChangeRequest request = new MemberPositionChangeRequest(ClubPosition.MEMBER);
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.changeMemberPosition(
-                club.getId(),
-                vicePresident.getId(),
-                manager.getId(),
-                request
-            )).isInstanceOf(CustomException.class);
+            // 매니저는 직책 변경 권한이 없으므로 권한 체크에서 403이 먼저 반환됨
+            performPatch("/clubs/" + club.getId() + "/members/" + vicePresident.getId() + "/position", request)
+                .andExpect(status().isForbidden());
         }
     }
 
     @Nested
-    @DisplayName("회장 위임")
+    @DisplayName("POST /clubs/{clubId}/president/transfer - 회장 위임")
     class TransferPresident {
 
         @Test
         @DisplayName("회장이 다른 멤버에게 회장을 위임한다")
-        void transferPresidentSuccess() {
+        void transferPresidentSuccess() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
+
             PresidentTransferRequest request = new PresidentTransferRequest(member.getId());
 
-            // when
-            List<ClubMember> result = clubMemberManagementService.transferPresident(
-                club.getId(),
-                president.getId(),
-                request
-            );
+            // when & then
+            performPost("/clubs/" + club.getId() + "/president/transfer", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.changedMembers", hasSize(2)));
 
-            // then
-            assertThat(result).hasSize(2);
+            clearPersistenceContext();
 
             ClubMember formerPresident = clubMemberRepository.getByClubIdAndUserId(club.getId(), president.getId());
             ClubMember newPresident = clubMemberRepository.getByClubIdAndUserId(club.getId(), member.getId());
@@ -170,55 +148,53 @@ class ClubMemberManagementServiceIntegrationTest extends IntegrationTestSupport 
         }
 
         @Test
-        @DisplayName("회장이 아닌 사람이 회장 위임을 시도하면 예외가 발생한다")
-        void transferPresidentByNonPresidentFails() {
+        @DisplayName("회장이 아닌 사람이 회장 위임을 시도하면 403을 반환한다")
+        void transferPresidentByNonPresidentFails() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(vicePresident.getId());
+
             PresidentTransferRequest request = new PresidentTransferRequest(member.getId());
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.transferPresident(
-                club.getId(),
-                vicePresident.getId(),
-                request
-            )).isInstanceOf(CustomException.class);
+            performPost("/clubs/" + club.getId() + "/president/transfer", request)
+                .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("자기 자신에게 회장 위임을 시도하면 예외가 발생한다")
-        void transferPresidentToSelfFails() {
+        @DisplayName("자기 자신에게 회장 위임을 시도하면 400을 반환한다")
+        void transferPresidentToSelfFails() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
+
             PresidentTransferRequest request = new PresidentTransferRequest(president.getId());
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.transferPresident(
-                club.getId(),
-                president.getId(),
-                request
-            )).isInstanceOf(CustomException.class);
+            performPost("/clubs/" + club.getId() + "/president/transfer", request)
+                .andExpect(status().isBadRequest());
         }
     }
 
     @Nested
-    @DisplayName("부회장 변경")
+    @DisplayName("PATCH /clubs/{clubId}/vice-president - 부회장 변경")
     class ChangeVicePresident {
 
         @Test
         @DisplayName("회장이 부회장을 변경한다")
-        void changeVicePresidentSuccess() {
+        void changeVicePresidentSuccess() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
+
             VicePresidentChangeRequest request = new VicePresidentChangeRequest(member.getId());
 
-            // when
-            List<ClubMember> result = clubMemberManagementService.changeVicePresident(
-                club.getId(),
-                president.getId(),
-                request
-            );
+            // when & then
+            performPatch("/clubs/" + club.getId() + "/vice-president", request)
+                .andExpect(status().isOk());
 
-            // then
+            clearPersistenceContext();
+
             ClubMember formerVicePresident = clubMemberRepository.getByClubIdAndUserId(
                 club.getId(), vicePresident.getId()
             );
@@ -229,20 +205,20 @@ class ClubMemberManagementServiceIntegrationTest extends IntegrationTestSupport 
         }
 
         @Test
-        @DisplayName("부회장을 해제한다 (null 전달)")
-        void removeVicePresident() {
+        @DisplayName("부회장을 해제한다")
+        void removeVicePresident() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
+
             VicePresidentChangeRequest request = new VicePresidentChangeRequest(null);
 
-            // when
-            List<ClubMember> result = clubMemberManagementService.changeVicePresident(
-                club.getId(),
-                president.getId(),
-                request
-            );
+            // when & then
+            performPatch("/clubs/" + club.getId() + "/vice-president", request)
+                .andExpect(status().isOk());
 
-            // then
+            clearPersistenceContext();
+
             ClubMember formerVicePresident = clubMemberRepository.getByClubIdAndUserId(
                 club.getId(), vicePresident.getId()
             );
@@ -251,94 +227,95 @@ class ClubMemberManagementServiceIntegrationTest extends IntegrationTestSupport 
     }
 
     @Nested
-    @DisplayName("멤버 추방")
+    @DisplayName("DELETE /clubs/{clubId}/members/{userId} - 멤버 추방")
     class RemoveMember {
 
         @Test
         @DisplayName("회장이 일반 멤버를 추방한다")
-        void removeMemberByPresidentSuccess() {
+        void removeMemberByPresidentSuccess() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
 
-            // when
-            clubMemberManagementService.removeMember(club.getId(), member.getId(), president.getId());
+            // when & then
+            performDelete("/clubs/" + club.getId() + "/members/" + member.getId())
+                .andExpect(status().isNoContent());
+
             clearPersistenceContext();
 
-            // then
             boolean exists = clubMemberRepository.existsByClubIdAndUserId(club.getId(), member.getId());
             assertThat(exists).isFalse();
         }
 
         @Test
         @DisplayName("자기 자신을 추방할 수 없다")
-        void removeSelfFails() {
+        void removeSelfFails() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.removeMember(
-                club.getId(), president.getId(), president.getId()
-            )).isInstanceOf(CustomException.class);
+            performDelete("/clubs/" + club.getId() + "/members/" + president.getId())
+                .andExpect(status().isBadRequest());
         }
 
         @Test
         @DisplayName("회장을 추방할 수 없다")
-        void removePresidentFails() {
+        void removePresidentFails() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(vicePresident.getId());
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.removeMember(
-                club.getId(), president.getId(), vicePresident.getId()
-            )).isInstanceOf(CustomException.class);
+            performDelete("/clubs/" + club.getId() + "/members/" + president.getId())
+                .andExpect(status().isBadRequest());
         }
 
         @Test
         @DisplayName("매니저 직책의 멤버는 추방할 수 없다")
-        void removeManagerFails() {
+        void removeManagerFails() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.removeMember(
-                club.getId(), manager.getId(), president.getId()
-            )).isInstanceOf(CustomException.class);
+            performDelete("/clubs/" + club.getId() + "/members/" + manager.getId())
+                .andExpect(status().isBadRequest());
         }
     }
 
     @Nested
-    @DisplayName("사전 멤버 관리")
+    @DisplayName("POST /clubs/{clubId}/pre-members - 사전 멤버 등록")
     class PreMemberManagement {
 
         @Test
         @DisplayName("사전 멤버를 등록한다")
-        void addPreMemberSuccess() {
+        void addPreMemberSuccess() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(president.getId());
+
             ClubPreMemberAddRequest request = new ClubPreMemberAddRequest(
                 "2022000001",
                 "신입생",
                 ClubPosition.MEMBER
             );
 
-            // when
-            ClubPreMemberAddResponse response = clubMemberManagementService.addPreMember(
-                club.getId(),
-                president.getId(),
-                request
-            );
-
-            // then
-            assertThat(response.name()).isEqualTo("신입생");
-            assertThat(response.studentNumber()).isEqualTo("2022000001");
+            // when & then
+            performPost("/clubs/" + club.getId() + "/pre-members", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("신입생"))
+                .andExpect(jsonPath("$.studentNumber").value("2022000001"));
         }
 
         @Test
         @DisplayName("이미 가입된 사용자를 사전 멤버로 등록하면 바로 멤버로 추가된다")
-        void addPreMemberWhenUserExistsBecomesDirectMember() {
+        void addPreMemberWhenUserExistsBecomesDirectMember() throws Exception {
             // given
             User existingUser = persist(UserFixture.createUser(university, "기존유저", "2022000002"));
             clearPersistenceContext();
+
+            mockLoginUser(president.getId());
 
             ClubPreMemberAddRequest request = new ClubPreMemberAddRequest(
                 existingUser.getStudentNumber(),
@@ -346,49 +323,45 @@ class ClubMemberManagementServiceIntegrationTest extends IntegrationTestSupport 
                 ClubPosition.MEMBER
             );
 
-            // when
-            ClubPreMemberAddResponse response = clubMemberManagementService.addPreMember(
-                club.getId(),
-                president.getId(),
-                request
-            );
+            // when & then
+            performPost("/clubs/" + club.getId() + "/pre-members", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isDirectMember").value(true));
 
-            // then
-            assertThat(response.isDirectMember()).isTrue();
             boolean isMember = clubMemberRepository.existsByClubIdAndUserId(club.getId(), existingUser.getId());
             assertThat(isMember).isTrue();
         }
 
         @Test
-        @DisplayName("사전 멤버 목록을 조회한다")
-        void getPreMembersSuccess() {
-            // given
-            ClubPreMemberAddRequest request1 = new ClubPreMemberAddRequest("2022000001", "신입생1", null);
-            ClubPreMemberAddRequest request2 = new ClubPreMemberAddRequest("2022000002", "신입생2", null);
-            clubMemberManagementService.addPreMember(club.getId(), president.getId(), request1);
-            clubMemberManagementService.addPreMember(club.getId(), president.getId(), request2);
-            clearPersistenceContext();
-
-            // when
-            ClubPreMembersResponse response = clubMemberManagementService.getPreMembers(
-                club.getId(), president.getId()
-            );
-
-            // then
-            assertThat(response.preMembers()).hasSize(2);
-        }
-
-        @Test
         @DisplayName("일반 멤버는 사전 멤버를 등록할 수 없다")
-        void addPreMemberByMemberFails() {
+        void addPreMemberByMemberFails() throws Exception {
             // given
             clearPersistenceContext();
+            mockLoginUser(member.getId());
+
             ClubPreMemberAddRequest request = new ClubPreMemberAddRequest("2022000001", "신입생", null);
 
             // when & then
-            assertThatThrownBy(() -> clubMemberManagementService.addPreMember(
-                club.getId(), member.getId(), request
-            )).isInstanceOf(CustomException.class);
+            performPost("/clubs/" + club.getId() + "/pre-members", request)
+                .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /clubs/{clubId}/pre-members - 사전 멤버 조회")
+    class GetPreMembers {
+
+        @Test
+        @DisplayName("사전 멤버 목록을 조회한다")
+        void getPreMembersSuccess() throws Exception {
+            // given
+            mockLoginUser(president.getId());
+
+            // when & then - 사전 멤버가 없는 경우 빈 리스트 반환
+            performGet("/clubs/" + club.getId() + "/pre-members")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.preMembers").isArray())
+                .andExpect(jsonPath("$.preMembers", hasSize(0)));
         }
     }
 }

@@ -1,65 +1,45 @@
-package gg.agit.konect.domain.club.service;
+package gg.agit.konect.domain.club.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.club.dto.ClubCondition;
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
-import gg.agit.konect.domain.club.dto.ClubDetailResponse;
-import gg.agit.konect.domain.club.dto.ClubsResponse;
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.club.model.Club;
-import gg.agit.konect.domain.club.model.ClubMember;
-import gg.agit.konect.domain.club.repository.ClubMemberRepository;
-import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.ControllerTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-@Transactional
-class ClubServiceIntegrationTest extends IntegrationTestSupport {
-
-    private static final int DEFAULT_PAGE_SIZE = 10;
-
-    @Autowired
-    private ClubService clubService;
-
-    @Autowired
-    private ClubRepository clubRepository;
-
-    @Autowired
-    private ClubMemberRepository clubMemberRepository;
+class ClubBasicControllerIntegrationTest extends ControllerTestSupport {
 
     private University university;
     private User normalUser;
     private User adminUser;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         university = persist(UniversityFixture.create());
         normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
         adminUser = persist(UserFixture.createAdmin(university));
     }
 
     @Nested
-    @DisplayName("동아리 목록 조회")
+    @DisplayName("GET /clubs - 동아리 목록 조회")
     class GetClubs {
 
         @Test
         @DisplayName("동아리 목록을 조회한다")
-        void getClubsSuccess() {
+        void getClubsSuccess() throws Exception {
             // given
             Club club1 = persist(ClubFixture.create(university, "BCSD Lab"));
             Club club2 = persist(ClubFixture.create(university, "스타트업 동아리"));
@@ -69,19 +49,18 @@ class ClubServiceIntegrationTest extends IntegrationTestSupport {
             persist(ClubMemberFixture.createPresident(club2, president2));
             clearPersistenceContext();
 
-            ClubCondition condition = new ClubCondition(1, DEFAULT_PAGE_SIZE, null, null);
+            mockLoginUser(normalUser.getId());
 
-            // when
-            ClubsResponse response = clubService.getClubs(condition, normalUser.getId());
-
-            // then
-            assertThat(response.clubs()).hasSize(2);
-            assertThat(response.totalPage()).isEqualTo(1);
+            // when & then
+            performGet("/clubs?page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clubs", hasSize(2)))
+                .andExpect(jsonPath("$.totalPage").value(1));
         }
 
         @Test
         @DisplayName("검색어로 동아리를 필터링한다")
-        void getClubsWithQuery() {
+        void getClubsWithQuery() throws Exception {
             // given
             Club club1 = persist(ClubFixture.create(university, "BCSD Lab"));
             Club club2 = persist(ClubFixture.create(university, "스타트업 동아리"));
@@ -91,66 +70,80 @@ class ClubServiceIntegrationTest extends IntegrationTestSupport {
             persist(ClubMemberFixture.createPresident(club2, president2));
             clearPersistenceContext();
 
-            ClubCondition condition = new ClubCondition(1, DEFAULT_PAGE_SIZE, "BCSD", null);
+            mockLoginUser(normalUser.getId());
 
-            // when
-            ClubsResponse response = clubService.getClubs(condition, normalUser.getId());
-
-            // then
-            assertThat(response.clubs()).hasSize(1);
-            assertThat(response.clubs().get(0).name()).isEqualTo("BCSD Lab");
+            // when & then
+            performGet("/clubs?page=1&limit=10&query=BCSD")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clubs", hasSize(1)))
+                .andExpect(jsonPath("$.clubs[0].name").value("BCSD Lab"));
         }
     }
 
     @Nested
-    @DisplayName("동아리 상세 조회")
+    @DisplayName("GET /clubs/{clubId} - 동아리 상세 조회")
     class GetClubDetail {
 
         @Test
         @DisplayName("동아리 상세 정보를 조회한다")
-        void getClubDetailSuccess() {
+        void getClubDetailSuccess() throws Exception {
             // given
             Club club = persist(ClubFixture.create(university, "BCSD Lab"));
             User president = persist(UserFixture.createUser(university, "회장", "2020000001"));
             persist(ClubMemberFixture.createPresident(club, president));
             clearPersistenceContext();
 
-            // when
-            ClubDetailResponse response = clubService.getClubDetail(club.getId(), normalUser.getId());
+            mockLoginUser(normalUser.getId());
 
-            // then
-            assertThat(response.name()).isEqualTo("BCSD Lab");
-            assertThat(response.presidentName()).isEqualTo("회장");
-            assertThat(response.memberCount()).isEqualTo(1);
-            assertThat(response.isMember()).isFalse();
+            // when & then
+            performGet("/clubs/" + club.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("BCSD Lab"))
+                .andExpect(jsonPath("$.presidentName").value("회장"))
+                .andExpect(jsonPath("$.memberCount").value(1))
+                .andExpect(jsonPath("$.isMember").value(false));
         }
 
         @Test
         @DisplayName("동아리 멤버인 경우 isMember가 true이다")
-        void getClubDetailAsMember() {
+        void getClubDetailAsMember() throws Exception {
             // given
             Club club = persist(ClubFixture.create(university, "BCSD Lab"));
             persist(ClubMemberFixture.createPresident(club, normalUser));
             clearPersistenceContext();
 
-            // when
-            ClubDetailResponse response = clubService.getClubDetail(club.getId(), normalUser.getId());
+            mockLoginUser(normalUser.getId());
 
-            // then
-            assertThat(response.isMember()).isTrue();
+            // when & then
+            performGet("/clubs/" + club.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isMember").value(true));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 동아리 조회 시 404를 반환한다")
+        void getClubDetailNotFound() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/clubs/99999")
+                .andExpect(status().isNotFound());
         }
     }
 
     @Nested
-    @DisplayName("동아리 생성 (어드민)")
+    @DisplayName("POST /clubs - 동아리 생성")
     class CreateClub {
 
         @Test
         @DisplayName("어드민이 동아리를 생성한다")
-        void createClubByAdminSuccess() {
+        void createClubByAdminSuccess() throws Exception {
             // given
             User presidentUser = persist(UserFixture.createUser(university, "새회장", "2020000003"));
             clearPersistenceContext();
+
+            mockLoginUser(adminUser.getId());
 
             ClubCreateRequest request = new ClubCreateRequest(
                 presidentUser.getId(),
@@ -162,30 +155,20 @@ class ClubServiceIntegrationTest extends IntegrationTestSupport {
                 ClubCategory.ACADEMIC
             );
 
-            // when
-            ClubDetailResponse response = clubService.createClub(adminUser.getId(), request);
-
-            // then
-            assertThat(response.name()).isEqualTo("새 동아리");
-            assertThat(response.presidentName()).isEqualTo("새회장");
-            assertThat(response.memberCount()).isEqualTo(1);
-
-            // 동아리가 저장되었는지 확인
-            Club savedClub = clubRepository.getById(response.id());
-            assertThat(savedClub).isNotNull();
-
-            // 회장이 멤버로 등록되었는지 확인
-            ClubMember president = clubMemberRepository.getByClubIdAndUserId(
-                response.id(),
-                presidentUser.getId()
-            );
-            assertThat(president.isPresident()).isTrue();
+            // when & then
+            performPost("/clubs", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("새 동아리"))
+                .andExpect(jsonPath("$.presidentName").value("새회장"))
+                .andExpect(jsonPath("$.memberCount").value(1));
         }
 
         @Test
-        @DisplayName("일반 유저가 동아리 생성 시 예외가 발생한다")
-        void createClubByNormalUserFails() {
+        @DisplayName("일반 유저가 동아리 생성 시 403을 반환한다")
+        void createClubByNormalUserFails() throws Exception {
             // given
+            mockLoginUser(normalUser.getId());
+
             ClubCreateRequest request = new ClubCreateRequest(
                 normalUser.getId(),
                 "새 동아리",
@@ -197,18 +180,18 @@ class ClubServiceIntegrationTest extends IntegrationTestSupport {
             );
 
             // when & then
-            assertThatThrownBy(() -> clubService.createClub(normalUser.getId(), request))
-                .isInstanceOf(CustomException.class);
+            performPost("/clubs", request)
+                .andExpect(status().isForbidden());
         }
     }
 
     @Nested
-    @DisplayName("가입한 동아리 조회")
+    @DisplayName("GET /clubs/joined - 가입한 동아리 조회")
     class GetJoinedClubs {
 
         @Test
         @DisplayName("사용자가 가입한 동아리 목록을 조회한다")
-        void getJoinedClubsSuccess() {
+        void getJoinedClubsSuccess() throws Exception {
             // given
             Club club1 = persist(ClubFixture.create(university, "동아리1"));
             Club club2 = persist(ClubFixture.create(university, "동아리2"));
@@ -216,11 +199,12 @@ class ClubServiceIntegrationTest extends IntegrationTestSupport {
             persist(ClubMemberFixture.createMember(club2, normalUser));
             clearPersistenceContext();
 
-            // when
-            var response = clubService.getJoinedClubs(normalUser.getId());
+            mockLoginUser(normalUser.getId());
 
-            // then
-            assertThat(response.joinedClubs()).hasSize(2);
+            // when & then
+            performGet("/clubs/joined")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.joinedClubs", hasSize(2)));
         }
     }
 }
