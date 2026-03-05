@@ -5,7 +5,6 @@ public final class SecurityPaths {
     public static final String[] PUBLIC_PATHS = {
         "/oauth2/**",
         "/login/**",
-        "/oauth-link-test.html",
         "/swagger-ui/**",
         "/swagger-ui.html",
         "/v3/api-docs/**",
