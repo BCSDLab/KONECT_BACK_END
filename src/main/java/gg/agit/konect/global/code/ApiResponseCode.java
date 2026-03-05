@@ -110,7 +110,7 @@ public enum ApiResponseCode {
     DUPLICATE_VERSION(HttpStatus.CONFLICT, "이미 등록된 버전입니다."),
     DUPLICATE_NOTIFICATION_TOKEN(HttpStatus.CONFLICT, "이미 등록된 알림 토큰입니다."),
     OAUTH_ACCOUNT_ALREADY_LINKED(HttpStatus.CONFLICT, "해당 OAuth 계정은 이미 다른 사용자에게 연동되어 있습니다."),
-    OAUTH_PROVIDER_ALREADY_LINKED(HttpStatus.CONFLICT, "해당 OAuth 제공자는 이미 다른 계정으로 연동되어 있습니다."),
+    OAUTH_PROVIDER_ALREADY_LINKED(HttpStatus.CONFLICT, "이 계정에는 해당 OAuth 제공자가 이미 연동되어 있습니다."),
 
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
