@@ -16,7 +16,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -58,22 +58,22 @@ public abstract class ControllerTestSupport {
     @Autowired
     protected EntityManager entityManager;
 
-    @MockBean
+    @MockitoBean
     protected LoginCheckInterceptor loginCheckInterceptor;
 
-    @MockBean
+    @MockitoBean
     protected LoginUserArgumentResolver loginUserArgumentResolver;
 
-    @MockBean
+    @MockitoBean
     protected AuthorizationInterceptor authorizationInterceptor;
 
-    @MockBean
+    @MockitoBean
     protected JwtProvider jwtProvider;
 
-    @MockBean
+    @MockitoBean
     protected CorsProperties corsProperties;
 
-    @MockBean
+    @MockitoBean
     protected LoggingProperties loggingProperties;
 
     @BeforeEach
