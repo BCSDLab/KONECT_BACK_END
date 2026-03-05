@@ -28,6 +28,18 @@ public interface UserOAuthAccountRepository extends Repository<UserOAuthAccount,
     @Query("""
         SELECT uoa
         FROM UserOAuthAccount uoa
+        JOIN FETCH uoa.user user
+        WHERE uoa.provider = :provider
+        AND uoa.providerId = :providerId
+        """)
+    Optional<UserOAuthAccount> findAccountByProviderAndProviderId(
+        @Param("provider") Provider provider,
+        @Param("providerId") String providerId
+    );
+
+    @Query("""
+        SELECT uoa
+        FROM UserOAuthAccount uoa
         WHERE uoa.user.id = :userId
         """)
     List<UserOAuthAccount> findAllByUserId(@Param("userId") Integer userId);
@@ -42,6 +54,8 @@ public interface UserOAuthAccountRepository extends Repository<UserOAuthAccount,
         @Param("userId") Integer userId,
         @Param("provider") Provider provider
     );
+
+    void delete(UserOAuthAccount userOAuthAccount);
 
     UserOAuthAccount save(UserOAuthAccount userOAuthAccount);
 }

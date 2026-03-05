@@ -50,6 +50,12 @@ public class OAuthLoginHelper {
                 ensureLinkedAccount(linkedUser.get(), provider, providerId, email);
                 return linkedUser;
             }
+
+            Optional<User> restoredByLinkedAccount = restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
+            if (restoredByLinkedAccount.isPresent()) {
+                ensureLinkedAccount(restoredByLinkedAccount.get(), provider, providerId, email);
+                return restoredByLinkedAccount;
+            }
         }
 
         if (provider == Provider.APPLE) {
@@ -111,6 +117,29 @@ public class OAuthLoginHelper {
 
     private boolean isStageProfile() {
         return environment.acceptsProfiles(Profiles.of(STAGE_PROFILE));
+    }
+
+    private Optional<User> restoreOrCleanupWithdrawnByLinkedProvider(Provider provider, String providerId) {
+        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository
+            .findAccountByProviderAndProviderId(provider, providerId);
+
+        if (linkedAccount.isEmpty()) {
+            return Optional.empty();
+        }
+
+        User linkedUser = linkedAccount.get().getUser();
+
+        if (linkedUser.getDeletedAt() == null) {
+            return Optional.empty();
+        }
+
+        if (!isStageProfile() && linkedUser.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS)) {
+            linkedUser.restore();
+            return Optional.of(userRepository.save(linkedUser));
+        }
+
+        userOAuthAccountRepository.delete(linkedAccount.get());
+        return Optional.empty();
     }
 
     private void ensureLinkedAccount(User user, Provider provider, String providerId, String oauthEmail) {
