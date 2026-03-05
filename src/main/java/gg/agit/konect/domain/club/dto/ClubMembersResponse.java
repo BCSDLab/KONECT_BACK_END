@@ -23,7 +23,11 @@ public record ClubMembersResponse(
         @Schema(description = "동아리 멤버 프로필 사진", example = "https://bcsdlab.com/static/img/logo.d89d9cc.png", requiredMode = REQUIRED)
         String imageUrl,
 
-        @Schema(description = "마스킹된 동아리 멤버 학번", example = "*******061", requiredMode = REQUIRED)
+        @Schema(
+            description = "동아리 멤버 학번 (조회 권한에 따라 마스킹될 수 있음)",
+            example = "*******061 또는 2021136061",
+            requiredMode = REQUIRED
+        )
         String studentNumber,
 
         @Schema(description = "직책", example = "PRESIDENT", requiredMode = REQUIRED)
@@ -31,14 +35,24 @@ public record ClubMembersResponse(
     ) {
         private static final int STUDENT_NUMBER_VISIBLE_LENGTH = 3;
 
-        public static InnerClubMember from(ClubMember clubMember) {
+        public static InnerClubMember fromMasked(ClubMember clubMember) {
+            return from(clubMember, true);
+        }
+
+        public static InnerClubMember fromUnmasked(ClubMember clubMember) {
+            return from(clubMember, false);
+        }
+
+        private static InnerClubMember from(ClubMember clubMember, boolean shouldMaskStudentNumber) {
             User user = clubMember.getUser();
 
             return new InnerClubMember(
                 user.getId(),
                 user.getName(),
                 user.getImageUrl(),
-                maskStudentNumber(user.getStudentNumber()),
+                shouldMaskStudentNumber
+                    ? maskStudentNumber(user.getStudentNumber())
+                    : user.getStudentNumber(),
                 clubMember.getClubPosition()
             );
         }
@@ -55,9 +69,21 @@ public record ClubMembersResponse(
     }
 
     public static ClubMembersResponse from(List<ClubMember> clubMembers) {
+        return fromMasked(clubMembers);
+    }
+
+    public static ClubMembersResponse fromMasked(List<ClubMember> clubMembers) {
         return new ClubMembersResponse(
             clubMembers.stream()
-                .map(InnerClubMember::from)
+                .map(InnerClubMember::fromMasked)
+                .toList()
+        );
+    }
+
+    public static ClubMembersResponse fromUnmasked(List<ClubMember> clubMembers) {
+        return new ClubMembersResponse(
+            clubMembers.stream()
+                .map(InnerClubMember::fromUnmasked)
                 .toList()
         );
     }
