@@ -41,7 +41,7 @@ import jakarta.persistence.EntityManager;
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@Import({TestSecurityConfig.class, TestJpaConfig.class})
+@Import({TestSecurityConfig.class, TestJpaConfig.class, TestGeminiConfig.class})
 @EnableAutoConfiguration(exclude = {
     OAuth2ClientAutoConfiguration.class
 })
