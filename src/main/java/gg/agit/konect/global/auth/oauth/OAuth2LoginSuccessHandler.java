@@ -195,6 +195,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                     exception.getErrorCode().getCode()
                 )
             );
+        } catch (Exception exception) {
+            log.error("Unexpected error during oauth link callback", exception);
+            String failedRedirect = oauthLoginHelper.appendQueryParameter(safeRedirect, "oauth_link", "failed");
+            response.sendRedirect(
+                oauthLoginHelper.appendQueryParameter(
+                    failedRedirect,
+                    "oauth_link_code",
+                    ApiResponseCode.UNEXPECTED_SERVER_ERROR.getCode()
+                )
+            );
         }
     }
 
