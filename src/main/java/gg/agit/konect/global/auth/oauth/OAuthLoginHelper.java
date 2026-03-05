@@ -47,13 +47,19 @@ public class OAuthLoginHelper {
             Optional<User> linkedUser = userOAuthAccountRepository
                 .findUserByProviderAndProviderId(provider, providerId);
             if (linkedUser.isPresent()) {
-                ensureLinkedAccount(linkedUser.get(), provider, providerId, email);
+                ensureLinkedAccount(linkedUser.get(), provider, providerId, email, linkedUser);
                 return linkedUser;
             }
 
             Optional<User> restoredByLinkedAccount = restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
             if (restoredByLinkedAccount.isPresent()) {
-                ensureLinkedAccount(restoredByLinkedAccount.get(), provider, providerId, email);
+                ensureLinkedAccount(
+                    restoredByLinkedAccount.get(),
+                    provider,
+                    providerId,
+                    email,
+                    restoredByLinkedAccount
+                );
                 return restoredByLinkedAccount;
             }
         }
@@ -143,11 +149,23 @@ public class OAuthLoginHelper {
     }
 
     private void ensureLinkedAccount(User user, Provider provider, String providerId, String oauthEmail) {
+        ensureLinkedAccount(user, provider, providerId, oauthEmail, Optional.empty());
+    }
+
+    private void ensureLinkedAccount(
+        User user,
+        Provider provider,
+        String providerId,
+        String oauthEmail,
+        Optional<User> knownOwner
+    ) {
         if (!StringUtils.hasText(providerId)) {
             return;
         }
 
-        Optional<User> owner = userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
+        Optional<User> owner = knownOwner.isPresent()
+            ? knownOwner
+            : userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
         if (owner.isPresent() && !owner.get().getId().equals(user.getId())) {
             return;
         }
