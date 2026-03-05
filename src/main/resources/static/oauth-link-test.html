@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OAuth Link Test</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #1d4ed8;
+      --ok: #059669;
+      --err: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #e7efff 0%, var(--bg) 45%);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .wrap {
+      max-width: 840px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    p {
+      margin: 6px 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn.primary {
+      border-color: var(--primary);
+      color: #fff;
+      background: var(--primary);
+    }
+
+    .field {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      margin-top: 8px;
+    }
+
+    code {
+      background: #eff2f7;
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    pre {
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+      background: #0b1020;
+      color: #d1f5ff;
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 110px;
+      overflow-x: auto;
+    }
+
+    .success { color: var(--ok); font-weight: 700; }
+    .failed { color: var(--err); font-weight: 700; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>OAuth Link Test Page</h1>
+    <p>
+      This page helps test <code>oauth_mode=link</code> flow.
+      It should be opened from the same backend domain that handles OAuth callback.
+    </p>
+    <p>
+      Current return URL: <code id="returnUrl"></code>
+    </p>
+  </div>
+
+  <div class="card">
+    <strong>Step 1) Set API Base URL</strong>
+    <input id="apiBase" class="field" />
+    <p>Example: <code>https://api.example.com</code> or leave as current origin.</p>
+  </div>
+
+  <div class="card">
+    <strong>Step 2) Start OAuth Link</strong>
+    <div class="row">
+      <button class="btn primary" data-provider="google">Link Google</button>
+      <button class="btn primary" data-provider="kakao">Link Kakao</button>
+      <button class="btn primary" data-provider="naver">Link Naver</button>
+      <button class="btn primary" data-provider="apple">Link Apple</button>
+    </div>
+    <p>
+      Redirect format:
+      <code>/oauth2/authorization/{provider}?redirect_uri={thisPage}&oauth_mode=link</code>
+    </p>
+  </div>
+
+  <div class="card">
+    <strong>Step 3) Check Link Result + Refresh Status</strong>
+    <p id="resultText">No link result yet.</p>
+    <div class="row">
+      <button id="refreshStatus" class="btn">Refresh /users/me/oauth/links</button>
+    </div>
+    <pre id="statusOutput">(empty)</pre>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const returnUrlEl = document.getElementById("returnUrl");
+    const apiBaseEl = document.getElementById("apiBase");
+    const resultTextEl = document.getElementById("resultText");
+    const statusOutputEl = document.getElementById("statusOutput");
+    const refreshBtn = document.getElementById("refreshStatus");
+
+    const currentUrl = window.location.origin + window.location.pathname;
+    returnUrlEl.textContent = currentUrl;
+    apiBaseEl.value = window.location.origin;
+
+    function getParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    function renderLinkResult() {
+      const result = getParam("oauth_link");
+      const code = getParam("oauth_link_code");
+
+      if (!result) {
+        resultTextEl.textContent = "No link result yet.";
+        resultTextEl.className = "";
+        return;
+      }
+
+      if (result === "success") {
+        resultTextEl.textContent = "Link success";
+        resultTextEl.className = "success";
+        return;
+      }
+
+      resultTextEl.textContent = "Link failed" + (code ? " (" + code + ")" : "");
+      resultTextEl.className = "failed";
+    }
+
+    function buildAuthorizeUrl(provider) {
+      const apiBase = apiBaseEl.value.trim().replace(/\/$/, "");
+      const callbackUrl = new URL(currentUrl);
+      callbackUrl.searchParams.delete("oauth_link");
+      callbackUrl.searchParams.delete("oauth_link_code");
+
+      const url = new URL(apiBase + "/oauth2/authorization/" + provider);
+      url.searchParams.set("redirect_uri", callbackUrl.toString());
+      url.searchParams.set("oauth_mode", "link");
+      return url.toString();
+    }
+
+    async function refreshStatus() {
+      const apiBase = apiBaseEl.value.trim().replace(/\/$/, "");
+      const url = apiBase + "/users/me/oauth/links";
+
+      statusOutputEl.textContent = "Loading...";
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          credentials: "include"
+        });
+
+        const text = await response.text();
+        let json = text;
+        try {
+          json = JSON.stringify(JSON.parse(text), null, 2);
+        } catch (_) {
+          // leave as plain text
+        }
+
+        statusOutputEl.textContent = "HTTP " + response.status + "\n" + json;
+      } catch (error) {
+        statusOutputEl.textContent = "Request failed: " + (error && error.message ? error.message : String(error));
+      }
+    }
+
+    document.querySelectorAll("button[data-provider]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        const provider = button.getAttribute("data-provider");
+        window.location.href = buildAuthorizeUrl(provider);
+      });
+    });
+
+    refreshBtn.addEventListener("click", refreshStatus);
+
+    renderLinkResult();
+    refreshStatus();
+  })();
+</script>
+</body>
+</html>

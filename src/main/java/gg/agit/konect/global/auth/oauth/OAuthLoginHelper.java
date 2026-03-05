@@ -1,6 +1,8 @@
 package gg.agit.konect.global.auth.oauth;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
@@ -15,6 +17,8 @@ import org.springframework.util.StringUtils;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.config.SecurityProperties;
@@ -29,6 +33,7 @@ public class OAuthLoginHelper {
     private static final String STAGE_PROFILE = "stage";
 
     private final UserRepository userRepository;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
     private final Environment environment;
@@ -38,9 +43,19 @@ public class OAuthLoginHelper {
 
     @Transactional
     public Optional<User> findUserByProvider(Provider provider, String email, String providerId) {
+        if (StringUtils.hasText(providerId)) {
+            Optional<User> linkedUser = userOAuthAccountRepository
+                .findUserByProviderAndProviderId(provider, providerId);
+            if (linkedUser.isPresent()) {
+                ensureLinkedAccount(linkedUser.get(), provider, providerId, email);
+                return linkedUser;
+            }
+        }
+
         if (provider == Provider.APPLE) {
             Optional<User> user = userRepository.findByProviderIdAndProvider(providerId, provider);
             if (user.isPresent()) {
+                ensureLinkedAccount(user.get(), provider, providerId, email);
                 return user;
             }
 
@@ -56,6 +71,7 @@ public class OAuthLoginHelper {
 
         Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
         if (user.isPresent()) {
+            ensureLinkedAccount(user.get(), provider, providerId, email);
             return user;
         }
 
@@ -97,6 +113,32 @@ public class OAuthLoginHelper {
         return environment.acceptsProfiles(Profiles.of(STAGE_PROFILE));
     }
 
+    private void ensureLinkedAccount(User user, Provider provider, String providerId, String oauthEmail) {
+        if (!StringUtils.hasText(providerId)) {
+            return;
+        }
+
+        Optional<User> owner = userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
+        if (owner.isPresent() && !owner.get().getId().equals(user.getId())) {
+            return;
+        }
+
+        Optional<UserOAuthAccount> linked = userOAuthAccountRepository.findByUserIdAndProvider(user.getId(), provider);
+
+        if (linked.isPresent()) {
+            UserOAuthAccount account = linked.get();
+
+            if (providerId.equals(account.getProviderId()) && StringUtils.hasText(oauthEmail)) {
+                account.updateOauthEmail(oauthEmail);
+                userOAuthAccountRepository.save(account);
+            }
+
+            return;
+        }
+
+        userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+    }
+
     // Apple 로그인 시 이메일이 누락된 경우, UnRegisteredUser에서 이메일을 조회
     public String resolveAppleEmail(String providerId) {
         if (!StringUtils.hasText(providerId)) {
@@ -122,6 +164,13 @@ public class OAuthLoginHelper {
         char joiner = redirectUri.contains("?") ? '&' : '?';
 
         return redirectUri + joiner + "bridge_token=" + bridgeToken;
+    }
+
+    public String appendQueryParameter(String redirectUri, String key, String value) {
+        String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+        char joiner = redirectUri.contains("?") ? '&' : '?';
+
+        return redirectUri + joiner + key + "=" + encodedValue;
     }
 
     /*
