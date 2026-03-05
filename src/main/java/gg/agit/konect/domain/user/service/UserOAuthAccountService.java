@@ -51,29 +51,39 @@ public class UserOAuthAccountService {
 
     @Transactional
     public void linkOAuthAccount(Integer userId, Provider provider, String providerId, String oauthEmail) {
+        User user = userRepository.getById(userId);
+        linkAccount(user, provider, providerId, oauthEmail, true);
+    }
+
+    @Transactional
+    public void linkPrimaryOAuthAccount(User user, Provider provider, String providerId, String oauthEmail) {
+        linkAccount(user, provider, providerId, oauthEmail, false);
+    }
+
+    private void linkAccount(
+        User user,
+        Provider provider,
+        String providerId,
+        String oauthEmail,
+        boolean requireProviderId
+    ) {
         if (!StringUtils.hasText(providerId)) {
-            throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_PROVIDER_ID);
+            if (requireProviderId) {
+                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_PROVIDER_ID);
+            }
+
+            return;
         }
 
-        User user = userRepository.getById(userId);
+        Integer userId = user.getId();
 
-        userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
-            .ifPresent(ownedUser -> {
-                if (!ownedUser.getId().equals(userId)) {
-                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
-                }
-            });
+        validateProviderOwnership(userId, provider, providerId);
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
             .orElse(null);
 
         if (account == null) {
-            try {
-                userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
-                entityManager.flush();
-            } catch (DataIntegrityViolationException e) {
-                resolveLinkConflictOnIntegrityViolation(userId, provider, providerId);
-            }
+            saveWithConflictHandling(userId, user, provider, providerId, oauthEmail);
             return;
         }
 
@@ -84,6 +94,30 @@ public class UserOAuthAccountService {
         if (StringUtils.hasText(oauthEmail)) {
             account.updateOauthEmail(oauthEmail);
             userOAuthAccountRepository.save(account);
+        }
+    }
+
+    private void validateProviderOwnership(Integer userId, Provider provider, String providerId) {
+        userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
+            .ifPresent(ownedUser -> {
+                if (!ownedUser.getId().equals(userId)) {
+                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+                }
+            });
+    }
+
+    private void saveWithConflictHandling(
+        Integer userId,
+        User user,
+        Provider provider,
+        String providerId,
+        String oauthEmail
+    ) {
+        try {
+            userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+            entityManager.flush();
+        } catch (DataIntegrityViolationException e) {
+            resolveLinkConflictOnIntegrityViolation(userId, provider, providerId);
         }
     }
 
@@ -107,41 +141,4 @@ public class UserOAuthAccountService {
         throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
     }
 
-    @Transactional
-    public void linkPrimaryOAuthAccount(User user, Provider provider, String providerId, String oauthEmail) {
-        if (!StringUtils.hasText(providerId)) {
-            return;
-        }
-
-        Integer userId = user.getId();
-
-        userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
-            .ifPresent(ownedUser -> {
-                if (!ownedUser.getId().equals(userId)) {
-                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
-                }
-            });
-
-        UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
-            .orElse(null);
-
-        if (account == null) {
-            try {
-                userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
-                entityManager.flush();
-            } catch (DataIntegrityViolationException e) {
-                resolveLinkConflictOnIntegrityViolation(userId, provider, providerId);
-            }
-            return;
-        }
-
-        if (!providerId.equals(account.getProviderId())) {
-            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
-        }
-
-        if (StringUtils.hasText(oauthEmail)) {
-            account.updateOauthEmail(oauthEmail);
-            userOAuthAccountRepository.save(account);
-        }
-    }
 }
