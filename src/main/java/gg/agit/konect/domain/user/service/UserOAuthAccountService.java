@@ -109,14 +109,35 @@ public class UserOAuthAccountService {
             return;
         }
 
-        userOAuthAccountRepository.findByUserIdAndProvider(user.getId(), provider)
-            .ifPresentOrElse(account -> {
-                    if (StringUtils.hasText(oauthEmail)) {
-                        account.updateOauthEmail(oauthEmail);
-                        userOAuthAccountRepository.save(account);
-                    }
-                },
-                () -> userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail))
-            );
+        Integer userId = user.getId();
+
+        userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
+            .ifPresent(ownedUser -> {
+                if (!ownedUser.getId().equals(userId)) {
+                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+                }
+            });
+
+        UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
+            .orElse(null);
+
+        if (account == null) {
+            try {
+                userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+                entityManager.flush();
+            } catch (DataIntegrityViolationException e) {
+                resolveLinkConflictOnIntegrityViolation(userId, provider, providerId);
+            }
+            return;
+        }
+
+        if (!providerId.equals(account.getProviderId())) {
+            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+        }
+
+        if (StringUtils.hasText(oauthEmail)) {
+            account.updateOauthEmail(oauthEmail);
+            userOAuthAccountRepository.save(account);
+        }
     }
 }
