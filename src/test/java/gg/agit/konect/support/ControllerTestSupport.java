@@ -18,9 +18,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -29,6 +29,7 @@ import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gg.agit.konect.global.auth.annotation.UserId;
 import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.web.AuthorizationInterceptor;
 import gg.agit.konect.global.auth.web.LoginCheckInterceptor;
@@ -45,21 +46,7 @@ import jakarta.persistence.EntityManager;
 @EnableAutoConfiguration(exclude = {
     OAuth2ClientAutoConfiguration.class
 })
-@TestPropertySource(locations = "classpath:.env.test.properties", properties = {
-    "spring.config.import=",
-    "spring.datasource.driver-class-name=org.h2.Driver",
-    "spring.datasource.url=jdbc:h2:mem:test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-    "spring.datasource.username=sa",
-    "spring.datasource.password=",
-    "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
-    "spring.jpa.properties.javax.persistence.validation.mode=none",
-    "spring.flyway.enabled=false",
-    "spring.data.redis.host=localhost",
-    "spring.data.redis.port=6379",
-    "spring.security.enabled=false",
-    "logging.ignored-url-patterns="
-})
+@TestPropertyConfig
 public abstract class ControllerTestSupport {
 
     @Autowired
@@ -92,7 +79,13 @@ public abstract class ControllerTestSupport {
     @BeforeEach
     void setUpCommonMocks() throws Exception {
         given(loginCheckInterceptor.preHandle(any(), any(), any())).willReturn(true);
-        given(loginUserArgumentResolver.supportsParameter(any())).willReturn(true);
+        given(loginUserArgumentResolver.supportsParameter(any(MethodParameter.class))).willAnswer(invocation -> {
+            MethodParameter parameter = invocation.getArgument(0);
+            boolean hasAnnotation = parameter.hasParameterAnnotation(UserId.class);
+            boolean isIntegerType = Integer.class.equals(parameter.getParameterType())
+                || int.class.equals(parameter.getParameterType());
+            return hasAnnotation && isIntegerType;
+        });
         given(authorizationInterceptor.preHandle(any(), any(), any())).willReturn(true);
         given(corsProperties.allowedOrigins()).willReturn(List.of("http://localhost:3000"));
         given(loggingProperties.ignoredUrlPatterns()).willReturn(List.of());

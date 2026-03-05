@@ -360,7 +360,8 @@ class ClubMemberControllerIntegrationTest extends ControllerTestSupport {
             // when & then - 사전 멤버가 없는 경우 빈 리스트 반환
             performGet("/clubs/" + club.getId() + "/pre-members")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.preMembers").isArray());
+                .andExpect(jsonPath("$.preMembers").isArray())
+                .andExpect(jsonPath("$.preMembers", hasSize(0)));
         }
     }
 }

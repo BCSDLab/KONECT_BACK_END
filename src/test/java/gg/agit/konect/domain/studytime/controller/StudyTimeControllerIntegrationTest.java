@@ -76,7 +76,8 @@ class StudyTimeControllerIntegrationTest extends ControllerTestSupport {
         void startTimerWhenAlreadyRunningFails() throws Exception {
             // given
             mockLoginUser(user.getId());
-            performPost("/studytimes/timers");
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
 
             // when & then
             performPost("/studytimes/timers")
@@ -91,10 +92,12 @@ class StudyTimeControllerIntegrationTest extends ControllerTestSupport {
             clearPersistenceContext();
 
             mockLoginUser(user.getId());
-            performPost("/studytimes/timers");
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
 
             mockLoginUser(anotherUser.getId());
-            performPost("/studytimes/timers");
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
 
             // then
             assertThat(studyTimerRepository.existsByUserId(user.getId())).isTrue();
@@ -111,7 +114,8 @@ class StudyTimeControllerIntegrationTest extends ControllerTestSupport {
         void stopTimerSuccess() throws Exception {
             // given
             mockLoginUser(user.getId());
-            performPost("/studytimes/timers");
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
 
             StudyTimerStopRequest request = new StudyTimerStopRequest(0L);
 
@@ -143,7 +147,8 @@ class StudyTimeControllerIntegrationTest extends ControllerTestSupport {
         void stopTimerWithTimeMismatchFails() throws Exception {
             // given
             mockLoginUser(user.getId());
-            performPost("/studytimes/timers");
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
 
             StudyTimerStopRequest request = new StudyTimerStopRequest(MISMATCHED_CLIENT_SECONDS);
 
