@@ -3,7 +3,9 @@ package gg.agit.konect.domain.user.service;
 import java.util.EnumSet;
 import java.util.List;
 
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -25,6 +27,7 @@ public class UserOAuthAccountService {
 
     private final UserRepository userRepository;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
+    private final EntityManager entityManager;
 
     public OAuthLinkStatusResponse getLinkStatus(Integer userId) {
         User user = userRepository.getById(userId);
@@ -65,7 +68,12 @@ public class UserOAuthAccountService {
             .orElse(null);
 
         if (account == null) {
-            userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+            try {
+                userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+                entityManager.flush();
+            } catch (DataIntegrityViolationException e) {
+                resolveLinkConflictOnIntegrityViolation(userId, provider, providerId);
+            }
             return;
         }
 
@@ -77,6 +85,22 @@ public class UserOAuthAccountService {
             account.updateOauthEmail(oauthEmail);
             userOAuthAccountRepository.save(account);
         }
+    }
+
+    private void resolveLinkConflictOnIntegrityViolation(Integer userId, Provider provider, String providerId) {
+        userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
+            .ifPresent(ownedUser -> {
+                if (!ownedUser.getId().equals(userId)) {
+                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+                }
+            });
+
+        userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
+            .ifPresent(linkedAccount -> {
+                if (!providerId.equals(linkedAccount.getProviderId())) {
+                    throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+                }
+            });
     }
 
     @Transactional
