@@ -7,7 +7,9 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
@@ -21,7 +23,9 @@ import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
+import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -37,6 +41,7 @@ public class OAuthLoginHelper {
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
     private final Environment environment;
+    private final EntityManager entityManager;
 
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
@@ -183,7 +188,38 @@ public class OAuthLoginHelper {
             return;
         }
 
-        userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+        try {
+            userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+            entityManager.flush();
+        } catch (DataIntegrityViolationException e) {
+            resolveEnsureLinkedAccountConflictOnIntegrityViolation(user.getId(), provider, providerId, knownOwner);
+        }
+    }
+
+    private void resolveEnsureLinkedAccountConflictOnIntegrityViolation(
+        Integer userId,
+        Provider provider,
+        String providerId,
+        Optional<User> knownOwner
+    ) {
+        Optional<User> owner = knownOwner.isPresent()
+            ? knownOwner
+            : userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
+
+        if (owner.isPresent() && !owner.get().getId().equals(userId)) {
+            throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+        }
+
+        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider);
+        if (linkedAccount.isPresent()) {
+            if (!providerId.equals(linkedAccount.get().getProviderId())) {
+                throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+            }
+
+            return;
+        }
+
+        throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
     }
 
     // Apple 로그인 시 이메일이 누락된 경우, UnRegisteredUser에서 이메일을 조회
