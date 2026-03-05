@@ -57,7 +57,7 @@ public class UserOAuthAccountService {
         userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
             .ifPresent(ownedUser -> {
                 if (!ownedUser.getId().equals(userId)) {
-                    throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
+                    throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
                 }
             });
 
@@ -70,7 +70,7 @@ public class UserOAuthAccountService {
         }
 
         if (!providerId.equals(account.getProviderId())) {
-            throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
+            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
         }
 
         if (StringUtils.hasText(oauthEmail)) {
