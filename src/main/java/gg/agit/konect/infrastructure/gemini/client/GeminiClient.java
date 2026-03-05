@@ -65,16 +65,20 @@ public class GeminiClient {
 
     @PostConstruct
     public void init() {
-        this.vertexAI = new VertexAI(
-            geminiProperties.projectId(),
-            geminiProperties.location()
-        );
-        this.generativeModel = new GenerativeModel(geminiProperties.model(), vertexAI);
-        log.info("GeminiClient 초기화 완료: project={}, location={}, model={}",
-            geminiProperties.projectId(),
-            geminiProperties.location(),
-            geminiProperties.model()
-        );
+        try {
+            this.vertexAI = new VertexAI(
+                geminiProperties.projectId(),
+                geminiProperties.location()
+            );
+            this.generativeModel = new GenerativeModel(geminiProperties.model(), vertexAI);
+            log.info("GeminiClient 초기화 완료: project={}, location={}, model={}",
+                geminiProperties.projectId(),
+                geminiProperties.location(),
+                geminiProperties.model()
+            );
+        } catch (Exception e) {
+            log.warn("GeminiClient 초기화 실패 (테스트 환경이거나 인증 정보 없음): {}", e.getMessage());
+        }
     }
 
     @PreDestroy

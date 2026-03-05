@@ -1,7 +1,8 @@
-package gg.agit.konect.domain.club.service;
+package gg.agit.konect.domain.club.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,31 +12,23 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.club.dto.ClubRecruitmentResponse;
 import gg.agit.konect.domain.club.dto.ClubRecruitmentUpsertRequest;
-import gg.agit.konect.domain.club.enums.RecruitmentStatus;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.ControllerTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.ClubRecruitmentFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-@Transactional
-class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
+class ClubRecruitmentControllerIntegrationTest extends ControllerTestSupport {
 
     private static final int RECRUITMENT_PERIOD_DAYS = 30;
-
-    @Autowired
-    private ClubRecruitmentService clubRecruitmentService;
 
     @Autowired
     private ClubRecruitmentRepository clubRecruitmentRepository;
@@ -47,7 +40,7 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
     private Club club;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         university = persist(UniversityFixture.create());
         normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
         president = persist(UserFixture.createUser(university, "회장", "2020000001"));
@@ -58,62 +51,58 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
     }
 
     @Nested
-    @DisplayName("모집 공고 조회")
+    @DisplayName("GET /clubs/{clubId}/recruitments - 모집 공고 조회")
     class GetRecruitment {
 
         @Test
-        @DisplayName("모집 공고를 조회한다")
-        void getRecruitmentSuccess() {
+        @DisplayName("상시 모집 공고를 조회한다")
+        void getRecruitmentSuccess() throws Exception {
             // given
-            ClubRecruitment recruitment = persist(ClubRecruitmentFixture.createAlwaysRecruiting(club));
+            persist(ClubRecruitmentFixture.createAlwaysRecruiting(club));
             clearPersistenceContext();
 
-            // when
-            ClubRecruitmentResponse response = clubRecruitmentService.getRecruitment(
-                club.getId(),
-                normalUser.getId()
-            );
+            mockLoginUser(normalUser.getId());
 
-            // then
-            assertThat(response.content()).isEqualTo("상시 모집 공고 내용입니다.");
-            assertThat(response.status()).isEqualTo(RecruitmentStatus.ONGOING);
-            assertThat(response.startAt()).isNull();
-            assertThat(response.endAt()).isNull();
-            assertThat(response.isApplied()).isFalse();
+            // when & then
+            performGet("/clubs/" + club.getId() + "/recruitments")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("상시 모집 공고 내용입니다."))
+                .andExpect(jsonPath("$.status").value("ONGOING"))
+                .andExpect(jsonPath("$.startAt").isEmpty())
+                .andExpect(jsonPath("$.endAt").isEmpty())
+                .andExpect(jsonPath("$.isApplied").value(false));
         }
 
         @Test
         @DisplayName("기간 모집 공고를 조회한다")
-        void getRecruitmentWithPeriod() {
+        void getRecruitmentWithPeriod() throws Exception {
             // given
             LocalDateTime startAt = LocalDateTime.now().minusDays(1);
             LocalDateTime endAt = LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS);
-            ClubRecruitment recruitment = persist(
-                ClubRecruitmentFixture.createWithPeriod(club, startAt, endAt)
-            );
+            persist(ClubRecruitmentFixture.createWithPeriod(club, startAt, endAt));
             clearPersistenceContext();
 
-            // when
-            ClubRecruitmentResponse response = clubRecruitmentService.getRecruitment(
-                club.getId(),
-                normalUser.getId()
-            );
+            mockLoginUser(normalUser.getId());
 
-            // then
-            assertThat(response.status()).isEqualTo(RecruitmentStatus.ONGOING);
-            assertThat(response.startAt()).isNotNull();
-            assertThat(response.endAt()).isNotNull();
+            // when & then
+            performGet("/clubs/" + club.getId() + "/recruitments")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ONGOING"))
+                .andExpect(jsonPath("$.startAt").isNotEmpty())
+                .andExpect(jsonPath("$.endAt").isNotEmpty());
         }
     }
 
     @Nested
-    @DisplayName("모집 공고 생성/수정")
+    @DisplayName("PUT /clubs/{clubId}/recruitments - 모집 공고 생성/수정")
     class UpsertRecruitment {
 
         @Test
         @DisplayName("회장이 상시 모집 공고를 생성한다")
-        void createAlwaysRecruitmentByPresident() {
+        void createAlwaysRecruitmentByPresident() throws Exception {
             // given
+            mockLoginUser(president.getId());
+
             ClubRecruitmentUpsertRequest request = new ClubRecruitmentUpsertRequest(
                 null,
                 null,
@@ -122,24 +111,23 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
                 List.of()
             );
 
-            // when
-            clubRecruitmentService.upsertRecruitment(club.getId(), president.getId(), request);
+            // when & then
+            performPut("/clubs/" + club.getId() + "/recruitments", request)
+                .andExpect(status().isNoContent());
+
             clearPersistenceContext();
 
-            // then
             ClubRecruitment saved = clubRecruitmentRepository.getByClubId(club.getId());
             assertThat(saved.getContent()).isEqualTo("새로운 상시 모집 공고입니다.");
             assertThat(saved.getIsAlwaysRecruiting()).isTrue();
         }
 
-        private ClubRecruitmentUpsertRequest.InnerClubRecruitmentImageRequest imageRequest(String url) {
-            return new ClubRecruitmentUpsertRequest.InnerClubRecruitmentImageRequest(url);
-        }
-
         @Test
         @DisplayName("매니저가 기간 모집 공고를 생성한다")
-        void createPeriodRecruitmentByManager() {
+        void createPeriodRecruitmentByManager() throws Exception {
             // given
+            mockLoginUser(manager.getId());
+
             LocalDateTime startAt = LocalDateTime.now().plusDays(1);
             LocalDateTime endAt = LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS);
 
@@ -149,16 +137,17 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
                 false,
                 "기간 모집 공고입니다.",
                 List.of(
-                    imageRequest("https://example.com/image1.png"),
-                    imageRequest("https://example.com/image2.png")
+                    new ClubRecruitmentUpsertRequest.InnerClubRecruitmentImageRequest("https://example.com/image1.png"),
+                    new ClubRecruitmentUpsertRequest.InnerClubRecruitmentImageRequest("https://example.com/image2.png")
                 )
             );
 
-            // when
-            clubRecruitmentService.upsertRecruitment(club.getId(), manager.getId(), request);
+            // when & then
+            performPut("/clubs/" + club.getId() + "/recruitments", request)
+                .andExpect(status().isNoContent());
+
             clearPersistenceContext();
 
-            // then
             ClubRecruitment saved = clubRecruitmentRepository.getByClubId(club.getId());
             assertThat(saved.getContent()).isEqualTo("기간 모집 공고입니다.");
             assertThat(saved.getIsAlwaysRecruiting()).isFalse();
@@ -169,10 +158,12 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
 
         @Test
         @DisplayName("기존 모집 공고를 수정한다")
-        void updateExistingRecruitment() {
+        void updateExistingRecruitment() throws Exception {
             // given
             persist(ClubRecruitmentFixture.createAlwaysRecruiting(club));
             clearPersistenceContext();
+
+            mockLoginUser(president.getId());
 
             LocalDateTime startAt = LocalDateTime.now().plusDays(1);
             LocalDateTime endAt = LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS);
@@ -185,20 +176,23 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
                 List.of()
             );
 
-            // when
-            clubRecruitmentService.upsertRecruitment(club.getId(), president.getId(), request);
+            // when & then
+            performPut("/clubs/" + club.getId() + "/recruitments", request)
+                .andExpect(status().isNoContent());
+
             clearPersistenceContext();
 
-            // then
             ClubRecruitment updated = clubRecruitmentRepository.getByClubId(club.getId());
             assertThat(updated.getContent()).isEqualTo("수정된 모집 공고입니다.");
             assertThat(updated.getIsAlwaysRecruiting()).isFalse();
         }
 
         @Test
-        @DisplayName("일반 유저가 모집 공고 생성 시 예외가 발생한다")
-        void createRecruitmentByNormalUserFails() {
+        @DisplayName("일반 유저가 모집 공고 생성 시 403을 반환한다")
+        void createRecruitmentByNormalUserFails() throws Exception {
             // given
+            mockLoginUser(normalUser.getId());
+
             ClubRecruitmentUpsertRequest request = new ClubRecruitmentUpsertRequest(
                 null,
                 null,
@@ -208,15 +202,16 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
             );
 
             // when & then
-            assertThatThrownBy(() ->
-                clubRecruitmentService.upsertRecruitment(club.getId(), normalUser.getId(), request)
-            ).isInstanceOf(CustomException.class);
+            performPut("/clubs/" + club.getId() + "/recruitments", request)
+                .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("상시 모집에 날짜를 입력하면 예외가 발생한다")
-        void alwaysRecruitingWithDatesFails() {
+        @DisplayName("상시 모집에 날짜를 입력하면 400을 반환한다")
+        void alwaysRecruitingWithDatesFails() throws Exception {
             // given
+            mockLoginUser(president.getId());
+
             ClubRecruitmentUpsertRequest request = new ClubRecruitmentUpsertRequest(
                 LocalDateTime.now(),
                 LocalDateTime.now().plusDays(RECRUITMENT_PERIOD_DAYS),
@@ -226,15 +221,16 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
             );
 
             // when & then
-            assertThatThrownBy(() ->
-                clubRecruitmentService.upsertRecruitment(club.getId(), president.getId(), request)
-            ).isInstanceOf(CustomException.class);
+            performPut("/clubs/" + club.getId() + "/recruitments", request)
+                .andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("기간 모집에 날짜가 없으면 예외가 발생한다")
-        void periodRecruitingWithoutDatesFails() {
+        @DisplayName("기간 모집에 날짜가 없으면 400을 반환한다")
+        void periodRecruitingWithoutDatesFails() throws Exception {
             // given
+            mockLoginUser(president.getId());
+
             ClubRecruitmentUpsertRequest request = new ClubRecruitmentUpsertRequest(
                 null,
                 null,
@@ -244,9 +240,8 @@ class ClubRecruitmentServiceIntegrationTest extends IntegrationTestSupport {
             );
 
             // when & then
-            assertThatThrownBy(() ->
-                clubRecruitmentService.upsertRecruitment(club.getId(), president.getId(), request)
-            ).isInstanceOf(CustomException.class);
+            performPut("/clubs/" + club.getId() + "/recruitments", request)
+                .andExpect(status().isBadRequest());
         }
     }
 }

@@ -120,6 +120,12 @@ slack:
   webhooks:
     error: https://hooks.slack.com/test
     event: https://hooks.slack.com/test-event
+  signing-secret: test-signing-secret
+
+gemini:
+  project-id: test-project
+  location: us-central1
+  model: gemini-1.5-flash
 
 logging:
   ignored-url-patterns:
