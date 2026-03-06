@@ -11,6 +11,8 @@ import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.SignupPrefillResponse;
 import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
+import gg.agit.konect.domain.user.dto.OAuthLinkRequest;
+import gg.agit.konect.domain.user.dto.OAuthLinkStatusResponse;
 import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,6 +54,14 @@ public interface UserApi {
     @Operation(summary = "로그인한 사용자의 정보를 조회한다.")
     @GetMapping("/me")
     ResponseEntity<UserInfoResponse> getMyInfo(@UserId Integer userId);
+
+    @Operation(summary = "로그인한 사용자의 OAuth 연동 상태를 조회한다.")
+    @GetMapping("/me/oauth/links")
+    ResponseEntity<OAuthLinkStatusResponse> getOAuthLinkStatus(@UserId Integer userId);
+
+    @Operation(summary = "로그인한 사용자 계정에 OAuth 계정을 연동한다.")
+    @PostMapping("/me/oauth/links")
+    ResponseEntity<Void> linkOAuthAccount(@UserId Integer userId, @RequestBody @Valid OAuthLinkRequest request);
 
     @Operation(summary = "로그아웃한다.")
     @PostMapping("/logout")

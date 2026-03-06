@@ -75,6 +75,10 @@ public class RefreshTokenService {
         return new Rotated(userId, newToken);
     }
 
+    public Integer extractUserId(String refreshToken) {
+        return validateAndExtractUserId(refreshToken);
+    }
+
     private Integer validateAndExtractUserId(String refreshToken) {
         if (!StringUtils.hasText(refreshToken)) {
             throw CustomException.of(ApiResponseCode.INVALID_REFRESH_TOKEN);

@@ -26,6 +26,7 @@ import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
+import gg.agit.konect.domain.user.service.UserOAuthAccountService;
 import gg.agit.konect.global.auth.web.AuthCookieService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
@@ -49,6 +50,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final ObjectMapper objectMapper;
     private final SignupTokenService signupTokenService;
     private final RefreshTokenService refreshTokenService;
+    private final UserOAuthAccountService userOAuthAccountService;
     private final AuthCookieService authCookieService;
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final UserRepository userRepository;
@@ -64,20 +66,31 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Provider provider = Provider.valueOf(oauthToken.getAuthorizedClientRegistrationId().toUpperCase());
         OAuth2User oauthUser = (OAuth2User)authentication.getPrincipal();
 
-        String providerId = null;
+        String providerId = extractProviderId(oauthUser, provider);
         String email = extractEmail(oauthUser, provider);
         String name = resolveAppleName(request, provider, oauthUser);
-        Optional<User> user;
+        OAuthContext oauthContext = consumeOAuthContext(request);
 
-        if (provider == Provider.APPLE) {
-            providerId = extractProviderId(oauthUser);
-
-            if (!StringUtils.hasText(providerId)) {
-                throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_PROVIDER_ID);
-            }
+        if (!StringUtils.hasText(providerId)) {
+            throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_PROVIDER_ID);
         }
 
         String appleRefreshTokenValue = extractAppleRefreshToken(oauthToken);
+
+        if (oauthContext.linkMode()) {
+            handleOAuthLinkMode(
+                request,
+                response,
+                oauthContext.safeRedirect(),
+                provider,
+                providerId,
+                email,
+                appleRefreshTokenValue
+            );
+            return;
+        }
+
+        Optional<User> user;
 
         user = oauthLoginHelper.findUserByProvider(provider, email, providerId);
 
@@ -96,7 +109,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         saveAppleRefreshTokenForUser(provider, user.get(), appleRefreshTokenValue);
-        sendLoginSuccessResponse(request, response, user.get());
+        sendLoginSuccessResponse(request, response, user.get(), oauthContext.safeRedirect());
     }
 
     private void sendAdditionalInfoRequiredResponse(
@@ -115,16 +128,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private void sendLoginSuccessResponse(
         HttpServletRequest request,
         HttpServletResponse response,
-        User user
+        User user,
+        String safeRedirect
     ) throws IOException {
-        HttpSession session = request.getSession(false);
-        String redirectUri = session == null ? null : (String)session.getAttribute("redirect_uri");
-        if (session != null) {
-            session.removeAttribute("redirect_uri");
-        }
-
-        String safeRedirect = oauthLoginHelper.resolveSafeRedirect(redirectUri);
-
         if (oauthLoginHelper.isAppleOauthCallback(safeRedirect)) {
             NativeSessionBridgeService svc = nativeSessionBridgeService.getIfAvailable();
 
@@ -146,6 +152,100 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         authCookieService.clearSignupToken(request, response);
 
         response.sendRedirect(safeRedirect);
+    }
+
+    private void handleOAuthLinkMode(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        String safeRedirect,
+        Provider provider,
+        String providerId,
+        String email,
+        String appleRefreshToken
+    ) throws IOException {
+        Integer currentUserId = resolveCurrentUserId(request);
+
+        if (currentUserId == null) {
+            String failedRedirect = oauthLoginHelper.appendQueryParameter(safeRedirect, "oauth_link", "failed");
+            response.sendRedirect(
+                oauthLoginHelper.appendQueryParameter(
+                    failedRedirect,
+                    "oauth_link_code",
+                    ApiResponseCode.INVALID_SESSION.getCode()
+                )
+            );
+            return;
+        }
+
+        try {
+            userOAuthAccountService.linkOAuthAccount(currentUserId, provider, providerId, email);
+
+            if (provider == Provider.APPLE && StringUtils.hasText(appleRefreshToken)) {
+                try {
+                    User user = userRepository.getById(currentUserId);
+                    saveAppleRefreshTokenForUser(provider, user, appleRefreshToken);
+                } catch (Exception exception) {
+                    log.warn(
+                        "OAuth link succeeded but failed to save apple refresh token. userId={}",
+                        currentUserId,
+                        exception
+                    );
+                }
+            }
+
+            response.sendRedirect(oauthLoginHelper.appendQueryParameter(safeRedirect, "oauth_link", "success"));
+        } catch (CustomException exception) {
+            String failedRedirect = oauthLoginHelper.appendQueryParameter(safeRedirect, "oauth_link", "failed");
+            response.sendRedirect(
+                oauthLoginHelper.appendQueryParameter(
+                    failedRedirect,
+                    "oauth_link_code",
+                    exception.getErrorCode().getCode()
+                )
+            );
+        } catch (Exception exception) {
+            log.error("Unexpected error during oauth link callback", exception);
+            String failedRedirect = oauthLoginHelper.appendQueryParameter(safeRedirect, "oauth_link", "failed");
+            response.sendRedirect(
+                oauthLoginHelper.appendQueryParameter(
+                    failedRedirect,
+                    "oauth_link_code",
+                    ApiResponseCode.UNEXPECTED_SERVER_ERROR.getCode()
+                )
+            );
+        }
+    }
+
+    private Integer resolveCurrentUserId(HttpServletRequest request) {
+        String refreshToken = authCookieService.getCookieValue(request, AuthCookieService.REFRESH_TOKEN_COOKIE);
+
+        if (!StringUtils.hasText(refreshToken)) {
+            return null;
+        }
+
+        try {
+            return refreshTokenService.extractUserId(refreshToken);
+        } catch (CustomException exception) {
+            return null;
+        }
+    }
+
+    private OAuthContext consumeOAuthContext(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        String redirectUri = null;
+        String oauthMode = null;
+
+        if (session != null) {
+            redirectUri = (String)session.getAttribute(OAuth2RedirectUriSaveFilter.REDIRECT_URI_SESSION_KEY);
+            oauthMode = (String)session.getAttribute(OAuth2RedirectUriSaveFilter.OAUTH_MODE_SESSION_KEY);
+            session.removeAttribute(OAuth2RedirectUriSaveFilter.REDIRECT_URI_SESSION_KEY);
+            session.removeAttribute(OAuth2RedirectUriSaveFilter.OAUTH_MODE_SESSION_KEY);
+        }
+
+        return new OAuthContext(
+            oauthLoginHelper.resolveSafeRedirect(redirectUri),
+            OAuth2RedirectUriSaveFilter.OAUTH_MODE_LINK.equalsIgnoreCase(oauthMode)
+        );
     }
 
     private String extractEmail(OAuth2User oauthUser, Provider provider) {
@@ -171,14 +271,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         return (String)current;
     }
 
-    private String extractProviderId(OAuth2User oauthUser) {
-        String providerId = oauthUser.getAttribute("sub");
+    private String extractProviderId(OAuth2User oauthUser, Provider provider) {
+        if (provider == Provider.APPLE) {
+            String providerId = oauthUser.getAttribute("sub");
 
-        if (!StringUtils.hasText(providerId)) {
-            providerId = oauthUser.getName();
+            if (!StringUtils.hasText(providerId)) {
+                providerId = oauthUser.getName();
+            }
+
+            return providerId;
         }
 
-        return providerId;
+        return oauthUser.getName();
     }
 
     private String resolveAppleName(HttpServletRequest request, Provider provider, OAuth2User oauthUser) {
@@ -287,5 +391,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             }
             unRegisteredUserRepository.save(u);
         });
+    }
+
+    private record OAuthContext(String safeRedirect, boolean linkMode) {
     }
 }

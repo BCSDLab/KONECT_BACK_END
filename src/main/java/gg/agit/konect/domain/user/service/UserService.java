@@ -62,6 +62,7 @@ public class UserService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final AppleTokenRevocationService appleTokenRevocationService;
     private final ChatRoomMembershipService chatRoomMembershipService;
+    private final UserOAuthAccountService userOAuthAccountService;
 
     @Transactional
     public Integer signup(String email, String providerId, Provider provider, SignupRequest request) {
@@ -98,6 +99,7 @@ public class UserService {
         );
 
         User savedUser = userRepository.save(newUser);
+        userOAuthAccountService.linkPrimaryOAuthAccount(savedUser, provider, providerId, email);
 
         joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
 
