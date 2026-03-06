@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "express": "^4.21.0",
-    "@ahngbeom/mysql-mcp-server": "*"
+    "@ahngbeom/mysql-mcp-server": "^1.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

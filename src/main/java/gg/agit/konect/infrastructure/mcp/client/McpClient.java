@@ -3,11 +3,13 @@ package gg.agit.konect.infrastructure.mcp.client;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -21,10 +23,24 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class McpClient {
 
-    private static final List<String> FORBIDDEN_KEYWORDS = List.of(
-        "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE",
-        "GRANT", "REVOKE", "EXEC", "EXECUTE", "INTO OUTFILE", "INTO DUMPFILE"
+    private static final List<Pattern> FORBIDDEN_PATTERNS = List.of(
+        Pattern.compile("\\bINSERT\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bUPDATE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bDELETE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bDROP\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bCREATE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bALTER\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bTRUNCATE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bGRANT\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bREVOKE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bEXEC\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bEXECUTE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bINTO\\s+OUTFILE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("\\bINTO\\s+DUMPFILE\\b", Pattern.CASE_INSENSITIVE),
+        Pattern.compile(";\\s*\\w", Pattern.CASE_INSENSITIVE)  // Multiple statements
     );
+
+    private static final Pattern VALID_TABLE_NAME = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
     private final RestClient restClient;
     private final McpProperties mcpProperties;
@@ -58,8 +74,8 @@ public class McpClient {
 
             return formatQueryResult(response);
         } catch (RestClientException e) {
-            log.error("MCP query execution failed: {}", e.getMessage());
-            throw new McpQueryException("Failed to execute query: " + e.getMessage(), e);
+            log.error("MCP query execution failed");
+            throw new McpQueryException("Failed to execute query", e);
         }
     }
 
@@ -77,8 +93,8 @@ public class McpClient {
 
             return parseTableList(response);
         } catch (RestClientException e) {
-            log.error("Failed to list tables: {}", e.getMessage());
-            throw new McpQueryException("Failed to list tables: " + e.getMessage(), e);
+            log.error("Failed to list tables");
+            throw new McpQueryException("Failed to list tables", e);
         }
     }
 
@@ -89,16 +105,24 @@ public class McpClient {
      * @return Table schema as formatted string
      */
     public String describeTable(String tableName) {
+        validateTableName(tableName);
+
         try {
+            String uri = UriComponentsBuilder
+                .fromHttpUrl(mcpProperties.url())
+                .pathSegment("tables", tableName)
+                .build()
+                .toUriString();
+
             String response = restClient.get()
-                .uri(mcpProperties.url() + "/tables/" + tableName)
+                .uri(uri)
                 .retrieve()
                 .body(String.class);
 
             return formatTableDescription(response);
         } catch (RestClientException e) {
-            log.error("Failed to describe table {}: {}", tableName, e.getMessage());
-            throw new McpQueryException("Failed to describe table: " + e.getMessage(), e);
+            log.error("Failed to describe table");
+            throw new McpQueryException("Failed to describe table", e);
         }
     }
 
@@ -117,7 +141,7 @@ public class McpClient {
             JsonNode node = objectMapper.readTree(response);
             return "healthy".equals(node.path("status").asText());
         } catch (Exception e) {
-            log.warn("MCP health check failed: {}", e.getMessage());
+            log.warn("MCP health check failed");
             return false;
         }
     }
@@ -134,11 +158,21 @@ public class McpClient {
             throw new McpQueryException("Only SELECT queries are allowed");
         }
 
-        // Check for forbidden keywords
-        for (String keyword : FORBIDDEN_KEYWORDS) {
-            if (normalizedSql.contains(keyword)) {
-                throw new McpQueryException("Query contains forbidden keyword: " + keyword);
+        // Check for forbidden patterns using word boundary regex
+        for (Pattern pattern : FORBIDDEN_PATTERNS) {
+            if (pattern.matcher(sql).find()) {
+                throw new McpQueryException("Query contains forbidden pattern");
             }
+        }
+    }
+
+    private void validateTableName(String tableName) {
+        if (tableName == null || tableName.isBlank()) {
+            throw new McpQueryException("Table name cannot be empty");
+        }
+
+        if (!VALID_TABLE_NAME.matcher(tableName).matches()) {
+            throw new McpQueryException("Invalid table name");
         }
     }
 

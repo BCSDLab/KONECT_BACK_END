@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -24,6 +23,8 @@ public class GeminiClient {
 
     private static final String API_URL_TEMPLATE =
         "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
+
+    private static final String API_KEY_HEADER = "x-goog-api-key";
 
     private static final double GENERATION_TEMPERATURE = 0.7;
     private static final int MAX_OUTPUT_TOKENS = 1024;
@@ -100,7 +101,7 @@ public class GeminiClient {
 
                 if ("query".equals(toolName) && args.has("sql")) {
                     String sql = args.get("sql").asText();
-                    log.debug("Executing SQL via MCP: {}", sql);
+                    log.debug("Executing SQL via MCP");
 
                     // 3. Execute query via MCP
                     String queryResult;
@@ -218,21 +219,18 @@ public class GeminiClient {
         String url = String.format(API_URL_TEMPLATE, geminiProperties.model());
 
         try {
-            String requestJson = objectMapper.writeValueAsString(request);
-            log.debug("Gemini API request: {}", requestJson);
-
             String response = restClient.post()
-                .uri(url + "?key=" + geminiProperties.apiKey())
+                .uri(url)
+                .header(API_KEY_HEADER, geminiProperties.apiKey())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
                 .retrieve()
                 .body(String.class);
 
-            log.debug("Gemini API response: {}", response);
             return response;
 
-        } catch (RestClientException | JsonProcessingException e) {
-            log.error("Gemini API call failed: {}", e.getMessage());
+        } catch (RestClientException e) {
+            log.error("Gemini API call failed");
             throw new GeminiException("Gemini API call failed", e);
         }
     }
@@ -242,10 +240,12 @@ public class GeminiClient {
         if (candidates.isArray() && !candidates.isEmpty()) {
             JsonNode content = candidates.get(0).path("content");
             JsonNode parts = content.path("parts");
-            if (parts.isArray() && !parts.isEmpty()) {
-                JsonNode firstPart = parts.get(0);
-                if (firstPart.has("functionCall")) {
-                    return firstPart.get("functionCall");
+            if (parts.isArray()) {
+                // Iterate through all parts to find functionCall
+                for (JsonNode part : parts) {
+                    if (part.has("functionCall")) {
+                        return part.get("functionCall");
+                    }
                 }
             }
         }
@@ -257,10 +257,16 @@ public class GeminiClient {
         if (candidates.isArray() && !candidates.isEmpty()) {
             JsonNode content = candidates.get(0).path("content");
             JsonNode parts = content.path("parts");
-            if (parts.isArray() && !parts.isEmpty()) {
-                JsonNode firstPart = parts.get(0);
-                if (firstPart.has("text")) {
-                    return firstPart.get("text").asText();
+            if (parts.isArray()) {
+                // Combine all text parts
+                StringBuilder textBuilder = new StringBuilder();
+                for (JsonNode part : parts) {
+                    if (part.has("text")) {
+                        textBuilder.append(part.get("text").asText());
+                    }
+                }
+                if (!textBuilder.isEmpty()) {
+                    return textBuilder.toString();
                 }
             }
         }
