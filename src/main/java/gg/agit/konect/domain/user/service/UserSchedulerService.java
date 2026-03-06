@@ -1,14 +1,12 @@
 package gg.agit.konect.domain.user.service;
 
-import static gg.agit.konect.domain.user.model.Provider.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.user.model.Provider;
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.infrastructure.oauth.AppleTokenRevocationService;
@@ -32,7 +30,7 @@ public class UserSchedulerService {
     public void revokeAppleTokensAfterRestoreWindow() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(REVOKE_AFTER_DAYS);
         List<User> usersToRevoke = userRepository.findByProviderAndDeletedAtBefore(
-            APPLE,
+            Provider.APPLE,
             threshold
         );
 

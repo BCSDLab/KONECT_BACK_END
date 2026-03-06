@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.user.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 
 import java.time.LocalDateTime;
