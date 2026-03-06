@@ -26,9 +26,6 @@ public class UserSchedulerTxService {
     public void clearAppleRefreshTokenIfMatches(Integer userId, String expectedRefreshToken) {
         userRepository.findByIdIncludingDeleted(userId)
             .filter(user -> expectedRefreshToken.equals(user.getAppleRefreshToken()))
-            .ifPresent(user -> {
-                user.clearAppleRefreshToken();
-                userRepository.save(user);
-            });
+            .ifPresent(User::clearAppleRefreshToken);
     }
 }
