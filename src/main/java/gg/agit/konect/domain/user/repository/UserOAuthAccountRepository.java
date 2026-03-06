@@ -43,6 +43,7 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
         SELECT uoa
         FROM UserOAuthAccount uoa
         WHERE uoa.user.id = :userId
+        ORDER BY uoa.id ASC
         """)
     List<UserOAuthAccount> findAllByUserId(@Param("userId") Integer userId);
 
