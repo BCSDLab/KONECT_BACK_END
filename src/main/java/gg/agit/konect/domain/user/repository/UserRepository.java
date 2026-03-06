@@ -157,4 +157,11 @@ public interface UserRepository extends Repository<User, Integer> {
         @Param("provider") Provider provider,
         @Param("threshold") LocalDateTime threshold
     );
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.id = :id
+        """)
+    Optional<User> findByIdIncludingDeleted(@Param("id") Integer id);
 }
