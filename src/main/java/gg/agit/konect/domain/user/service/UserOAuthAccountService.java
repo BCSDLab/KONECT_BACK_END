@@ -2,10 +2,14 @@ package gg.agit.konect.domain.user.service;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -25,9 +29,13 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class UserOAuthAccountService {
 
+    private static final long RESTORE_WINDOW_DAYS = 7L;
+    private static final String STAGE_PROFILE = "stage";
+
     private final UserRepository userRepository;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final EntityManager entityManager;
+    private final Environment environment;
 
     public OAuthLinkStatusResponse getLinkStatus(Integer userId) {
         User user = userRepository.getById(userId);
@@ -77,6 +85,7 @@ public class UserOAuthAccountService {
 
         Integer userId = user.getId();
 
+        restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
         validateProviderOwnership(userId, provider, providerId);
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
@@ -139,6 +148,33 @@ public class UserOAuthAccountService {
             });
 
         throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+    }
+
+    private void restoreOrCleanupWithdrawnByLinkedProvider(Provider provider, String providerId) {
+        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository
+            .findAccountByProviderAndProviderId(provider, providerId);
+
+        if (linkedAccount.isEmpty()) {
+            return;
+        }
+
+        User linkedUser = linkedAccount.get().getUser();
+        if (linkedUser.getDeletedAt() == null) {
+            return;
+        }
+
+        if (!isStageProfile() && linkedUser.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS)) {
+            linkedUser.restore();
+            userRepository.save(linkedUser);
+            return;
+        }
+
+        userOAuthAccountRepository.delete(linkedAccount.get());
+        entityManager.flush();
+    }
+
+    private boolean isStageProfile() {
+        return environment.acceptsProfiles(Profiles.of(STAGE_PROFILE));
     }
 
 }
