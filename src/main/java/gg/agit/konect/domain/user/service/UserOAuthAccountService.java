@@ -86,7 +86,12 @@ public class UserOAuthAccountService {
         Integer userId = user.getId();
 
         restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
+        validatePrimaryProviderOwnership(user, provider, providerId);
         validateProviderOwnership(userId, provider, providerId);
+
+        if (isAlreadyPrimaryProviderLinked(user, provider, providerId)) {
+            return;
+        }
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
             .orElse(null);
@@ -113,6 +118,24 @@ public class UserOAuthAccountService {
                     throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
                 }
             });
+    }
+
+    private void validatePrimaryProviderOwnership(User user, Provider provider, String providerId) {
+        Integer userId = user.getId();
+        userRepository.findByProviderIdAndProvider(providerId, provider)
+            .ifPresent(ownedUser -> {
+                if (!ownedUser.getId().equals(userId)) {
+                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+                }
+            });
+
+        if (provider.equals(user.getProvider()) && !providerId.equals(user.getProviderId())) {
+            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+        }
+    }
+
+    private boolean isAlreadyPrimaryProviderLinked(User user, Provider provider, String providerId) {
+        return provider.equals(user.getProvider()) && providerId.equals(user.getProviderId());
     }
 
     private void saveWithConflictHandling(
