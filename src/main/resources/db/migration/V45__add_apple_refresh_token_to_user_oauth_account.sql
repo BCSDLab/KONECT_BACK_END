@@ -16,7 +16,6 @@ INSERT INTO user_oauth_account (user_id, provider, provider_id, oauth_email, app
 SELECT u.id, u.provider, u.provider_id, u.email, u.apple_refresh_token, NOW(), NOW()
 FROM users u
 WHERE u.provider IS NOT NULL
-  AND u.provider_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
     FROM user_oauth_account ua

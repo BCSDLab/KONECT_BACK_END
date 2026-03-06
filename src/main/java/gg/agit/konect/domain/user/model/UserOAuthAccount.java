@@ -51,7 +51,7 @@ public class UserOAuthAccount extends BaseEntity {
     @Column(name = "provider", length = 20, nullable = false)
     private Provider provider;
 
-    @Column(name = "provider_id", length = 255, nullable = false)
+    @Column(name = "provider_id", length = 255)
     private String providerId;
 
     @Column(name = "oauth_email", length = 100)
