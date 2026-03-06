@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.user.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -143,4 +143,16 @@ public interface UserRepository extends Repository<User, Integer> {
         AND u.deletedAt IS NULL
         """)
     List<User> findAllByIdIn(@Param("ids") List<Integer> ids);
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.provider = :provider
+        AND u.deletedAt IS NOT NULL
+        AND u.deletedAt < :threshold
+        """)
+    List<User> findByProviderAndDeletedAtBefore(
+        @Param("provider") Provider provider,
+        @Param("threshold") LocalDateTime threshold
+    );
 }
