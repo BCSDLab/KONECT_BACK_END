@@ -42,6 +42,8 @@ public class UserSchedulerService {
             try {
                 if (user.getAppleRefreshToken() != null) {
                     appleTokenRevocationService.revoke(user.getAppleRefreshToken());
+                    user.clearAppleRefreshToken();
+                    userRepository.save(user);
                 }
             } catch (Exception e) {
                 // 개별 사용자의 토큰 revoke 실패 시 다른 사용자 처리 계속

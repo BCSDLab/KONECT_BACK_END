@@ -214,4 +214,8 @@ public class User extends BaseEntity {
     public boolean canRestore(LocalDateTime now, long restoreWindowDays) {
         return deletedAt != null && deletedAt.isAfter(now.minusDays(restoreWindowDays));
     }
+
+    public void clearAppleRefreshToken() {
+        this.appleRefreshToken = null;
+    }
 }

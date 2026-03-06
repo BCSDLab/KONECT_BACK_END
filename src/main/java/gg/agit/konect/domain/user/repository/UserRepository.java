@@ -151,6 +151,7 @@ public interface UserRepository extends Repository<User, Integer> {
         WHERE u.provider = :provider
         AND u.deletedAt IS NOT NULL
         AND u.deletedAt < :threshold
+        AND u.appleRefreshToken IS NOT NULL
         """)
     List<User> findByProviderAndDeletedAtBefore(
         @Param("provider") Provider provider,
