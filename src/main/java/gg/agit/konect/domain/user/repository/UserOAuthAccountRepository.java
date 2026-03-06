@@ -5,15 +5,15 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.model.UserOAuthAccount;
 
-public interface UserOAuthAccountRepository extends Repository<UserOAuthAccount, Integer> {
+public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccount, Integer> {
 
     @Query("""
         SELECT uoa.user
@@ -68,5 +68,4 @@ public interface UserOAuthAccountRepository extends Repository<UserOAuthAccount,
         """)
     int deleteAllByWithdrawnUsersBefore(@Param("expiredAt") LocalDateTime expiredAt);
 
-    UserOAuthAccount save(UserOAuthAccount userOAuthAccount);
 }

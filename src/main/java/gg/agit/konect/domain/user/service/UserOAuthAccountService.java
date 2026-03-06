@@ -5,7 +5,6 @@ import java.util.List;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.env.Environment;
@@ -34,7 +33,6 @@ public class UserOAuthAccountService {
 
     private final UserRepository userRepository;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
-    private final EntityManager entityManager;
     private final Environment environment;
 
     public OAuthLinkStatusResponse getLinkStatus(Integer userId) {
@@ -77,7 +75,7 @@ public class UserOAuthAccountService {
     public int cleanupExpiredWithdrawnUserOAuthAccounts(LocalDateTime now) {
         LocalDateTime expiredAt = now.minusDays(RESTORE_WINDOW_DAYS);
         int deletedCount = userOAuthAccountRepository.deleteAllByWithdrawnUsersBefore(expiredAt);
-        entityManager.flush();
+        userOAuthAccountRepository.flush();
         return deletedCount;
     }
 
@@ -151,8 +149,7 @@ public class UserOAuthAccountService {
         String oauthEmail
     ) {
         try {
-            userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
-            entityManager.flush();
+            userOAuthAccountRepository.saveAndFlush(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
         } catch (DataIntegrityViolationException e) {
             throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
         }
@@ -178,7 +175,7 @@ public class UserOAuthAccountService {
         }
 
         userOAuthAccountRepository.delete(linkedAccount.get());
-        entityManager.flush();
+        userOAuthAccountRepository.flush();
     }
 
     private boolean isStageProfile() {
