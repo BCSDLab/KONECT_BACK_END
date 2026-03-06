@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.user.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -7,11 +8,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 
 public interface UserRepository extends Repository<User, Integer> {
 
@@ -70,25 +71,6 @@ public interface UserRepository extends Repository<User, Integer> {
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
-    default User getByProviderIdAndProvider(String providerId, Provider provider) {
-        return findByProviderIdAndProvider(providerId, provider)
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_USER));
-    }
-
-    @Query("""
-        SELECT (COUNT(u) > 0)
-        FROM User u
-        WHERE u.university.id = :universityId
-        AND u.studentNumber = :studentNumber
-        AND u.id <> :id
-        AND u.deletedAt IS NULL
-        """)
-    boolean existsByUniversityIdAndStudentNumberAndIdNot(
-        @Param("universityId") Integer universityId,
-        @Param("studentNumber") String studentNumber,
-        @Param("id") Integer id
-    );
-
     @Query("""
         SELECT (COUNT(u) > 0)
         FROM User u
@@ -113,27 +95,6 @@ public interface UserRepository extends Repository<User, Integer> {
         @Param("studentNumber") String studentNumber
     );
 
-    @Query("""
-        SELECT u
-        FROM User u
-        WHERE u.university.id = :universityId
-        AND u.studentNumber LIKE CONCAT(:year, '%')
-        AND u.deletedAt IS NULL
-        """)
-    List<User> findUserIdsByUniversityAndStudentYear(
-        @Param("universityId") Integer universityId,
-        @Param("year") String year
-    );
-
-    @Query("""
-        SELECT (COUNT(u) > 0)
-        FROM User u
-        WHERE u.phoneNumber = :phoneNumber
-        AND u.id <> :id
-        AND u.deletedAt IS NULL
-        """)
-    boolean existsByPhoneNumberAndIdNot(@Param("phoneNumber") String phoneNumber, @Param("id") Integer id);
-
     User save(User user);
 
     @Query("""
@@ -145,9 +106,22 @@ public interface UserRepository extends Repository<User, Integer> {
     List<User> findAllByIdIn(@Param("ids") List<Integer> ids);
 
     @Query("""
-        SELECT COUNT(u)
+        SELECT u
         FROM User u
-        WHERE u.deletedAt IS NULL
+        WHERE u.provider = :provider
+        AND u.deletedAt IS NOT NULL
+        AND u.deletedAt < :threshold
+        AND u.appleRefreshToken IS NOT NULL
         """)
-    long countActiveUsers();
+    List<User> findByProviderAndDeletedAtBefore(
+        @Param("provider") Provider provider,
+        @Param("threshold") LocalDateTime threshold
+    );
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.id = :id
+        """)
+    Optional<User> findByIdIncludingDeleted(@Param("id") Integer id);
 }
