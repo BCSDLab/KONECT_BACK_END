@@ -126,28 +126,8 @@ public class UserOAuthAccountService {
             userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
             entityManager.flush();
         } catch (DataIntegrityViolationException e) {
-            resolveLinkConflictOnIntegrityViolation(userId, provider, providerId);
+            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
         }
-    }
-
-    private void resolveLinkConflictOnIntegrityViolation(Integer userId, Provider provider, String providerId) {
-        userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
-            .ifPresent(ownedUser -> {
-                if (!ownedUser.getId().equals(userId)) {
-                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
-                }
-            });
-
-        userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
-            .ifPresent(linkedAccount -> {
-                if (!providerId.equals(linkedAccount.getProviderId())) {
-                    throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
-                }
-
-                throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
-            });
-
-        throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
     }
 
     private void restoreOrCleanupWithdrawnByLinkedProvider(Provider provider, String providerId) {

@@ -196,34 +196,8 @@ public class OAuthLoginHelper {
             userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
             entityManager.flush();
         } catch (DataIntegrityViolationException e) {
-            resolveEnsureLinkedAccountConflictOnIntegrityViolation(user.getId(), provider, providerId, knownOwner);
+            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
         }
-    }
-
-    private void resolveEnsureLinkedAccountConflictOnIntegrityViolation(
-        Integer userId,
-        Provider provider,
-        String providerId,
-        Optional<User> knownOwner
-    ) {
-        Optional<User> owner = knownOwner.isPresent()
-            ? knownOwner
-            : userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
-
-        if (owner.isPresent() && !owner.get().getId().equals(userId)) {
-            throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
-        }
-
-        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider);
-        if (linkedAccount.isPresent()) {
-            if (!providerId.equals(linkedAccount.get().getProviderId())) {
-                throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
-            }
-
-            return;
-        }
-
-        throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
     }
 
     // Apple 로그인 시 이메일이 누락된 경우, UnRegisteredUser에서 이메일을 조회
