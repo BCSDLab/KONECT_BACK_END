@@ -7,53 +7,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-import gg.agit.konect.global.code.ApiResponseCode;
-import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 
 public interface UserRepository extends Repository<User, Integer> {
 
-    @Query("""
-        SELECT u
-        FROM User u
-        WHERE u.email = :email
-        AND u.provider = :provider
-        AND u.deletedAt IS NULL
-        """)
-    Optional<User> findByEmailAndProvider(@Param("email") String email, @Param("provider") Provider provider);
-
-    Optional<User> findFirstByEmailAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(
-        @Param("email") String email,
-        @Param("provider") Provider provider
-    );
-
-    @Query("""
-        SELECT u
-        FROM User u
-        WHERE u.providerId = :providerId
-        AND u.provider = :provider
-        AND u.deletedAt IS NULL
-        """)
-    Optional<User> findByProviderIdAndProvider(
-        @Param("providerId") String providerId,
-        @Param("provider") Provider provider
-    );
-
-    Optional<User> findFirstByProviderIdAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(
-        @Param("providerId") String providerId,
-        @Param("provider") Provider provider
-    );
-
-    @Query("""
-        SELECT (COUNT(u) > 0)
-        FROM User u
-        WHERE u.providerId = :providerId
-        AND u.provider = :provider
-        AND u.deletedAt IS NULL
-        """)
-    boolean existsByProviderIdAndProvider(@Param("providerId") String providerId, @Param("provider") Provider provider);
+    Optional<User> findFirstByEmailAndDeletedAtIsNotNullOrderByDeletedAtDesc(String email);
 
     @Query("""
         SELECT u
@@ -63,16 +24,18 @@ public interface UserRepository extends Repository<User, Integer> {
         """)
     Optional<User> findById(@Param("id") Integer id);
 
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.role = :role
+        AND u.deletedAt IS NULL
+        ORDER BY u.id ASC
+        """)
     Optional<User> findFirstByRoleOrderByIdAsc(UserRole role);
 
     default User getById(Integer id) {
         return findById(id).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));
-    }
-
-    default User getByProviderIdAndProvider(String providerId, Provider provider) {
-        return findByProviderIdAndProvider(providerId, provider)
-            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
     @Query("""

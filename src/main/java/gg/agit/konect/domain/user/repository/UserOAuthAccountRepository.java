@@ -1,11 +1,11 @@
 package gg.agit.konect.domain.user.repository;
 
-import java.util.List;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -47,6 +47,29 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
     List<UserOAuthAccount> findAllByUserId(@Param("userId") Integer userId);
 
     @Query("""
+        SELECT uoa.user
+        FROM UserOAuthAccount uoa
+        WHERE uoa.oauthEmail = :oauthEmail
+        AND uoa.provider = :provider
+        AND uoa.user.deletedAt IS NULL
+        """)
+    Optional<User> findUserByOauthEmailAndProvider(
+        @Param("oauthEmail") String oauthEmail,
+        @Param("provider") Provider provider
+    );
+
+    @Query("""
+        SELECT uoa
+        FROM UserOAuthAccount uoa
+        WHERE uoa.provider = :provider
+        AND uoa.providerId = :providerId
+        """)
+    Optional<UserOAuthAccount> findByProviderAndProviderId(
+        @Param("provider") Provider provider,
+        @Param("providerId") String providerId
+    );
+
+    @Query("""
         SELECT uoa
         FROM UserOAuthAccount uoa
         WHERE uoa.user.id = :userId
@@ -67,5 +90,17 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
         AND uoa.user.deletedAt <= :expiredAt
         """)
     int deleteAllByWithdrawnUsersBefore(@Param("expiredAt") LocalDateTime expiredAt);
+
+    @Query("""
+        SELECT (COUNT(uoa) > 0)
+        FROM UserOAuthAccount uoa
+        WHERE uoa.provider = :provider
+        AND uoa.providerId = :providerId
+        AND uoa.user.deletedAt IS NULL
+        """)
+    boolean existsByProviderAndProviderId(
+        @Param("provider") Provider provider,
+        @Param("providerId") String providerId
+    );
 
 }

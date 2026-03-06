@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.user.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 
 import java.time.LocalDateTime;
@@ -34,7 +34,9 @@ import gg.agit.konect.domain.user.event.UserRegisteredEvent;
 import gg.agit.konect.domain.user.event.UserWithdrawnEvent;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
@@ -63,6 +65,7 @@ public class UserService {
     private final AppleTokenRevocationService appleTokenRevocationService;
     private final ChatRoomMembershipService chatRoomMembershipService;
     private final UserOAuthAccountService userOAuthAccountService;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
 
     @Transactional
     public Integer signup(String email, String providerId, Provider provider, SignupRequest request) {
@@ -71,13 +74,13 @@ public class UserService {
         }
 
         if (StringUtils.hasText(providerId)) {
-            userRepository.findByProviderIdAndProvider(providerId, provider)
+            userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
                 .ifPresent(u -> {
                     throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
                 });
         }
 
-        userRepository.findByEmailAndProvider(email, provider)
+        userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider)
             .ifPresent(u -> {
                 throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
             });
@@ -108,12 +111,12 @@ public class UserService {
         unRegisteredUserRepository.delete(tempUser);
 
         applicationEventPublisher.publishEvent(
-            UserRegisteredEvent.from(savedUser.getEmail(), savedUser.getProvider().name())
+            UserRegisteredEvent.from(savedUser.getEmail(), provider.name())
         );
+
         return savedUser.getId();
     }
 
-    // TODO 추후에 슈퍼 어드민을 만들어 학교가 확장되는 것을 고려해야 함
     private void sendWelcomeMessage(User newUser) {
         try {
             User operator = userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)
@@ -154,7 +157,6 @@ public class UserService {
         return unRegisteredUserRepository.getByEmailAndProvider(email, provider);
     }
 
-    // TODO. 초기 회원 처리 완료 후 제거
     private void joinPreMembers(User user, Integer universityId, String studentNumber, String name) {
         List<ClubPreMember> preMembers =
             clubPreMemberRepository.findAllByUniversityIdAndStudentNumberAndName(
@@ -218,15 +220,21 @@ public class UserService {
 
         validateNotClubPresident(userId);
 
-        if (user.getProvider() == Provider.APPLE) {
-            appleTokenRevocationService.revoke(user.getAppleRefreshToken());
+        UserOAuthAccount primaryAccount = userOAuthAccountService.getPrimaryOAuthAccount(userId);
+        if (primaryAccount != null && primaryAccount.getProvider() == Provider.APPLE) {
+            String appleRefreshToken = primaryAccount.getAppleRefreshToken();
+            if (appleRefreshToken != null) {
+                appleTokenRevocationService.revoke(appleRefreshToken);
+            }
         }
 
         user.withdraw(LocalDateTime.now());
         userRepository.save(user);
 
+        UserOAuthAccount primaryAccountForEvent = userOAuthAccountService.getPrimaryOAuthAccount(userId);
+        String providerName = primaryAccountForEvent != null ? primaryAccountForEvent.getProvider().name() : "UNKNOWN";
         applicationEventPublisher.publishEvent(
-            UserWithdrawnEvent.from(user.getEmail(), user.getProvider().name())
+            UserWithdrawnEvent.from(user.getEmail(), providerName)
         );
     }
 
@@ -237,5 +245,4 @@ public class UserService {
             throw CustomException.of(CANNOT_DELETE_CLUB_PRESIDENT);
         }
     }
-
 }

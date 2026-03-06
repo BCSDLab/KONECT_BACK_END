@@ -1,14 +1,14 @@
 package gg.agit.konect.domain.user.service;
 
+import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
-import org.springframework.stereotype.Service;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -36,14 +36,9 @@ public class UserOAuthAccountService {
     private final Environment environment;
 
     public OAuthLinkStatusResponse getLinkStatus(Integer userId) {
-        User user = userRepository.getById(userId);
+        List<UserOAuthAccount> accounts = userOAuthAccountRepository.findAllByUserId(userId);
         EnumSet<Provider> linkedProviders = EnumSet.noneOf(Provider.class);
 
-        if (user.getProvider() != null) {
-            linkedProviders.add(user.getProvider());
-        }
-
-        List<UserOAuthAccount> accounts = userOAuthAccountRepository.findAllByUserId(userId);
         for (UserOAuthAccount account : accounts) {
             linkedProviders.add(account.getProvider());
         }
@@ -58,12 +53,13 @@ public class UserOAuthAccountService {
     @Transactional
     public void linkOAuthAccount(Integer userId, Provider provider, String providerId, String oauthEmail) {
         User user = userRepository.getById(userId);
-        linkAccount(user, provider, providerId, oauthEmail, true);
+        String appleRefreshToken = null;
+        linkAccount(user, provider, providerId, oauthEmail, appleRefreshToken, true);
     }
 
     @Transactional
     public void linkPrimaryOAuthAccount(User user, Provider provider, String providerId, String oauthEmail) {
-        linkAccount(user, provider, providerId, oauthEmail, false);
+        linkAccount(user, provider, providerId, oauthEmail, null, false);
     }
 
     @Transactional
@@ -84,6 +80,7 @@ public class UserOAuthAccountService {
         Provider provider,
         String providerId,
         String oauthEmail,
+        String appleRefreshToken,
         boolean requireProviderId
     ) {
         if (!StringUtils.hasText(providerId)) {
@@ -98,13 +95,12 @@ public class UserOAuthAccountService {
 
         restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
         validatePrimaryProviderOwnership(user, provider, providerId);
-        validateProviderOwnership(userId, provider, providerId);
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
             .orElse(null);
 
         if (account == null) {
-            saveWithConflictHandling(userId, user, provider, providerId, oauthEmail);
+            saveWithConflictHandling(userId, user, provider, providerId, oauthEmail, appleRefreshToken);
             return;
         }
 
@@ -118,27 +114,22 @@ public class UserOAuthAccountService {
         }
     }
 
-    private void validateProviderOwnership(Integer userId, Provider provider, String providerId) {
+    private void validatePrimaryProviderOwnership(User user, Provider provider, String providerId) {
+        Integer userId = user.getId();
+
         userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
             .ifPresent(ownedUser -> {
                 if (!ownedUser.getId().equals(userId)) {
                     throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
                 }
             });
-    }
 
-    private void validatePrimaryProviderOwnership(User user, Provider provider, String providerId) {
-        Integer userId = user.getId();
-        userRepository.findByProviderIdAndProvider(providerId, provider)
-            .ifPresent(ownedUser -> {
-                if (!ownedUser.getId().equals(userId)) {
-                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+        userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
+            .ifPresent(existingAccount -> {
+                if (!providerId.equals(existingAccount.getProviderId())) {
+                    throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
                 }
             });
-
-        if (provider.equals(user.getProvider()) && !providerId.equals(user.getProviderId())) {
-            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
-        }
     }
 
     private void saveWithConflictHandling(
@@ -146,10 +137,13 @@ public class UserOAuthAccountService {
         User user,
         Provider provider,
         String providerId,
-        String oauthEmail
+        String oauthEmail,
+        String appleRefreshToken
     ) {
         try {
-            userOAuthAccountRepository.saveAndFlush(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+            userOAuthAccountRepository.saveAndFlush(
+                UserOAuthAccount.of(user, provider, providerId, oauthEmail, appleRefreshToken)
+            );
         } catch (DataIntegrityViolationException e) {
             throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
         }
@@ -182,4 +176,8 @@ public class UserOAuthAccountService {
         return environment.acceptsProfiles(Profiles.of(STAGE_PROFILE));
     }
 
+    public UserOAuthAccount getPrimaryOAuthAccount(Integer userId) {
+        List<UserOAuthAccount> accounts = userOAuthAccountRepository.findAllByUserId(userId);
+        return accounts.isEmpty() ? null : accounts.get(0);
+    }
 }
