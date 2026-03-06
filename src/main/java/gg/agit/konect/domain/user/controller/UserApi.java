@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.SignupPrefillResponse;
+import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
 import gg.agit.konect.domain.user.dto.OAuthLinkRequest;
@@ -29,7 +29,7 @@ public interface UserApi {
         summary = "추가 정보가 필요한 사용자의 정보를 받아 회원가입을 진행한다.",
         description = """
             추가 정보를 입력받아 회원가입을 완료합니다.
-
+            
             - `INVALID_SIGNUP_TOKEN` (401): 회원가입 토큰이 없거나 올바르지 않은 경우
             - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
             - `DUPLICATE_STUDENT_NUMBER` (409): 동일 대학교 + 학번 조합이 이미 존재하는 경우
