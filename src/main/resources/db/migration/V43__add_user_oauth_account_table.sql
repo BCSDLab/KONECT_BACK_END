@@ -2,7 +2,7 @@ CREATE TABLE user_oauth_account (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     provider VARCHAR(20) NOT NULL,
-    provider_id VARCHAR(255) NULL,
+    provider_id VARCHAR(255) NOT NULL,
     oauth_email VARCHAR(100) NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
