@@ -28,38 +28,30 @@ public class GeminiClient {
 
     private static final double GENERATION_TEMPERATURE = 0.3;
     private static final int MAX_OUTPUT_TOKENS = 1024;
+    private static final int MAX_TOOL_ITERATIONS = 5;
 
     private static final String SYSTEM_PROMPT = """
         당신은 KONECT 서비스의 데이터 분석 AI입니다.
-        사용자 질문에 답하기 위해 query 도구를 사용하여 MySQL 데이터베이스를 조회하세요.
+        사용자 질문에 답하기 위해 데이터베이스를 조회하세요.
         SELECT 문만 사용 가능합니다.
         반드시 한국어로만 응답하세요.
 
-        주요 테이블 및 컬럼:
+        사용 가능한 도구:
+        1. list_tables: 데이터베이스의 모든 테이블 목록 조회
+        2. describe_table: 특정 테이블의 컬럼 구조 조회 (테이블명 필요)
+        3. query: SQL SELECT 쿼리 실행
 
-        1. users (사용자)
-           - id, email, nickname, created_at, updated_at, deleted_at
-           - deleted_at IS NULL 조건으로 활성 사용자 필터링
-           - created_at으로 가입일 조회 (예: DATE(created_at) = CURDATE() - INTERVAL 1 DAY)
+        작업 순서:
+        1. 질문에 필요한 테이블을 모르면 list_tables로 테이블 목록 확인
+        2. 테이블 구조를 모르면 describe_table로 컬럼 정보 확인
+        3. 충분한 정보가 있으면 query로 SQL 실행
 
-        2. club (동아리)
-           - id, name, description, created_at, updated_at
-
-        3. club_member (동아리 멤버)
-           - id, club_id, user_id, role, created_at
-           - role: PRESIDENT, VICE_PRESIDENT, MEMBER
-           - club_id로 club 테이블과 JOIN 가능
-
-        4. club_recruitment (모집 공고)
-           - id, club_id, is_always_recruiting, start_at, end_at, created_at
-           - 모집 중 조건: is_always_recruiting = true OR (start_at <= NOW() AND end_at >= NOW())
-           - club_id로 club 테이블과 JOIN 가능
-
-        자주 사용하는 쿼리 예시:
-        - 동아리 멤버 수: SELECT COUNT(*) FROM club_member cm
-          JOIN club c ON cm.club_id = c.id WHERE c.name = '동아리명'
-        - 어제 가입 회원: SELECT COUNT(*) FROM users
-          WHERE DATE(created_at) = CURDATE() - INTERVAL 1 DAY AND deleted_at IS NULL
+        알려진 주요 테이블:
+        - users: 사용자 (deleted_at IS NULL = 활성 사용자)
+        - club: 동아리
+        - club_member: 동아리 멤버 (role: PRESIDENT, VICE_PRESIDENT, MEMBER)
+        - club_recruitment: 모집 공고
+        - club_apply: 동아리 지원
 
         질문에 적절한 SQL을 작성하고 query 도구를 호출하세요.
         결과를 받으면 사용자에게 친절하고 자연스러운 한국어로 응답하세요.
@@ -85,6 +77,34 @@ public class GeminiClient {
         )
     );
 
+    private static final Map<String, Object> LIST_TABLES_TOOL = Map.of(
+        "name", "list_tables",
+        "description", "데이터베이스의 모든 테이블 목록을 조회합니다.",
+        "parameters", Map.of(
+            "type", "object",
+            "properties", Map.of()
+        )
+    );
+
+    private static final Map<String, Object> DESCRIBE_TABLE_TOOL = Map.of(
+        "name", "describe_table",
+        "description", "특정 테이블의 컬럼 구조를 조회합니다.",
+        "parameters", Map.of(
+            "type", "object",
+            "properties", Map.of(
+                "table_name", Map.of(
+                    "type", "string",
+                    "description", "조회할 테이블 이름"
+                )
+            ),
+            "required", List.of("table_name")
+        )
+    );
+
+    private static final List<Map<String, Object>> ALL_TOOLS = List.of(
+        QUERY_TOOL, LIST_TABLES_TOOL, DESCRIBE_TABLE_TOOL
+    );
+
     private final RestClient restClient;
     private final GeminiProperties geminiProperties;
     private final McpClient mcpClient;
@@ -102,43 +122,61 @@ public class GeminiClient {
 
     /**
      * Process user query with function calling support.
+     * Supports multi-turn tool calls for schema discovery and query execution.
      *
      * @param userMessage User's question
      * @return AI response
      */
     public String chat(String userMessage) {
         try {
-            // 1. First call - may result in tool call
-            Map<String, Object> request = buildInitialRequest(userMessage);
-            String response = callGeminiApi(request);
+            List<Map<String, Object>> conversationHistory = new ArrayList<>();
 
-            JsonNode responseNode = objectMapper.readTree(response);
+            // Add user message
+            conversationHistory.add(Map.of(
+                "role", "user",
+                "parts", List.of(Map.of("text", userMessage))
+            ));
 
-            // 2. Check for function call
-            JsonNode functionCall = extractFunctionCall(responseNode);
-            if (functionCall != null) {
+            // Multi-turn loop for tool calls
+            for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+                Map<String, Object> request = buildRequestWithHistory(conversationHistory);
+                String response = callGeminiApi(request);
+                JsonNode responseNode = objectMapper.readTree(response);
+
+                JsonNode functionCall = extractFunctionCall(responseNode);
+                if (functionCall == null) {
+                    // No more tool calls - return text response
+                    return extractTextResponse(responseNode);
+                }
+
                 String toolName = functionCall.path("name").asText();
                 JsonNode args = functionCall.path("args");
+                String toolResult = executeToolCall(toolName, args);
 
-                if ("query".equals(toolName) && args.has("sql")) {
-                    String sql = args.get("sql").asText();
-                    log.debug("Executing SQL via MCP");
+                // Add model's function call to history
+                conversationHistory.add(Map.of(
+                    "role", "model",
+                    "parts", List.of(Map.of(
+                        "functionCall", Map.of(
+                            "name", toolName,
+                            "args", objectMapper.convertValue(args, Map.class)
+                        )
+                    ))
+                ));
 
-                    // 3. Execute query via MCP
-                    String queryResult;
-                    try {
-                        queryResult = mcpClient.executeQuery(sql);
-                    } catch (McpClient.McpQueryException e) {
-                        queryResult = "쿼리 실행 오류: " + e.getMessage();
-                    }
-
-                    // 4. Send result back to Gemini
-                    return callWithToolResult(userMessage, toolName, sql, queryResult);
-                }
+                // Add function result to history
+                conversationHistory.add(Map.of(
+                    "role", "user",
+                    "parts", List.of(Map.of(
+                        "functionResponse", Map.of(
+                            "name", toolName,
+                            "response", Map.of("result", toolResult)
+                        )
+                    ))
+                ));
             }
 
-            // No function call - return direct response
-            return extractTextResponse(responseNode);
+            return "죄송합니다. 요청 처리 중 최대 반복 횟수에 도달했습니다.";
 
         } catch (Exception e) {
             log.error("Gemini API call failed", e);
@@ -146,7 +184,32 @@ public class GeminiClient {
         }
     }
 
-    private Map<String, Object> buildInitialRequest(String userMessage) {
+    private String executeToolCall(String toolName, JsonNode args) {
+        try {
+            return switch (toolName) {
+                case "query" -> {
+                    String sql = args.path("sql").asText();
+                    log.debug("Executing SQL via MCP: {}", sql);
+                    yield mcpClient.executeQuery(sql);
+                }
+                case "list_tables" -> {
+                    log.debug("Listing tables via MCP");
+                    List<String> tables = mcpClient.listTables();
+                    yield String.join(", ", tables);
+                }
+                case "describe_table" -> {
+                    String tableName = args.path("table_name").asText();
+                    log.debug("Describing table via MCP: {}", tableName);
+                    yield mcpClient.describeTable(tableName);
+                }
+                default -> "알 수 없는 도구: " + toolName;
+            };
+        } catch (McpClient.McpQueryException e) {
+            return "도구 실행 오류: " + e.getMessage();
+        }
+    }
+
+    private Map<String, Object> buildRequestWithHistory(List<Map<String, Object>> conversationHistory) {
         Map<String, Object> request = new HashMap<>();
 
         // System instruction
@@ -154,14 +217,12 @@ public class GeminiClient {
             "parts", List.of(Map.of("text", SYSTEM_PROMPT))
         ));
 
-        // User message
-        request.put("contents", List.of(
-            Map.of("role", "user", "parts", List.of(Map.of("text", userMessage)))
-        ));
+        // Conversation history
+        request.put("contents", conversationHistory);
 
-        // Tools (function declarations)
+        // Tools (all function declarations)
         request.put("tools", List.of(
-            Map.of("functionDeclarations", List.of(QUERY_TOOL))
+            Map.of("functionDeclarations", ALL_TOOLS)
         ));
 
         // Generation config
@@ -171,69 +232,6 @@ public class GeminiClient {
         ));
 
         return request;
-    }
-
-    private String callWithToolResult(String userMessage, String toolName, String sql, String result) {
-        try {
-            Map<String, Object> request = new HashMap<>();
-
-            // System instruction
-            request.put("systemInstruction", Map.of(
-                "parts", List.of(Map.of("text", SYSTEM_PROMPT))
-            ));
-
-            // Conversation history with tool call and result
-            List<Map<String, Object>> contents = new ArrayList<>();
-
-            // User message
-            contents.add(Map.of(
-                "role", "user",
-                "parts", List.of(Map.of("text", userMessage))
-            ));
-
-            // Model's function call
-            contents.add(Map.of(
-                "role", "model",
-                "parts", List.of(Map.of(
-                    "functionCall", Map.of(
-                        "name", toolName,
-                        "args", Map.of("sql", sql)
-                    )
-                ))
-            ));
-
-            // Function result
-            contents.add(Map.of(
-                "role", "user",
-                "parts", List.of(Map.of(
-                    "functionResponse", Map.of(
-                        "name", toolName,
-                        "response", Map.of("result", result)
-                    )
-                ))
-            ));
-
-            request.put("contents", contents);
-
-            // Tools still available for potential multi-turn
-            request.put("tools", List.of(
-                Map.of("functionDeclarations", List.of(QUERY_TOOL))
-            ));
-
-            request.put("generationConfig", Map.of(
-                "temperature", GENERATION_TEMPERATURE,
-                "maxOutputTokens", MAX_OUTPUT_TOKENS
-            ));
-
-            String response = callGeminiApi(request);
-            JsonNode responseNode = objectMapper.readTree(response);
-
-            return extractTextResponse(responseNode);
-
-        } catch (Exception e) {
-            log.error("Failed to process tool result", e);
-            return "쿼리 결과를 처리하는 중 오류가 발생했습니다.";
-        }
     }
 
     private String callGeminiApi(Map<String, Object> request) {
