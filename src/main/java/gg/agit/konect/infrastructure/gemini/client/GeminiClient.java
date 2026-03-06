@@ -34,11 +34,23 @@ public class GeminiClient {
         사용자 질문에 답하기 위해 query 도구를 사용하여 MySQL 데이터베이스를 조회하세요.
         SELECT 문만 사용 가능합니다.
 
-        주요 테이블:
-        - users: 사용자 정보 (deleted_at IS NULL = 활성 사용자)
-        - club: 동아리 정보
-        - club_member: 동아리 멤버 정보
-        - club_recruitment: 모집 공고 (is_always_recruiting=true 또는 start_at <= NOW() AND end_at >= NOW() = 모집 중)
+        주요 테이블 및 컬럼:
+
+        1. users (사용자)
+           - id, email, nickname, created_at, updated_at, deleted_at
+           - deleted_at IS NULL 조건으로 활성 사용자 필터링
+           - created_at으로 가입일 조회 (예: DATE(created_at) = CURDATE() - INTERVAL 1 DAY)
+
+        2. club (동아리)
+           - id, name, description, created_at, updated_at
+
+        3. club_member (동아리 멤버)
+           - id, club_id, user_id, role, created_at
+           - role: PRESIDENT, VICE_PRESIDENT, MEMBER
+
+        4. club_recruitment (모집 공고)
+           - id, club_id, is_always_recruiting, start_at, end_at, created_at
+           - 모집 중 조건: is_always_recruiting = true OR (start_at <= NOW() AND end_at >= NOW())
 
         질문에 적절한 SQL을 작성하고 query 도구를 호출하세요.
         결과를 받으면 사용자에게 친절하고 자연스러운 한국어로 응답하세요.
