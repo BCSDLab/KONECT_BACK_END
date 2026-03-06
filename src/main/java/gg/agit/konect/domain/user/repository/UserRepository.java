@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.user.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -150,4 +151,24 @@ public interface UserRepository extends Repository<User, Integer> {
         WHERE u.deletedAt IS NULL
         """)
     long countActiveUsers();
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.provider = :provider
+        AND u.deletedAt IS NOT NULL
+        AND u.deletedAt < :threshold
+        AND u.appleRefreshToken IS NOT NULL
+        """)
+    List<User> findByProviderAndDeletedAtBefore(
+        @Param("provider") Provider provider,
+        @Param("threshold") LocalDateTime threshold
+    );
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.id = :id
+        """)
+    Optional<User> findByIdIncludingDeleted(@Param("id") Integer id);
 }
