@@ -231,8 +231,7 @@ public class UserService {
         user.withdraw(LocalDateTime.now());
         userRepository.save(user);
 
-        UserOAuthAccount primaryAccountForEvent = userOAuthAccountService.getPrimaryOAuthAccount(userId);
-        String providerName = primaryAccountForEvent != null ? primaryAccountForEvent.getProvider().name() : "UNKNOWN";
+        String providerName = primaryAccount != null ? primaryAccount.getProvider().name() : "UNKNOWN";
         applicationEventPublisher.publishEvent(
             UserWithdrawnEvent.from(user.getEmail(), providerName)
         );
