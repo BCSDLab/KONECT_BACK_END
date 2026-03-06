@@ -14,6 +14,8 @@ slack:
   signing-secret: ${SLACK_SIGNING_SECRET}
 
 gemini:
-  project-id: ${GEMINI_PROJECT_ID}
-  location: ${GEMINI_LOCATION:us-central1}
-  model: ${GEMINI_MODEL:gemini-1.5-flash}
+  api-key: ${GEMINI_API_KEY}
+  model: ${GEMINI_MODEL:gemini-2.0-flash}
+
+mcp:
+  url: ${MCP_BRIDGE_URL:http://localhost:3100}

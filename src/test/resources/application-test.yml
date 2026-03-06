@@ -123,9 +123,11 @@ slack:
   signing-secret: test-signing-secret
 
 gemini:
-  project-id: test-project
-  location: us-central1
-  model: gemini-1.5-flash
+  api-key: test-api-key
+  model: gemini-2.0-flash
+
+mcp:
+  url: http://localhost:3100
 
 logging:
   ignored-url-patterns:
