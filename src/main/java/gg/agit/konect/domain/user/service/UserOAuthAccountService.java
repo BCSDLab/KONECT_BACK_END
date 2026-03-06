@@ -68,6 +68,19 @@ public class UserOAuthAccountService {
         linkAccount(user, provider, providerId, oauthEmail, false);
     }
 
+    @Transactional
+    public int cleanupExpiredWithdrawnUserOAuthAccounts() {
+        return cleanupExpiredWithdrawnUserOAuthAccounts(LocalDateTime.now());
+    }
+
+    @Transactional
+    public int cleanupExpiredWithdrawnUserOAuthAccounts(LocalDateTime now) {
+        LocalDateTime expiredAt = now.minusDays(RESTORE_WINDOW_DAYS);
+        int deletedCount = userOAuthAccountRepository.deleteAllByWithdrawnUsersBefore(expiredAt);
+        entityManager.flush();
+        return deletedCount;
+    }
+
     private void linkAccount(
         User user,
         Provider provider,
@@ -88,10 +101,6 @@ public class UserOAuthAccountService {
         restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
         validatePrimaryProviderOwnership(user, provider, providerId);
         validateProviderOwnership(userId, provider, providerId);
-
-        if (isAlreadyPrimaryProviderLinked(user, provider, providerId)) {
-            return;
-        }
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
             .orElse(null);
@@ -132,10 +141,6 @@ public class UserOAuthAccountService {
         if (provider.equals(user.getProvider()) && !providerId.equals(user.getProviderId())) {
             throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
         }
-    }
-
-    private boolean isAlreadyPrimaryProviderLinked(User user, Provider provider, String providerId) {
-        return provider.equals(user.getProvider()) && providerId.equals(user.getProviderId());
     }
 
     private void saveWithConflictHandling(

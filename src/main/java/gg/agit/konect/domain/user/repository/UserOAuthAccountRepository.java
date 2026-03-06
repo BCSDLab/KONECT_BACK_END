@@ -1,8 +1,10 @@
 package gg.agit.konect.domain.user.repository;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -56,6 +58,15 @@ public interface UserOAuthAccountRepository extends Repository<UserOAuthAccount,
     );
 
     void delete(UserOAuthAccount userOAuthAccount);
+
+    @Modifying
+    @Query("""
+        DELETE
+        FROM UserOAuthAccount uoa
+        WHERE uoa.user.deletedAt IS NOT NULL
+        AND uoa.user.deletedAt <= :expiredAt
+        """)
+    int deleteAllByWithdrawnUsersBefore(@Param("expiredAt") LocalDateTime expiredAt);
 
     UserOAuthAccount save(UserOAuthAccount userOAuthAccount);
 }
