@@ -1,125 +1,275 @@
 package gg.agit.konect.infrastructure.gemini.client;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
-import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gg.agit.konect.infrastructure.gemini.config.GeminiProperties;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
+import gg.agit.konect.infrastructure.mcp.client.McpClient;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class GeminiClient {
 
-    private static final String INTENT_ANALYSIS_PROMPT = """
+    private static final String API_URL_TEMPLATE =
+        "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
+
+    private static final double GENERATION_TEMPERATURE = 0.7;
+    private static final int MAX_OUTPUT_TOKENS = 1024;
+
+    private static final String SYSTEM_PROMPT = """
         당신은 KONECT 서비스의 데이터 분석 AI입니다.
-        사용자의 질문을 분석하여 다음 중 하나의 쿼리 타입만 반환하세요.
-        반드시 아래 목록 중 하나의 값만 반환하고, 다른 텍스트는 포함하지 마세요.
+        사용자 질문에 답하기 위해 query 도구를 사용하여 MySQL 데이터베이스를 조회하세요.
+        SELECT 문만 사용 가능합니다.
 
-        가능한 쿼리 타입:
-        - USER_COUNT: 가입된 사용자 수, 회원 수, 유저 수 관련 질문
-        - CLUB_COUNT: 전체 동아리 수, 동아리 개수 관련 질문
-        - CLUB_RECRUITING_COUNT: 현재 모집 중인 동아리 수, 모집 현황 관련 질문
-        - CLUB_MEMBER_TOTAL_COUNT: 전체 동아리원 수, 동아리 멤버 총 인원 관련 질문
-        - UNKNOWN: 위 항목에 해당하지 않는 질문
+        주요 테이블:
+        - users: 사용자 정보 (deleted_at IS NULL = 활성 사용자)
+        - club: 동아리 정보
+        - club_member: 동아리 멤버 정보
+        - club_recruitment: 모집 공고 (is_always_recruiting=true 또는 start_at <= NOW() AND end_at >= NOW() = 모집 중)
 
-        예시:
-        - "가입된 사용자 수 알려줘" -> USER_COUNT
-        - "현재 모집 중인 동아리 몇개야?" -> CLUB_RECRUITING_COUNT
-        - "전체 동아리 수는?" -> CLUB_COUNT
-        - "동아리원이 총 몇명이야?" -> CLUB_MEMBER_TOTAL_COUNT
-        - "오늘 날씨 어때?" -> UNKNOWN
-        - "특정 사용자 이메일 알려줘" -> UNKNOWN
+        질문에 적절한 SQL을 작성하고 query 도구를 호출하세요.
+        결과를 받으면 사용자에게 친절하고 자연스러운 한국어로 응답하세요.
+        이모지를 적절히 사용하여 친근하게 답변하세요.
+        응답은 간결하게 2-3문장으로 작성하세요.
 
-        사용자 질문: %s
-
-        쿼리 타입:
+        지원하지 않는 질문(데이터베이스와 무관한 질문)에는 정중히 거절하고,
+        어떤 질문이 가능한지 안내하세요.
         """;
 
-    private static final String RESPONSE_GENERATION_PROMPT = """
-        당신은 KONECT 서비스의 친절한 AI 어시스턴트입니다.
-        아래 정보를 바탕으로 사용자에게 자연스럽고 친절한 한국어로 응답해주세요.
-        이모지를 적절히 사용하여 친근하게 답변해주세요.
-        응답은 간결하게 2-3문장으로 작성해주세요.
+    private static final Map<String, Object> QUERY_TOOL = Map.of(
+        "name", "query",
+        "description", "MySQL 데이터베이스에 SELECT 쿼리를 실행합니다. 반드시 SELECT 문만 사용하세요.",
+        "parameters", Map.of(
+            "type", "object",
+            "properties", Map.of(
+                "sql", Map.of(
+                    "type", "string",
+                    "description", "실행할 SELECT SQL 쿼리"
+                )
+            ),
+            "required", List.of("sql")
+        )
+    );
 
-        사용자 질문: %s
-        조회된 데이터: %s
-
-        응답:
-        """;
-
+    private final RestClient restClient;
     private final GeminiProperties geminiProperties;
-    private VertexAI vertexAI;
-    private GenerativeModel generativeModel;
+    private final McpClient mcpClient;
+    private final ObjectMapper objectMapper;
 
-    public GeminiClient(GeminiProperties geminiProperties) {
+    public GeminiClient(RestClient.Builder restClientBuilder,
+                        GeminiProperties geminiProperties,
+                        McpClient mcpClient,
+                        ObjectMapper objectMapper) {
+        this.restClient = restClientBuilder.build();
         this.geminiProperties = geminiProperties;
+        this.mcpClient = mcpClient;
+        this.objectMapper = objectMapper;
     }
 
-    @PostConstruct
-    public void init() {
+    /**
+     * Process user query with function calling support.
+     *
+     * @param userMessage User's question
+     * @return AI response
+     */
+    public String chat(String userMessage) {
         try {
-            this.vertexAI = new VertexAI(
-                geminiProperties.projectId(),
-                geminiProperties.location()
-            );
-            this.generativeModel = new GenerativeModel(geminiProperties.model(), vertexAI);
-            log.info("GeminiClient 초기화 완료: project={}, location={}, model={}",
-                geminiProperties.projectId(),
-                geminiProperties.location(),
-                geminiProperties.model()
-            );
+            // 1. First call - may result in tool call
+            Map<String, Object> request = buildInitialRequest(userMessage);
+            String response = callGeminiApi(request);
+
+            JsonNode responseNode = objectMapper.readTree(response);
+
+            // 2. Check for function call
+            JsonNode functionCall = extractFunctionCall(responseNode);
+            if (functionCall != null) {
+                String toolName = functionCall.path("name").asText();
+                JsonNode args = functionCall.path("args");
+
+                if ("query".equals(toolName) && args.has("sql")) {
+                    String sql = args.get("sql").asText();
+                    log.debug("Executing SQL via MCP: {}", sql);
+
+                    // 3. Execute query via MCP
+                    String queryResult;
+                    try {
+                        queryResult = mcpClient.executeQuery(sql);
+                    } catch (McpClient.McpQueryException e) {
+                        queryResult = "쿼리 실행 오류: " + e.getMessage();
+                    }
+
+                    // 4. Send result back to Gemini
+                    return callWithToolResult(userMessage, toolName, sql, queryResult);
+                }
+            }
+
+            // No function call - return direct response
+            return extractTextResponse(responseNode);
+
         } catch (Exception e) {
-            log.warn("GeminiClient 초기화 실패 (테스트 환경이거나 인증 정보 없음): {}", e.getMessage());
+            log.error("Gemini API call failed", e);
+            return "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.";
         }
     }
 
-    @PreDestroy
-    public void destroy() {
-        if (vertexAI != null) {
-            try {
-                vertexAI.close();
-                log.info("GeminiClient 리소스 해제 완료");
-            } catch (Exception e) {
-                log.warn("GeminiClient 리소스 해제 중 오류", e);
+    private Map<String, Object> buildInitialRequest(String userMessage) {
+        Map<String, Object> request = new HashMap<>();
+
+        // System instruction
+        request.put("systemInstruction", Map.of(
+            "parts", List.of(Map.of("text", SYSTEM_PROMPT))
+        ));
+
+        // User message
+        request.put("contents", List.of(
+            Map.of("role", "user", "parts", List.of(Map.of("text", userMessage)))
+        ));
+
+        // Tools (function declarations)
+        request.put("tools", List.of(
+            Map.of("functionDeclarations", List.of(QUERY_TOOL))
+        ));
+
+        // Generation config
+        request.put("generationConfig", Map.of(
+            "temperature", GENERATION_TEMPERATURE,
+            "maxOutputTokens", MAX_OUTPUT_TOKENS
+        ));
+
+        return request;
+    }
+
+    private String callWithToolResult(String userMessage, String toolName, String sql, String result) {
+        try {
+            Map<String, Object> request = new HashMap<>();
+
+            // System instruction
+            request.put("systemInstruction", Map.of(
+                "parts", List.of(Map.of("text", SYSTEM_PROMPT))
+            ));
+
+            // Conversation history with tool call and result
+            List<Map<String, Object>> contents = new ArrayList<>();
+
+            // User message
+            contents.add(Map.of(
+                "role", "user",
+                "parts", List.of(Map.of("text", userMessage))
+            ));
+
+            // Model's function call
+            contents.add(Map.of(
+                "role", "model",
+                "parts", List.of(Map.of(
+                    "functionCall", Map.of(
+                        "name", toolName,
+                        "args", Map.of("sql", sql)
+                    )
+                ))
+            ));
+
+            // Function result
+            contents.add(Map.of(
+                "role", "user",
+                "parts", List.of(Map.of(
+                    "functionResponse", Map.of(
+                        "name", toolName,
+                        "response", Map.of("result", result)
+                    )
+                ))
+            ));
+
+            request.put("contents", contents);
+
+            // Tools still available for potential multi-turn
+            request.put("tools", List.of(
+                Map.of("functionDeclarations", List.of(QUERY_TOOL))
+            ));
+
+            request.put("generationConfig", Map.of(
+                "temperature", GENERATION_TEMPERATURE,
+                "maxOutputTokens", MAX_OUTPUT_TOKENS
+            ));
+
+            String response = callGeminiApi(request);
+            JsonNode responseNode = objectMapper.readTree(response);
+
+            return extractTextResponse(responseNode);
+
+        } catch (Exception e) {
+            log.error("Failed to process tool result", e);
+            return "쿼리 결과를 처리하는 중 오류가 발생했습니다.";
+        }
+    }
+
+    private String callGeminiApi(Map<String, Object> request) {
+        String url = String.format(API_URL_TEMPLATE, geminiProperties.model());
+
+        try {
+            String requestJson = objectMapper.writeValueAsString(request);
+            log.debug("Gemini API request: {}", requestJson);
+
+            String response = restClient.post()
+                .uri(url + "?key=" + geminiProperties.apiKey())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(String.class);
+
+            log.debug("Gemini API response: {}", response);
+            return response;
+
+        } catch (RestClientException | JsonProcessingException e) {
+            log.error("Gemini API call failed: {}", e.getMessage());
+            throw new GeminiException("Gemini API call failed", e);
+        }
+    }
+
+    private JsonNode extractFunctionCall(JsonNode response) {
+        JsonNode candidates = response.path("candidates");
+        if (candidates.isArray() && !candidates.isEmpty()) {
+            JsonNode content = candidates.get(0).path("content");
+            JsonNode parts = content.path("parts");
+            if (parts.isArray() && !parts.isEmpty()) {
+                JsonNode firstPart = parts.get(0);
+                if (firstPart.has("functionCall")) {
+                    return firstPart.get("functionCall");
+                }
             }
         }
+        return null;
     }
 
-    public String analyzeIntent(String userQuery) {
-        String prompt = String.format(INTENT_ANALYSIS_PROMPT, userQuery);
-        String result = callGemini(prompt);
-        if (result == null) {
-            return "UNKNOWN";
+    private String extractTextResponse(JsonNode response) {
+        JsonNode candidates = response.path("candidates");
+        if (candidates.isArray() && !candidates.isEmpty()) {
+            JsonNode content = candidates.get(0).path("content");
+            JsonNode parts = content.path("parts");
+            if (parts.isArray() && !parts.isEmpty()) {
+                JsonNode firstPart = parts.get(0);
+                if (firstPart.has("text")) {
+                    return firstPart.get("text").asText();
+                }
+            }
         }
-        return result.trim().toUpperCase();
+        return "응답을 생성할 수 없습니다.";
     }
 
-    public String generateResponse(String userQuery, String data) {
-        String prompt = String.format(RESPONSE_GENERATION_PROMPT, userQuery, data);
-        String result = callGemini(prompt);
-        return result != null ? result : "응답을 생성할 수 없습니다.";
-    }
-
-    private String callGemini(String prompt) {
-        if (generativeModel == null) {
-            log.error("GenerativeModel이 초기화되지 않았습니다.");
-            return null;
-        }
-
-        try {
-            GenerateContentResponse response = generativeModel.generateContent(prompt);
-            return ResponseHandler.getText(response);
-        } catch (IOException e) {
-            log.error("Gemini API 호출 실패", e);
-            return null;
+    public static class GeminiException extends RuntimeException {
+        public GeminiException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

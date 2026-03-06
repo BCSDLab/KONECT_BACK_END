@@ -44,3 +44,7 @@ logs
 
 .env*
 !.env.example
+
+### MCP Bridge ###
+mcp-bridge/node_modules/
+mcp-bridge/.env
