@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.user.service;
 
-import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS;
+import static gg.agit.konect.domain.club.enums.ClubPosition.PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 
 import java.time.LocalDateTime;
@@ -216,9 +216,8 @@ public class UserService {
 
         validateNotClubPresident(userId);
 
-        if (user.getProvider() == Provider.APPLE) {
-            appleTokenRevocationService.revoke(user.getAppleRefreshToken());
-        }
+        // Apple 토큰은 7일 복구 정책을 위해 즉시 revoke하지 않음
+        // 스케줄러가 7일 경과 후에 revoke 처리
 
         user.withdraw(LocalDateTime.now());
         userRepository.save(user);
