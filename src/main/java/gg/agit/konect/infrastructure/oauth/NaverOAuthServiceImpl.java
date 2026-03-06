@@ -14,6 +14,7 @@ import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.auth.oauth.SocialOAuthService;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +26,10 @@ public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements S
 
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
 
-    @Transactional
     @Override
+    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
@@ -37,7 +39,7 @@ public class NaverOAuthServiceImpl extends DefaultOAuth2UserService implements S
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
 
-        Optional<User> registered = userRepository.findByEmailAndProvider(email, provider);
+        Optional<User> registered = userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider);
 
         if (registered.isPresent()) {
             return oAuth2User;

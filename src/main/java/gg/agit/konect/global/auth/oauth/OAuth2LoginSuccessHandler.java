@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -19,11 +16,15 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
-import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.domain.user.service.UserOAuthAccountService;
@@ -53,7 +54,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserOAuthAccountService userOAuthAccountService;
     private final AuthCookieService authCookieService;
     private final OAuth2AuthorizedClientService authorizedClientService;
-    private final UserRepository userRepository;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
 
     @Override
@@ -182,8 +183,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             if (provider == Provider.APPLE && StringUtils.hasText(appleRefreshToken)) {
                 try {
-                    User user = userRepository.getById(currentUserId);
-                    saveAppleRefreshTokenForUser(provider, user, appleRefreshToken);
+                    UserOAuthAccount account = userOAuthAccountRepository
+                        .findByUserIdAndProvider(currentUserId, provider)
+                        .orElse(null);
+                    if (account != null) {
+                        account.updateAppleRefreshToken(appleRefreshToken);
+                        userOAuthAccountRepository.save(account);
+                    }
                 } catch (Exception exception) {
                     log.warn(
                         "OAuth link succeeded but failed to save apple refresh token. userId={}",
@@ -363,8 +369,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
-        user.updateAppleRefreshToken(appleRefreshToken);
-        userRepository.save(user);
+        userOAuthAccountRepository.findByUserIdAndProvider(user.getId(), provider)
+            .ifPresent(account -> {
+                account.updateAppleRefreshToken(appleRefreshToken);
+                userOAuthAccountRepository.save(account);
+            });
     }
 
     private void saveAppleRefreshTokenForUnRegisteredUser(

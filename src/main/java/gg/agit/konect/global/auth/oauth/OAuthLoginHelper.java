@@ -7,11 +7,10 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
-import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,12 +19,13 @@ import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.model.UserOAuthAccount;
-import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
 import gg.agit.konect.global.exception.CustomException;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -69,30 +69,7 @@ public class OAuthLoginHelper {
             }
         }
 
-        if (provider == Provider.APPLE) {
-            Optional<User> user = userRepository.findByProviderIdAndProvider(providerId, provider);
-            if (user.isPresent()) {
-                ensureLinkedAccount(user.get(), provider, providerId, email);
-                return user;
-            }
-
-            if (StringUtils.hasText(providerId)) {
-                Optional<User> restoredByProviderId = restoreWithdrawnByProviderId(provider, providerId);
-                if (restoredByProviderId.isPresent()) {
-                    return restoredByProviderId;
-                }
-            }
-
-            return restoreWithdrawnByEmail(provider, email);
-        }
-
-        Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
-        if (user.isPresent()) {
-            ensureLinkedAccount(user.get(), provider, providerId, email);
-            return user;
-        }
-
-        return restoreWithdrawnByEmail(provider, email);
+        return userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider);
     }
 
     private Optional<User> restoreWithdrawnByProviderId(Provider provider, String providerId) {
@@ -100,8 +77,10 @@ public class OAuthLoginHelper {
             return Optional.empty();
         }
 
-        return userRepository
-            .findFirstByProviderIdAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(providerId, provider)
+        return userOAuthAccountRepository
+            .findAccountByProviderAndProviderId(provider, providerId)
+            .filter(account -> account.getUser().getDeletedAt() != null)
+            .map(UserOAuthAccount::getUser)
             .filter(user -> user.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS))
             .map(user -> {
                 user.restore();
@@ -118,7 +97,8 @@ public class OAuthLoginHelper {
             return Optional.empty();
         }
 
-        return userRepository.findFirstByEmailAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(email, provider)
+        return userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider)
+            .filter(user -> user.getDeletedAt() != null)
             .filter(user -> user.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS))
             .map(user -> {
                 user.restore();
@@ -193,7 +173,7 @@ public class OAuthLoginHelper {
         }
 
         try {
-            userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail));
+            userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail, null));
             entityManager.flush();
         } catch (DataIntegrityViolationException e) {
             throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
