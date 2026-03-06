@@ -85,6 +85,10 @@ public class UserOAuthAccount extends BaseEntity {
         this.oauthEmail = oauthEmail;
     }
 
+    public void updateProviderId(String providerId) {
+        this.providerId = providerId;
+    }
+
     public void updateAppleRefreshToken(String appleRefreshToken) {
         this.appleRefreshToken = appleRefreshToken;
     }

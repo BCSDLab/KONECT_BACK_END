@@ -144,15 +144,15 @@ public class OAuthLoginHelper {
         String oauthEmail,
         Optional<User> knownOwner
     ) {
-        if (!StringUtils.hasText(providerId)) {
-            return;
-        }
+        // providerId가 없어도 저장 허용 (이메일 기반 매칭)
 
-        Optional<User> owner = knownOwner.isPresent()
-            ? knownOwner
-            : userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
-        if (owner.isPresent() && !owner.get().getId().equals(user.getId())) {
-            throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+        if (StringUtils.hasText(providerId)) {
+            Optional<User> owner = knownOwner.isPresent()
+                ? knownOwner
+                : userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
+            if (owner.isPresent() && !owner.get().getId().equals(user.getId())) {
+                throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+            }
         }
 
         Optional<UserOAuthAccount> linked = userOAuthAccountRepository.findByUserIdAndProvider(user.getId(), provider);
@@ -160,8 +160,16 @@ public class OAuthLoginHelper {
         if (linked.isPresent()) {
             UserOAuthAccount account = linked.get();
 
-            if (!providerId.equals(account.getProviderId())) {
-                throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+            // provider_id 업데이트 (NULL -> 값 채우기)
+            if (StringUtils.hasText(providerId)) {
+                if (!providerId.equals(account.getProviderId())) {
+                    if (account.getProviderId() == null || !StringUtils.hasText(account.getProviderId())) {
+                        account.updateProviderId(providerId);
+                        userOAuthAccountRepository.save(account);
+                    } else {
+                        throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+                    }
+                }
             }
 
             if (StringUtils.hasText(oauthEmail)) {

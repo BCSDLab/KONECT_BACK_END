@@ -87,14 +87,15 @@ public class UserOAuthAccountService {
             if (requireProviderId) {
                 throw CustomException.of(ApiResponseCode.FAILED_EXTRACT_PROVIDER_ID);
             }
-
-            return;
+            // providerId가 없어도 계속 진행 (이메일 기반 매칭)
         }
 
         Integer userId = user.getId();
 
-        restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
-        validatePrimaryProviderOwnership(user, provider, providerId);
+        if (StringUtils.hasText(providerId)) {
+            restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
+            validatePrimaryProviderOwnership(user, provider, providerId);
+        }
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
             .orElse(null);
@@ -104,8 +105,18 @@ public class UserOAuthAccountService {
             return;
         }
 
-        if (!providerId.equals(account.getProviderId())) {
-            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+        // 기존 계정이 있으면 provider_id 업데이트 (NULL -> 값 채우기)
+        if (StringUtils.hasText(providerId)) {
+            if (!providerId.equals(account.getProviderId())) {
+                // provider_id가 NULL이거나 다른 값이면 업데이트
+                if (account.getProviderId() == null || !StringUtils.hasText(account.getProviderId())) {
+                    account.updateProviderId(providerId);
+                    userOAuthAccountRepository.save(account);
+                } else {
+                    // 이미 다른 provider_id가 있으면 충돌
+                    throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+                }
+            }
         }
 
         if (StringUtils.hasText(oauthEmail)) {
