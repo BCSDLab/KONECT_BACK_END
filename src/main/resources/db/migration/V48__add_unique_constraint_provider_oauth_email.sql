@@ -14,17 +14,16 @@ HAVING cnt > 1;
 DELETE dup
 FROM user_oauth_account dup
 JOIN (
-    SELECT
-        provider,
-        oauth_email,
-        id AS keep_id,
-        ROW_NUMBER() OVER (PARTITION BY provider, oauth_email ORDER BY created_at DESC) AS rn
-    FROM user_oauth_account
-    WHERE oauth_email IS NOT NULL
-) ranked ON dup.provider = ranked.provider
-          AND dup.oauth_email = ranked.oauth_email
-          AND dup.id != ranked.keep_id
-WHERE ranked.rn > 1;
+    SELECT ranked.id
+    FROM (
+        SELECT
+            id,
+            ROW_NUMBER() OVER (PARTITION BY provider, oauth_email ORDER BY created_at DESC) AS rn
+        FROM user_oauth_account
+        WHERE oauth_email IS NOT NULL
+    ) ranked
+    WHERE ranked.rn > 1
+) to_delete ON dup.id = to_delete.id;
 
 -- Step 3: Add unique constraint
 ALTER TABLE user_oauth_account
