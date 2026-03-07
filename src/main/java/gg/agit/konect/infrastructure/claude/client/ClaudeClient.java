@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -47,7 +48,7 @@ public class ClaudeClient {
         ## 주요 테이블 힌트
         - users: 사용자 정보 (deleted_at IS NULL = 활성 사용자)
         - club: 동아리 정보
-        - club_member: 동아리 멤버 (role: PRESIDENT, VICE_PRESIDENT, MEMBER)
+        - club_member: 동아리 멤버 (role: PRESIDENT, VICE_PRESIDENT, MANAGER, MEMBER)
         - club_recruitment: 모집 공고
         - club_apply: 동아리 지원
 
@@ -131,6 +132,12 @@ public class ClaudeClient {
             for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
                 Map<String, Object> request = buildRequest(messages);
                 String response = callClaudeApi(request);
+
+                if (response == null) {
+                    log.error("Claude API returned null response");
+                    throw new ClaudeException("Claude API returned null response", null);
+                }
+
                 JsonNode responseNode = objectMapper.readTree(response);
 
                 String stopReason = responseNode.path("stop_reason").asText();
@@ -141,14 +148,20 @@ public class ClaudeClient {
                 }
 
                 if ("tool_use".equals(stopReason)) {
+                    // Process tool calls and add results
+                    List<Map<String, Object>> toolResults = processToolCalls(content);
+
+                    if (toolResults.isEmpty()) {
+                        log.warn("stop_reason is tool_use but no tool_use blocks found");
+                        return extractTextResponse(content);
+                    }
+
                     // Add assistant's response to messages
                     messages.add(Map.of(
                         "role", "assistant",
                         "content", objectMapper.convertValue(content, List.class)
                     ));
 
-                    // Process tool calls and add results
-                    List<Map<String, Object>> toolResults = processToolCalls(content);
                     messages.add(Map.of(
                         "role", "user",
                         "content", toolResults
@@ -160,11 +173,12 @@ public class ClaudeClient {
                 }
             }
 
-            return "죄송합니다. 요청 처리 중 최대 반복 횟수에 도달했습니다.";
+            log.warn("Maximum tool iterations reached");
+            throw new ClaudeException("Maximum tool iterations reached", null);
 
-        } catch (Exception e) {
-            log.error("Claude API call failed", e);
-            return "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.";
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse Claude API response", e);
+            throw new ClaudeException("Failed to parse Claude API response", e);
         }
     }
 
@@ -177,9 +191,9 @@ public class ClaudeClient {
                 String toolName = block.path("name").asText();
                 JsonNode input = block.path("input");
 
-                log.info("Tool call: {} with input: {}", toolName, input);
+                log.debug("Tool call: {}", toolName);
                 String result = executeToolCall(toolName, input);
-                log.info("Tool result: {}", result);
+                log.debug("Tool execution completed: {}", toolName);
 
                 toolResults.add(Map.of(
                     "type", "tool_result",
@@ -197,17 +211,17 @@ public class ClaudeClient {
             return switch (toolName) {
                 case "query" -> {
                     String sql = input.path("sql").asText();
-                    log.info("Executing SQL via MCP: {}", sql);
+                    log.debug("Executing SQL query via MCP");
                     yield mcpClient.executeQuery(sql);
                 }
                 case "list_tables" -> {
-                    log.info("Listing tables via MCP");
+                    log.debug("Listing tables via MCP");
                     List<String> tables = mcpClient.listTables();
                     yield String.join(", ", tables);
                 }
                 case "describe_table" -> {
                     String tableName = input.path("table_name").asText();
-                    log.info("Describing table via MCP: {}", tableName);
+                    log.debug("Describing table via MCP: {}", tableName);
                     yield mcpClient.describeTable(tableName);
                 }
                 default -> "알 수 없는 도구: " + toolName;
@@ -239,7 +253,6 @@ public class ClaudeClient {
                 .retrieve()
                 .body(String.class);
 
-            log.debug("Claude API response: {}", response);
             return response;
 
         } catch (RestClientException e) {
