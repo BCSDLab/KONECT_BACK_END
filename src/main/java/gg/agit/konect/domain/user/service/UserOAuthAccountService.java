@@ -134,13 +134,6 @@ public class UserOAuthAccountService {
                     throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
                 }
             });
-
-        userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
-            .ifPresent(existingAccount -> {
-                if (!providerId.equals(existingAccount.getProviderId())) {
-                    throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
-                }
-            });
     }
 
     private void saveWithConflictHandling(
