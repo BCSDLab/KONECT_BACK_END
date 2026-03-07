@@ -226,17 +226,17 @@ public class UserService {
 
         validateNotClubPresident(userId);
 
-        UserOAuthAccount primaryAccount = userOAuthAccountService.getPrimaryOAuthAccount(userId);
-        if (primaryAccount != null && primaryAccount.getProvider() == Provider.APPLE) {
-            String appleRefreshToken = primaryAccount.getAppleRefreshToken();
-            if (appleRefreshToken != null) {
-                appleTokenRevocationService.revoke(appleRefreshToken);
+        List<UserOAuthAccount> oauthAccounts = userOAuthAccountRepository.findAllByUserId(userId);
+        for (UserOAuthAccount account : oauthAccounts) {
+            if (account.getProvider() == Provider.APPLE && StringUtils.hasText(account.getAppleRefreshToken())) {
+                appleTokenRevocationService.revoke(account.getAppleRefreshToken());
             }
         }
 
         user.withdraw(LocalDateTime.now());
         userRepository.save(user);
 
+        UserOAuthAccount primaryAccount = oauthAccounts.isEmpty() ? null : oauthAccounts.get(0);
         String providerName = primaryAccount != null ? primaryAccount.getProvider().name() : "UNKNOWN";
         applicationEventPublisher.publishEvent(
             UserWithdrawnEvent.from(user.getEmail(), providerName)
