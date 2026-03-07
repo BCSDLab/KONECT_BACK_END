@@ -116,4 +116,18 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
         @Param("providerId") String providerId
     );
 
+    @Query("""
+        SELECT uoa
+        FROM UserOAuthAccount uoa
+        JOIN FETCH uoa.user user
+        WHERE uoa.provider = :provider
+        AND user.deletedAt IS NOT NULL
+        AND user.deletedAt < :threshold
+        AND uoa.appleRefreshToken IS NOT NULL
+        """)
+    List<UserOAuthAccount> findAppleAccountsToRevoke(
+        @Param("provider") Provider provider,
+        @Param("threshold") LocalDateTime threshold
+    );
+
 }

@@ -189,7 +189,4 @@ public class User extends BaseEntity {
         return deletedAt != null && deletedAt.isAfter(now.minusDays(restoreWindowDays));
     }
 
-    public void clearAppleRefreshToken() {
-        this.appleRefreshToken = null;
-    }
 }
