@@ -31,7 +31,7 @@ public interface UserRepository extends Repository<User, Integer> {
         AND u.deletedAt IS NULL
         ORDER BY u.id ASC
         """)
-    Optional<User> findFirstByRoleOrderByIdAsc(UserRole role);
+    Optional<User> findFirstByRoleOrderByIdAsc(@Param("role") UserRole role);
 
     default User getById(Integer id) {
         return findById(id).orElseThrow(() ->
