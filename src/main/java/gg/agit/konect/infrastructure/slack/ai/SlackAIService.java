@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import gg.agit.konect.infrastructure.gemini.client.GeminiClient;
+import gg.agit.konect.infrastructure.claude.client.ClaudeClient;
 import gg.agit.konect.infrastructure.slack.client.SlackClient;
 import gg.agit.konect.infrastructure.slack.config.SlackProperties;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class SlackAIService {
     private static final Pattern AI_PREFIX_PATTERN = Pattern.compile("^[Aa][Ii]\\)\\s*(.+)$");
     private static final Pattern MENTION_PATTERN = Pattern.compile("^<@[^>]+>\\s*");
 
-    private final GeminiClient geminiClient;
+    private final ClaudeClient claudeClient;
     private final SlackClient slackClient;
     private final SlackProperties slackProperties;
 
@@ -63,8 +63,8 @@ public class SlackAIService {
 
             log.debug("AI 질문 처리 시작: {}", userQuery);
 
-            // GeminiClient가 MCP를 통해 자동으로 SQL 결정 및 실행
-            String response = geminiClient.chat(userQuery);
+            // ClaudeClient가 MCP를 통해 자동으로 SQL 결정 및 실행
+            String response = claudeClient.chat(userQuery);
 
             log.debug("AI 응답 생성 완료");
 
