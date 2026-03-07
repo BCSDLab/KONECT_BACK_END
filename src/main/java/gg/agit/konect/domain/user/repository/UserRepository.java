@@ -1,6 +1,5 @@
 package gg.agit.konect.domain.user.repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -19,52 +17,19 @@ public interface UserRepository extends Repository<User, Integer> {
     @Query("""
         SELECT u
         FROM User u
-        WHERE u.email = :email
-        AND u.provider = :provider
-        AND u.deletedAt IS NULL
-        """)
-    Optional<User> findByEmailAndProvider(@Param("email") String email, @Param("provider") Provider provider);
-
-    Optional<User> findFirstByEmailAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(
-        @Param("email") String email,
-        @Param("provider") Provider provider
-    );
-
-    @Query("""
-        SELECT u
-        FROM User u
-        WHERE u.providerId = :providerId
-        AND u.provider = :provider
-        AND u.deletedAt IS NULL
-        """)
-    Optional<User> findByProviderIdAndProvider(
-        @Param("providerId") String providerId,
-        @Param("provider") Provider provider
-    );
-
-    Optional<User> findFirstByProviderIdAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(
-        @Param("providerId") String providerId,
-        @Param("provider") Provider provider
-    );
-
-    @Query("""
-        SELECT (COUNT(u) > 0)
-        FROM User u
-        WHERE u.providerId = :providerId
-        AND u.provider = :provider
-        AND u.deletedAt IS NULL
-        """)
-    boolean existsByProviderIdAndProvider(@Param("providerId") String providerId, @Param("provider") Provider provider);
-
-    @Query("""
-        SELECT u
-        FROM User u
         WHERE u.id = :id
         AND u.deletedAt IS NULL
         """)
     Optional<User> findById(@Param("id") Integer id);
 
-    Optional<User> findFirstByRoleOrderByIdAsc(UserRole role);
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.role = :role
+        AND u.deletedAt IS NULL
+        ORDER BY u.id ASC
+        """)
+    Optional<User> findFirstByRoleOrderByIdAsc(@Param("role") UserRole role);
 
     default User getById(Integer id) {
         return findById(id).orElseThrow(() ->
@@ -104,24 +69,4 @@ public interface UserRepository extends Repository<User, Integer> {
         AND u.deletedAt IS NULL
         """)
     List<User> findAllByIdIn(@Param("ids") List<Integer> ids);
-
-    @Query("""
-        SELECT u
-        FROM User u
-        WHERE u.provider = :provider
-        AND u.deletedAt IS NOT NULL
-        AND u.deletedAt < :threshold
-        AND u.appleRefreshToken IS NOT NULL
-        """)
-    List<User> findByProviderAndDeletedAtBefore(
-        @Param("provider") Provider provider,
-        @Param("threshold") LocalDateTime threshold
-    );
-
-    @Query("""
-        SELECT u
-        FROM User u
-        WHERE u.id = :id
-        """)
-    Optional<User> findByIdIncludingDeleted(@Param("id") Integer id);
 }

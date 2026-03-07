@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -19,11 +16,14 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
-import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.domain.user.service.UserOAuthAccountService;
@@ -41,9 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    @Value("${app.frontend.base-url}")
-    private String frontendBaseUrl;
-
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
     private final OAuthLoginHelper oauthLoginHelper;
     private final AppleOAuthNameResolver appleOAuthNameResolver;
@@ -53,8 +50,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserOAuthAccountService userOAuthAccountService;
     private final AuthCookieService authCookieService;
     private final OAuth2AuthorizedClientService authorizedClientService;
-    private final UserRepository userRepository;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
 
     @Override
     public void onAuthenticationSuccess(
@@ -178,20 +177,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         try {
-            userOAuthAccountService.linkOAuthAccount(currentUserId, provider, providerId, email);
-
-            if (provider == Provider.APPLE && StringUtils.hasText(appleRefreshToken)) {
-                try {
-                    User user = userRepository.getById(currentUserId);
-                    saveAppleRefreshTokenForUser(provider, user, appleRefreshToken);
-                } catch (Exception exception) {
-                    log.warn(
-                        "OAuth link succeeded but failed to save apple refresh token. userId={}",
-                        currentUserId,
-                        exception
-                    );
-                }
-            }
+            userOAuthAccountService.linkOAuthAccount(
+                currentUserId,
+                provider,
+                providerId,
+                email,
+                appleRefreshToken
+            );
 
             response.sendRedirect(oauthLoginHelper.appendQueryParameter(safeRedirect, "oauth_link", "success"));
         } catch (CustomException exception) {
@@ -363,8 +355,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
-        user.updateAppleRefreshToken(appleRefreshToken);
-        userRepository.save(user);
+        userOAuthAccountRepository.findByUserIdAndProvider(user.getId(), provider)
+            .ifPresent(account -> {
+                account.updateAppleRefreshToken(appleRefreshToken);
+                userOAuthAccountRepository.save(account);
+            });
     }
 
     private void saveAppleRefreshTokenForUnRegisteredUser(

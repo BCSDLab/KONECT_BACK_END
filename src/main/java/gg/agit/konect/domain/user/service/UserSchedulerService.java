@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.infrastructure.oauth.AppleTokenRevocationService;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +28,9 @@ public class UserSchedulerService {
      */
     public void revokeAppleTokensAfterRestoreWindow() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(REVOKE_AFTER_DAYS);
-        List<User> usersToRevoke = userSchedulerTxService.findUsersToRevoke(threshold);
+        List<UserOAuthAccount> accountsToRevoke = userSchedulerTxService.findAccountsToRevoke(threshold);
 
-        if (usersToRevoke.isEmpty()) {
+        if (accountsToRevoke.isEmpty()) {
             log.info("No Apple users to revoke (threshold={})", threshold);
             return;
         }
@@ -37,25 +38,23 @@ public class UserSchedulerService {
         int successCount = 0;
         int failureCount = 0;
 
-        for (User user : usersToRevoke) {
+        for (UserOAuthAccount account : accountsToRevoke) {
             try {
-                String refreshToken = user.getAppleRefreshToken();
-                if (refreshToken == null) {
-                    continue;
-                }
+                String refreshToken = account.getAppleRefreshToken();
 
                 appleTokenRevocationService.revoke(refreshToken);
-                userSchedulerTxService.clearAppleRefreshTokenIfMatches(user.getId(), refreshToken);
+                userSchedulerTxService.clearAppleRefreshTokenIfMatches(account.getId(), refreshToken);
                 successCount++;
             } catch (Exception e) {
                 failureCount++;
-                log.error("Failed to revoke Apple token for userId={}", user.getId(), e);
+                User user = account.getUser();
+                log.error("Failed to revoke Apple token for userId={}, accountId={}", user.getId(), account.getId(), e);
             }
         }
 
         log.info(
             "Apple token revoke task finished: total={}, success={}, failure={}"
-            , usersToRevoke.size(), successCount, failureCount
+            , accountsToRevoke.size(), successCount, failureCount
         );
     }
 }

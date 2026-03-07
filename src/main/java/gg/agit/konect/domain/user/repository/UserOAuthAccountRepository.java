@@ -1,11 +1,11 @@
 package gg.agit.konect.domain.user.repository;
 
-import java.util.List;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -42,9 +42,45 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
     @Query("""
         SELECT uoa
         FROM UserOAuthAccount uoa
+        JOIN FETCH uoa.user user
+        WHERE uoa.provider = :provider
+        AND uoa.oauthEmail = :oauthEmail
+        """)
+    Optional<UserOAuthAccount> findAccountByProviderAndOauthEmail(
+        @Param("provider") Provider provider,
+        @Param("oauthEmail") String oauthEmail
+    );
+
+    @Query("""
+        SELECT uoa
+        FROM UserOAuthAccount uoa
         WHERE uoa.user.id = :userId
+        ORDER BY uoa.id ASC
         """)
     List<UserOAuthAccount> findAllByUserId(@Param("userId") Integer userId);
+
+    @Query("""
+        SELECT uoa.user
+        FROM UserOAuthAccount uoa
+        WHERE uoa.oauthEmail = :oauthEmail
+        AND uoa.provider = :provider
+        AND uoa.user.deletedAt IS NULL
+        """)
+    Optional<User> findUserByOauthEmailAndProvider(
+        @Param("oauthEmail") String oauthEmail,
+        @Param("provider") Provider provider
+    );
+
+    @Query("""
+        SELECT uoa
+        FROM UserOAuthAccount uoa
+        WHERE uoa.provider = :provider
+        AND uoa.providerId = :providerId
+        """)
+    Optional<UserOAuthAccount> findByProviderAndProviderId(
+        @Param("provider") Provider provider,
+        @Param("providerId") String providerId
+    );
 
     @Query("""
         SELECT uoa
@@ -67,5 +103,31 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
         AND uoa.user.deletedAt <= :expiredAt
         """)
     int deleteAllByWithdrawnUsersBefore(@Param("expiredAt") LocalDateTime expiredAt);
+
+    @Query("""
+        SELECT (COUNT(uoa) > 0)
+        FROM UserOAuthAccount uoa
+        WHERE uoa.provider = :provider
+        AND uoa.providerId = :providerId
+        AND uoa.user.deletedAt IS NULL
+        """)
+    boolean existsByProviderAndProviderId(
+        @Param("provider") Provider provider,
+        @Param("providerId") String providerId
+    );
+
+    @Query("""
+        SELECT uoa
+        FROM UserOAuthAccount uoa
+        JOIN FETCH uoa.user user
+        WHERE uoa.provider = :provider
+        AND user.deletedAt IS NOT NULL
+        AND user.deletedAt < :threshold
+        AND uoa.appleRefreshToken IS NOT NULL
+        """)
+    List<UserOAuthAccount> findAppleAccountsToRevoke(
+        @Param("provider") Provider provider,
+        @Param("threshold") LocalDateTime threshold
+    );
 
 }

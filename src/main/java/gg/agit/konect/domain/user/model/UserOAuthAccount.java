@@ -51,30 +51,45 @@ public class UserOAuthAccount extends BaseEntity {
     @Column(name = "provider", length = 20, nullable = false)
     private Provider provider;
 
-    @Column(name = "provider_id", length = 255, nullable = false)
+    @Column(name = "provider_id", length = 255)
     private String providerId;
 
     @Column(name = "oauth_email", length = 100)
     private String oauthEmail;
 
+    @Column(name = "apple_refresh_token", length = 1024)
+    private String appleRefreshToken;
+
     @Builder
-    private UserOAuthAccount(User user, Provider provider, String providerId, String oauthEmail) {
+    private UserOAuthAccount(User user, Provider provider, String providerId, String oauthEmail,
+        String appleRefreshToken) {
         this.user = user;
         this.provider = provider;
         this.providerId = providerId;
         this.oauthEmail = oauthEmail;
+        this.appleRefreshToken = appleRefreshToken;
     }
 
-    public static UserOAuthAccount of(User user, Provider provider, String providerId, String oauthEmail) {
+    public static UserOAuthAccount of(User user, Provider provider, String providerId, String oauthEmail,
+        String appleRefreshToken) {
         return UserOAuthAccount.builder()
             .user(user)
             .provider(provider)
             .providerId(providerId)
             .oauthEmail(oauthEmail)
+            .appleRefreshToken(appleRefreshToken)
             .build();
     }
 
     public void updateOauthEmail(String oauthEmail) {
         this.oauthEmail = oauthEmail;
+    }
+
+    public void updateProviderId(String providerId) {
+        this.providerId = providerId;
+    }
+
+    public void updateAppleRefreshToken(String appleRefreshToken) {
+        this.appleRefreshToken = appleRefreshToken;
     }
 }

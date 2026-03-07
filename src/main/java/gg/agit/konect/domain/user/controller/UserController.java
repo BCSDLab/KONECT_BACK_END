@@ -112,7 +112,7 @@ public class UserController implements UserApi {
             )
         );
 
-        userOAuthAccountService.linkOAuthAccount(userId, provider, verified.providerId(), verified.email());
+        userOAuthAccountService.linkOAuthAccount(userId, provider, verified.providerId(), verified.email(), null);
         return ResponseEntity.noContent().build();
     }
 

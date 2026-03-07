@@ -14,6 +14,7 @@ import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.auth.oauth.AppleOAuthNameResolver;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -28,9 +29,10 @@ public class AppleOAuthServiceImpl extends OidcUserService {
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final AppleOAuthNameResolver appleOAuthNameResolver;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
 
-    @Transactional
     @Override
+    @Transactional
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         OidcUser oidcUser = super.loadUser(userRequest);
 
@@ -41,12 +43,13 @@ public class AppleOAuthServiceImpl extends OidcUserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
         Provider provider = Provider.valueOf(registrationId);
 
-        if (userRepository.existsByProviderIdAndProvider(providerId, provider)) {
+        if (userOAuthAccountRepository.existsByProviderAndProviderId(provider, providerId)) {
             return oidcUser;
         }
 
         if (StringUtils.hasText(email)) {
-            Optional<User> registeredByEmail = userRepository.findByEmailAndProvider(email, provider);
+            Optional<User> registeredByEmail = userOAuthAccountRepository
+                .findUserByOauthEmailAndProvider(email, provider);
 
             if (registeredByEmail.isPresent()) {
                 return oidcUser;
@@ -70,5 +73,4 @@ public class AppleOAuthServiceImpl extends OidcUserService {
 
         return oidcUser;
     }
-
 }
