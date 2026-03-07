@@ -78,7 +78,7 @@ public class User extends BaseEntity {
     private String imageUrl;
 
     @OneToMany(mappedBy = "user", fetch = LAZY)
-    private final List<UserOAuthAccount> oauthAccounts = new ArrayList<>();
+    private List<UserOAuthAccount> oauthAccounts = new ArrayList<>();
 
     @Column(name = "last_login_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime lastLoginAt;

@@ -61,7 +61,7 @@ public class ClubRecruitment extends BaseEntity {
     private Club club;
 
     @OneToMany(mappedBy = "clubRecruitment", fetch = LAZY, cascade = ALL, orphanRemoval = true)
-    private final List<ClubRecruitmentImage> images = new ArrayList<>();
+    private List<ClubRecruitmentImage> images = new ArrayList<>();
 
     @Builder
     private ClubRecruitment(
