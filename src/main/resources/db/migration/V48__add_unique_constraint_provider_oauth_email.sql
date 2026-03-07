@@ -9,18 +9,20 @@ WHERE oauth_email IS NOT NULL
 GROUP BY provider, oauth_email
 HAVING cnt > 1;
 
--- Step 2: Remove duplicates (keep the most recent one)
--- If there are duplicates, this keeps the one with the latest created_at
 DELETE dup
 FROM user_oauth_account dup
 JOIN (
     SELECT ranked.id
     FROM (
         SELECT
-            id,
-            ROW_NUMBER() OVER (PARTITION BY provider, oauth_email ORDER BY created_at DESC) AS rn
-        FROM user_oauth_account
-        WHERE oauth_email IS NOT NULL
+            uoa.id,
+            ROW_NUMBER() OVER (
+                PARTITION BY uoa.provider, uoa.oauth_email
+                ORDER BY (u.deleted_at IS NULL) DESC, uoa.created_at DESC, uoa.id DESC
+            ) AS rn
+        FROM user_oauth_account uoa
+        INNER JOIN users u ON u.id = uoa.user_id
+        WHERE uoa.oauth_email IS NOT NULL
     ) ranked
     WHERE ranked.rn > 1
 ) to_delete ON dup.id = to_delete.id;
