@@ -37,18 +37,6 @@ public interface UserRepository extends Repository<User, Integer> {
     }
 
     @Query("""
-        SELECT (COUNT(u) > 0)
-        FROM User u
-        WHERE u.university.id = :universityId
-        AND u.studentNumber = :studentNumber
-        AND u.deletedAt IS NULL
-        """)
-    boolean existsByUniversityIdAndStudentNumber(
-        @Param("universityId") Integer universityId,
-        @Param("studentNumber") String studentNumber
-    );
-
-    @Query("""
         SELECT u
         FROM User u
         WHERE u.university.id = :universityId

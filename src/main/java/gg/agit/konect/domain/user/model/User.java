@@ -33,10 +33,6 @@ import lombok.NoArgsConstructor;
     uniqueConstraints = {
         @UniqueConstraint(name = "uq_users_phone_number_active",
             columnNames = {"phone_number", "active_flag"}
-        ),
-        @UniqueConstraint(
-            name = "uq_users_university_id_student_number_active",
-            columnNames = {"university_id", "student_number", "active_flag"}
         )
     }
 )

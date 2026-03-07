@@ -83,7 +83,6 @@ public class UserService {
         UnRegisteredUser tempUser = findUnregisteredUser(email, providerId, provider);
         University university = universityRepository.findById(request.universityId())
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
-        validateStudentNumberDuplicationOnSignup(university.getId(), request.studentNumber());
         User newUser = User.of(
             university,
             tempUser,
@@ -183,13 +182,6 @@ public class UserService {
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
         Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);
         return UserInfoResponse.from(user, joinedClubCount, studyTime, unreadCouncilNoticeCount, isClubManager);
-    }
-
-    private void validateStudentNumberDuplicationOnSignup(Integer universityId, String studentNumber) {
-        boolean exists = userRepository.existsByUniversityIdAndStudentNumber(universityId, studentNumber);
-        if (exists) {
-            throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
-        }
     }
 
     @Transactional(readOnly = false)
