@@ -36,6 +36,8 @@ public class UserOAuthAccountService {
     private final Environment environment;
 
     public OAuthLinkStatusResponse getLinkStatus(Integer userId) {
+        userRepository.getById(userId);
+
         List<UserOAuthAccount> accounts = userOAuthAccountRepository.findAllByUserId(userId);
         EnumSet<Provider> linkedProviders = EnumSet.noneOf(Provider.class);
 
