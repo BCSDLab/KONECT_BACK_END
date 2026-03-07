@@ -42,6 +42,18 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
     @Query("""
         SELECT uoa
         FROM UserOAuthAccount uoa
+        JOIN FETCH uoa.user user
+        WHERE uoa.provider = :provider
+        AND uoa.oauthEmail = :oauthEmail
+        """)
+    Optional<UserOAuthAccount> findAccountByProviderAndOauthEmail(
+        @Param("provider") Provider provider,
+        @Param("oauthEmail") String oauthEmail
+    );
+
+    @Query("""
+        SELECT uoa
+        FROM UserOAuthAccount uoa
         WHERE uoa.user.id = :userId
         ORDER BY uoa.id ASC
         """)

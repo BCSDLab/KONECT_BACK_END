@@ -106,6 +106,8 @@ public class UserOAuthAccountService {
         if (StringUtils.hasText(providerId)) {
             restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
             validatePrimaryProviderOwnership(user, provider, providerId);
+        } else if (StringUtils.hasText(oauthEmail)) {
+            restoreOrCleanupWithdrawnByOauthEmail(provider, oauthEmail);
         }
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
@@ -172,6 +174,29 @@ public class UserOAuthAccountService {
     private void restoreOrCleanupWithdrawnByLinkedProvider(Provider provider, String providerId) {
         Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository
             .findAccountByProviderAndProviderId(provider, providerId);
+
+        if (linkedAccount.isEmpty()) {
+            return;
+        }
+
+        User linkedUser = linkedAccount.get().getUser();
+        if (linkedUser.getDeletedAt() == null) {
+            return;
+        }
+
+        if (!isStageProfile() && linkedUser.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS)) {
+            linkedUser.restore();
+            userRepository.save(linkedUser);
+            return;
+        }
+
+        userOAuthAccountRepository.delete(linkedAccount.get());
+        userOAuthAccountRepository.flush();
+    }
+
+    private void restoreOrCleanupWithdrawnByOauthEmail(Provider provider, String oauthEmail) {
+        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository
+            .findAccountByProviderAndOauthEmail(provider, oauthEmail);
 
         if (linkedAccount.isEmpty()) {
             return;

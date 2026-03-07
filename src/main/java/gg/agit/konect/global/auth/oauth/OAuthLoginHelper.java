@@ -69,6 +69,14 @@ public class OAuthLoginHelper {
             }
         }
 
+        if (StringUtils.hasText(email)) {
+            Optional<User> restoredByEmail = restoreOrCleanupWithdrawnByOauthEmail(provider, email);
+            if (restoredByEmail.isPresent()) {
+                ensureLinkedAccount(restoredByEmail.get(), provider, providerId, email, restoredByEmail);
+                return restoredByEmail;
+            }
+        }
+
         return userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider);
     }
 
@@ -120,6 +128,28 @@ public class OAuthLoginHelper {
 
         User linkedUser = linkedAccount.get().getUser();
 
+        if (linkedUser.getDeletedAt() == null) {
+            return Optional.empty();
+        }
+
+        if (!isStageProfile() && linkedUser.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS)) {
+            linkedUser.restore();
+            return Optional.of(userRepository.save(linkedUser));
+        }
+
+        userOAuthAccountRepository.delete(linkedAccount.get());
+        return Optional.empty();
+    }
+
+    private Optional<User> restoreOrCleanupWithdrawnByOauthEmail(Provider provider, String oauthEmail) {
+        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository
+            .findAccountByProviderAndOauthEmail(provider, oauthEmail);
+
+        if (linkedAccount.isEmpty()) {
+            return Optional.empty();
+        }
+
+        User linkedUser = linkedAccount.get().getUser();
         if (linkedUser.getDeletedAt() == null) {
             return Optional.empty();
         }
