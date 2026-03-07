@@ -122,10 +122,12 @@ slack:
     event: https://hooks.slack.com/test-event
   signing-secret: test-signing-secret
 
-gemini:
-  project-id: test-project
-  location: us-central1
-  model: gemini-1.5-flash
+claude:
+  api-key: test-api-key
+  model: claude-sonnet-4-20250514
+
+mcp:
+  url: http://localhost:3100
 
 logging:
   ignored-url-patterns:

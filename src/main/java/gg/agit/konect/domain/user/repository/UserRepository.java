@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.user.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -7,13 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 
 public interface UserRepository extends Repository<User, Integer> {
-
     Optional<User> findFirstByEmailAndDeletedAtIsNotNullOrderByDeletedAtDesc(String email);
 
     @Query("""
@@ -113,4 +114,24 @@ public interface UserRepository extends Repository<User, Integer> {
         WHERE u.deletedAt IS NULL
         """)
     long countActiveUsers();
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.provider = :provider
+        AND u.deletedAt IS NOT NULL
+        AND u.deletedAt < :threshold
+        AND u.appleRefreshToken IS NOT NULL
+        """)
+    List<User> findByProviderAndDeletedAtBefore(
+        @Param("provider") Provider provider,
+        @Param("threshold") LocalDateTime threshold
+    );
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.id = :id
+        """)
+    Optional<User> findByIdIncludingDeleted(@Param("id") Integer id);
 }

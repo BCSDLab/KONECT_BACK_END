@@ -70,8 +70,7 @@ dependencies {
     // notification
     implementation 'com.google.firebase:firebase-admin:9.2.0'
 
-    // Gemini AI
-    implementation 'com.google.cloud:google-cloud-vertexai:1.15.0'
+    // Gemini AI - using REST API directly (no SDK dependency)
 
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

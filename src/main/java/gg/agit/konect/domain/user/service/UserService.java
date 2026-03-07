@@ -49,9 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
-
     private static final String DEFAULT_WELCOME_MESSAGE = "KONECT에 오신 것을 환영합니다. 궁금한 점이 있으면 언제든 문의해 주세요.";
-
     private final UserRepository userRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final UniversityRepository universityRepository;
@@ -72,26 +70,20 @@ public class UserService {
         if (provider == Provider.APPLE && !StringUtils.hasText(providerId)) {
             throw CustomException.of(ApiResponseCode.INVALID_REQUEST_BODY);
         }
-
         if (StringUtils.hasText(providerId)) {
             userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId)
                 .ifPresent(u -> {
                     throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
                 });
         }
-
         userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider)
             .ifPresent(u -> {
                 throw CustomException.of(ApiResponseCode.ALREADY_REGISTERED_USER);
             });
-
         UnRegisteredUser tempUser = findUnregisteredUser(email, providerId, provider);
-
         University university = universityRepository.findById(request.universityId())
             .orElseThrow(() -> CustomException.of(ApiResponseCode.UNIVERSITY_NOT_FOUND));
-
         validateStudentNumberDuplicationOnSignup(university.getId(), request.studentNumber());
-
         User newUser = User.of(
             university,
             tempUser,
@@ -100,7 +92,6 @@ public class UserService {
             request.isMarketingAgreement(),
             "https://stage-static.koreatech.in/konect/User_02.png"
         );
-
         User savedUser = userRepository.save(newUser);
         userOAuthAccountService.linkPrimaryOAuthAccount(
             savedUser,
@@ -109,17 +100,12 @@ public class UserService {
             email,
             tempUser.getAppleRefreshToken()
         );
-
         joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
-
         sendWelcomeMessage(savedUser);
-
         unRegisteredUserRepository.delete(tempUser);
-
         applicationEventPublisher.publishEvent(
             UserRegisteredEvent.from(savedUser.getEmail(), provider.name())
         );
-
         return savedUser.getId();
     }
 
@@ -127,26 +113,20 @@ public class UserService {
         try {
             User operator = userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)
                 .orElse(null);
-
             if (operator == null) {
                 return;
             }
-
             ChatRoom.validateIsNotSameParticipant(operator, newUser);
-
             ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(operator.getId(), newUser.getId())
                 .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
-
             LocalDateTime joinedAt = Objects.requireNonNull(
                 chatRoom.getCreatedAt(),
                 "chatRoom.createdAt must not be null"
             );
             chatRoomMembershipService.addDirectMembers(chatRoom, operator, newUser, joinedAt);
-
             ChatMessage chatMessage = chatMessageRepository.save(
                 ChatMessage.of(chatRoom, operator, DEFAULT_WELCOME_MESSAGE)
             );
-
             chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
         } catch (Exception e) {
             log.warn("회원가입 환영 메시지 전송 실패. userId={}", newUser.getId(), e);
@@ -159,7 +139,6 @@ public class UserService {
                 return unRegisteredUserRepository.getByProviderIdAndProvider(providerId, provider);
             }
         }
-
         return unRegisteredUserRepository.getByEmailAndProvider(email, provider);
     }
 
@@ -168,26 +147,21 @@ public class UserService {
             clubPreMemberRepository.findAllByUniversityIdAndStudentNumberAndName(
                 universityId, studentNumber, name
             );
-
         if (preMembers.isEmpty()) {
             return;
         }
-
         for (ClubPreMember preMember : preMembers) {
             if (preMember.getClubPosition() == PRESIDENT) {
                 replaceCurrentPresident(preMember.getClub().getId(), user.getId());
             }
-
             ClubMember clubMember = ClubMember.builder()
                 .club(preMember.getClub())
                 .user(user)
                 .clubPosition(preMember.getClubPosition())
                 .build();
-
             ClubMember savedMember = clubMemberRepository.save(clubMember);
             chatRoomMembershipService.addClubMember(savedMember);
         }
-
         clubPreMemberRepository.deleteAll(preMembers);
     }
 
@@ -208,13 +182,11 @@ public class UserService {
         int joinedClubCount = clubMembers.size();
         Long unreadCouncilNoticeCount = councilNoticeReadRepository.countUnreadNoticesByUserId(user.getId());
         Long studyTime = studyTimeQueryService.getTotalStudyTime(userId);
-
         return UserInfoResponse.from(user, joinedClubCount, studyTime, unreadCouncilNoticeCount, isClubManager);
     }
 
     private void validateStudentNumberDuplicationOnSignup(Integer universityId, String studentNumber) {
         boolean exists = userRepository.existsByUniversityIdAndStudentNumber(universityId, studentNumber);
-
         if (exists) {
             throw CustomException.of(ApiResponseCode.DUPLICATE_STUDENT_NUMBER);
         }
@@ -223,19 +195,15 @@ public class UserService {
     @Transactional(readOnly = false)
     public void deleteUser(Integer userId) {
         User user = userRepository.getById(userId);
-
         validateNotClubPresident(userId);
-
         List<UserOAuthAccount> oauthAccounts = userOAuthAccountRepository.findAllByUserId(userId);
         for (UserOAuthAccount account : oauthAccounts) {
             if (account.getProvider() == Provider.APPLE && StringUtils.hasText(account.getAppleRefreshToken())) {
                 appleTokenRevocationService.revoke(account.getAppleRefreshToken());
             }
         }
-
         user.withdraw(LocalDateTime.now());
         userRepository.save(user);
-
         UserOAuthAccount primaryAccount = oauthAccounts.isEmpty() ? null : oauthAccounts.get(0);
         String providerName = primaryAccount != null ? primaryAccount.getProvider().name() : "UNKNOWN";
         applicationEventPublisher.publishEvent(
