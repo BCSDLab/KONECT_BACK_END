@@ -1,15 +1,14 @@
-CREATE TABLE user_oauth_account
-(
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    user_id     INT          NOT NULL,
-    provider    VARCHAR(20)  NOT NULL,
+CREATE TABLE user_oauth_account (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    provider VARCHAR(20) NOT NULL,
     provider_id VARCHAR(255) NOT NULL,
     oauth_email VARCHAR(100) NULL,
-    created_at  TIMESTAMP    NOT NULL,
-    updated_at  TIMESTAMP    NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
 
     CONSTRAINT fk_user_oauth_account_user
-        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (user_id) REFERENCES users(id),
 
     CONSTRAINT uq_user_oauth_account_provider_provider_id
         UNIQUE (provider, provider_id),
