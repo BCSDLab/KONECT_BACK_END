@@ -72,7 +72,7 @@ public class OAuthLoginHelper {
         if (StringUtils.hasText(email)) {
             Optional<User> restoredByEmail = restoreOrCleanupWithdrawnByOauthEmail(provider, email);
             if (restoredByEmail.isPresent()) {
-                ensureLinkedAccount(restoredByEmail.get(), provider, providerId, email, restoredByEmail);
+                ensureLinkedAccount(restoredByEmail.get(), provider, providerId, email);
                 return restoredByEmail;
             }
         }
