@@ -1,6 +1,6 @@
 -- user_oauth_account 테이블에 apple_refresh_token 컬럼 추가
 ALTER TABLE user_oauth_account
-ADD COLUMN apple_refresh_token VARCHAR(1024) NULL AFTER oauth_email;
+ADD COLUMN IF NOT EXISTS apple_refresh_token VARCHAR(1024) NULL AFTER oauth_email;
 
 -- users 테이블에서 user_oauth_account 테이블로 apple_refresh_token 데이터 마이그레이션
 -- V43에서 이미 provider, provider_id는 마이그레이션됨
@@ -18,6 +18,18 @@ SELECT u.id, u.provider, u.provider_id, u.email, u.apple_refresh_token, NOW(), N
 FROM users u
 WHERE u.provider = 'APPLE'
   AND u.deleted_at IS NOT NULL
+  AND (
+    u.provider_id IS NULL
+    OR u.id = (
+      SELECT u3.id
+      FROM users u3
+      WHERE u3.provider = u.provider
+        AND u3.provider_id = u.provider_id
+        AND u3.deleted_at IS NOT NULL
+      ORDER BY u3.deleted_at DESC, u3.id DESC
+      LIMIT 1
+    )
+  )
   AND NOT EXISTS (
     SELECT 1
     FROM user_oauth_account ua
