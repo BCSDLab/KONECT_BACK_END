@@ -51,15 +51,26 @@ public class UserOAuthAccountService {
     }
 
     @Transactional
-    public void linkOAuthAccount(Integer userId, Provider provider, String providerId, String oauthEmail) {
+    public void linkOAuthAccount(
+        Integer userId,
+        Provider provider,
+        String providerId,
+        String oauthEmail,
+        String appleRefreshToken
+    ) {
         User user = userRepository.getById(userId);
-        String appleRefreshToken = null;
         linkAccount(user, provider, providerId, oauthEmail, appleRefreshToken, true);
     }
 
     @Transactional
-    public void linkPrimaryOAuthAccount(User user, Provider provider, String providerId, String oauthEmail) {
-        linkAccount(user, provider, providerId, oauthEmail, null, false);
+    public void linkPrimaryOAuthAccount(
+        User user,
+        Provider provider,
+        String providerId,
+        String oauthEmail,
+        String appleRefreshToken
+    ) {
+        linkAccount(user, provider, providerId, oauthEmail, appleRefreshToken, false);
     }
 
     @Transactional
@@ -121,6 +132,11 @@ public class UserOAuthAccountService {
 
         if (StringUtils.hasText(oauthEmail)) {
             account.updateOauthEmail(oauthEmail);
+            userOAuthAccountRepository.save(account);
+        }
+
+        if (provider == Provider.APPLE && StringUtils.hasText(appleRefreshToken)) {
+            account.updateAppleRefreshToken(appleRefreshToken);
             userOAuthAccountRepository.save(account);
         }
     }

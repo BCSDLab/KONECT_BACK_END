@@ -102,7 +102,13 @@ public class UserService {
         );
 
         User savedUser = userRepository.save(newUser);
-        userOAuthAccountService.linkPrimaryOAuthAccount(savedUser, provider, providerId, email);
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            savedUser,
+            provider,
+            providerId,
+            email,
+            tempUser.getAppleRefreshToken()
+        );
 
         joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
 

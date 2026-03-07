@@ -179,25 +179,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         try {
-            userOAuthAccountService.linkOAuthAccount(currentUserId, provider, providerId, email);
-
-            if (provider == Provider.APPLE && StringUtils.hasText(appleRefreshToken)) {
-                try {
-                    UserOAuthAccount account = userOAuthAccountRepository
-                        .findByUserIdAndProvider(currentUserId, provider)
-                        .orElse(null);
-                    if (account != null) {
-                        account.updateAppleRefreshToken(appleRefreshToken);
-                        userOAuthAccountRepository.save(account);
-                    }
-                } catch (Exception exception) {
-                    log.warn(
-                        "OAuth link succeeded but failed to save apple refresh token. userId={}",
-                        currentUserId,
-                        exception
-                    );
-                }
-            }
+            userOAuthAccountService.linkOAuthAccount(
+                currentUserId,
+                provider,
+                providerId,
+                email,
+                appleRefreshToken
+            );
 
             response.sendRedirect(oauthLoginHelper.appendQueryParameter(safeRedirect, "oauth_link", "success"));
         } catch (CustomException exception) {
