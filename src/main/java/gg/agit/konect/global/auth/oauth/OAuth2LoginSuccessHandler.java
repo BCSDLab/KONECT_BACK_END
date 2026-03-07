@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
@@ -42,9 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    @Value("${app.frontend.base-url}")
-    private String frontendBaseUrl;
-
     private final ObjectProvider<NativeSessionBridgeService> nativeSessionBridgeService;
     private final OAuthLoginHelper oauthLoginHelper;
     private final AppleOAuthNameResolver appleOAuthNameResolver;
@@ -56,6 +52,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
 
     @Override
     public void onAuthenticationSuccess(
