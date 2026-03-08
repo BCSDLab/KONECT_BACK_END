@@ -32,7 +32,6 @@ public interface UserApi {
             
             - `INVALID_SIGNUP_TOKEN` (401): 회원가입 토큰이 없거나 올바르지 않은 경우
             - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
-            - `DUPLICATE_STUDENT_NUMBER` (409): 동일 대학교 + 학번 조합이 이미 존재하는 경우
             - `ALREADY_REGISTERED_USER` (409): 이미 가입된 회원인 경우
             - `UNIVERSITY_NOT_FOUND` (404): 대학교를 찾을 수 없는 경우
             - `NOT_FOUND_UNREGISTERED_USER` (404): 임시 유저를 찾을 수 없는 경우

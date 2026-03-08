@@ -36,6 +36,7 @@ public interface UserRepository extends Repository<User, Integer> {
             CustomException.of(ApiResponseCode.NOT_FOUND_USER));
     }
 
+    // 학번 유니크 제약 제거로 동일 대학+학번 유저가 복수 존재할 수 있어 List로 반환
     @Query("""
         SELECT u
         FROM User u
@@ -43,7 +44,7 @@ public interface UserRepository extends Repository<User, Integer> {
         AND u.studentNumber = :studentNumber
         AND u.deletedAt IS NULL
         """)
-    Optional<User> findByUniversityIdAndStudentNumber(
+    List<User> findAllByUniversityIdAndStudentNumber(
         @Param("universityId") Integer universityId,
         @Param("studentNumber") String studentNumber
     );

@@ -91,12 +91,16 @@ public class ClubMemberManagementService {
         ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
         Integer universityId = club.getUniversity().getId();
 
-        Optional<User> existingUser = userRepository.findByUniversityIdAndStudentNumber(
+        // 학번 유니크 제약 제거로 동일 대학+학번 유저가 복수 존재할 수 있어, 이름으로 추가 필터링
+        List<User> candidates = userRepository.findAllByUniversityIdAndStudentNumber(
             universityId, studentNumber
         );
+        Optional<User> matchedUser = candidates.stream()
+            .filter(user -> name.equals(user.getName()))
+            .findFirst();
 
-        if (existingUser.isPresent()) {
-            return addDirectMember(club, existingUser.get(), clubPosition);
+        if (matchedUser.isPresent()) {
+            return addDirectMember(club, matchedUser.get(), clubPosition);
         }
 
         return addPreMemberInternal(club, studentNumber, name, clubPosition);
