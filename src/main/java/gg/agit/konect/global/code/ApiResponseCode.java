@@ -42,6 +42,7 @@ public enum ApiResponseCode {
     UNSUPPORTED_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth Provider 입니다."),
     INVALID_NOTIFICATION_TOKEN(HttpStatus.BAD_REQUEST, "푸시 알림 토큰이 유효하지 않습니다."),
     FEE_PAYMENT_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "회비 납부가 필요한 동아리입니다. 납부 증빙 사진을 첨부해주세요."),
+    AMBIGUOUS_USER_MATCH(HttpStatus.BAD_REQUEST, "동일한 정보로 식별되는 사용자가 2명 이상입니다. 관리자에게 문의해주세요."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
@@ -98,7 +99,6 @@ public enum ApiResponseCode {
     OPTIMISTIC_LOCKING_FAILURE(HttpStatus.CONFLICT, "이미 처리된 요청입니다."),
     ALREADY_REGISTERED_USER(HttpStatus.CONFLICT, "이미 가입된 회원입니다."),
     ALREADY_EXIST_COUNCIL(HttpStatus.CONFLICT, "해당 대학교에 이미 총동아리연합회가 존재합니다."),
-    DUPLICATE_STUDENT_NUMBER(HttpStatus.CONFLICT, "이미 사용 중인 학번입니다."),
     DUPLICATE_PHONE_NUMBER(HttpStatus.CONFLICT, "이미 사용 중인 전화번호입니다."),
     ALREADY_APPLIED_CLUB(HttpStatus.CONFLICT, "이미 동아리에 가입 신청을 완료했습니다."),
     ALREADY_CLUB_MEMBER(HttpStatus.CONFLICT, "이미 동아리 회원입니다."),
