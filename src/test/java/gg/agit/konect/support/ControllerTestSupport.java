@@ -7,11 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -20,7 +16,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,16 +27,11 @@ import gg.agit.konect.global.auth.web.LoginCheckInterceptor;
 import gg.agit.konect.global.auth.web.LoginUserArgumentResolver;
 import gg.agit.konect.global.config.CorsProperties;
 import gg.agit.konect.global.logging.LoggingProperties;
-import jakarta.persistence.EntityManager;
 
-@Execution(ExecutionMode.SAME_THREAD)
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
+// @WebMvcTest는 웹 레이어만 로드하므로 DB 접근 없이 컨트롤러 단위 테스트가 가능하다.
+// 하위 클래스에서 @WebMvcTest(TargetController.class)를 선언하여 테스트 대상을 지정한다.
 @ActiveProfiles("test")
-@Import({TestSecurityConfig.class, TestJpaConfig.class, TestClaudeConfig.class})
-
-@TestPropertyConfig
+@Import({TestSecurityConfig.class})
 public abstract class ControllerTestSupport {
 
     @Autowired
@@ -49,9 +39,6 @@ public abstract class ControllerTestSupport {
 
     @Autowired
     protected ObjectMapper objectMapper;
-
-    @Autowired
-    protected EntityManager entityManager;
 
     @MockitoBean
     protected LoginCheckInterceptor loginCheckInterceptor;
@@ -88,17 +75,6 @@ public abstract class ControllerTestSupport {
 
     protected void mockLoginUser(Integer userId) throws Exception {
         given(loginUserArgumentResolver.resolveArgument(any(), any(), any(), any())).willReturn(userId);
-    }
-
-    protected <T> T persist(T entity) {
-        entityManager.persist(entity);
-        entityManager.flush();
-        return entity;
-    }
-
-    protected void clearPersistenceContext() {
-        entityManager.flush();
-        entityManager.clear();
     }
 
     protected ResultActions performGet(String url) throws Exception {
