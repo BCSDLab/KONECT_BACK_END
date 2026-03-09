@@ -22,14 +22,7 @@ public interface UserRepository extends Repository<User, Integer> {
         """)
     Optional<User> findById(@Param("id") Integer id);
 
-    @Query("""
-        SELECT u
-        FROM User u
-        WHERE u.role = :role
-        AND u.deletedAt IS NULL
-        ORDER BY u.id ASC
-        """)
-    Optional<User> findFirstByRoleOrderByIdAsc(@Param("role") UserRole role);
+    Optional<User> findFirstByRoleAndDeletedAtIsNullOrderByIdAsc(UserRole role);
 
     default User getById(Integer id) {
         return findById(id).orElseThrow(() ->
