@@ -110,7 +110,7 @@ public class UserService {
 
     private void sendWelcomeMessage(User newUser) {
         try {
-            User operator = userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)
+            User operator = userRepository.findFirstByRoleAndDeletedAtIsNullOrderByIdAsc(UserRole.ADMIN)
                 .orElse(null);
             if (operator == null) {
                 return;
