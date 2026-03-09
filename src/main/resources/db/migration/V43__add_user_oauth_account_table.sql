@@ -2,7 +2,7 @@ CREATE TABLE user_oauth_account (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     provider VARCHAR(20) NOT NULL,
-    provider_id VARCHAR(255) NOT NULL,
+    provider_id VARCHAR(255) NULL,
     oauth_email VARCHAR(100) NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
@@ -27,7 +27,6 @@ SELECT u.id,
 FROM users u
 WHERE u.deleted_at IS NULL
   AND u.provider IS NOT NULL
-  AND u.provider_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
     FROM user_oauth_account ua
