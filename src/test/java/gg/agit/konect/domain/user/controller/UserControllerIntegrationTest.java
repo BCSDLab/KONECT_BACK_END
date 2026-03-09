@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Test;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.support.ControllerTestSupport;
+import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class UserControllerIntegrationTest extends ControllerTestSupport {
+class UserControllerIntegrationTest extends IntegrationTestSupport {
 
     private University university;
 

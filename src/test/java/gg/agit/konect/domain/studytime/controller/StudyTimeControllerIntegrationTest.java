@@ -14,11 +14,11 @@ import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.repository.StudyTimerRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.support.ControllerTestSupport;
+import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class StudyTimeControllerIntegrationTest extends ControllerTestSupport {
+class StudyTimeControllerIntegrationTest extends IntegrationTestSupport {
 
     private static final long MISMATCHED_CLIENT_SECONDS = 100L;
 

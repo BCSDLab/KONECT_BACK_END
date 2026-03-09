@@ -14,12 +14,12 @@ import org.junit.jupiter.api.Test;
 import gg.agit.konect.domain.schedule.model.Schedule;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.support.ControllerTestSupport;
+import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ScheduleFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ScheduleControllerIntegrationTest extends ControllerTestSupport {
+class ScheduleControllerIntegrationTest extends IntegrationTestSupport {
 
     private static final int TEST_YEAR = 2026;
     private static final int MARCH = 3;

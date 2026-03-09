@@ -19,14 +19,14 @@ import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.support.ControllerTestSupport;
+import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.ClubRecruitmentFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ClubRecruitmentControllerIntegrationTest extends ControllerTestSupport {
+class ClubRecruitmentControllerIntegrationTest extends IntegrationTestSupport {
 
     private static final int RECRUITMENT_PERIOD_DAYS = 30;
 
