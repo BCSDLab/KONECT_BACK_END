@@ -97,6 +97,8 @@ jar {
 
 tasks.named('test') {
 	useJUnitPlatform()
+
+	maxParallelForks = Runtime.runtime.availableProcessors()
 }
 
 checkstyle {
