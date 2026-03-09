@@ -31,5 +31,8 @@ WHERE u.deleted_at IS NULL
     SELECT 1
     FROM user_oauth_account ua
     WHERE ua.provider = u.provider
-      AND ua.provider_id = u.provider_id
+        AND (
+            (u.provider_id IS NULL AND ua.provider_id IS NULL)
+                OR ua.provider_id = u.provider_id
+            )
 );
