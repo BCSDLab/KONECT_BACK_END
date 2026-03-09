@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.club.controller;
+package gg.agit.konect.integration.domain.club.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
