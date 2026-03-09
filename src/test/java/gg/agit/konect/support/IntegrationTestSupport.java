@@ -4,14 +4,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Import({TestSecurityConfig.class, TestJpaConfig.class, TestClaudeConfig.class})
-
 @TestPropertyConfig
+@Transactional
 public abstract class IntegrationTestSupport {
 
     @Autowired
