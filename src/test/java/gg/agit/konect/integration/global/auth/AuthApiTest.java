@@ -15,7 +15,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.LinkedMultiValueMap;
@@ -56,9 +55,6 @@ class AuthApiTest extends IntegrationTestSupport {
 
     @MockitoBean
     private NativeSessionBridgeService nativeSessionBridgeService;
-
-    @Autowired
-    private JwtProvider jwtProvider;
 
     private University university;
 
