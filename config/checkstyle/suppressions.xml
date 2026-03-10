@@ -12,5 +12,5 @@
     <suppress files="[\\/]test[\\/]" checks="MagicNumber"/>
 
     <!-- 테스트 코드는 한글 메서드명 허용 -->
-    <suppress files="[\\/]src[\\/]test[\\/]" checks="MethodName"/>
+    <suppress files="[\\/]test[\\/]" checks="MethodName"/>
 </suppressions>
