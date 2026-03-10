@@ -26,7 +26,7 @@ import gg.agit.konect.support.fixture.ClubRecruitmentFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ClubRecruitmentControllerIntegrationTest extends IntegrationTestSupport {
+class ClubRecruitmentApiTest extends IntegrationTestSupport {
 
     private static final int RECRUITMENT_PERIOD_DAYS = 30;
 

@@ -20,7 +20,7 @@ import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ClubBasicControllerIntegrationTest extends IntegrationTestSupport {
+class ClubBasicApiTest extends IntegrationTestSupport {
 
     private University university;
     private User normalUser;

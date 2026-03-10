@@ -37,7 +37,7 @@ import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class AuthControllerIntegrationTest extends IntegrationTestSupport {
+class AuthApiTest extends IntegrationTestSupport {
 
     private static final int BRIDGE_USER_ID = 2024001003;
     private static final Duration SIGNUP_TOKEN_TTL = Duration.ofMinutes(10);

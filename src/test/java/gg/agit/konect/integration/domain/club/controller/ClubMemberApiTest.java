@@ -27,7 +27,7 @@ import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ClubMemberControllerIntegrationTest extends IntegrationTestSupport {
+class ClubMemberApiTest extends IntegrationTestSupport {
 
     @Autowired
     private ClubMemberRepository clubMemberRepository;

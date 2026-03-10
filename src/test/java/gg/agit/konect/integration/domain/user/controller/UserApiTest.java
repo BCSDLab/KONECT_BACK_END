@@ -16,7 +16,7 @@ import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class UserControllerIntegrationTest extends IntegrationTestSupport {
+class UserApiTest extends IntegrationTestSupport {
 
     private University university;
 
