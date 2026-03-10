@@ -151,12 +151,13 @@ is_launcher_formatter() {
 }
 
 to_native_path() {
-    if [[ "$formatter_bin" == *.exe ]] && command -v cygpath >/dev/null 2>&1; then
-        cygpath -w "$1"
+    local path="$1"
+    local formatter="${2:-$formatter_bin}"
+    if [[ "$formatter" == *.exe ]] && command -v cygpath >/dev/null 2>&1; then
+        cygpath -w "$path"
         return 0
     fi
-
-    printf '%s\n' "$1"
+    printf '%s\n' "$path"
 }
 
 run_formatter() {
