@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.domain.club.controller;
+package gg.agit.konect.integration.domain.club;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,7 +20,7 @@ import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ClubBasicControllerIntegrationTest extends IntegrationTestSupport {
+class ClubBasicApiTest extends IntegrationTestSupport {
 
     private University university;
     private User normalUser;

@@ -10,4 +10,7 @@
 
     <!-- 테스트 코드는 매직 넘버 허용 -->
     <suppress files="[\\/]test[\\/]" checks="MagicNumber"/>
+
+    <!-- 테스트 코드는 한글 메서드명 허용 -->
+    <suppress files="[\\/]test[\\/]" checks="MethodName"/>
 </suppressions>
