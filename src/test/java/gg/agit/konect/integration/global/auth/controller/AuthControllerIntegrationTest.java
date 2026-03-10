@@ -76,6 +76,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
         @Test
         void 기존_구글_회원은_로그인하고_리프레시_쿠키를_발급한다() throws Exception {
+            // given
             User existingUser = persist(UserFixture.createUser(university, "구글회원", "2024001001"));
             clearPersistenceContext();
 
@@ -94,6 +95,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 .willReturn("http://localhost:3000/feed");
             given(oauthLoginHelper.isAppleOauthCallback("http://localhost:3000/feed")).willReturn(false);
 
+            // when, then
             performPost("/auth/oauth/token", oauthLoginRequest("GOOGLE", "google-access-token", null,
                 "http://localhost:3000/feed", null))
                 .andExpect(status().isOk())
@@ -114,6 +116,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
         @Test
         void 신규_애플_회원은_요청_이름으로_회원가입_토큰을_발급한다() throws Exception {
+            // given
             given(appleTokenVerifier.verify(any())).willReturn(
                 new VerifiedOAuthUser("apple-provider-id", "new-apple@koreatech.ac.kr", "")
             );
@@ -135,6 +138,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
             )
                 .willReturn("signup-token-apple");
 
+            // when, then
             performPost("/auth/oauth/token", oauthLoginRequest("APPLE", null, "apple-id-token",
                 "konect://oauth/callback", "앱등이"))
                 .andExpect(status().isOk())
@@ -154,6 +158,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
         @Test
         void 기존_애플_회원이_네이티브_콜백으로_로그인하면_브릿지_토큰을_내려준다() throws Exception {
+            // given
             User existingUser = persist(UserFixture.createUser(university, "애플회원", "2024001002"));
             clearPersistenceContext();
 
@@ -175,6 +180,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
             given(oauthLoginHelper.appendBridgeToken("konect://oauth/callback", "bridge-token-123"))
                 .willReturn("konect://oauth/callback?bridge_token=bridge-token-123");
 
+            // when, then
             performPost("/auth/oauth/token", oauthLoginRequest("APPLE", null, "apple-id-token",
                 "konect://oauth/callback", "애플회원"))
                 .andExpect(status().isOk())
@@ -197,6 +203,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
         @Test
         void 지원하지_않는_프로바이더면_400_에러_코드를_반환한다() throws Exception {
+            // given, when, then
             performPost("/auth/oauth/token", oauthLoginRequest("LINE", "unused-access-token", null,
                 "http://localhost:3000/feed", null))
                 .andExpect(status().isBadRequest())
@@ -209,12 +216,14 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
         @Test
         void 유효한_브릿지_토큰이면_리프레시_쿠키를_발급한다() throws Exception {
+            // given
             given(nativeSessionBridgeService.consume("bridge-token-success"))
                 .willReturn(Optional.of(BRIDGE_USER_ID));
 
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
             params.add("bridge_token", "bridge-token-success");
 
+            // when, then
             performGet("/native/session/bridge", params)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -232,11 +241,13 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
         @Test
         void 유효하지_않은_브릿지_토큰이면_401을_반환하고_쿠키를_발급하지_않는다() throws Exception {
+            // given
             given(nativeSessionBridgeService.consume(eq("bridge-token-invalid"))).willReturn(Optional.empty());
 
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
             params.add("bridge_token", "bridge-token-invalid");
 
+            // when, then
             performGet("/native/session/bridge", params)
                 .andExpect(status().isUnauthorized())
                 .andExpect(
@@ -250,6 +261,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
         @Test
         void 브릿지_토큰이_없으면_401을_반환하고_쿠키를_발급하지_않는다() throws Exception {
+            // given, when, then
             performGet("/native/session/bridge")
                 .andExpect(status().isUnauthorized())
                 .andExpect(
