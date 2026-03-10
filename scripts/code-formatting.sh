@@ -8,13 +8,30 @@ cd "$repo_root"
 temp_base_dir="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
 
 target_java_files=()
-while IFS= read -r file; do
-    target_java_files+=("$file")
-done < <(git diff --cached --name-only --diff-filter=ACMR -- '*.java')
+target_mode="staged"
+pre_format_snapshot=""
+
+# 파일 인자가 있으면 인자 사용, 없으면 스테이징된 파일 사용
+if [ $# -gt 0 ]; then
+    target_mode="explicit"
+    for file in "$@"; do
+        if [[ -f "$file" && "$file" == *.java ]]; then
+            target_java_files+=("$file")
+        fi
+    done
+else
+    while IFS= read -r file; do
+        target_java_files+=("$file")
+    done < <(git diff --cached --name-only --diff-filter=ACMR -- '*.java')
+fi
 
 if [ ${#target_java_files[@]} -eq 0 ]; then
-    echo "[건너뜀] 포맷할 스테이징된 Java 파일이 없습니다."
+    echo "[건너뜀] 포맷할 Java 파일이 없습니다."
     exit 0
+fi
+
+if [ "$target_mode" = "explicit" ]; then
+    pre_format_snapshot="$(git diff --no-ext-diff -- "${target_java_files[@]}" 2>/dev/null || true)"
 fi
 
 find_formatter() {
@@ -244,20 +261,34 @@ if ! run_formatter; then
     exit 1
 fi
 
-git add -- "${target_java_files[@]}"
+if [ "$target_mode" = "staged" ]; then
+    git add -- "${target_java_files[@]}"
 
-removed_from_stage=()
-for file in "${target_java_files[@]}"; do
-    if git diff --cached --quiet -- "$file"; then
-        removed_from_stage+=("$file")
-    fi
-done
-
-if [ ${#removed_from_stage[@]} -gt 0 ]; then
-    echo "[안내] 포맷팅 후 스테이징 diff가 사라진 파일:"
-    for file in "${removed_from_stage[@]}"; do
-        echo "  - $file"
+    removed_from_stage=()
+    for file in "${target_java_files[@]}"; do
+        if git diff --cached --quiet -- "$file"; then
+            removed_from_stage+=("$file")
+        fi
     done
+
+    if [ ${#removed_from_stage[@]} -gt 0 ]; then
+        echo "[안내] 포맷팅 후 스테이징 diff가 사라진 파일:"
+        for file in "${removed_from_stage[@]}"; do
+            echo "  - $file"
+        done
+    fi
+
+    echo "[완료] 스테이징된 Java 파일에 IntelliJ 포맷을 적용했습니다."
+else
+    post_format_snapshot="$(git diff --no-ext-diff -- "${target_java_files[@]}" 2>/dev/null || true)"
+
+    if [[ "$pre_format_snapshot" != "$post_format_snapshot" ]]; then
+        echo "[커밋] 포맷팅으로 인한 코드 변경사항을 커밋합니다."
+        git add -- "${target_java_files[@]}"
+        git commit -m "chore: 코드 포맷팅"
+        echo "[완료] chore: 코드 포맷팅 커밋 생성"
+    else
+        echo "[완료] 지정된 Java 파일에 IntelliJ 포맷을 적용했습니다."
+    fi
 fi
 
-echo "[완료] 스테이징된 Java 파일에 IntelliJ 포맷을 적용했습니다."
