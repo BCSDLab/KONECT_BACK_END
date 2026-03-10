@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.domain.studytime;
+package gg.agit.konect.integration.domain.studytime.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,7 +18,7 @@ import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class StudyTimeApiTest extends IntegrationTestSupport {
+class StudyTimeControllerIntegrationTest extends IntegrationTestSupport {
 
     private static final long MISMATCHED_CLIENT_SECONDS = 100L;
 
