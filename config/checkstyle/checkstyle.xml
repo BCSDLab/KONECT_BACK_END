@@ -14,10 +14,6 @@
     <property name="severity" value="error"/>
     <property name="fileExtensions" value="java"/>
 
-    <module name="SuppressionFilter">
-        <property name="file" value="${suppressionFile}"/>
-    </module>
-
     <!-- 파일당 최대 줄 길이 -->
     <module name="LineLength">
         <property name="max" value="120"/>

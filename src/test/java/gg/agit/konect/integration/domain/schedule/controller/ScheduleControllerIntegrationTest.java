@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.domain.schedule;
+package gg.agit.konect.integration.domain.schedule.controller;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -19,7 +19,7 @@ import gg.agit.konect.support.fixture.ScheduleFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ScheduleApiTest extends IntegrationTestSupport {
+class ScheduleControllerIntegrationTest extends IntegrationTestSupport {
 
     private static final int TEST_YEAR = 2026;
     private static final int MARCH = 3;
