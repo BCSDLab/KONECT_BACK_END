@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.domain.user.controller;
+package gg.agit.konect.integration.domain.user;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 

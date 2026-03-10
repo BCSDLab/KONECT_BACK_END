@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.global.auth.controller;
+package gg.agit.konect.integration.global.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;

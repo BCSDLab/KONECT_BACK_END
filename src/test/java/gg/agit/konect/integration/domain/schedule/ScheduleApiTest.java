@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.domain.schedule.controller;
+package gg.agit.konect.integration.domain.schedule;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
