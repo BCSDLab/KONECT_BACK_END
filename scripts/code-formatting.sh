@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+invocation_dir="$(pwd)"
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
@@ -11,18 +12,70 @@ target_java_files=()
 target_mode="staged"
 pre_format_snapshot=""
 
+resolve_target_java_file() {
+    local input_file="$1"
+    local resolved_file=""
+    local matched_files=""
+    local match_count
+
+    case "$input_file" in
+        *.java) ;;
+        *) return 1 ;;
+    esac
+
+    if [ -f "$input_file" ]; then
+        resolved_file="$input_file"
+    elif [ -f "$invocation_dir/$input_file" ]; then
+        resolved_file="$invocation_dir/$input_file"
+    elif [ -f "$repo_root/$input_file" ]; then
+        resolved_file="$repo_root/$input_file"
+    else
+        matched_files="$(git ls-files -- "$input_file" "*/$input_file" 2>/dev/null || true)"
+        if [ -z "$matched_files" ]; then
+            return 1
+        fi
+
+        match_count="$(printf '%s\n' "$matched_files" | wc -l | tr -d ' ')"
+        if [ "$match_count" -gt 1 ]; then
+            echo "[건너뜀] 여러 Java 파일이 일치해 파일명을 특정할 수 없습니다: $input_file" >&2
+            printf '%s\n' "$matched_files" >&2
+            return 1
+        fi
+
+        resolved_file="$repo_root/$matched_files"
+    fi
+
+    case "$resolved_file" in
+        "$repo_root"/*)
+            printf '%s\n' "${resolved_file#$repo_root/}"
+            return 0
+            ;;
+    esac
+
+    echo "[건너뜀] 레포 외부 파일은 포맷할 수 없습니다: $input_file" >&2
+    return 1
+}
+
 # 파일 인자가 있으면 인자 사용, 없으면 스테이징된 파일 사용
 if [ $# -gt 0 ]; then
     target_mode="explicit"
     for file in "$@"; do
-        if [[ -f "$file" && "$file" == *.java ]]; then
-            target_java_files+=("$file")
+        resolved_file="$(resolve_target_java_file "$file" || true)"
+        if [ -n "$resolved_file" ]; then
+            target_java_files+=("$resolved_file")
         fi
     done
 else
-    while IFS= read -r file; do
-        target_java_files+=("$file")
-    done < <(git diff --cached --name-only --diff-filter=ACMR -- '*.java')
+    staged_java_files="$(git diff --cached --name-only --diff-filter=ACMR -- '*.java')"
+    if [ -n "$staged_java_files" ]; then
+        while IFS= read -r file; do
+            if [ -n "$file" ]; then
+                target_java_files+=("$file")
+            fi
+        done <<EOF
+$staged_java_files
+EOF
+    fi
 fi
 
 if [ ${#target_java_files[@]} -eq 0 ]; then
@@ -86,11 +139,16 @@ find_formatter() {
     fi
 
     for pattern in "${windows_patterns[@]}"; do
-        while IFS= read -r match; do
-            if [ -n "$match" ]; then
-                candidates+=("$match")
-            fi
-        done < <(compgen -G "$pattern" || true)
+        matched_paths="$(compgen -G "$pattern" || true)"
+        if [ -n "$matched_paths" ]; then
+            while IFS= read -r match; do
+                if [ -n "$match" ]; then
+                    candidates+=("$match")
+                fi
+            done <<EOF
+$matched_paths
+EOF
+        fi
     done
 
     for candidate in "${candidates[@]}"; do
@@ -130,6 +188,86 @@ find_code_style() {
     return 1
 }
 
+find_google_java_format() {
+    local candidate
+    local -a candidates=(
+        "${GOOGLE_JAVA_FORMAT_BIN:-}"
+        "$repo_root/tools/google-java-format/google-java-format.jar"
+        "$repo_root/tools/google-java-format/google-java-format-all-deps.jar"
+        "google-java-format"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [ -z "$candidate" ]; then
+            continue
+        fi
+
+        if [ -f "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+
+        if command -v "$candidate" >/dev/null 2>&1; then
+            command -v "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+download_google_java_format() {
+    local version="1.35.0"
+    local cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/konect"
+    local target_dir="$cache_root/google-java-format"
+    local target_file="$target_dir/google-java-format-${version}-all-deps.jar"
+    local download_url="https://repo1.maven.org/maven2/com/google/googlejavaformat/google-java-format/${version}/google-java-format-${version}-all-deps.jar"
+
+    if [ -f "$target_file" ]; then
+        printf '%s\n' "$target_file"
+        return 0
+    fi
+
+    if ! command -v curl >/dev/null 2>&1; then
+        return 1
+    fi
+
+    mkdir -p "$target_dir"
+    curl --fail --location --silent --show-error "$download_url" --output "$target_file"
+    printf '%s\n' "$target_file"
+}
+
+run_unused_import_cleanup() {
+    local formatter
+    local -a cleanup_args=()
+
+    formatter="$(find_google_java_format || true)"
+    if [ -z "$formatter" ]; then
+        formatter="$(download_google_java_format || true)"
+    fi
+
+    if [ -z "$formatter" ]; then
+        echo "google-java-format을 찾지 못해 미사용 import 제거를 건너뜁니다."
+        echo "GOOGLE_JAVA_FORMAT_BIN을 설정하거나 curl 사용 가능한 환경에서 다시 실행해 주세요."
+        return 1
+    fi
+
+    echo "미사용 import를 제거하는 중..."
+
+    if [[ "$formatter" == *.jar ]]; then
+        if ! command -v java >/dev/null 2>&1; then
+            echo "Java 런타임이 없어 미사용 import를 제거할 수 없습니다."
+            return 1
+        fi
+
+        cleanup_args=(java -jar "$formatter")
+    else
+        cleanup_args=("$formatter")
+    fi
+
+    "${cleanup_args[@]}" --replace --fix-imports-only --skip-sorting-imports "${absolute_files[@]}"
+}
+
 formatter_bin="$(find_formatter)" || {
     echo "IntelliJ formatter를 찾지 못했습니다. IDEA_FORMATTER_BIN 또는 INTELLIJ_FORMATTER_BIN을 설정해 주세요."
     exit 1
@@ -154,7 +292,21 @@ if [ ${#absolute_files[@]} -eq 0 ]; then
     exit 0
 fi
 
-echo "IntelliJ formatter로 스테이징된 Java 파일 ${#absolute_files[@]}개를 포맷하는 중..."
+if [ "$target_mode" = "explicit" ]; then
+    echo "IntelliJ formatter로 지정된 Java 파일 ${#absolute_files[@]}개를 포맷하는 중..."
+else
+    echo "IntelliJ formatter로 스테이징된 Java 파일 ${#absolute_files[@]}개를 포맷하는 중..."
+fi
+echo "[대상 파일]"
+for file in "${target_java_files[@]}"; do
+    if [ -f "$file" ]; then
+        echo "  - $file"
+    fi
+done
+
+if ! run_unused_import_cleanup; then
+    exit 1
+fi
 
 is_launcher_formatter() {
     local basename
@@ -283,12 +435,8 @@ else
     post_format_snapshot="$(git diff --no-ext-diff -- "${target_java_files[@]}" 2>/dev/null || true)"
 
     if [[ "$pre_format_snapshot" != "$post_format_snapshot" ]]; then
-        echo "[커밋] 포맷팅으로 인한 코드 변경사항을 커밋합니다."
-        git add -- "${target_java_files[@]}"
-        git commit -m "chore: 코드 포맷팅"
-        echo "[완료] chore: 코드 포맷팅 커밋 생성"
+        echo "[완료] 지정된 Java 파일에 포맷과 미사용 import 정리를 적용했습니다."
     else
-        echo "[완료] 지정된 Java 파일에 IntelliJ 포맷을 적용했습니다."
+        echo "[완료] 지정된 Java 파일에 변경할 내용이 없습니다."
     fi
 fi
-
