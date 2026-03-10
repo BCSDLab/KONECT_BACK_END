@@ -119,9 +119,8 @@ formatter_bin="$(find_formatter)" || {
 }
 
 style_file=""
-if style_file="$(find_code_style)"; then
-    :
-else
+if ! style_file="$(find_code_style)"; then
+    style_file=""
     echo "프로젝트 IntelliJ 코드 스타일 파일이 없어 IntelliJ 기본 스타일을 사용합니다."
     echo "팀과 같은 스타일을 쓰려면 .idea/codeStyles/Project.xml 또는 config/intellij-code-style.xml을 추가해 주세요."
 fi
