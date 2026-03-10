@@ -218,7 +218,8 @@ EOF
         return 1
     fi
 
-    if "$formatter_bin" format "${formatter_exec_args[@]}" "${formatter_file_args[@]}" >"$stdout_log" 2>"$stderr_log"; then
+    # Non-launcher (format.sh 등): 서브커맨드 없이 직접 호출
+    if "$formatter_bin" "${formatter_exec_args[@]}" "${formatter_file_args[@]}" >"$stdout_log" 2>"$stderr_log"; then
         rm -f "$stdout_log" "$stderr_log"
         return 0
     fi
