@@ -6,6 +6,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRES
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Objects;
 
 import org.springframework.context.ApplicationEventPublisher;
