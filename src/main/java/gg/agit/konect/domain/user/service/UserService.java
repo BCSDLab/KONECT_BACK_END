@@ -100,9 +100,8 @@ public class UserService {
             tempUser.getAppleRefreshToken()
         );
 
-
-            joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
-          sendWelcomeMessage(savedUser);
+        joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
+        sendWelcomeMessage(savedUser);
         unRegisteredUserRepository.delete(tempUser);
         applicationEventPublisher.publishEvent(
             UserRegisteredEvent.from(savedUser.getEmail(), provider.name())
