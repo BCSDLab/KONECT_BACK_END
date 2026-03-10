@@ -70,6 +70,8 @@ dependencies {
     // notification
     implementation 'com.google.firebase:firebase-admin:9.2.0'
 
+    // Gemini AI - using REST API directly (no SDK dependency)
+
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
@@ -95,6 +97,8 @@ jar {
 
 tasks.named('test') {
 	useJUnitPlatform()
+
+	maxParallelForks = Math.min(Runtime.runtime.availableProcessors(), 4)
 }
 
 checkstyle {

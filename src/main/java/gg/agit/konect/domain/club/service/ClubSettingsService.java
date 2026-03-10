@@ -91,7 +91,7 @@ public class ClubSettingsService {
     }
 
     private ApplicationSummary buildApplicationSummary(Integer clubId) {
-        int questionCount = clubApplyQuestionRepository.findAllByClubIdOrderByIdAsc(clubId).size();
+        int questionCount = clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId).size();
         return new ApplicationSummary(questionCount);
     }
 

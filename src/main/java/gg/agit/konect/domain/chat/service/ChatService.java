@@ -116,7 +116,7 @@ public class ChatService {
 
     @Transactional
     public ChatRoomResponse createOrGetAdminChatRoom(Integer currentUserId) {
-        User adminUser = userRepository.findFirstByRoleOrderByIdAsc(UserRole.ADMIN)
+        User adminUser = userRepository.findFirstByRoleAndDeletedAtIsNullOrderByIdAsc(UserRole.ADMIN)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_USER));
 
         return createOrGetChatRoom(currentUserId, new ChatRoomCreateRequest(adminUser.getId()));

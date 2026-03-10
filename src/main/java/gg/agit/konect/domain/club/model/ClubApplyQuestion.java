@@ -6,6 +6,8 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static java.lang.Boolean.TRUE;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.time.LocalDateTime;
+
 import org.springframework.util.StringUtils;
 
 import gg.agit.konect.global.exception.CustomException;
@@ -45,24 +47,34 @@ public class ClubApplyQuestion extends BaseEntity {
     @Column(name = "is_required", nullable = false)
     private Boolean isRequired;
 
+    @NotNull
+    @Column(name = "display_order", nullable = false)
+    private Integer displayOrder;
+
+    @Column(name = "deleted_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime deletedAt;
+
     @Builder
     private ClubApplyQuestion(
         Integer id,
         Club club,
         String question,
-        Boolean isRequired
+        Boolean isRequired,
+        Integer displayOrder
     ) {
         this.id = id;
         this.club = club;
         this.question = question;
         this.isRequired = isRequired;
+        this.displayOrder = displayOrder;
     }
 
-    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired) {
+    public static ClubApplyQuestion of(Club club, String question, Boolean isRequired, Integer displayOrder) {
         return ClubApplyQuestion.builder()
             .club(club)
             .question(question)
             .isRequired(isRequired)
+            .displayOrder(displayOrder)
             .build();
     }
 
@@ -73,6 +85,18 @@ public class ClubApplyQuestion extends BaseEntity {
     public void update(String question, Boolean isRequired) {
         this.question = question;
         this.isRequired = isRequired;
+    }
+
+    public void softDelete(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public void updateDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
+    }
+
+    public boolean isSame(String question, Boolean isRequired) {
+        return this.question.equals(question) && this.isRequired.equals(isRequired);
     }
 
     private void validateRequiredAnswer(String answer) {

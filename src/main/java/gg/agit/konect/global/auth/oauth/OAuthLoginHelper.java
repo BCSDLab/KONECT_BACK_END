@@ -1,11 +1,16 @@
 package gg.agit.konect.global.auth.oauth;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -13,9 +18,14 @@ import org.springframework.util.StringUtils;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.config.SecurityProperties;
+import gg.agit.konect.global.exception.CustomException;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -24,42 +34,61 @@ public class OAuthLoginHelper {
 
     private static final long RESTORE_WINDOW_DAYS = 7L;
 
+    private static final String STAGE_PROFILE = "stage";
+
     private final UserRepository userRepository;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final UnRegisteredUserRepository unRegisteredUserRepository;
     private final SecurityProperties securityProperties;
+    private final Environment environment;
+    private final EntityManager entityManager;
 
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
     @Transactional
     public Optional<User> findUserByProvider(Provider provider, String email, String providerId) {
-        if (provider == Provider.APPLE) {
-            Optional<User> user = userRepository.findByProviderIdAndProvider(providerId, provider);
-            if (user.isPresent()) {
-                return user;
+        if (StringUtils.hasText(providerId)) {
+            Optional<User> linkedUser = userOAuthAccountRepository
+                .findUserByProviderAndProviderId(provider, providerId);
+            if (linkedUser.isPresent()) {
+                ensureLinkedAccount(linkedUser.get(), provider, providerId, email, linkedUser);
+                return linkedUser;
             }
 
-            if (StringUtils.hasText(providerId)) {
-                Optional<User> restoredByProviderId = restoreWithdrawnByProviderId(provider, providerId);
-                if (restoredByProviderId.isPresent()) {
-                    return restoredByProviderId;
-                }
+            Optional<User> restoredByLinkedAccount = restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
+            if (restoredByLinkedAccount.isPresent()) {
+                ensureLinkedAccount(
+                    restoredByLinkedAccount.get(),
+                    provider,
+                    providerId,
+                    email,
+                    restoredByLinkedAccount
+                );
+                return restoredByLinkedAccount;
             }
-
-            return restoreWithdrawnByEmail(provider, email);
         }
 
-        Optional<User> user = userRepository.findByEmailAndProvider(email, provider);
-        if (user.isPresent()) {
-            return user;
+        if (StringUtils.hasText(email)) {
+            Optional<User> restoredByEmail = restoreOrCleanupWithdrawnByOauthEmail(provider, email);
+            if (restoredByEmail.isPresent()) {
+                ensureLinkedAccount(restoredByEmail.get(), provider, providerId, email);
+                return restoredByEmail;
+            }
         }
 
-        return restoreWithdrawnByEmail(provider, email);
+        return userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider);
     }
 
     private Optional<User> restoreWithdrawnByProviderId(Provider provider, String providerId) {
-        return userRepository
-            .findFirstByProviderIdAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(providerId, provider)
+        if (isStageProfile()) {
+            return Optional.empty();
+        }
+
+        return userOAuthAccountRepository
+            .findAccountByProviderAndProviderId(provider, providerId)
+            .filter(account -> account.getUser().getDeletedAt() != null)
+            .map(UserOAuthAccount::getUser)
             .filter(user -> user.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS))
             .map(user -> {
                 user.restore();
@@ -68,16 +97,125 @@ public class OAuthLoginHelper {
     }
 
     private Optional<User> restoreWithdrawnByEmail(Provider provider, String email) {
+        if (isStageProfile()) {
+            return Optional.empty();
+        }
+
         if (!StringUtils.hasText(email)) {
             return Optional.empty();
         }
 
-        return userRepository.findFirstByEmailAndProviderAndDeletedAtIsNotNullOrderByDeletedAtDesc(email, provider)
+        return userOAuthAccountRepository.findUserByOauthEmailAndProvider(email, provider)
+            .filter(user -> user.getDeletedAt() != null)
             .filter(user -> user.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS))
             .map(user -> {
                 user.restore();
                 return userRepository.save(user);
             });
+    }
+
+    private boolean isStageProfile() {
+        return environment.acceptsProfiles(Profiles.of(STAGE_PROFILE));
+    }
+
+    private Optional<User> restoreOrCleanupWithdrawnByLinkedProvider(Provider provider, String providerId) {
+        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository
+            .findAccountByProviderAndProviderId(provider, providerId);
+
+        if (linkedAccount.isEmpty()) {
+            return Optional.empty();
+        }
+
+        User linkedUser = linkedAccount.get().getUser();
+
+        if (linkedUser.getDeletedAt() == null) {
+            return Optional.empty();
+        }
+
+        if (!isStageProfile() && linkedUser.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS)) {
+            linkedUser.restore();
+            return Optional.of(userRepository.save(linkedUser));
+        }
+
+        userOAuthAccountRepository.delete(linkedAccount.get());
+        return Optional.empty();
+    }
+
+    private Optional<User> restoreOrCleanupWithdrawnByOauthEmail(Provider provider, String oauthEmail) {
+        Optional<UserOAuthAccount> linkedAccount = userOAuthAccountRepository
+            .findAccountByProviderAndOauthEmail(provider, oauthEmail);
+
+        if (linkedAccount.isEmpty()) {
+            return Optional.empty();
+        }
+
+        User linkedUser = linkedAccount.get().getUser();
+        if (linkedUser.getDeletedAt() == null) {
+            return Optional.empty();
+        }
+
+        if (!isStageProfile() && linkedUser.canRestore(LocalDateTime.now(), RESTORE_WINDOW_DAYS)) {
+            linkedUser.restore();
+            return Optional.of(userRepository.save(linkedUser));
+        }
+
+        userOAuthAccountRepository.delete(linkedAccount.get());
+        return Optional.empty();
+    }
+
+    private void ensureLinkedAccount(User user, Provider provider, String providerId, String oauthEmail) {
+        ensureLinkedAccount(user, provider, providerId, oauthEmail, Optional.empty());
+    }
+
+    private void ensureLinkedAccount(
+        User user,
+        Provider provider,
+        String providerId,
+        String oauthEmail,
+        Optional<User> knownOwner
+    ) {
+        // providerId가 없어도 저장 허용 (이메일 기반 매칭)
+
+        if (StringUtils.hasText(providerId)) {
+            Optional<User> owner = knownOwner.isPresent()
+                ? knownOwner
+                : userOAuthAccountRepository.findUserByProviderAndProviderId(provider, providerId);
+            if (owner.isPresent() && !owner.get().getId().equals(user.getId())) {
+                throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+            }
+        }
+
+        Optional<UserOAuthAccount> linked = userOAuthAccountRepository.findByUserIdAndProvider(user.getId(), provider);
+
+        if (linked.isPresent()) {
+            UserOAuthAccount account = linked.get();
+
+            // provider_id 업데이트 (NULL -> 값 채우기)
+            if (StringUtils.hasText(providerId)) {
+                if (!providerId.equals(account.getProviderId())) {
+                    if (account.getProviderId() == null || !StringUtils.hasText(account.getProviderId())) {
+                        account.updateProviderId(providerId);
+                        userOAuthAccountRepository.save(account);
+                    } else {
+                        throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+                    }
+                }
+            }
+
+            if (StringUtils.hasText(oauthEmail)) {
+                account.updateOauthEmail(oauthEmail);
+                userOAuthAccountRepository.save(account);
+            }
+
+            return;
+        }
+
+        try {
+            userOAuthAccountRepository.save(UserOAuthAccount.of(user, provider, providerId, oauthEmail, null));
+            entityManager.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
+        }
     }
 
     // Apple 로그인 시 이메일이 누락된 경우, UnRegisteredUser에서 이메일을 조회
@@ -105,6 +243,13 @@ public class OAuthLoginHelper {
         char joiner = redirectUri.contains("?") ? '&' : '?';
 
         return redirectUri + joiner + "bridge_token=" + bridgeToken;
+    }
+
+    public String appendQueryParameter(String redirectUri, String key, String value) {
+        String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+        char joiner = redirectUri.contains("?") ? '&' : '?';
+
+        return redirectUri + joiner + key + "=" + encodedValue;
     }
 
     /*

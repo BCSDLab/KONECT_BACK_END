@@ -9,18 +9,27 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import gg.agit.konect.domain.club.model.ClubApply;
+import gg.agit.konect.domain.club.enums.ClubApplyStatus;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 
 public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
 
-    boolean existsByClubIdAndUserId(Integer clubId, Integer userId);
+    @Query("""
+        SELECT COUNT(ca) > 0
+        FROM ClubApply ca
+        WHERE ca.club.id = :clubId
+          AND ca.user.id = :userId
+          AND ca.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
+        """)
+    boolean existsPendingByClubIdAndUserId(@Param("clubId") Integer clubId, @Param("userId") Integer userId);
 
     @Query("""
         SELECT ca.club.id
         FROM ClubApply ca
         WHERE ca.user.id = :userId
           AND ca.club.id IN :clubIds
+          AND ca.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
         """)
     List<Integer> findClubIdsByUserIdAndClubIdIn(
         @Param("userId") Integer userId,
@@ -28,8 +37,6 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
     );
 
     ClubApply save(ClubApply clubApply);
-
-    void delete(ClubApply clubApply);
 
     void deleteByUserId(Integer userId);
 
@@ -39,6 +46,7 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
         JOIN FETCH clubApply.user user
         WHERE clubApply.id = :id
           AND clubApply.club.id = :clubId
+          AND clubApply.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
         """)
     Optional<ClubApply> findByIdAndClubId(
         @Param("id") Integer id,
@@ -56,6 +64,7 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
         JOIN FETCH clubApply.user user
         WHERE clubApply.club.id = :clubId
           AND clubApply.user.id = :userId
+          AND clubApply.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
         """)
     Optional<ClubApply> findByClubIdAndUserId(
         @Param("clubId") Integer clubId,
@@ -67,11 +76,23 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
     }
 
+    Optional<ClubApply> findFirstByClubIdAndUserIdAndStatusOrderByCreatedAtDescIdDesc(
+        Integer clubId,
+        Integer userId,
+        ClubApplyStatus status
+    );
+
+    default ClubApply getLatestApprovedByClubIdAndUserId(Integer clubId, Integer userId) {
+        return findFirstByClubIdAndUserIdAndStatusOrderByCreatedAtDescIdDesc(clubId, userId, ClubApplyStatus.APPROVED)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
+    }
+
     @Query("""
         SELECT clubApply
         FROM ClubApply clubApply
         JOIN FETCH clubApply.user user
         WHERE clubApply.club.id = :clubId
+          AND clubApply.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
         """)
     List<ClubApply> findAllByClubIdWithUser(@Param("clubId") Integer clubId);
 
@@ -80,6 +101,7 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
         FROM ClubApply clubApply
         JOIN FETCH clubApply.club club
         WHERE clubApply.user.id = :userId
+          AND clubApply.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
           AND NOT EXISTS (
             SELECT 1
             FROM ClubMember clubMember
@@ -96,6 +118,7 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
         JOIN FETCH clubApply.user user
         WHERE clubApply.club.id = :clubId
           AND clubApply.createdAt BETWEEN :startDateTime AND :endDateTime
+          AND clubApply.status = gg.agit.konect.domain.club.enums.ClubApplyStatus.PENDING
         """)
     List<ClubApply> findAllByClubIdAndCreatedAtBetweenWithUser(
         @Param("clubId") Integer clubId,

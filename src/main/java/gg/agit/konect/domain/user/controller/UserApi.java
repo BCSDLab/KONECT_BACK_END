@@ -11,6 +11,8 @@ import gg.agit.konect.domain.user.dto.SignupPrefillResponse;
 import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.dto.UserAccessTokenResponse;
 import gg.agit.konect.domain.user.dto.UserInfoResponse;
+import gg.agit.konect.domain.user.dto.OAuthLinkRequest;
+import gg.agit.konect.domain.user.dto.OAuthLinkStatusResponse;
 import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +32,6 @@ public interface UserApi {
             
             - `INVALID_SIGNUP_TOKEN` (401): 회원가입 토큰이 없거나 올바르지 않은 경우
             - `INVALID_REQUEST_BODY` (400): 요청 본문의 형식이 올바르지 않거나 필수 값이 누락된 경우
-            - `DUPLICATE_STUDENT_NUMBER` (409): 동일 대학교 + 학번 조합이 이미 존재하는 경우
             - `ALREADY_REGISTERED_USER` (409): 이미 가입된 회원인 경우
             - `UNIVERSITY_NOT_FOUND` (404): 대학교를 찾을 수 없는 경우
             - `NOT_FOUND_UNREGISTERED_USER` (404): 임시 유저를 찾을 수 없는 경우
@@ -52,6 +53,14 @@ public interface UserApi {
     @Operation(summary = "로그인한 사용자의 정보를 조회한다.")
     @GetMapping("/me")
     ResponseEntity<UserInfoResponse> getMyInfo(@UserId Integer userId);
+
+    @Operation(summary = "로그인한 사용자의 OAuth 연동 상태를 조회한다.")
+    @GetMapping("/me/oauth/links")
+    ResponseEntity<OAuthLinkStatusResponse> getOAuthLinkStatus(@UserId Integer userId);
+
+    @Operation(summary = "로그인한 사용자 계정에 OAuth 계정을 연동한다.")
+    @PostMapping("/me/oauth/links")
+    ResponseEntity<Void> linkOAuthAccount(@UserId Integer userId, @RequestBody @Valid OAuthLinkRequest request);
 
     @Operation(summary = "로그아웃한다.")
     @PostMapping("/logout")

@@ -73,7 +73,7 @@ public interface ClubBasicApi {
     );
 
     @Operation(summary = "동아리 정보를 수정한다.", description = """
-        동아리 회장 또는 부회장만 동아리 정보를 수정할 수 있습니다.
+        동아리 운영진 권한부터 동아리 정보를 수정할 수 있습니다.
         수정 가능 항목: 한 줄 소개, 로고 이미지, 동방 위치, 상세 소개
         동아리명과 분과는 수정할 수 없으며, 변경이 필요한 경우 문의하기를 통해 어드민에게 요청하세요.
 
@@ -141,6 +141,7 @@ public interface ClubBasicApi {
     @Operation(summary = "동아리 멤버 리스트를 조회한다.", description = """
         동아리 회원만 멤버 리스트를 조회할 수 있습니다.
         positionGroup 파라미터로 특정 직책 그룹의 회원만 필터링할 수 있습니다.
+        studentNumber는 조회 권한에 따라 마스킹되며, 관리자/운영진 이상은 원본 학번이 반환될 수 있습니다.
         
         ## 에러
         - FORBIDDEN_CLUB_MEMBER_ACCESS (403): 동아리 멤버 조회 권한이 없습니다.

@@ -91,15 +91,25 @@ public class ClubMemberManagementService {
         ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
         Integer universityId = club.getUniversity().getId();
 
-        Optional<User> existingUser = userRepository.findByUniversityIdAndStudentNumber(
+        // 학번 유니크 제약 제거로 동일 대학+학번 유저가 복수 존재할 수 있어, 이름으로 추가 필터링
+        List<User> candidates = userRepository.findAllByUniversityIdAndStudentNumber(
             universityId, studentNumber
         );
 
-        if (existingUser.isPresent()) {
-            return addDirectMember(club, existingUser.get(), clubPosition);
+        List<User> matchedUsers = candidates.stream()
+            .filter(user -> name.equals(user.getName()))
+            .toList();
+
+        if (matchedUsers.isEmpty()) {
+            return addPreMemberInternal(club, studentNumber, name, clubPosition);
         }
 
-        return addPreMemberInternal(club, studentNumber, name, clubPosition);
+        if (matchedUsers.size() == 1) {
+            return addDirectMember(club, matchedUsers.get(0), clubPosition);
+        }
+
+        // 동명이인이 2명 이상이면 모호성으로 인해 등록 불가
+        throw CustomException.of(AMBIGUOUS_USER_MATCH);
     }
 
     private ClubPreMemberAddResponse addDirectMember(Club club, User user, ClubPosition clubPosition) {

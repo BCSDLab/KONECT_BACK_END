@@ -16,11 +16,14 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
+import gg.agit.konect.domain.club.enums.ClubApplyStatus;
 import gg.agit.konect.domain.club.enums.ClubApplicationSortBy;
 import gg.agit.konect.domain.club.model.ClubApply;
+import gg.agit.konect.domain.club.model.QClubApply;
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -41,12 +44,14 @@ public class ClubApplyQueryRepository {
 
         BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
         BooleanExpression activeUserOnly = user.deletedAt.isNull();
+        BooleanExpression pendingOnly = clubApply.status.eq(ClubApplyStatus.PENDING);
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
             .join(clubApply.user, user).fetchJoin()
             .where(
                 clubApply.club.id.eq(clubId),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -60,6 +65,7 @@ public class ClubApplyQueryRepository {
             .from(clubApply)
             .where(
                 clubApply.club.id.eq(clubId),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -82,6 +88,7 @@ public class ClubApplyQueryRepository {
 
         BooleanExpression notAlreadyMember = notAlreadyClubMember(clubId);
         BooleanExpression activeUserOnly = user.deletedAt.isNull();
+        BooleanExpression pendingOnly = clubApply.status.eq(ClubApplyStatus.PENDING);
 
         List<ClubApply> content = jpaQueryFactory
             .selectFrom(clubApply)
@@ -89,6 +96,7 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 clubApply.createdAt.between(startDateTime, endDateTime),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -103,6 +111,7 @@ public class ClubApplyQueryRepository {
             .where(
                 clubApply.club.id.eq(clubId),
                 clubApply.createdAt.between(startDateTime, endDateTime),
+                pendingOnly,
                 activeUserOnly,
                 notAlreadyMember
             )
@@ -150,17 +159,7 @@ public class ClubApplyQueryRepository {
             condition.sortDirection()
         );
 
-        BooleanExpression isClubMember = isAlreadyClubMember(clubId);
-        BooleanExpression activeUserOnly = user.deletedAt.isNull();
-
-        List<ClubApply> content = jpaQueryFactory
-            .selectFrom(clubApply)
-            .join(clubApply.user, user).fetchJoin()
-            .where(
-                clubApply.club.id.eq(clubId),
-                activeUserOnly,
-                isClubMember
-            )
+        List<ClubApply> content = approvedMemberApplicationBaseQuery(clubId)
             .orderBy(orderSpecifier)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
@@ -169,14 +168,28 @@ public class ClubApplyQueryRepository {
         Long total = jpaQueryFactory
             .select(clubApply.count())
             .from(clubApply)
-            .where(
-                clubApply.club.id.eq(clubId),
-                activeUserOnly,
-                isClubMember
-            )
+            .join(clubApply.user, user)
+            .where(approvedMemberApplicationPredicates(clubId))
             .fetchOne();
 
         return new PageImpl<>(content, pageable, total != null ? total : 0L);
+    }
+
+    private JPAQuery<ClubApply> approvedMemberApplicationBaseQuery(Integer clubId) {
+        return jpaQueryFactory
+            .selectFrom(clubApply)
+            .join(clubApply.user, user).fetchJoin()
+            .where(approvedMemberApplicationPredicates(clubId));
+    }
+
+    private BooleanExpression[] approvedMemberApplicationPredicates(Integer clubId) {
+        return new BooleanExpression[] {
+            clubApply.club.id.eq(clubId),
+            user.deletedAt.isNull(),
+            isAlreadyClubMember(clubId),
+            clubApply.status.eq(ClubApplyStatus.APPROVED),
+            isLatestApprovedApplicationByUser(clubId)
+        };
     }
 
     private BooleanExpression isAlreadyClubMember(Integer clubId) {
@@ -188,5 +201,24 @@ public class ClubApplyQueryRepository {
                 clubMember.user.id.eq(clubApply.user.id)
             )
             .exists();
+    }
+
+    private BooleanExpression isLatestApprovedApplicationByUser(Integer clubId) {
+        QClubApply newerApply = new QClubApply("newerApply");
+
+        return JPAExpressions
+            .selectOne()
+            .from(newerApply)
+            .where(
+                newerApply.club.id.eq(clubId),
+                newerApply.status.eq(ClubApplyStatus.APPROVED),
+                newerApply.user.id.eq(clubApply.user.id),
+                newerApply.createdAt.gt(clubApply.createdAt)
+                    .or(
+                        newerApply.createdAt.eq(clubApply.createdAt)
+                            .and(newerApply.id.gt(clubApply.id))
+                    )
+            )
+            .notExists();
     }
 }

@@ -16,6 +16,8 @@ import jakarta.servlet.http.HttpSession;
 public class OAuth2RedirectUriSaveFilter extends OncePerRequestFilter {
 
     public static final String REDIRECT_URI_SESSION_KEY = "redirect_uri";
+    public static final String OAUTH_MODE_SESSION_KEY = "oauth_mode";
+    public static final String OAUTH_MODE_LINK = "LINK";
 
     @Override
     protected void doFilterInternal(
@@ -26,10 +28,17 @@ public class OAuth2RedirectUriSaveFilter extends OncePerRequestFilter {
 
         if (request.getRequestURI().startsWith("/oauth2/authorization/")) {
             String redirectUri = request.getParameter("redirect_uri");
+            String mode = request.getParameter("oauth_mode");
 
             if (isValidRedirectUri(redirectUri)) {
                 HttpSession session = request.getSession(true);
                 session.setAttribute(REDIRECT_URI_SESSION_KEY, redirectUri);
+
+                if (isLinkMode(mode)) {
+                    session.setAttribute(OAUTH_MODE_SESSION_KEY, OAUTH_MODE_LINK);
+                } else {
+                    session.removeAttribute(OAUTH_MODE_SESSION_KEY);
+                }
             }
         }
 
@@ -52,5 +61,9 @@ public class OAuth2RedirectUriSaveFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private boolean isLinkMode(String mode) {
+        return mode != null && OAUTH_MODE_LINK.equalsIgnoreCase(mode);
     }
 }
