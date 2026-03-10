@@ -26,7 +26,6 @@ import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.service.SignupTokenService;
-import gg.agit.konect.global.auth.jwt.JwtProvider;
 import gg.agit.konect.global.auth.oauth.NativeSessionBridgeService;
 import gg.agit.konect.global.auth.oauth.OAuthLoginHelper;
 import gg.agit.konect.global.auth.oauth.VerifiedOAuthUser;
