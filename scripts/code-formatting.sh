@@ -180,36 +180,36 @@ run_formatter() {
     done
 
     if is_launcher_formatter "$formatter_bin"; then
-            local temp_root
-            local temp_config
-            local temp_system
-            local temp_log
+        local temp_root
+        local temp_config
+        local temp_system
+        local temp_log
 
-            temp_root="$(mktemp -d "$temp_base_dir/idea-format.XXXXXX")"
-            mkdir -p "$temp_root/config" "$temp_root/system" "$temp_root/log"
-            temp_config="$(to_native_path "$temp_root/config")"
-            temp_system="$(to_native_path "$temp_root/system")"
-            temp_log="$(to_native_path "$temp_root/log")"
+        temp_root="$(mktemp -d "$temp_base_dir/idea-format.XXXXXX")"
+        mkdir -p "$temp_root/config" "$temp_root/system" "$temp_root/log"
+        temp_config="$(to_native_path "$temp_root/config")"
+        temp_system="$(to_native_path "$temp_root/system")"
+        temp_log="$(to_native_path "$temp_root/log")"
 
-            if "$formatter_bin" format \
-                "-Didea.config.path=$temp_config" \
-                "-Didea.system.path=$temp_system" \
-                "-Didea.log.path=$temp_log" \
-                "-Djava.awt.headless=true" \
-                "${formatter_exec_args[@]}" \
-                "${formatter_file_args[@]}" \
-                >"$stdout_log" \
-                2>"$stderr_log"; then
-                rm -rf "$temp_root"
-                rm -f "$stdout_log" "$stderr_log"
-                return 0
-            fi
-
-            cat "$stdout_log"
-            cat "$stderr_log" >&2
+        if "$formatter_bin" format \
+            "-Didea.config.path=$temp_config" \
+            "-Didea.system.path=$temp_system" \
+            "-Didea.log.path=$temp_log" \
+            "-Djava.awt.headless=true" \
+            "${formatter_exec_args[@]}" \
+            "${formatter_file_args[@]}" \
+            >"$stdout_log" \
+            2>"$stderr_log"; then
             rm -rf "$temp_root"
             rm -f "$stdout_log" "$stderr_log"
-            return 1
+            return 0
+        fi
+
+        cat "$stdout_log"
+        cat "$stderr_log" >&2
+        rm -rf "$temp_root"
+        rm -f "$stdout_log" "$stderr_log"
+        return 1
     fi
 
     if "$formatter_bin" format "${formatter_exec_args[@]}" "${formatter_file_args[@]}" >"$stdout_log" 2>"$stderr_log"; then
