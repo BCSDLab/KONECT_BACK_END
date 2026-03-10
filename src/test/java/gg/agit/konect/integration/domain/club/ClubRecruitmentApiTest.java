@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.domain.club.controller;
+package gg.agit.konect.integration.domain.club;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,7 +26,7 @@ import gg.agit.konect.support.fixture.ClubRecruitmentFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ClubRecruitmentControllerIntegrationTest extends IntegrationTestSupport {
+class ClubRecruitmentApiTest extends IntegrationTestSupport {
 
     private static final int RECRUITMENT_PERIOD_DAYS = 30;
 

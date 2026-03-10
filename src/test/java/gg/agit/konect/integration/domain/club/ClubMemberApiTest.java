@@ -1,4 +1,4 @@
-package gg.agit.konect.integration.domain.club.controller;
+package gg.agit.konect.integration.domain.club;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -27,7 +27,7 @@ import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-class ClubMemberControllerIntegrationTest extends IntegrationTestSupport {
+class ClubMemberApiTest extends IntegrationTestSupport {
 
     @Autowired
     private ClubMemberRepository clubMemberRepository;
