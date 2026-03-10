@@ -435,7 +435,10 @@ else
     post_format_snapshot="$(git diff --no-ext-diff -- "${target_java_files[@]}" 2>/dev/null || true)"
 
     if [[ "$pre_format_snapshot" != "$post_format_snapshot" ]]; then
-        echo "[완료] 지정된 Java 파일에 포맷과 미사용 import 정리를 적용했습니다."
+        echo "[커밋] 포맷팅으로 인한 코드 변경사항을 커밋합니다."
+        git add -- "${target_java_files[@]}"
+        git commit -m "chore: 코드 포맷팅"
+        echo "[완료] chore: 코드 포맷팅 커밋 생성"
     else
         echo "[완료] 지정된 Java 파일에 변경할 내용이 없습니다."
     fi
