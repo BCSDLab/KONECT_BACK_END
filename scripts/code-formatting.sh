@@ -187,23 +187,29 @@ run_formatter() {
 
         temp_root="$(mktemp -d "$temp_base_dir/idea-format.XXXXXX")"
         mkdir -p "$temp_root/config" "$temp_root/system" "$temp_root/log"
-        temp_config="$(to_native_path "$temp_root/config")"
-        temp_system="$(to_native_path "$temp_root/system")"
-        temp_log="$(to_native_path "$temp_root/log")"
+        temp_config="$temp_root/config"
+        temp_system="$temp_root/system"
+        temp_log="$temp_root/log"
 
+        temp_properties="$temp_root/idea.properties"
+        cat > "$temp_properties" <<EOF
+idea.config.path=$temp_config
+idea.system.path=$temp_system
+idea.log.path=$temp_log
+EOF
+
+        export IDEA_PROPERTIES="$temp_properties"
         if "$formatter_bin" format \
-            "-Didea.config.path=$temp_config" \
-            "-Didea.system.path=$temp_system" \
-            "-Didea.log.path=$temp_log" \
-            "-Djava.awt.headless=true" \
             "${formatter_exec_args[@]}" \
             "${formatter_file_args[@]}" \
             >"$stdout_log" \
             2>"$stderr_log"; then
+            unset IDEA_PROPERTIES
             rm -rf "$temp_root"
             rm -f "$stdout_log" "$stderr_log"
             return 0
         fi
+        unset IDEA_PROPERTIES
 
         cat "$stdout_log"
         cat "$stderr_log" >&2
