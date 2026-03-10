@@ -102,7 +102,7 @@ public class UserService {
 
 
             joinPreMembers(savedUser, university.getId(), request.studentNumber(), request.name());
-        sendWelcomeMessage(savedUser);
+          sendWelcomeMessage(savedUser);
         unRegisteredUserRepository.delete(tempUser);
         applicationEventPublisher.publishEvent(
             UserRegisteredEvent.from(savedUser.getEmail(), provider.name())
