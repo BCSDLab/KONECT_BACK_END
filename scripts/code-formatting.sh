@@ -140,14 +140,23 @@ fi
 echo "IntelliJ formatter로 스테이징된 Java 파일 ${#absolute_files[@]}개를 포맷하는 중..."
 
 is_launcher_formatter() {
-    case "$1" in
-        */MacOS/idea|*/MacOS/studio|idea|studio|*.exe)
+    local basename
+    basename=$(basename "$1" .sh)  # .sh 확장자 제거
+    case "$basename" in
+        idea|idea64|studio|studio64)
             return 0
             ;;
-        *)
-            return 1
+        *.exe)
+            # Windows exe 파일에서 이름 추출
+            basename=$(basename "$1" .exe)
+            case "$basename" in
+                idea|idea64|studio|studio64)
+                    return 0
+                    ;;
+            esac
             ;;
     esac
+    return 1
 }
 
 to_native_path() {
