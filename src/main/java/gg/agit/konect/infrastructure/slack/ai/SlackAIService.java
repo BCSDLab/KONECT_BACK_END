@@ -91,7 +91,7 @@ public class SlackAIService {
 
         List<Map<String, Object>> messages = new ArrayList<>();
         for (Map<String, Object> reply : replies) {
-            String replyText = (String) reply.get("text");
+            String replyText = (String)reply.get("text");
 
             if (replyText == null) {
                 continue;
