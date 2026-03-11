@@ -1,6 +1,7 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -21,7 +22,7 @@ public class SlackAIService {
 
     private static final Pattern AI_PREFIX_PATTERN = Pattern.compile("^[Aa][Ii]\\)\\s*(.+)$");
     private static final Pattern MENTION_PATTERN = Pattern.compile("^<@[^>]+>\\s*");
-    private static final String AI_RESPONSE_PREFIX = ":robot_face: *AI 응답*\n";
+    private static final String AI_RESPONSE_PREFIX = ":robot_face: *AI \uc751\ub2f5*\n";
 
     private final ClaudeClient claudeClient;
     private final SlackClient slackClient;
@@ -48,21 +49,44 @@ public class SlackAIService {
         return MENTION_PATTERN.matcher(text).replaceFirst("").trim();
     }
 
+    /**
+     * AI \uc2a4\ub808\ub4dc\uc778 \uacbd\uc6b0 replies\ub97c \ubc18\ud658, \uc544\ub2cc \uacbd\uc6b0 \ube48 \ub9ac\uc2a4\ud2b8 \ubc18\ud658.
+     * Controller\uc5d0\uc11c isAIThread \ud310\ub2e8\uacfc getThreadReplies\ub97c \ud55c \ubc88\uc5d0 \ucc98\ub9ac\ud558\ub3c4\ub85d \ud1b5\ud569.
+     */
+    public List<Map<String, Object>> fetchAIThreadReplies(String channelId, String threadTs) {
+        List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
+        if (replies.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Map<String, Object> rootMessage = replies.get(0);
+        String rootText = (String)rootMessage.get("text");
+        if (rootText != null && isAIQuery(rootText)) {
+            return replies;
+        }
+        if (replies.stream().anyMatch(r -> r.get("bot_id") != null)) {
+            return replies;
+        }
+        return new ArrayList<>();
+    }
+
     @Async
-    public void processAIQuery(String text, String channelId, String threadTs) {
+    public void processAIQuery(String text, String channelId, String threadTs,
+            List<Map<String, Object>> cachedReplies) {
         try {
             String userQuery = extractQuery(text);
 
             if (userQuery == null || userQuery.isBlank()) {
-                log.debug("빈 질문으로 처리 중단");
+                log.debug("\ube48 \uc9c8\ubb38\uc73c\ub85c \ucc98\ub9ac \uc911\ub2e8");
                 slackClient.postThreadReply(channelId, threadTs,
-                    formatSlackResponse("질문 내용이 비어있습니다. 예: `AI) 가입자 수 알려줘` 또는 `@봇이름 동아리 수는?`"));
+                    formatSlackResponse("\uc9c8\ubb38 \ub0b4\uc6a9\uc774 \ube44\uc5b4\uc788\uc2b5\ub2c8\ub2e4. \uc608: `AI) \uac00\uc785\uc790 \uc218 \uc54c\ub824\uc918` \ub610\ub294 `@\ubd07\uc774\ub984 \ub3d9\uc544\ub9ac \uc218\ub294?`"));
                 return;
             }
 
-            log.debug("AI 질문 처리 시작: {}", userQuery);
+            log.debug("AI \uc9c8\ubb38 \ucc98\ub9ac \uc2dc\uc791: {}", userQuery);
 
-            List<Map<String, Object>> messages = buildConversationHistory(channelId, threadTs);
+            List<Map<String, Object>> replies =
+                cachedReplies != null ? cachedReplies : new ArrayList<>();
+            List<Map<String, Object>> messages = buildConversationHistory(replies);
 
             if (messages.isEmpty()) {
                 messages = new ArrayList<>();
@@ -71,34 +95,18 @@ public class SlackAIService {
 
             String response = claudeClient.chat(messages);
 
-            log.debug("AI 응답 생성 완료");
+            log.debug("AI \uc751\ub2f5 \uc0dd\uc131 \uc644\ub8cc");
 
             slackClient.postThreadReply(channelId, threadTs, formatSlackResponse(response));
 
         } catch (Exception e) {
-            log.error("AI 질문 처리 중 오류 발생", e);
+            log.error("AI \uc9c8\ubb38 \ucc98\ub9ac \uc911 \uc624\ub958 \ubc1c\uc0dd", e);
             slackClient.postThreadReply(channelId, threadTs,
-                ":warning: 죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.");
+                ":warning: \uc8c4\uc1a1\ud569\ub2c8\ub2e4. \uc694\uccad\uc744 \ucc98\ub9ac\ud558\ub294 \uc911 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4.");
         }
     }
 
-    public boolean isAIThread(String channelId, String threadTs) {
-        List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
-        if (replies.isEmpty()) {
-            return false;
-        }
-        // 루트 메시지가 AI 질의이거나 봇이 이미 응답한 스레드이면 AI 스레드로 판단
-        Map<String, Object> rootMessage = replies.get(0);
-        String rootText = (String)rootMessage.get("text");
-        if (rootText != null && isAIQuery(rootText)) {
-            return true;
-        }
-        return replies.stream().anyMatch(r -> r.get("bot_id") != null);
-    }
-
-    private List<Map<String, Object>> buildConversationHistory(String channelId, String threadTs) {
-        List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
-
+    private List<Map<String, Object>> buildConversationHistory(List<Map<String, Object>> replies) {
         if (replies.isEmpty()) {
             return new ArrayList<>();
         }
@@ -123,10 +131,29 @@ public class SlackAIService {
             }
         }
 
-        return messages;
+        return mergeConsecutiveRoles(messages);
+    }
+
+    /**
+     * Claude API\ub294 user/assistant\uc774 \uad50\ub300\ub85c \uc640\uc57c \ud558\ubbc0\ub85c,
+     * \uc5f0\uc18d\ub41c \ub3d9\uc77c role \uba54\uc2dc\uc9c0\ub97c \ud558\ub098\ub85c \ubcd1\ud569.
+     */
+    private List<Map<String, Object>> mergeConsecutiveRoles(List<Map<String, Object>> messages) {
+        List<Map<String, Object>> merged = new ArrayList<>();
+        for (Map<String, Object> msg : messages) {
+            if (!merged.isEmpty()
+                    && merged.get(merged.size() - 1).get("role").equals(msg.get("role"))) {
+                Map<String, Object> last = new HashMap<>(merged.get(merged.size() - 1));
+                last.put("content", last.get("content") + "\n" + msg.get("content"));
+                merged.set(merged.size() - 1, last);
+            } else {
+                merged.add(msg);
+            }
+        }
+        return merged;
     }
 
     private String formatSlackResponse(String response) {
-        return String.format(":robot_face: *AI 응답*\n%s", response);
+        return String.format(":robot_face: *AI \uc751\ub2f5*\n%s", response);
     }
 }
