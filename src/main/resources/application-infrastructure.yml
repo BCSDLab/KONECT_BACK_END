@@ -12,7 +12,6 @@ slack:
     error: ${SLACK_WEBHOOK_ERROR}
     event: ${SLACK_WEBHOOK_EVENT}
   signing-secret: ${SLACK_SIGNING_SECRET}
-  bot-token: ${SLACK_BOT_TOKEN}
 
 claude:
   api-key: ${CLAUDE_API_KEY}

@@ -5,8 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "slack")
 public record SlackProperties(
     Webhooks webhooks,
-    String signingSecret,
-    String botToken
+    String signingSecret
 ) {
     public record Webhooks(
         String error,
