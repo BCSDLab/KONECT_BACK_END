@@ -82,6 +82,20 @@ public class SlackAIService {
         }
     }
 
+    public boolean isAIThread(String channelId, String threadTs) {
+        List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
+        if (replies.isEmpty()) {
+            return false;
+        }
+        // 루트 메시지가 AI 질의이거나 봇이 이미 응답한 스레드이면 AI 스레드로 판단
+        Map<String, Object> rootMessage = replies.get(0);
+        String rootText = (String)rootMessage.get("text");
+        if (rootText != null && isAIQuery(rootText)) {
+            return true;
+        }
+        return replies.stream().anyMatch(r -> r.get("bot_id") != null);
+    }
+
     private List<Map<String, Object>> buildConversationHistory(String channelId, String threadTs) {
         List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
 
@@ -98,10 +112,13 @@ public class SlackAIService {
             }
 
             if (reply.get("bot_id") != null) {
-                String content = replyText.replace(AI_RESPONSE_PREFIX, "");
+                String content = replyText.startsWith(AI_RESPONSE_PREFIX)
+                    ? replyText.substring(AI_RESPONSE_PREFIX.length())
+                    : replyText;
                 messages.add(Map.of("role", "assistant", "content", content));
             } else {
-                String userText = isAIQuery(replyText) ? extractQuery(replyText) : replyText;
+                String normalizedText = normalizeAppMentionText(replyText);
+                String userText = isAIQuery(normalizedText) ? extractQuery(normalizedText) : normalizedText;
                 messages.add(Map.of("role", "user", "content", userText));
             }
         }

@@ -108,6 +108,10 @@ public class SlackEventController {
             if (slackAIService.isAIQuery(text)) {
                 log.debug("AI 질문 감지");
                 slackAIService.processAIQuery(text, channelId, effectiveThreadTs);
+            } else if (threadTs != null && slackAIService.isAIThread(channelId, threadTs)) {
+                // 이미 AI가 참여한 스레드의 후속 질문은 prefix 없이도 처리
+                log.debug("AI 스레드 내 후속 질문 감지");
+                slackAIService.processAIQuery(text, channelId, effectiveThreadTs);
             }
         }
 
