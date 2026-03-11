@@ -130,9 +130,19 @@ public class ClaudeClient {
      * @return AI response
      */
     public String chat(String userMessage) {
+        return chat(List.of(Map.of("role", "user", "content", userMessage)));
+    }
+
+    /**
+     * Process conversation history with tool use support.
+     * Supports multi-turn tool calls for schema discovery and query execution.
+     *
+     * @param initialMessages Conversation history
+     * @return AI response
+     */
+    public String chat(List<Map<String, Object>> initialMessages) {
         try {
-            List<Map<String, Object>> messages = new ArrayList<>();
-            messages.add(Map.of("role", "user", "content", userMessage));
+            List<Map<String, Object>> messages = new ArrayList<>(initialMessages);
 
             for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
                 Map<String, Object> request = buildRequest(messages);
