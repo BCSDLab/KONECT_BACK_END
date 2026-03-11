@@ -1,5 +1,6 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -89,6 +90,9 @@ public class SlackEventController {
         String eventType = (String)event.get("type");
         String text = (String)event.get("text");
         String subtype = (String)event.get("subtype");
+        String channelId = (String)event.get("channel");
+        String ts = (String)event.get("ts");
+        String threadTs = (String)event.get("thread_ts");
 
         log.debug("이벤트 처리: eventType={}", eventType);
 
@@ -97,11 +101,23 @@ public class SlackEventController {
             return;
         }
 
+        // thread_ts가 있으면 스레드 내 메시지, 없으면 새 스레드 시작
+        String effectiveThreadTs = threadTs != null ? threadTs : ts;
+
         // 메시지 이벤트 처리
         if ("message".equals(eventType) && text != null) {
             if (slackAIService.isAIQuery(text)) {
                 log.debug("AI 질문 감지");
-                slackAIService.processAIQuery(text);
+                slackAIService.processAIQuery(text, channelId, effectiveThreadTs, null);
+            } else if (threadTs != null) {
+                // AI 스레드 확인과 replies fetch를 한 번에 처리 (중복 API 호출 방지)
+                List<Map<String, Object>> aiReplies =
+                    slackAIService.fetchAIThreadReplies(channelId, threadTs);
+                if (!aiReplies.isEmpty()) {
+                    log.debug("AI 스레드 내 후속 질문 감지");
+                    slackAIService.processAIQuery(
+                        text, channelId, effectiveThreadTs, aiReplies);
+                }
             }
         }
 
@@ -109,7 +125,7 @@ public class SlackEventController {
         if ("app_mention".equals(eventType) && text != null) {
             String normalizedText = slackAIService.normalizeAppMentionText(text);
             log.debug("앱 멘션 감지");
-            slackAIService.processAIQuery(normalizedText);
+            slackAIService.processAIQuery(normalizedText, channelId, effectiveThreadTs, null);
         }
     }
 }
