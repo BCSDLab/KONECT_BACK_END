@@ -22,7 +22,11 @@ public class SlackAIService {
 
     private static final Pattern AI_PREFIX_PATTERN = Pattern.compile("^[Aa][Ii]\\)\\s*(.+)$");
     private static final Pattern MENTION_PATTERN = Pattern.compile("^<@[^>]+>\\s*");
-    private static final String AI_RESPONSE_PREFIX = ":robot_face: *AI \uc751\ub2f5*\n";
+    private static final String AI_RESPONSE_PREFIX = ":robot_face: *AI 응답*\n";
+    private static final String EMPTY_QUERY_MESSAGE =
+        "질문 내용이 비어있습니다. 예: `AI) 가입자 수 알려줘` 또는 `@봇이름 동아리 수는?`";
+    private static final String ERROR_MESSAGE =
+        ":warning: 죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.";
 
     private final ClaudeClient claudeClient;
     private final SlackClient slackClient;
@@ -50,8 +54,8 @@ public class SlackAIService {
     }
 
     /**
-     * AI \uc2a4\ub808\ub4dc\uc778 \uacbd\uc6b0 replies\ub97c \ubc18\ud658, \uc544\ub2cc \uacbd\uc6b0 \ube48 \ub9ac\uc2a4\ud2b8 \ubc18\ud658.
-     * Controller\uc5d0\uc11c isAIThread \ud310\ub2e8\uacfc getThreadReplies\ub97c \ud55c \ubc88\uc5d0 \ucc98\ub9ac\ud558\ub3c4\ub85d \ud1b5\ud569.
+     * AI 스레드이면 replies 반환, 아니면 빈 리스트 반환.
+     * Controller에서 isAIThread 판단과 getThreadReplies를 한 번에 처리하도록 통합.
      */
     public List<Map<String, Object>> fetchAIThreadReplies(String channelId, String threadTs) {
         List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
@@ -76,13 +80,13 @@ public class SlackAIService {
             String userQuery = extractQuery(text);
 
             if (userQuery == null || userQuery.isBlank()) {
-                log.debug("\ube48 \uc9c8\ubb38\uc73c\ub85c \ucc98\ub9ac \uc911\ub2e8");
+                log.debug("빈 질문으로 처리 중단");
                 slackClient.postThreadReply(channelId, threadTs,
-                    formatSlackResponse("\uc9c8\ubb38 \ub0b4\uc6a9\uc774 \ube44\uc5b4\uc788\uc2b5\ub2c8\ub2e4. \uc608: `AI) \uac00\uc785\uc790 \uc218 \uc54c\ub824\uc918` \ub610\ub294 `@\ubd07\uc774\ub984 \ub3d9\uc544\ub9ac \uc218\ub294?`"));
+                    formatSlackResponse(EMPTY_QUERY_MESSAGE));
                 return;
             }
 
-            log.debug("AI \uc9c8\ubb38 \ucc98\ub9ac \uc2dc\uc791: {}", userQuery);
+            log.debug("AI 질문 처리 시작: {}", userQuery);
 
             List<Map<String, Object>> replies =
                 cachedReplies != null ? cachedReplies : new ArrayList<>();
@@ -95,14 +99,13 @@ public class SlackAIService {
 
             String response = claudeClient.chat(messages);
 
-            log.debug("AI \uc751\ub2f5 \uc0dd\uc131 \uc644\ub8cc");
+            log.debug("AI 응답 생성 완료");
 
             slackClient.postThreadReply(channelId, threadTs, formatSlackResponse(response));
 
         } catch (Exception e) {
-            log.error("AI \uc9c8\ubb38 \ucc98\ub9ac \uc911 \uc624\ub958 \ubc1c\uc0dd", e);
-            slackClient.postThreadReply(channelId, threadTs,
-                ":warning: \uc8c4\uc1a1\ud569\ub2c8\ub2e4. \uc694\uccad\uc744 \ucc98\ub9ac\ud558\ub294 \uc911 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4.");
+            log.error("AI 질문 처리 중 오류 발생", e);
+            slackClient.postThreadReply(channelId, threadTs, ERROR_MESSAGE);
         }
     }
 
@@ -126,7 +129,9 @@ public class SlackAIService {
                 messages.add(Map.of("role", "assistant", "content", content));
             } else {
                 String normalizedText = normalizeAppMentionText(replyText);
-                String userText = isAIQuery(normalizedText) ? extractQuery(normalizedText) : normalizedText;
+                String userText = isAIQuery(normalizedText)
+                    ? extractQuery(normalizedText)
+                    : normalizedText;
                 messages.add(Map.of("role", "user", "content", userText));
             }
         }
@@ -135,8 +140,8 @@ public class SlackAIService {
     }
 
     /**
-     * Claude API\ub294 user/assistant\uc774 \uad50\ub300\ub85c \uc640\uc57c \ud558\ubbc0\ub85c,
-     * \uc5f0\uc18d\ub41c \ub3d9\uc77c role \uba54\uc2dc\uc9c0\ub97c \ud558\ub098\ub85c \ubcd1\ud569.
+     * Claude API는 user/assistant이 교대로 와야 하므로
+     * 연속된 동일 role 메시지를 하나로 병합.
      */
     private List<Map<String, Object>> mergeConsecutiveRoles(List<Map<String, Object>> messages) {
         List<Map<String, Object>> merged = new ArrayList<>();
@@ -154,6 +159,6 @@ public class SlackAIService {
     }
 
     private String formatSlackResponse(String response) {
-        return String.format(":robot_face: *AI \uc751\ub2f5*\n%s", response);
+        return String.format(":robot_face: *AI 응답*\n%s", response);
     }
 }
