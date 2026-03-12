@@ -1,6 +1,9 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +31,10 @@ public class SlackEventController {
 
     private static final String SLACK_TIMESTAMP_HEADER = "X-Slack-Request-Timestamp";
     private static final String SLACK_SIGNATURE_HEADER = "X-Slack-Signature";
+    private static final int EVENT_CACHE_MAX_SIZE = 500;
+
+    // ConcurrentHashMap 기반 thread-safe event_id 캐시
+    private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
     private final SlackAIService slackAIService;
     private final SlackSignatureVerifier signatureVerifier;
@@ -65,6 +72,15 @@ public class SlackEventController {
 
         // 이벤트 콜백 처리
         if ("event_callback".equals(type)) {
+            String eventId = (String)payload.get("event_id");
+            if (eventId != null && !processedEventIds.add(eventId)) {
+                log.debug("중복 이벤트 무시: event_id={}", eventId);
+                return ResponseEntity.ok().build();
+            }
+            // 캐시 크기 초과 시 오래된 항목 제거
+            if (processedEventIds.size() > EVENT_CACHE_MAX_SIZE) {
+                processedEventIds.remove(processedEventIds.iterator().next());
+            }
             Map<String, Object> event = (Map<String, Object>)payload.get("event");
             if (event != null) {
                 handleEvent(event);
@@ -89,6 +105,9 @@ public class SlackEventController {
         String eventType = (String)event.get("type");
         String text = (String)event.get("text");
         String subtype = (String)event.get("subtype");
+        String channelId = (String)event.get("channel");
+        String ts = (String)event.get("ts");
+        String threadTs = (String)event.get("thread_ts");
 
         log.debug("이벤트 처리: eventType={}", eventType);
 
@@ -97,11 +116,23 @@ public class SlackEventController {
             return;
         }
 
+        String effectiveThreadTs = threadTs != null ? threadTs : ts;
+
         // 메시지 이벤트 처리
         if ("message".equals(eventType) && text != null) {
             if (slackAIService.isAIQuery(text)) {
+                // AI) prefix → 새 질문 또는 스레드 내 후속 질문
                 log.debug("AI 질문 감지");
-                slackAIService.processAIQuery(text);
+                slackAIService.processAIQuery(text, channelId, effectiveThreadTs, null);
+            } else if (threadTs != null && slackAIService.isAppMention(text)) {
+                // 스레드 내 @멘션 있을 때만 이력 포함 처리
+                List<Map<String, Object>> aiReplies =
+                    slackAIService.fetchAIThreadReplies(channelId, threadTs);
+                if (!aiReplies.isEmpty()) {
+                    log.debug("AI 스레드 내 후속 질문 감지");
+                    slackAIService.processAIQuery(
+                        text, channelId, effectiveThreadTs, aiReplies);
+                }
             }
         }
 
@@ -109,7 +140,7 @@ public class SlackEventController {
         if ("app_mention".equals(eventType) && text != null) {
             String normalizedText = slackAIService.normalizeAppMentionText(text);
             log.debug("앱 멘션 감지");
-            slackAIService.processAIQuery(normalizedText);
+            slackAIService.processAIQuery(normalizedText, channelId, effectiveThreadTs, null);
         }
     }
 }
