@@ -39,6 +39,13 @@ public class SlackAIService {
         return AI_PREFIX_PATTERN.matcher(text.trim()).matches();
     }
 
+    public boolean isAppMention(String text) {
+        if (text == null) {
+            return false;
+        }
+        return MENTION_PATTERN.matcher(text.trim()).find();
+    }
+
     public String extractQuery(String text) {
         Matcher matcher = AI_PREFIX_PATTERN.matcher(text.trim());
         if (matcher.matches()) {
@@ -54,10 +61,6 @@ public class SlackAIService {
         return MENTION_PATTERN.matcher(text).replaceFirst("").trim();
     }
 
-    /**
-     * AI 스레드이면 replies 반환, 아니면 빈 리스트 반환.
-     * Controller에서 isAIThread 판단과 getThreadReplies를 한 번에 처리하도록 통합.
-     */
     public List<Map<String, Object>> fetchAIThreadReplies(String channelId, String threadTs) {
         List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
         if (replies.isEmpty()) {
@@ -138,17 +141,21 @@ public class SlackAIService {
         }
 
         List<Map<String, Object>> merged = mergeConsecutiveRoles(messages);
+
+        // Claude API는 반드시 user role로 시작해야 함
+        if (!merged.isEmpty() && "assistant".equals(merged.get(0).get("role"))) {
+            merged = new ArrayList<>(merged.subList(1, merged.size()));
+        }
+
         // 토큰 과다 사용 방지: 최근 MAX_HISTORY_MESSAGES개만 유지
         if (merged.size() > MAX_HISTORY_MESSAGES) {
-            merged = merged.subList(merged.size() - MAX_HISTORY_MESSAGES, merged.size());
+            merged = new ArrayList<>(
+                merged.subList(merged.size() - MAX_HISTORY_MESSAGES, merged.size())
+            );
         }
         return merged;
     }
 
-    /**
-     * Claude API는 user/assistant이 교대로 와야 하므로
-     * 연속된 동일 role 메시지를 하나로 병합.
-     */
     private List<Map<String, Object>> mergeConsecutiveRoles(List<Map<String, Object>> messages) {
         List<Map<String, Object>> merged = new ArrayList<>();
         for (Map<String, Object> msg : messages) {

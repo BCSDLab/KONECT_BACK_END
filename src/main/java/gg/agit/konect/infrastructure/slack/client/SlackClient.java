@@ -49,6 +49,7 @@ public class SlackClient {
         log.error("Slack 메시지 전송 실패 : message={}, url={}", message, url, e);
     }
 
+    @Retryable
     public void postThreadReply(String channelId, String threadTs, String text) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(APPLICATION_JSON);
@@ -60,7 +61,23 @@ public class SlackClient {
         payload.put("text", text);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-        restTemplate.postForEntity(SLACK_API_BASE + "/chat.postMessage", request, String.class);
+        ResponseEntity<String> response = restTemplate.postForEntity(
+            SLACK_API_BASE + "/chat.postMessage", request, String.class
+        );
+
+        Map<String, Object> parsed = parseSlackResponse(response.getBody());
+        Boolean ok = (Boolean)parsed.get("ok");
+        if (!Boolean.TRUE.equals(ok)) {
+            String error = (String)parsed.get("error");
+            log.error("Slack 스레드 응답 전송 실패: channelId={}, threadTs={}, error={}",
+                channelId, threadTs, error);
+        }
+    }
+
+    @Recover
+    public void postThreadReplyRecover(Exception e, String channelId,
+            String threadTs, String text) {
+        log.error("Slack 스레드 응답 전송 최종 실패: channelId={}, threadTs={}", channelId, threadTs, e);
     }
 
     @SuppressWarnings("unchecked")
@@ -76,7 +93,14 @@ public class SlackClient {
             ResponseEntity<String> response = restTemplate.exchange(
                 url, org.springframework.http.HttpMethod.GET, request, String.class
             );
-            Map<String, Object> parsed = objectMapper.readValue(response.getBody(), Map.class);
+            Map<String, Object> parsed = parseSlackResponse(response.getBody());
+            Boolean ok = (Boolean)parsed.get("ok");
+            if (!Boolean.TRUE.equals(ok)) {
+                String error = (String)parsed.get("error");
+                log.error("스레드 이력 조회 실패 (Slack API): channelId={}, threadTs={}, error={}",
+                    channelId, threadTs, error);
+                return new ArrayList<>();
+            }
             Object messages = parsed.get("messages");
             if (messages instanceof List) {
                 return (List<Map<String, Object>>)messages;
@@ -85,5 +109,14 @@ public class SlackClient {
             log.error("스레드 이력 조회 실패: channelId={}, threadTs={}", channelId, threadTs, e);
         }
         return new ArrayList<>();
+    }
+
+    private Map<String, Object> parseSlackResponse(String body) {
+        try {
+            return objectMapper.readValue(body, Map.class);
+        } catch (Exception e) {
+            log.error("Slack 응답 파싱 실패: {}", body, e);
+            return new HashMap<>();
+        }
     }
 }

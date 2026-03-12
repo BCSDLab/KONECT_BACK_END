@@ -1,9 +1,9 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,15 +33,8 @@ public class SlackEventController {
     private static final String SLACK_SIGNATURE_HEADER = "X-Slack-Signature";
     private static final int EVENT_CACHE_MAX_SIZE = 500;
 
-    // Slack 재시도 중복 방지용 event_id 캐시
-    private final Set<String> processedEventIds = Collections.newSetFromMap(
-        new java.util.LinkedHashMap<>() {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
-                return size() > EVENT_CACHE_MAX_SIZE;
-            }
-        }
-    );
+    // ConcurrentHashMap 기반 thread-safe event_id 캐시
+    private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
     private final SlackAIService slackAIService;
     private final SlackSignatureVerifier signatureVerifier;
@@ -84,6 +77,10 @@ public class SlackEventController {
                 log.debug("중복 이벤트 무시: event_id={}", eventId);
                 return ResponseEntity.ok().build();
             }
+            // 캐시 크기 초과 시 오래된 항목 제거
+            if (processedEventIds.size() > EVENT_CACHE_MAX_SIZE) {
+                processedEventIds.remove(processedEventIds.iterator().next());
+            }
             Map<String, Object> event = (Map<String, Object>)payload.get("event");
             if (event != null) {
                 handleEvent(event);
@@ -119,16 +116,16 @@ public class SlackEventController {
             return;
         }
 
-        // thread_ts가 있으면 스레드 내 메시지, 없으면 새 스레드 시작
         String effectiveThreadTs = threadTs != null ? threadTs : ts;
 
         // 메시지 이벤트 처리
         if ("message".equals(eventType) && text != null) {
             if (slackAIService.isAIQuery(text)) {
+                // AI) prefix → 새 질문 또는 스레드 내 후속 질문
                 log.debug("AI 질문 감지");
                 slackAIService.processAIQuery(text, channelId, effectiveThreadTs, null);
-            } else if (threadTs != null) {
-                // AI 스레드 확인과 replies fetch를 한 번에 처리 (중복 API 호출 방지)
+            } else if (threadTs != null && slackAIService.isAppMention(text)) {
+                // 스레드 내 @멘션 있을 때만 이력 포함 처리
                 List<Map<String, Object>> aiReplies =
                     slackAIService.fetchAIThreadReplies(channelId, threadTs);
                 if (!aiReplies.isEmpty()) {
