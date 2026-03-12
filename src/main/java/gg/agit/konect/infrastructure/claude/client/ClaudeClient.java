@@ -122,17 +122,9 @@ public class ClaudeClient {
         this.objectMapper = objectMapper;
     }
 
-    /**
-     * Process user query with tool use support.
-     * Supports multi-turn tool calls for schema discovery and query execution.
-     *
-     * @param userMessage User's question
-     * @return AI response
-     */
-    public String chat(String userMessage) {
+    public String chat(List<Map<String, Object>> initialMessages) {
         try {
-            List<Map<String, Object>> messages = new ArrayList<>();
-            messages.add(Map.of("role", "user", "content", userMessage));
+            List<Map<String, Object>> messages = new ArrayList<>(initialMessages);
 
             for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
                 Map<String, Object> request = buildRequest(messages);
@@ -197,7 +189,6 @@ public class ClaudeClient {
                 }
 
                 JsonNode responseNode = objectMapper.readTree(response);
-
                 String stopReason = responseNode.path("stop_reason").asText();
                 JsonNode content = responseNode.path("content");
 
@@ -206,7 +197,6 @@ public class ClaudeClient {
                 }
 
                 if ("tool_use".equals(stopReason)) {
-                    // Process tool calls and add results
                     List<Map<String, Object>> toolResults = processToolCalls(content);
 
                     if (toolResults.isEmpty()) {
@@ -214,18 +204,15 @@ public class ClaudeClient {
                         return extractTextResponse(content);
                     }
 
-                    // Add assistant's response to messages
                     messages.add(Map.of(
                         "role", "assistant",
                         "content", objectMapper.convertValue(content, List.class)
                     ));
-
                     messages.add(Map.of(
                         "role", "user",
                         "content", toolResults
                     ));
                 } else {
-                    // Unexpected stop reason
                     log.warn("Unexpected stop_reason: {}", stopReason);
                     return extractTextResponse(content);
                 }
