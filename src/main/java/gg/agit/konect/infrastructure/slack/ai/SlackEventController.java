@@ -1,5 +1,6 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +33,6 @@ public class SlackEventController {
     private static final String SLACK_SIGNATURE_HEADER = "X-Slack-Signature";
     private static final int EVENT_CACHE_MAX_SIZE = 500;
 
-    // ConcurrentHashMap 기반 thread-safe event_id 캐시
     private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
 
     private final SlackAIService slackAIService;
@@ -54,14 +54,12 @@ public class SlackEventController {
 
         String type = (String)payload.get("type");
 
-        // URL 검증은 서명 검증 없이 처리 (최초 설정 시)
         if ("url_verification".equals(type)) {
             String challenge = (String)payload.get("challenge");
             log.info("Slack URL 검증 요청 처리");
             return ResponseEntity.ok(Map.of("challenge", challenge));
         }
 
-        // 서명 검증 - 원본 요청 본문 사용
         if (!signatureVerifier.isValidRequest(timestamp, signature, rawBody)) {
             log.warn("Slack 서명 검증 실패");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -69,14 +67,12 @@ public class SlackEventController {
 
         log.debug("Slack 이벤트 수신: type={}", type);
 
-        // 이벤트 콜백 처리
         if ("event_callback".equals(type)) {
             String eventId = (String)payload.get("event_id");
             if (eventId != null && !processedEventIds.add(eventId)) {
                 log.debug("중복 이벤트 무시: event_id={}", eventId);
                 return ResponseEntity.ok().build();
             }
-            // 캐시 크기 초과 시 오래된 항목 제거
             if (processedEventIds.size() > EVENT_CACHE_MAX_SIZE) {
                 processedEventIds.remove(processedEventIds.iterator().next());
             }
@@ -86,7 +82,6 @@ public class SlackEventController {
             }
         }
 
-        // Slack은 3초 내 응답을 기대하므로 빠르게 200 반환
         return ResponseEntity.ok().build();
     }
 
@@ -104,28 +99,37 @@ public class SlackEventController {
         String eventType = (String)event.get("type");
         String text = (String)event.get("text");
         String subtype = (String)event.get("subtype");
+        String channelId = (String)event.get("channel");
+        String ts = (String)event.get("ts");
+        String threadTs = (String)event.get("thread_ts");
 
         log.debug("이벤트 처리: eventType={}", eventType);
 
-        // bot 메시지나 변경 이벤트는 무시
         if (subtype != null) {
             return;
         }
 
-        // 메시지 이벤트 처리
+        String effectiveThreadTs = threadTs != null ? threadTs : ts;
+
         if ("message".equals(eventType) && text != null) {
             if (slackAIService.isAIQuery(text)) {
-                // AI) prefix → 새 질문 또는 스레드 내 후속 질문
                 log.debug("AI 질문 감지");
-                slackAIService.processAIQuery(text);
+                slackAIService.processAIQuery(text, channelId, effectiveThreadTs, null);
+            } else if (threadTs != null && slackAIService.isAppMention(text)) {
+                List<Map<String, Object>> aiReplies =
+                    slackAIService.fetchAIThreadReplies(channelId, threadTs);
+                if (!aiReplies.isEmpty()) {
+                    log.debug("AI 스레드 내 후속 질문 감지");
+                    slackAIService.processAIQuery(
+                        text, channelId, effectiveThreadTs, aiReplies);
+                }
             }
         }
 
-        // 앱 멘션 이벤트 처리
         if ("app_mention".equals(eventType) && text != null) {
             String normalizedText = slackAIService.normalizeAppMentionText(text);
             log.debug("앱 멘션 감지");
-            slackAIService.processAIQuery(normalizedText);
+            slackAIService.processAIQuery(normalizedText, channelId, effectiveThreadTs, null);
         }
     }
 }
