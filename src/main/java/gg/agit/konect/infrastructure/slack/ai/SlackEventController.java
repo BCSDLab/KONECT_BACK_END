@@ -1,6 +1,5 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,9 +104,6 @@ public class SlackEventController {
         String eventType = (String)event.get("type");
         String text = (String)event.get("text");
         String subtype = (String)event.get("subtype");
-        String channelId = (String)event.get("channel");
-        String ts = (String)event.get("ts");
-        String threadTs = (String)event.get("thread_ts");
 
         log.debug("이벤트 처리: eventType={}", eventType);
 
@@ -116,23 +112,12 @@ public class SlackEventController {
             return;
         }
 
-        String effectiveThreadTs = threadTs != null ? threadTs : ts;
-
         // 메시지 이벤트 처리
         if ("message".equals(eventType) && text != null) {
             if (slackAIService.isAIQuery(text)) {
                 // AI) prefix → 새 질문 또는 스레드 내 후속 질문
                 log.debug("AI 질문 감지");
-                slackAIService.processAIQuery(text, channelId, effectiveThreadTs, null);
-            } else if (threadTs != null && slackAIService.isAppMention(text)) {
-                // 스레드 내 @멘션 있을 때만 이력 포함 처리
-                List<Map<String, Object>> aiReplies =
-                    slackAIService.fetchAIThreadReplies(channelId, threadTs);
-                if (!aiReplies.isEmpty()) {
-                    log.debug("AI 스레드 내 후속 질문 감지");
-                    slackAIService.processAIQuery(
-                        text, channelId, effectiveThreadTs, aiReplies);
-                }
+                slackAIService.processAIQuery(text);
             }
         }
 
@@ -140,7 +125,7 @@ public class SlackEventController {
         if ("app_mention".equals(eventType) && text != null) {
             String normalizedText = slackAIService.normalizeAppMentionText(text);
             log.debug("앱 멘션 감지");
-            slackAIService.processAIQuery(normalizedText, channelId, effectiveThreadTs, null);
+            slackAIService.processAIQuery(normalizedText);
         }
     }
 }

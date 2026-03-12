@@ -122,9 +122,17 @@ public class ClaudeClient {
         this.objectMapper = objectMapper;
     }
 
-    public String chat(List<Map<String, Object>> initialMessages) {
+    /**
+     * Process user query with tool use support.
+     * Supports multi-turn tool calls for schema discovery and query execution.
+     *
+     * @param userMessage User's question
+     * @return AI response
+     */
+    public String chat(String userMessage) {
         try {
-            List<Map<String, Object>> messages = new ArrayList<>(initialMessages);
+            List<Map<String, Object>> messages = new ArrayList<>();
+            messages.add(Map.of("role", "user", "content", userMessage));
 
             for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
                 Map<String, Object> request = buildRequest(messages);

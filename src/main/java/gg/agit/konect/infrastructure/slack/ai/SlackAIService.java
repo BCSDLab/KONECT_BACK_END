@@ -1,9 +1,5 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import gg.agit.konect.infrastructure.claude.client.ClaudeClient;
 import gg.agit.konect.infrastructure.slack.client.SlackClient;
+import gg.agit.konect.infrastructure.slack.config.SlackProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,15 +19,10 @@ public class SlackAIService {
 
     private static final Pattern AI_PREFIX_PATTERN = Pattern.compile("^[Aa][Ii]\\)\\s*(.+)$");
     private static final Pattern MENTION_PATTERN = Pattern.compile("^<@[^>]+>\\s*");
-    private static final String AI_RESPONSE_PREFIX = ":robot_face: *AI 응답*\n";
-    private static final int MAX_HISTORY_MESSAGES = 10;
-    private static final String EMPTY_QUERY_MESSAGE =
-        "질문 내용이 비어있습니다. 예: `AI) 가입자 수 알려줘` 또는 `@봇이름 동아리 수는?`";
-    private static final String ERROR_MESSAGE =
-        ":warning: 죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.";
 
     private final ClaudeClient claudeClient;
     private final SlackClient slackClient;
+    private final SlackProperties slackProperties;
 
     public boolean isAIQuery(String text) {
         if (text == null) {
@@ -61,114 +53,37 @@ public class SlackAIService {
         return MENTION_PATTERN.matcher(text).replaceFirst("").trim();
     }
 
-    public List<Map<String, Object>> fetchAIThreadReplies(String channelId, String threadTs) {
-        List<Map<String, Object>> replies = slackClient.getThreadReplies(channelId, threadTs);
-        if (replies.isEmpty()) {
-            return new ArrayList<>();
-        }
-        Map<String, Object> rootMessage = replies.get(0);
-        String rootText = (String)rootMessage.get("text");
-        if (rootText != null && isAIQuery(rootText)) {
-            return replies;
-        }
-        if (replies.stream().anyMatch(r -> r.get("bot_id") != null)) {
-            return replies;
-        }
-        return new ArrayList<>();
-    }
-
     @Async
-    public void processAIQuery(String text, String channelId, String threadTs,
-            List<Map<String, Object>> cachedReplies) {
+    public void processAIQuery(String text) {
         try {
             String userQuery = extractQuery(text);
 
+            // 빈 질문은 처리하지 않음
             if (userQuery == null || userQuery.isBlank()) {
                 log.debug("빈 질문으로 처리 중단");
-                slackClient.postThreadReply(channelId, threadTs,
-                    formatSlackResponse(EMPTY_QUERY_MESSAGE));
+                String guidanceMessage = formatSlackResponse(
+                    "질문 내용이 비어있습니다. 예: `AI) 가입자 수 알려줘` 또는 `@봇이름 동아리 수는?`"
+                );
+                slackClient.sendMessage(guidanceMessage, slackProperties.webhooks().event());
                 return;
             }
 
             log.debug("AI 질문 처리 시작: {}", userQuery);
 
-            List<Map<String, Object>> replies =
-                cachedReplies != null ? cachedReplies : new ArrayList<>();
-            List<Map<String, Object>> messages = buildConversationHistory(replies);
-
-            if (messages.isEmpty()) {
-                messages = new ArrayList<>();
-                messages.add(Map.of("role", "user", "content", userQuery));
-            }
-
-            String response = claudeClient.chat(messages);
+            // ClaudeClient가 MCP를 통해 자동으로 SQL 결정 및 실행
+            String response = claudeClient.chat(userQuery);
 
             log.debug("AI 응답 생성 완료");
 
-            slackClient.postThreadReply(channelId, threadTs, formatSlackResponse(response));
+            // Slack에 응답 전송
+            String slackMessage = formatSlackResponse(response);
+            slackClient.sendMessage(slackMessage, slackProperties.webhooks().event());
 
         } catch (Exception e) {
             log.error("AI 질문 처리 중 오류 발생", e);
-            slackClient.postThreadReply(channelId, threadTs, ERROR_MESSAGE);
+            String errorMessage = ":warning: 죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.";
+            slackClient.sendMessage(errorMessage, slackProperties.webhooks().event());
         }
-    }
-
-    private List<Map<String, Object>> buildConversationHistory(List<Map<String, Object>> replies) {
-        if (replies.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        List<Map<String, Object>> messages = new ArrayList<>();
-        for (Map<String, Object> reply : replies) {
-            String replyText = (String)reply.get("text");
-
-            if (replyText == null) {
-                continue;
-            }
-
-            if (reply.get("bot_id") != null) {
-                String content = replyText.startsWith(AI_RESPONSE_PREFIX)
-                    ? replyText.substring(AI_RESPONSE_PREFIX.length())
-                    : replyText;
-                messages.add(Map.of("role", "assistant", "content", content));
-            } else {
-                String normalizedText = normalizeAppMentionText(replyText);
-                String userText = isAIQuery(normalizedText)
-                    ? extractQuery(normalizedText)
-                    : normalizedText;
-                messages.add(Map.of("role", "user", "content", userText));
-            }
-        }
-
-        List<Map<String, Object>> merged = mergeConsecutiveRoles(messages);
-
-        // Claude API는 반드시 user role로 시작해야 함
-        if (!merged.isEmpty() && "assistant".equals(merged.get(0).get("role"))) {
-            merged = new ArrayList<>(merged.subList(1, merged.size()));
-        }
-
-        // 토큰 과다 사용 방지: 최근 MAX_HISTORY_MESSAGES개만 유지
-        if (merged.size() > MAX_HISTORY_MESSAGES) {
-            merged = new ArrayList<>(
-                merged.subList(merged.size() - MAX_HISTORY_MESSAGES, merged.size())
-            );
-        }
-        return merged;
-    }
-
-    private List<Map<String, Object>> mergeConsecutiveRoles(List<Map<String, Object>> messages) {
-        List<Map<String, Object>> merged = new ArrayList<>();
-        for (Map<String, Object> msg : messages) {
-            if (!merged.isEmpty()
-                    && merged.get(merged.size() - 1).get("role").equals(msg.get("role"))) {
-                Map<String, Object> last = new HashMap<>(merged.get(merged.size() - 1));
-                last.put("content", last.get("content") + "\n" + msg.get("content"));
-                merged.set(merged.size() - 1, last);
-            } else {
-                merged.add(msg);
-            }
-        }
-        return merged;
     }
 
     private String formatSlackResponse(String response) {
