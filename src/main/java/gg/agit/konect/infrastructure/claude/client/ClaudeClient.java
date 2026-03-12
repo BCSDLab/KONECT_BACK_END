@@ -122,13 +122,58 @@ public class ClaudeClient {
         this.objectMapper = objectMapper;
     }
 
-    /**
-     * Process user query with tool use support.
-     * Supports multi-turn tool calls for schema discovery and query execution.
-     *
-     * @param userMessage User's question
-     * @return AI response
-     */
+    public String chat(List<Map<String, Object>> initialMessages) {
+        try {
+            List<Map<String, Object>> messages = new ArrayList<>(initialMessages);
+
+            for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+                Map<String, Object> request = buildRequest(messages);
+                String response = callClaudeApi(request);
+
+                if (response == null) {
+                    log.error("Claude API returned null response");
+                    throw new ClaudeException("Claude API returned null response", null);
+                }
+
+                JsonNode responseNode = objectMapper.readTree(response);
+                String stopReason = responseNode.path("stop_reason").asText();
+                JsonNode content = responseNode.path("content");
+
+                if ("end_turn".equals(stopReason)) {
+                    return extractTextResponse(content);
+                }
+
+                if ("tool_use".equals(stopReason)) {
+                    List<Map<String, Object>> toolResults = processToolCalls(content);
+
+                    if (toolResults.isEmpty()) {
+                        log.warn("stop_reason is tool_use but no tool_use blocks found");
+                        return extractTextResponse(content);
+                    }
+
+                    messages.add(Map.of(
+                        "role", "assistant",
+                        "content", objectMapper.convertValue(content, List.class)
+                    ));
+                    messages.add(Map.of(
+                        "role", "user",
+                        "content", toolResults
+                    ));
+                } else {
+                    log.warn("Unexpected stop_reason: {}", stopReason);
+                    return extractTextResponse(content);
+                }
+            }
+
+            log.warn("Maximum tool iterations reached");
+            throw new ClaudeException("Maximum tool iterations reached", null);
+
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse Claude API response", e);
+            throw new ClaudeException("Failed to parse Claude API response", e);
+        }
+    }
+
     public String chat(String userMessage) {
         try {
             List<Map<String, Object>> messages = new ArrayList<>();
