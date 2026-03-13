@@ -31,6 +31,7 @@ public class ImageConversionService {
     private static final Set<String> SKIP_CONVERSION_TYPES = Set.of("image/webp");
 
     private static final float DEFAULT_WEBP_QUALITY = 0.8f;
+    private static final int WEBP_QUALITY_PERCENT_SCALE = 100;
 
     private static final int MAX_IMAGE_DIMENSION = 8000;
 
@@ -246,9 +247,9 @@ public class ImageConversionService {
             return 0;
         }
         if (quality >= 1) {
-            return 100;
+            return WEBP_QUALITY_PERCENT_SCALE;
         }
-        return Math.round(quality * 100);
+        return Math.round(quality * WEBP_QUALITY_PERCENT_SCALE);
     }
 
     private String getExtension(String contentType) {
