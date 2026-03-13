@@ -12,6 +12,16 @@ target_java_files=()
 target_mode="staged"
 pre_format_snapshot=""
 
+canonicalize_path() {
+    local input_path="$1"
+    local dir_path
+    local base_name
+
+    dir_path="$(cd "$(dirname "$input_path")" && pwd -P)" || return 1
+    base_name="$(basename "$input_path")"
+    printf '%s/%s\n' "$dir_path" "$base_name"
+}
+
 resolve_target_java_file() {
     local input_file="$1"
     local resolved_file=""
@@ -24,11 +34,20 @@ resolve_target_java_file() {
     esac
 
     if [ -f "$input_file" ]; then
-        resolved_file="$(realpath "$input_file")"
+        resolved_file="$(canonicalize_path "$input_file")" || {
+            echo "[오류] 파일 경로를 정규화할 수 없습니다: $input_file" >&2
+            return 1
+        }
     elif [ -f "$invocation_dir/$input_file" ]; then
-        resolved_file="$(realpath "$invocation_dir/$input_file")"
+        resolved_file="$(canonicalize_path "$invocation_dir/$input_file")" || {
+            echo "[오류] 파일 경로를 정규화할 수 없습니다: $input_file" >&2
+            return 1
+        }
     elif [ -f "$repo_root/$input_file" ]; then
-        resolved_file="$(realpath "$repo_root/$input_file")"
+        resolved_file="$(canonicalize_path "$repo_root/$input_file")" || {
+            echo "[오류] 파일 경로를 정규화할 수 없습니다: $input_file" >&2
+            return 1
+        }
     else
         matched_files="$(git ls-files -- "$input_file" "*/$input_file" 2>/dev/null || true)"
         if [ -z "$matched_files" ]; then
@@ -42,7 +61,10 @@ resolve_target_java_file() {
             return 1
         fi
 
-        resolved_file="$(realpath "$repo_root/$matched_files")"
+        resolved_file="$(canonicalize_path "$repo_root/$matched_files")" || {
+            echo "[오류] 파일 경로를 정규화할 수 없습니다: $input_file" >&2
+            return 1
+        }
     fi
 
     case "$resolved_file" in
