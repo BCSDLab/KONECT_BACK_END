@@ -178,11 +178,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         String slackMessage = String.format(
             """
-            URI: `%s`
-            Location: `%s`
-            Exception: `%s`
-            ```%s```
-            """,
+                URI: `%s`
+                Location: `%s`
+                Exception: `%s`
+                ```%s```
+                """,
             uri, location, exception, message
         );
 

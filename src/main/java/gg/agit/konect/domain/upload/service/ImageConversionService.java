@@ -109,7 +109,7 @@ public class ImageConversionService {
 
     private int readExifOrientation(IIOMetadata metadata) {
         for (String formatName : metadata.getMetadataFormatNames()) {
-            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(formatName);
+            IIOMetadataNode root = (IIOMetadataNode)metadata.getAsTree(formatName);
             Integer orientation = findOrientationInNode(root);
             if (orientation != null) {
                 return orientation;
@@ -143,9 +143,9 @@ public class ImageConversionService {
             }
         }
 
-        for (IIOMetadataNode child = (IIOMetadataNode) node.getFirstChild();
+        for (IIOMetadataNode child = (IIOMetadataNode)node.getFirstChild();
              child != null;
-             child = (IIOMetadataNode) child.getNextSibling()) {
+             child = (IIOMetadataNode)child.getNextSibling()) {
             Integer result = findOrientationInNode(child);
             if (result != null) {
                 return result;
