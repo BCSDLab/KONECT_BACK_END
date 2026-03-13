@@ -57,16 +57,19 @@ public class ImageConversionService {
 
         try (ImageOutputStream ios = ImageIO.createImageOutputStream(output)) {
             ImageWriter writer = ImageIO.getImageWritersByFormatName("webp").next();
-            writer.setOutput(ios);
+            try {
+                writer.setOutput(ios);
 
-            ImageWriteParam writeParam = writer.getDefaultWriteParam();
-            if (writeParam.canWriteCompressed()) {
-                writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                writeParam.setCompressionQuality(quality);
+                ImageWriteParam writeParam = writer.getDefaultWriteParam();
+                if (writeParam.canWriteCompressed()) {
+                    writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                    writeParam.setCompressionQuality(quality);
+                }
+
+                writer.write(null, new IIOImage(image, null, null), writeParam);
+            } finally {
+                writer.dispose();
             }
-
-            writer.write(null, new IIOImage(image, null, null), writeParam);
-            writer.dispose();
         }
 
         return output.toByteArray();
