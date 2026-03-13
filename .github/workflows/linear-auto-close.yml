@@ -23,6 +23,8 @@ jobs:
           set -euo pipefail
 
           BRANCH="${{ github.head_ref }}"
+          echo "현재 브랜치: $BRANCH"
+          
           ISSUE_ID=$(echo "$BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1 || true)
 
           if [ -z "$ISSUE_ID" ]; then
