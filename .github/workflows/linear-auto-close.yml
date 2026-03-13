@@ -1,0 +1,169 @@
+name: Linear Auto Close
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - develop
+
+env:
+  LINEAR_API_URL: https://api.linear.app/graphql
+
+jobs:
+  close-linear-issue:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract issue ID from branch name
+        id: extract
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="${{ github.head_ref }}"
+          ISSUE_ID=$(echo "$BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1 || true)
+
+          if [ -z "$ISSUE_ID" ]; then
+            echo "⚠️ 브랜치 이름에서 Linear 이슈 ID를 찾지 못했습니다: $BRANCH"
+            echo "issue_id=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "issue_id=$ISSUE_ID" >> "$GITHUB_OUTPUT"
+          echo "✅ Linear 이슈 ID 발견: $ISSUE_ID"
+
+      - name: Find Linear team ID and Done state ID
+        id: linear_meta
+        if: steps.extract.outputs.issue_id != ''
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          ISSUE_ID: ${{ steps.extract.outputs.issue_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ISSUE_RESPONSE=$(curl -sS -X POST "$LINEAR_API_URL" \
+            -H "Authorization: $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg issueId "$ISSUE_ID" \
+              '{
+                query: "query($id: String!) { issue(id: $id) { id identifier team { id key name } } }",
+                variables: { id: $issueId }
+              }')")
+
+          echo "$ISSUE_RESPONSE" | jq '.'
+
+          HAS_ERRORS=$(echo "$ISSUE_RESPONSE" | jq 'has("errors")')
+          TEAM_ID=$(echo "$ISSUE_RESPONSE" | jq -r '.data.issue.team.id // empty')
+          TEAM_NAME=$(echo "$ISSUE_RESPONSE" | jq -r '.data.issue.team.name // empty')
+
+          if [ "$HAS_ERRORS" = "true" ] || [ -z "$TEAM_ID" ]; then
+            echo "❌ 이슈 $ISSUE_ID 의 팀 정보를 가져오지 못했습니다."
+            exit 1
+          fi
+
+          echo "✅ 이슈가 속한 팀 확인: $TEAM_NAME ($TEAM_ID)"
+
+          STATES_RESPONSE=$(curl -sS -X POST "$LINEAR_API_URL" \
+            -H "Authorization: $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg teamId "$TEAM_ID" \
+              '{
+                query: "query($teamId: String!) { team(id: $teamId) { id name states { nodes { id name type } } } }",
+                variables: { teamId: $teamId }
+              }')")
+
+          echo "$STATES_RESPONSE" | jq '.'
+
+          HAS_ERRORS=$(echo "$STATES_RESPONSE" | jq 'has("errors")')
+          DONE_STATE_ID=$(echo "$STATES_RESPONSE" | jq -r '
+            .data.team.states.nodes
+            | map(select((.type // "") == "completed" or (.name | ascii_downcase) == "done"))
+            | .[0].id // empty
+          ')
+          DONE_STATE_NAME=$(echo "$STATES_RESPONSE" | jq -r '
+            .data.team.states.nodes
+            | map(select((.type // "") == "completed" or (.name | ascii_downcase) == "done"))
+            | .[0].name // empty
+          ')
+
+          if [ "$HAS_ERRORS" = "true" ] || [ -z "$DONE_STATE_ID" ]; then
+            echo "❌ 팀 $TEAM_NAME 에서 완료 상태(Done/completed)를 찾지 못했습니다."
+            exit 1
+          fi
+
+          echo "done_state_id=$DONE_STATE_ID" >> "$GITHUB_OUTPUT"
+          echo "✅ 완료 상태 확인: $DONE_STATE_NAME ($DONE_STATE_ID)"
+
+      - name: Move Linear issue to Done
+        if: steps.extract.outputs.issue_id != ''
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          ISSUE_ID: ${{ steps.extract.outputs.issue_id }}
+          DONE_STATE_ID: ${{ steps.linear_meta.outputs.done_state_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RESPONSE=$(curl -sS -X POST "$LINEAR_API_URL" \
+            -H "Authorization: $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg issueId "$ISSUE_ID" \
+              --arg stateId "$DONE_STATE_ID" \
+              '{
+                query: "mutation($i: String!, $s: String!) { issueUpdate(id: $i, input: { stateId: $s }) { success issue { id identifier title state { id name type } } } }",
+                variables: { i: $issueId, s: $stateId }
+              }')")
+
+          echo "$RESPONSE" | jq '.'
+
+          HAS_ERRORS=$(echo "$RESPONSE" | jq 'has("errors")')
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.issueUpdate.success // false')
+
+          if [ "$HAS_ERRORS" = "true" ] || [ "$SUCCESS" != "true" ]; then
+            echo "❌ $ISSUE_ID 이슈를 완료 상태로 변경하지 못했습니다."
+            exit 1
+          fi
+
+          echo "✅ $ISSUE_ID 이슈가 완료 상태로 변경되었습니다."
+
+      - name: Add comment to Linear issue
+        if: steps.extract.outputs.issue_id != ''
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          ISSUE_ID: ${{ steps.extract.outputs.issue_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          MERGED_BY="${{ github.event.pull_request.merged_by.login }}"
+
+          RESPONSE=$(curl -sS -X POST "$LINEAR_API_URL" \
+            -H "Authorization: $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg issueId "$ISSUE_ID" \
+              --arg body "✅ PR 머지 완료: [$PR_TITLE]($PR_URL)\n\n머지한 사람: @$MERGED_BY" \
+              '{
+                query: "mutation($i: String!, $b: String!) { commentCreate(input: { issueId: $i, body: $b }) { success } }",
+                variables: { i: $issueId, b: $body }
+              }')")
+
+          echo "$RESPONSE" | jq '.'
+
+          HAS_ERRORS=$(echo "$RESPONSE" | jq 'has("errors")')
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.commentCreate.success // false')
+
+          if [ "$HAS_ERRORS" = "true" ] || [ "$SUCCESS" != "true" ]; then
+            echo "❌ $ISSUE_ID 이슈에 코멘트를 추가하지 못했습니다."
+            exit 1
+          fi
+
+          echo "📝 $ISSUE_ID 이슈에 PR 머지 코멘트를 추가했습니다."
