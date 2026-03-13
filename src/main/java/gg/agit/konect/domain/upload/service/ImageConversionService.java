@@ -4,12 +4,16 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
 import org.springframework.stereotype.Service;
@@ -30,6 +34,12 @@ public class ImageConversionService {
 
     private static final float DEFAULT_WEBP_QUALITY = 0.8f;
 
+    /**
+     * 이미지 최대 해상도 (가로/세로 중 큰 값).
+     * 8000픽셀로 제한하여 메모리 사용량을 256MB(8000×8000×4bytes) 수준으로 유지.
+     */
+    private static final int MAX_IMAGE_DIMENSION = 8000;
+
     public ConversionResult convertToWebP(MultipartFile file) throws IOException {
         String contentType = file.getContentType();
 
@@ -38,17 +48,43 @@ public class ImageConversionService {
             return new ConversionResult(file.getBytes(), contentType, getExtension(contentType));
         }
 
-        try (InputStream input = file.getInputStream()) {
-            BufferedImage image = ImageIO.read(input);
+        try (InputStream input = file.getInputStream();
+             ImageInputStream iis = ImageIO.createImageInputStream(input)) {
 
-            if (image == null) {
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+            if (!readers.hasNext()) {
                 throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
             }
 
-            byte[] webpBytes = convertImageToWebP(image, DEFAULT_WEBP_QUALITY);
-            log.info("이미지 WEBP 변환 완료: 원본 {} bytes → WEBP {} bytes", file.getSize(), webpBytes.length);
+            ImageReader reader = readers.next();
+            try {
+                validateImageDimensions(reader, iis);
 
-            return new ConversionResult(webpBytes, "image/webp", "webp");
+                ImageReadParam readParam = reader.getDefaultReadParam();
+                BufferedImage image = reader.read(0, readParam);
+
+                if (image == null) {
+                    throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
+                }
+
+                byte[] webpBytes = convertImageToWebP(image, DEFAULT_WEBP_QUALITY);
+                log.info("이미지 WEBP 변환 완료: 원본 {} bytes → WEBP {} bytes", file.getSize(), webpBytes.length);
+
+                return new ConversionResult(webpBytes, "image/webp", "webp");
+            } finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    private void validateImageDimensions(ImageReader reader, ImageInputStream iis) throws IOException {
+        reader.setInput(iis);
+        int width = reader.getWidth(0);
+        int height = reader.getHeight(0);
+
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+            log.warn("이미지 해상도 초과: {}x{} (최대 {}px)", width, height, MAX_IMAGE_DIMENSION);
+            throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         }
     }
 
@@ -56,7 +92,13 @@ public class ImageConversionService {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         try (ImageOutputStream ios = ImageIO.createImageOutputStream(output)) {
-            ImageWriter writer = ImageIO.getImageWritersByFormatName("webp").next();
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("webp");
+            if (!writers.hasNext()) {
+                throw new IllegalStateException(
+                    "WEBP ImageWriter를 찾을 수 없습니다. TwelveMonkeys imageio-webp 플러그인이 로드되었는지 확인하세요.");
+            }
+
+            ImageWriter writer = writers.next();
             try {
                 writer.setOutput(ios);
 
