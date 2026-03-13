@@ -65,7 +65,7 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
 
     // 이미지 WEBP 변환 (TwelveMonkeys ImageIO)
-    implementation 'com.twelvemonkeys.imageio:imageio-core:3.13.1'
+    // imageio-core는 imageio-webp, imageio-jpeg의 전이 의존성으로 자동 포함됨
     implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.1'
     implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.13.1'
 
