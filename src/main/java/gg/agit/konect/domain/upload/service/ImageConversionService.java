@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.upload.service;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,6 +14,8 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
@@ -67,6 +70,8 @@ public class ImageConversionService {
                     throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
                 }
 
+                image = applyExifOrientation(reader, image);
+
                 byte[] webpBytes = convertImageToWebP(image, DEFAULT_WEBP_QUALITY);
                 log.info("이미지 WEBP 변환 완료: 원본 {} bytes → WEBP {} bytes", file.getSize(), webpBytes.length);
 
@@ -86,6 +91,135 @@ public class ImageConversionService {
             log.warn("이미지 해상도 초과: {}x{} (최대 {}px)", width, height, MAX_IMAGE_DIMENSION);
             throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         }
+    }
+
+    private BufferedImage applyExifOrientation(ImageReader reader, BufferedImage image) {
+        try {
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            int orientation = readExifOrientation(metadata);
+            if (orientation > 1) {
+                log.debug("EXIF Orientation 적용: {}", orientation);
+                return rotateImage(image, orientation);
+            }
+        } catch (Exception e) {
+            log.debug("EXIF Orientation 읽기 실패, 원본 유지: {}", e.getMessage());
+        }
+        return image;
+    }
+
+    private int readExifOrientation(IIOMetadata metadata) {
+        for (String formatName : metadata.getMetadataFormatNames()) {
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(formatName);
+            Integer orientation = findOrientationInNode(root);
+            if (orientation != null) {
+                return orientation;
+            }
+        }
+        return 1;
+    }
+
+    private Integer findOrientationInNode(IIOMetadataNode node) {
+        if ("exif".equalsIgnoreCase(node.getNodeName()) || "Orientation".equalsIgnoreCase(node.getNodeName())) {
+            String attr = node.getAttribute("value");
+            if (attr.isEmpty()) {
+                attr = node.getAttribute("Orientation");
+            }
+            if (!attr.isEmpty()) {
+                try {
+                    return Integer.parseInt(attr);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        String tagName = node.getAttribute("TagName");
+        if ("Orientation".equals(tagName)) {
+            String attr = node.getAttribute("TagValue");
+            if (!attr.isEmpty()) {
+                try {
+                    return Integer.parseInt(attr);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        for (IIOMetadataNode child = (IIOMetadataNode) node.getFirstChild();
+             child != null;
+             child = (IIOMetadataNode) child.getNextSibling()) {
+            Integer result = findOrientationInNode(child);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    private BufferedImage rotateImage(BufferedImage image, int orientation) {
+        return switch (orientation) {
+            case 2 -> flipHorizontal(image);
+            case 3 -> rotate180(image);
+            case 4 -> flipVertical(image);
+            case 5 -> rotate90(rotate90(image));
+            case 6 -> rotate90(image);
+            case 7 -> rotate270(rotate90(image));
+            case 8 -> rotate270(image);
+            default -> image;
+        };
+    }
+
+    private BufferedImage rotate90(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage rotated = new BufferedImage(h, w, image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        Graphics2D g = rotated.createGraphics();
+        g.translate((h - w) / 2, (h - w) / 2);
+        g.rotate(Math.PI / 2, h / 2.0, w / 2.0);
+        g.drawRenderedImage(image, null);
+        g.dispose();
+        return rotated;
+    }
+
+    private BufferedImage rotate180(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage rotated = new BufferedImage(w, h, image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        Graphics2D g = rotated.createGraphics();
+        g.rotate(Math.PI, w / 2.0, h / 2.0);
+        g.drawRenderedImage(image, null);
+        g.dispose();
+        return rotated;
+    }
+
+    private BufferedImage rotate270(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage rotated = new BufferedImage(h, w, image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        Graphics2D g = rotated.createGraphics();
+        g.translate((h - w) / 2, (h - w) / 2);
+        g.rotate(-Math.PI / 2, h / 2.0, w / 2.0);
+        g.drawRenderedImage(image, null);
+        g.dispose();
+        return rotated;
+    }
+
+    private BufferedImage flipHorizontal(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage flipped = new BufferedImage(w, h, image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        Graphics2D g = flipped.createGraphics();
+        g.drawImage(image, w, 0, -w, h, null);
+        g.dispose();
+        return flipped;
+    }
+
+    private BufferedImage flipVertical(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage flipped = new BufferedImage(w, h, image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        Graphics2D g = flipped.createGraphics();
+        g.drawImage(image, 0, h, w, -h, null);
+        g.dispose();
+        return flipped;
     }
 
     private byte[] convertImageToWebP(BufferedImage image, float quality) throws IOException {
