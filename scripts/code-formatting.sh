@@ -24,7 +24,7 @@ resolve_target_java_file() {
     esac
 
     if [ -f "$input_file" ]; then
-        resolved_file="$input_file"
+        resolved_file="$repo_root/$input_file"
     elif [ -f "$invocation_dir/$input_file" ]; then
         resolved_file="$invocation_dir/$input_file"
     elif [ -f "$repo_root/$input_file" ]; then
