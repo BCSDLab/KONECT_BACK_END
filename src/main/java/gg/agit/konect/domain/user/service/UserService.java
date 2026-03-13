@@ -89,7 +89,7 @@ public class UserService {
             request.name(),
             request.studentNumber(),
             request.isMarketingAgreement(),
-            "https://stage-static.koreatech.in/konect/User_02.png"
+            "https://stage-static.koreatech.in/konect/user/2026-03-13-0bbed894-260f-46d6-b8d3-47b8a89953ff.webp"
         );
         User savedUser = userRepository.save(newUser);
         userOAuthAccountService.linkPrimaryOAuthAccount(
