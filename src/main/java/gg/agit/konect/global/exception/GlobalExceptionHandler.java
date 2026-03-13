@@ -55,7 +55,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Object> handleIllegalStateException() {
+    public ResponseEntity<Object> handleIllegalStateException(IllegalStateException e) {
+        log.warn("IllegalStateException 발생: {}", e.getMessage(), e);
         return buildErrorResponse(ApiResponseCode.ILLEGAL_STATE);
     }
 
