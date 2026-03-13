@@ -1,6 +1,5 @@
 package gg.agit.konect.infrastructure.slack.ai;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -115,14 +114,6 @@ public class SlackEventController {
             if (slackAIService.isAIQuery(text)) {
                 log.debug("AI 질문 감지");
                 slackAIService.processAIQuery(text, channelId, effectiveThreadTs, null);
-            } else if (threadTs != null && slackAIService.isAppMention(text)) {
-                List<Map<String, Object>> aiReplies =
-                    slackAIService.fetchAIThreadReplies(channelId, threadTs);
-                if (!aiReplies.isEmpty()) {
-                    log.debug("AI 스레드 내 후속 질문 감지");
-                    slackAIService.processAIQuery(
-                        text, channelId, effectiveThreadTs, aiReplies);
-                }
             }
         }
 
