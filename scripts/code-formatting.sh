@@ -50,12 +50,6 @@ resolve_target_java_file() {
             printf '%s\n' "${resolved_file#$repo_root/}"
             return 0
             ;;
-        *)
-            if [ -f "$repo_root/$resolved_file" ]; then
-                printf '%s\n' "$resolved_file"
-                return 0
-            fi
-            ;;
     esac
 
     echo "[건너뜀] 레포 외부 파일은 포맷할 수 없습니다: $input_file" >&2
