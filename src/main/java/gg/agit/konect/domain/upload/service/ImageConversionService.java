@@ -1,6 +1,6 @@
 package gg.agit.konect.domain.upload.service;
 
-import java.awt.*;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,6 +42,15 @@ public class ImageConversionService {
      * 8000픽셀로 제한하여 메모리 사용량을 256MB(8000×8000×4bytes) 수준으로 유지.
      */
     private static final int MAX_IMAGE_DIMENSION = 8000;
+
+    private static final int ORIENTATION_NORMAL = 1;
+    private static final int ORIENTATION_FLIP_HORIZONTAL = 2;
+    private static final int ORIENTATION_ROTATE_180 = 3;
+    private static final int ORIENTATION_FLIP_VERTICAL = 4;
+    private static final int ORIENTATION_ROTATE_90_FLIP = 5;
+    private static final int ORIENTATION_ROTATE_90 = 6;
+    private static final int ORIENTATION_ROTATE_270_FLIP = 7;
+    private static final int ORIENTATION_ROTATE_270 = 8;
 
     public ConversionResult convertToWebP(MultipartFile file) throws IOException {
         String contentType = file.getContentType();
@@ -97,7 +106,7 @@ public class ImageConversionService {
         try {
             IIOMetadata metadata = reader.getImageMetadata(0);
             int orientation = readExifOrientation(metadata);
-            if (orientation > 1) {
+            if (orientation > ORIENTATION_NORMAL) {
                 log.debug("EXIF Orientation 적용: {}", orientation);
                 return rotateImage(image, orientation);
             }
@@ -156,13 +165,13 @@ public class ImageConversionService {
 
     private BufferedImage rotateImage(BufferedImage image, int orientation) {
         return switch (orientation) {
-            case 2 -> flipHorizontal(image);
-            case 3 -> rotate180(image);
-            case 4 -> flipVertical(image);
-            case 5 -> rotate90(rotate90(image));
-            case 6 -> rotate90(image);
-            case 7 -> rotate270(rotate90(image));
-            case 8 -> rotate270(image);
+            case ORIENTATION_FLIP_HORIZONTAL -> flipHorizontal(image);
+            case ORIENTATION_ROTATE_180 -> rotate180(image);
+            case ORIENTATION_FLIP_VERTICAL -> flipVertical(image);
+            case ORIENTATION_ROTATE_90_FLIP -> rotate90(rotate90(image));
+            case ORIENTATION_ROTATE_90 -> rotate90(image);
+            case ORIENTATION_ROTATE_270_FLIP -> rotate270(rotate90(image));
+            case ORIENTATION_ROTATE_270 -> rotate270(image);
             default -> image;
         };
     }
