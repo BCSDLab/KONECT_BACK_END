@@ -168,9 +168,9 @@ public class ImageConversionService {
             case ORIENTATION_FLIP_HORIZONTAL -> flipHorizontal(image);
             case ORIENTATION_ROTATE_180 -> rotate180(image);
             case ORIENTATION_FLIP_VERTICAL -> flipVertical(image);
-            case ORIENTATION_ROTATE_90_FLIP -> rotate90(rotate90(image));
+            case ORIENTATION_ROTATE_90_FLIP -> flipHorizontal(rotate90(image));
             case ORIENTATION_ROTATE_90 -> rotate90(image);
-            case ORIENTATION_ROTATE_270_FLIP -> rotate270(rotate90(image));
+            case ORIENTATION_ROTATE_270_FLIP -> flipHorizontal(rotate270(image));
             case ORIENTATION_ROTATE_270 -> rotate270(image);
             default -> image;
         };
