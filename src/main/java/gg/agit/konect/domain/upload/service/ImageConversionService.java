@@ -2,33 +2,28 @@ package gg.agit.konect.domain.upload.service;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.sksamuel.scrimage.AwtImage;
+import com.sksamuel.scrimage.webp.WebpWriter;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * 이미지 포맷 변환 서비스 - PNG/JPG를 WEBP로 변환.
- */
 @Service
 @Slf4j
 public class ImageConversionService {
@@ -37,10 +32,6 @@ public class ImageConversionService {
 
     private static final float DEFAULT_WEBP_QUALITY = 0.8f;
 
-    /**
-     * 이미지 최대 해상도 (가로/세로 중 큰 값).
-     * 8000픽셀로 제한하여 메모리 사용량을 256MB(8000×8000×4bytes) 수준으로 유지.
-     */
     private static final int MAX_IMAGE_DIMENSION = 8000;
 
     private static final int ORIENTATION_NORMAL = 1;
@@ -118,7 +109,7 @@ public class ImageConversionService {
 
     private int readExifOrientation(IIOMetadata metadata) {
         for (String formatName : metadata.getMetadataFormatNames()) {
-            IIOMetadataNode root = (IIOMetadataNode)metadata.getAsTree(formatName);
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(formatName);
             Integer orientation = findOrientationInNode(root);
             if (orientation != null) {
                 return orientation;
@@ -152,9 +143,9 @@ public class ImageConversionService {
             }
         }
 
-        for (IIOMetadataNode child = (IIOMetadataNode)node.getFirstChild();
+        for (IIOMetadataNode child = (IIOMetadataNode) node.getFirstChild();
              child != null;
-             child = (IIOMetadataNode)child.getNextSibling()) {
+             child = (IIOMetadataNode) child.getNextSibling()) {
             Integer result = findOrientationInNode(child);
             if (result != null) {
                 return result;
@@ -242,32 +233,22 @@ public class ImageConversionService {
     }
 
     private byte[] convertImageToWebP(BufferedImage image, float quality) throws IOException {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-        try (ImageOutputStream ios = ImageIO.createImageOutputStream(output)) {
-            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("webp");
-            if (!writers.hasNext()) {
-                throw new IllegalStateException(
-                    "WEBP ImageWriter를 찾을 수 없습니다. TwelveMonkeys imageio-webp 플러그인이 로드되었는지 확인하세요.");
-            }
-
-            ImageWriter writer = writers.next();
-            try {
-                writer.setOutput(ios);
-
-                ImageWriteParam writeParam = writer.getDefaultWriteParam();
-                if (writeParam.canWriteCompressed()) {
-                    writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                    writeParam.setCompressionQuality(quality);
-                }
-
-                writer.write(null, new IIOImage(image, null, null), writeParam);
-            } finally {
-                writer.dispose();
-            }
+        try {
+            return new AwtImage(image)
+                .bytes(WebpWriter.DEFAULT.withQ(toWebpQualityPercent(quality)));
+        } catch (RuntimeException e) {
+            throw new IOException("WEBP 이미지 변환에 실패했습니다.", e);
         }
+    }
 
-        return output.toByteArray();
+    private int toWebpQualityPercent(float quality) {
+        if (quality <= 0) {
+            return 0;
+        }
+        if (quality >= 1) {
+            return 100;
+        }
+        return Math.round(quality * 100);
     }
 
     private String getExtension(String contentType) {
