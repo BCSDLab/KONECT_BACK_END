@@ -55,7 +55,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Object> handleIllegalStateException() {
+    public ResponseEntity<Object> handleIllegalStateException(IllegalStateException e) {
+        log.warn("IllegalStateException 발생: {}", e.getMessage(), e);
         return buildErrorResponse(ApiResponseCode.ILLEGAL_STATE);
     }
 
@@ -177,11 +178,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         String slackMessage = String.format(
             """
-            URI: `%s`
-            Location: `%s`
-            Exception: `%s`
-            ```%s```
-            """,
+                URI: `%s`
+                Location: `%s`
+                Exception: `%s`
+                ```%s```
+                """,
             uri, location, exception, message
         );
 
