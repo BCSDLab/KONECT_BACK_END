@@ -64,6 +64,10 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.41.14')
     implementation 'software.amazon.awssdk:s3'
 
+    // 이미지 WEBP 변환 (TwelveMonkeys ImageIO)
+    implementation 'com.twelvemonkeys.imageio:imageio-core:3.13.1'
+    implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.1'
+
     // monitoring
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
