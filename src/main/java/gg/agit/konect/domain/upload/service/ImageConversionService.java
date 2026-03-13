@@ -144,7 +144,7 @@ public class ImageConversionService {
         String tagName = node.getAttribute("TagName");
         if ("Orientation".equals(tagName)) {
             String attr = node.getAttribute("TagValue");
-            if (!attr.isEmpty()) {
+            if (attr != null && !attr.isEmpty()) {
                 try {
                     return Integer.parseInt(attr);
                 } catch (NumberFormatException ignored) {
