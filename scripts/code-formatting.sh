@@ -24,11 +24,11 @@ resolve_target_java_file() {
     esac
 
     if [ -f "$input_file" ]; then
-        resolved_file="$input_file"
+        resolved_file="$(realpath "$input_file")"
     elif [ -f "$invocation_dir/$input_file" ]; then
-        resolved_file="$invocation_dir/$input_file"
+        resolved_file="$(realpath "$invocation_dir/$input_file")"
     elif [ -f "$repo_root/$input_file" ]; then
-        resolved_file="$repo_root/$input_file"
+        resolved_file="$(realpath "$repo_root/$input_file")"
     else
         matched_files="$(git ls-files -- "$input_file" "*/$input_file" 2>/dev/null || true)"
         if [ -z "$matched_files" ]; then
@@ -42,7 +42,7 @@ resolve_target_java_file() {
             return 1
         fi
 
-        resolved_file="$repo_root/$matched_files"
+        resolved_file="$(realpath "$repo_root/$matched_files")"
     fi
 
     case "$resolved_file" in
