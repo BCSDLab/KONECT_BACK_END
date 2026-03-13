@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import gg.agit.konect.domain.upload.dto.ImageUploadResponse;
 import gg.agit.konect.domain.upload.enums.UploadTarget;
+import gg.agit.konect.domain.upload.service.ImageConversionService.ConversionResult;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.infrastructure.storage.cdn.StorageCdnProperties;
@@ -31,29 +32,36 @@ public class UploadService {
         "image/png",
         "image/jpg",
         "image/jpeg",
-        "image/webp",
-        "image/avif"
+        "image/webp"
     );
 
     private final S3Client s3Client;
     private final S3StorageProperties s3StorageProperties;
     private final StorageCdnProperties storageCdnProperties;
+    private final ImageConversionService imageConversionService;
 
     public ImageUploadResponse uploadImage(MultipartFile file, UploadTarget target) {
         validateS3Configuration();
-        String contentType = validateFile(file);
-        String extension = extensionFromContentType(contentType);
-        String key = buildKey(extension, target);
+        validateFile(file);
+
+        ConversionResult conversionResult;
+        try {
+            conversionResult = imageConversionService.convertToWebP(file);
+        } catch (IOException e) {
+            log.error("이미지 WEBP 변환 실패. fileName: {}", file.getOriginalFilename(), e);
+            throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
+        }
+
+        String key = buildKey(conversionResult.extension(), target);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
             .bucket(s3StorageProperties.bucket())
             .key(key)
-            .contentType(contentType)
+            .contentType(conversionResult.contentType())
             .build();
 
         try {
-            byte[] fileBytes = file.getBytes();
-            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(fileBytes));
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(conversionResult.bytes()));
         } catch (S3Exception e) {
             String awsErrorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null;
             String awsErrorMessage = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
@@ -78,23 +86,13 @@ public class UploadService {
                 e
             );
             throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
-        } catch (IOException e) {
-            log.error(
-                "파일 업로드 중 문제가 발생했습니다. fileName: {}, fileSize: {}, contentType: {}, message: {}",
-                file.getOriginalFilename(),
-                file.getSize(),
-                file.getContentType(),
-                e.getMessage(),
-                e
-            );
-            throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
         }
 
         String fileUrl = trimTrailingSlash(storageCdnProperties.baseUrl()) + "/" + key;
         return new ImageUploadResponse(key, fileUrl);
     }
 
-    private String validateFile(MultipartFile file) {
+    private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw CustomException.of(ApiResponseCode.INVALID_REQUEST_BODY);
         }
@@ -108,19 +106,6 @@ public class UploadService {
         if (maxUploadBytes != null && file.getSize() > maxUploadBytes) {
             throw CustomException.of(ApiResponseCode.INVALID_FILE_SIZE);
         }
-
-        return contentType;
-    }
-
-    private String extensionFromContentType(String contentType) {
-        return switch (contentType) {
-            case "image/png" -> "png";
-            case "image/jpg" -> "jpg";
-            case "image/jpeg" -> "jpg";
-            case "image/webp" -> "webp";
-            case "image/avif" -> "avif";
-            default -> throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
-        };
     }
 
     private String buildKey(String extension, UploadTarget target) {
