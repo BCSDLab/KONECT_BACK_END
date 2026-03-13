@@ -32,8 +32,7 @@ public class UploadService {
         "image/png",
         "image/jpg",
         "image/jpeg",
-        "image/webp",
-        "image/avif"
+        "image/webp"
     );
 
     private final S3Client s3Client;

@@ -77,7 +77,6 @@ public class ImageConversionService {
             case "image/png" -> "png";
             case "image/jpg", "image/jpeg" -> "jpg";
             case "image/webp" -> "webp";
-            case "image/avif" -> "avif";
             default -> "bin";
         };
     }
