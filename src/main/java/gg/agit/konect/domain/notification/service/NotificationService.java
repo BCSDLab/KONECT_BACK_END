@@ -38,6 +38,7 @@ public class NotificationService {
     private static final String EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
     private static final Pattern EXPO_PUSH_TOKEN_PATTERN =
         Pattern.compile("^(ExponentPushToken|ExpoPushToken)\\[[^\\]]+\\]$");
+    private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "default_notifications";
     private static final int CHAT_MESSAGE_PREVIEW_MAX_LENGTH = 30;
     private static final String CHAT_MESSAGE_PREVIEW_SUFFIX = "...";
 
@@ -118,7 +119,7 @@ public class NotificationService {
             data.put("path", "chats/" + roomId);
 
             List<ExpoPushMessage> messages = tokens.stream()
-                .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data))
+                .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
                 .toList();
 
             HttpHeaders headers = new HttpHeaders();
@@ -238,7 +239,7 @@ public class NotificationService {
                     }
 
                     List<ExpoPushMessage> messages = tokens.stream()
-                        .map(token -> new ExpoPushMessage(token, clubName, previewBody, data))
+                        .map(token -> new ExpoPushMessage(token, clubName, previewBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
                         .toList();
 
                     HttpHeaders headers = new HttpHeaders();
@@ -344,7 +345,7 @@ public class NotificationService {
             Map<String, Object> data = buildData(null, path);
 
             List<ExpoPushMessage> messages = tokens.stream()
-                .map(token -> new ExpoPushMessage(token, title, body, data))
+                .map(token -> new ExpoPushMessage(token, title, body, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
                 .toList();
 
             HttpHeaders headers = new HttpHeaders();
@@ -421,7 +422,7 @@ public class NotificationService {
         return messageContent.substring(0, endIndex) + CHAT_MESSAGE_PREVIEW_SUFFIX;
     }
 
-    private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data) {
+    private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data, String channelId) {
     }
 
     private record ExpoPushResponse(List<ExpoPushTicket> data) {
