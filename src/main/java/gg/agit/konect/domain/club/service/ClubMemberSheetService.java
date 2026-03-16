@@ -21,7 +21,9 @@ import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -55,6 +57,7 @@ public class ClubMemberSheetService {
             clearSheet(spreadsheetId);
             writeSheet(spreadsheetId, buildRows(members));
         } catch (IOException e) {
+            log.error("구글 스프레드시트 동기화 실패. spreadsheetId={}, cause={}", spreadsheetId, e.getMessage(), e);
             throw CustomException.of(FAILED_SYNC_GOOGLE_SHEET);
         }
 
@@ -84,7 +87,7 @@ public class ClubMemberSheetService {
                 member.getUser().getName(),
                 member.getUser().getStudentNumber(),
                 member.getUser().getEmail(),
-                member.getUser().getPhoneNumber() != null ? member.getUser().getPhoneNumber() : "",
+                member.getUser().getPhoneNumber() != null ? "'" + member.getUser().getPhoneNumber() : "",
                 member.getClubPosition().getDescription(),
                 member.getCreatedAt().format(DATE_FORMATTER)
             ));
