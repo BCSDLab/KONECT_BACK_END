@@ -119,7 +119,8 @@ public class NotificationService {
             data.put("path", "chats/" + roomId);
 
             List<ExpoPushMessage> messages = tokens.stream()
-                .map(token -> new ExpoPushMessage(token, senderName, truncatedBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
+                .map(token -> new ExpoPushMessage(
+                    token, senderName, truncatedBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
                 .toList();
 
             HttpHeaders headers = new HttpHeaders();
@@ -239,7 +240,8 @@ public class NotificationService {
                     }
 
                     List<ExpoPushMessage> messages = tokens.stream()
-                        .map(token -> new ExpoPushMessage(token, clubName, previewBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
+                        .map(token -> new ExpoPushMessage(
+                            token, clubName, previewBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
                         .toList();
 
                     HttpHeaders headers = new HttpHeaders();
