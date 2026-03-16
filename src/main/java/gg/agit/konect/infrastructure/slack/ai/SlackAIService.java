@@ -24,6 +24,8 @@ public class SlackAIService {
     private static final Pattern MENTION_PATTERN = Pattern.compile("^<@[^>]+>\\s*");
     private static final Pattern MARKDOWN_BOLD_PATTERN =
         Pattern.compile("\\*\\*(.+?)\\*\\*", Pattern.DOTALL);
+    private static final Pattern MARKDOWN_ITALIC_PATTERN =
+        Pattern.compile("(?<!\\*)\\*(?!\\*)([^\\n*]+?)(?<!\\*)\\*(?!\\*)");
     private static final String AI_RESPONSE_PREFIX = ":robot_face: *AI 응답*\n";
     private static final int MAX_HISTORY_MESSAGES = 10;
     private static final String EMPTY_QUERY_MESSAGE =
@@ -175,7 +177,8 @@ public class SlackAIService {
         if (text == null) {
             return null;
         }
-        return MARKDOWN_BOLD_PATTERN.matcher(text).replaceAll("*$1*");
+        String result = MARKDOWN_BOLD_PATTERN.matcher(text).replaceAll("*$1*");
+        return MARKDOWN_ITALIC_PATTERN.matcher(result).replaceAll("*$1*");
     }
 
     private String formatSlackResponse(String response) {
