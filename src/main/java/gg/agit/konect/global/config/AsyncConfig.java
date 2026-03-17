@@ -13,8 +13,8 @@ public class AsyncConfig {
     private static final int SHEET_SYNC_MAX_POOL_SIZE = 4;
     private static final int SHEET_SYNC_QUEUE_CAPACITY = 50;
 
-    @Bean(name = "sheetSyncExecutor")
-    public Executor sheetSyncExecutor() {
+    @Bean(name = "sheetSyncTaskExecutor")
+    public Executor sheetSyncTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(SHEET_SYNC_CORE_POOL_SIZE);
         executor.setMaxPoolSize(SHEET_SYNC_MAX_POOL_SIZE);

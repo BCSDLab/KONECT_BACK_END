@@ -55,13 +55,13 @@ public class SheetSyncExecutor {
     private final ClubFeePaymentRepository clubFeePaymentRepository;
     private final ObjectMapper objectMapper;
 
-    @Async("sheetSyncExecutor")
+    @Async("sheetSyncTaskExecutor")
     @Transactional(readOnly = true)
     public void execute(Integer clubId) {
         executeWithSort(clubId, ClubSheetSortKey.POSITION, true);
     }
 
-    @Async("sheetSyncExecutor")
+    @Async("sheetSyncTaskExecutor")
     @Transactional(readOnly = true)
     public void executeWithSort(Integer clubId, ClubSheetSortKey sortKey, boolean ascending) {
         Club club = clubRepository.getById(clubId);
