@@ -17,12 +17,10 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.infrastructure.claude.config.ClaudeProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class SheetHeaderMapper {
 
     private static final String API_URL = "https://api.anthropic.com/v1/messages";
@@ -33,8 +31,20 @@ public class SheetHeaderMapper {
 
     private final Sheets googleSheetsService;
     private final ClaudeProperties claudeProperties;
-    private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final RestClient restClient;
+
+    public SheetHeaderMapper(
+        Sheets googleSheetsService,
+        ClaudeProperties claudeProperties,
+        ObjectMapper objectMapper,
+        RestClient.Builder restClientBuilder
+    ) {
+        this.googleSheetsService = googleSheetsService;
+        this.claudeProperties = claudeProperties;
+        this.objectMapper = objectMapper;
+        this.restClient = restClientBuilder.build();
+    }
 
     public SheetColumnMapping analyzeHeaders(String spreadsheetId) {
         List<String> headers = readHeaders(spreadsheetId);
