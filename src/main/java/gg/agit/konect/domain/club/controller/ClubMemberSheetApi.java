@@ -6,9 +6,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
 import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
+import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +32,8 @@ public interface ClubMemberSheetApi {
     @PostMapping("/{clubId}/members/sheet-sync")
     ResponseEntity<ClubMemberSheetSyncResponse> syncMembersToSheet(
         @PathVariable(name = "clubId") Integer clubId,
+        @RequestParam(name = "sortKey", defaultValue = "POSITION") ClubSheetSortKey sortKey,
+        @RequestParam(name = "ascending", defaultValue = "true") boolean ascending,
         @UserId Integer requesterId
     );
 }
