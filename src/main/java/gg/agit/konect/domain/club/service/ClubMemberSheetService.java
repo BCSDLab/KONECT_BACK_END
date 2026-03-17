@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET;
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_SHEET_ID;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
@@ -14,8 +15,9 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ClearValuesRequest;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
-import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncRequest;
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
+import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
+import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
@@ -34,7 +36,7 @@ public class ClubMemberSheetService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private static final List<Object> HEADER_ROW = List.of(
-        "이름", "학번", "이메일", "전화번호", "직책", "가입일"
+        "\uc774\ub984", "\ud559\ubc88", "\uc774\uba54\uc77c", "\uc804\ud654\ubc88\ud638", "\uc9c1\uccb8", "\uac00\uc785\uc77c"
     );
 
     private final Sheets googleSheetsService;
@@ -42,22 +44,29 @@ public class ClubMemberSheetService {
     private final ClubMemberRepository clubMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
 
-    public ClubMemberSheetSyncResponse syncMembersToSheet(
-        Integer clubId,
-        Integer requesterId,
-        ClubMemberSheetSyncRequest request
-    ) {
-        clubRepository.getById(clubId);
+    @Transactional
+    public void updateSheetId(Integer clubId, Integer requesterId, ClubSheetIdUpdateRequest request) {
+        Club club = clubRepository.getById(clubId);
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+        club.updateGoogleSheetId(request.spreadsheetId());
+    }
+
+    public ClubMemberSheetSyncResponse syncMembersToSheet(Integer clubId, Integer requesterId) {
+        Club club = clubRepository.getById(clubId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
+        String spreadsheetId = club.getGoogleSheetId();
+        if (spreadsheetId == null || spreadsheetId.isBlank()) {
+            throw CustomException.of(NOT_FOUND_CLUB_SHEET_ID);
+        }
+
         List<ClubMember> members = clubMemberRepository.findAllByClubId(clubId);
-        String spreadsheetId = request.spreadsheetId();
 
         try {
             clearSheet(spreadsheetId);
             writeSheet(spreadsheetId, buildRows(members));
         } catch (IOException e) {
-            log.error("구글 스프레드시트 동기화 실패. spreadsheetId={}, cause={}", spreadsheetId, e.getMessage(), e);
+            log.error("\uad6c\uae00 \uc2a4\ud504\ub808\ub4dc\uc2dc\ud2b8 \ub3d9\uae30\ud654 \uc2e4\ud328. spreadsheetId={}, cause={}", spreadsheetId, e.getMessage(), e);
             throw CustomException.of(FAILED_SYNC_GOOGLE_SHEET);
         }
 

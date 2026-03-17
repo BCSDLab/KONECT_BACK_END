@@ -84,6 +84,9 @@ public class Club extends BaseEntity {
     @Column(name = "is_application_enabled")
     private Boolean isApplicationEnabled;
 
+    @Column(name = "google_sheet_id", length = 255)
+    private String googleSheetId;
+
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
 
@@ -223,5 +226,9 @@ public class Club extends BaseEntity {
         this.feeBank = null;
         this.feeAccountNumber = null;
         this.feeAccountHolder = null;
+    }
+
+    public void updateGoogleSheetId(String googleSheetId) {
+        this.googleSheetId = googleSheetId;
     }
 }
