@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +27,9 @@ public class SheetHeaderMapper {
     private static final String API_URL = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
     private static final String MAPPING_MODEL = "claude-haiku-4-5-20251001";
-    private static final int MAX_TOKENS = 256;
-    private static final String HEADER_RANGE = "1:1";
+    private static final int MAX_TOKENS = 512;
+    private static final int SCAN_ROWS = 10;
+    private static final String SCAN_RANGE = "A1:Z10";
 
     private final Sheets googleSheetsService;
     private final ClaudeProperties claudeProperties;
@@ -47,14 +49,14 @@ public class SheetHeaderMapper {
     }
 
     public SheetColumnMapping analyzeHeaders(String spreadsheetId) {
-        List<String> headers = readHeaders(spreadsheetId);
-        if (headers.isEmpty()) {
-            log.warn("No headers found in spreadsheet. Using default mapping.");
+        List<List<String>> rows = readRows(spreadsheetId);
+        if (rows.isEmpty()) {
+            log.warn("No data found in spreadsheet. Using default mapping.");
             return SheetColumnMapping.defaultMapping();
         }
 
         try {
-            return inferMapping(headers);
+            return inferMapping(rows);
         } catch (Exception e) {
             log.warn(
                 "Header analysis failed, using default mapping. cause={}",
@@ -64,10 +66,10 @@ public class SheetHeaderMapper {
         }
     }
 
-    private List<String> readHeaders(String spreadsheetId) {
+    private List<List<String>> readRows(String spreadsheetId) {
         try {
             ValueRange response = googleSheetsService.spreadsheets().values()
-                .get(spreadsheetId, HEADER_RANGE)
+                .get(spreadsheetId, SCAN_RANGE)
                 .execute();
 
             List<List<Object>> values = response.getValues();
@@ -75,44 +77,59 @@ public class SheetHeaderMapper {
                 return List.of();
             }
 
-            return values.get(0).stream()
-                .map(Object::toString)
-                .toList();
+            List<List<String>> rows = new ArrayList<>();
+            int limit = Math.min(values.size(), SCAN_ROWS);
+            for (int i = 0; i < limit; i++) {
+                List<String> row = values.get(i).stream()
+                    .map(Object::toString)
+                    .toList();
+                rows.add(row);
+            }
+            return rows;
 
         } catch (IOException e) {
-            log.error("Failed to read headers. spreadsheetId={}", spreadsheetId, e);
+            log.error("Failed to read rows. spreadsheetId={}", spreadsheetId, e);
             return List.of();
         }
     }
 
-    private SheetColumnMapping inferMapping(List<String> headers) throws Exception {
-        String prompt = buildPrompt(headers);
+    private SheetColumnMapping inferMapping(List<List<String>> rows) throws Exception {
+        String prompt = buildPrompt(rows);
         String rawJson = callClaude(prompt);
-        return parseMapping(rawJson, headers.size());
+        return parseMapping(rawJson);
     }
 
-    private String buildPrompt(List<String> headers) {
-        return String.format("""
-            The following are column headers from a spreadsheet used by a Korean university club:
-            %s
+    private String buildPrompt(List<List<String>> rows) {
+        StringBuilder rowsDescription = new StringBuilder();
+        for (int i = 0; i < rows.size(); i++) {
+            rowsDescription.append(String.format("Row %d: %s%n", i + 1, rows.get(i)));
+        }
 
-            Map each header to one of these field names if it matches. Column index starts at 0.
+        return String.format("""
+            Below are the first rows of a spreadsheet used by a Korean university club:
+
+            %s
+            First, identify which row contains the column headers (not title or blank rows).
+            Then, map each header to one of these field names. Column index starts at 0.
             Fields: name, studentId, email, phone, position, joinedAt, feePaid, paidAt
 
             Rules:
-            - "name" = member's name (이름, 성명, 이름 등)
-            - "studentId" = student number (학번, 학생번호 등)
-            - "email" = email address (이메일, 이메일주소 등)
-            - "phone" = phone number (전화번호, 연락처, 핸드폰 등)
-            - "position" = role/position in club (직책, 직급, 역할 등)
-            - "joinedAt" = join date (가입일, 가입날짜, 입부일 등)
-            - "feePaid" = fee payment status (회비, 납부여부, 납부, 회비납부 등)
-            - "paidAt" = fee payment date (납부일, 납부날짜 등)
+            - "name" = member's name (이름, 성명 etc.)
+            - "studentId" = student number (학번, 학생번호 etc.)
+            - "email" = email address (이메일, 이메일주소 etc.)
+            - "phone" = phone number (전화번호, 연락처, 핸드폰 etc.)
+            - "position" = role in club (직책, 직급, 역할 etc.)
+            - "joinedAt" = join date (가입일, 가입날짜, 입부일 etc.)
+            - "feePaid" = fee payment status (회비, 납부여부, 회비납부 etc.)
+            - "paidAt" = fee payment date (납부일, 납부날짜 etc.)
 
-            Respond ONLY with a JSON object like:
-            {"name": 0, "studentId": 1, "email": 2}
-            Only include fields you are confident about. Do not include explanation.
-            """, headers);
+            Respond ONLY with a JSON object in this exact format:
+            {"headerRow": 1, "mapping": {"name": 0, "studentId": 1}}
+
+            - "headerRow" is the 1-indexed row number of the header row.
+            - "mapping" contains only fields you are confident about.
+            - Do not include any explanation.
+            """, rowsDescription);
     }
 
     private String callClaude(String prompt) {
@@ -140,7 +157,7 @@ public class SheetHeaderMapper {
         }
     }
 
-    private SheetColumnMapping parseMapping(String rawJson, int headerCount) {
+    private SheetColumnMapping parseMapping(String rawJson) {
         try {
             String cleaned = rawJson.trim();
             int start = cleaned.indexOf('{');
@@ -150,18 +167,25 @@ public class SheetHeaderMapper {
             }
             cleaned = cleaned.substring(start, end + 1);
 
-            JsonNode node = objectMapper.readTree(cleaned);
+            JsonNode root = objectMapper.readTree(cleaned);
+            int headerRow = root.path("headerRow").asInt(1);
+            int dataStartRow = headerRow + 1;
+
+            JsonNode mappingNode = root.path("mapping");
             Map<String, Integer> mapping = new HashMap<>();
 
-            node.fields().forEachRemaining(entry -> {
+            mappingNode.fields().forEachRemaining(entry -> {
                 int colIndex = entry.getValue().asInt(-1);
-                if (colIndex >= 0 && colIndex < headerCount) {
+                if (colIndex >= 0) {
                     mapping.put(entry.getKey(), colIndex);
                 }
             });
 
-            log.info("Sheet header mapping resolved: {}", mapping);
-            return new SheetColumnMapping(mapping);
+            log.info(
+                "Sheet header mapping resolved. headerRow={}, dataStartRow={}, mapping={}",
+                headerRow, dataStartRow, mapping
+            );
+            return new SheetColumnMapping(mapping, dataStartRow);
 
         } catch (Exception e) {
             log.warn("Failed to parse mapping JSON: {}. Using default.", rawJson);

@@ -102,10 +102,18 @@ public class SheetSyncExecutor {
             return SheetColumnMapping.defaultMapping();
         }
         try {
-            Map<String, Integer> map = objectMapper.readValue(
+            Map<String, Object> raw = objectMapper.readValue(
                 mappingJson, new TypeReference<>() {}
             );
-            return new SheetColumnMapping(map);
+            int dataStartRow = raw.containsKey("dataStartRow")
+                ? ((Number) raw.get("dataStartRow")).intValue() : 2;
+            Map<String, Integer> fieldMap = new HashMap<>();
+            raw.forEach((key, value) -> {
+                if (!"dataStartRow".equals(key) && value instanceof Number num) {
+                    fieldMap.put(key, num.intValue());
+                }
+            });
+            return new SheetColumnMapping(fieldMap, dataStartRow);
         } catch (Exception e) {
             log.warn("Failed to parse sheet mapping, using default. cause={}", e.getMessage());
             return SheetColumnMapping.defaultMapping();
@@ -118,7 +126,7 @@ public class SheetSyncExecutor {
         Map<Integer, ClubFeePayment> paymentMap,
         SheetColumnMapping mapping
     ) throws IOException {
-        int dataStartRow = 2;
+        int dataStartRow = mapping.getDataStartRow();
         Map<Integer, List<Object>> columnData = buildColumnData(members, paymentMap, mapping);
 
         List<ValueRange> data = new ArrayList<>();

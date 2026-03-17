@@ -58,7 +58,9 @@ public class ClubMemberSheetService {
 
         SheetColumnMapping mapping = sheetHeaderMapper.analyzeHeaders(request.spreadsheetId());
         try {
-            club.updateSheetColumnMapping(objectMapper.writeValueAsString(mapping.toMap()));
+            club.updateSheetColumnMapping(
+                objectMapper.writeValueAsString(mapping.toMap())
+            );
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
         }

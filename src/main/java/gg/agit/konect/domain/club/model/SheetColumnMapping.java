@@ -22,11 +22,18 @@ public class SheetColumnMapping {
     private static final int COL_JOINED_AT = 5;
     private static final int COL_FEE_PAID = 6;
     private static final int COL_PAID_AT = 7;
+    private static final int DEFAULT_DATA_START_ROW = 2;
 
     private final Map<String, Integer> fieldToColumn;
+    private final int dataStartRow;
+
+    public SheetColumnMapping(Map<String, Integer> fieldToColumn, int dataStartRow) {
+        this.fieldToColumn = new HashMap<>(fieldToColumn);
+        this.dataStartRow = dataStartRow;
+    }
 
     public SheetColumnMapping(Map<String, Integer> fieldToColumn) {
-        this.fieldToColumn = new HashMap<>(fieldToColumn);
+        this(fieldToColumn, DEFAULT_DATA_START_ROW);
     }
 
     public static SheetColumnMapping defaultMapping() {
@@ -39,7 +46,7 @@ public class SheetColumnMapping {
         mapping.put(JOINED_AT, COL_JOINED_AT);
         mapping.put(FEE_PAID, COL_FEE_PAID);
         mapping.put(PAID_AT, COL_PAID_AT);
-        return new SheetColumnMapping(mapping);
+        return new SheetColumnMapping(mapping, DEFAULT_DATA_START_ROW);
     }
 
     public boolean hasColumn(String field) {
@@ -50,7 +57,13 @@ public class SheetColumnMapping {
         return fieldToColumn.getOrDefault(field, -1);
     }
 
-    public Map<String, Integer> toMap() {
-        return new HashMap<>(fieldToColumn);
+    public int getDataStartRow() {
+        return dataStartRow;
+    }
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> result = new HashMap<>(fieldToColumn);
+        result.put("dataStartRow", dataStartRow);
+        return result;
     }
 }
