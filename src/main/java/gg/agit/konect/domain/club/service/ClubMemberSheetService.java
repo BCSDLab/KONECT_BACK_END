@@ -66,7 +66,10 @@ public class ClubMemberSheetService {
             clearSheet(spreadsheetId);
             writeSheet(spreadsheetId, buildRows(members));
         } catch (IOException e) {
-            log.error("\uad6c\uae00 \uc2a4\ud504\ub808\ub4dc\uc2dc\ud2b8 \ub3d9\uae30\ud654 \uc2e4\ud328. spreadsheetId={}, cause={}", spreadsheetId, e.getMessage(), e);
+            log.error(
+                "\uad6c\uae00 \uc2a4\ud504\ub808\ub4dc\uc2dc\ud2b8 \ub3d9\uae30\ud654 \uc2e4\ud328. spreadsheetId={}, cause={}",
+                spreadsheetId, e.getMessage(), e
+            );
             throw CustomException.of(FAILED_SYNC_GOOGLE_SHEET);
         }
 
@@ -96,7 +99,8 @@ public class ClubMemberSheetService {
                 member.getUser().getName(),
                 member.getUser().getStudentNumber(),
                 member.getUser().getEmail(),
-                member.getUser().getPhoneNumber() != null ? "'" + member.getUser().getPhoneNumber() : "",
+                member.getUser().getPhoneNumber() != null
+                    ? "'" + member.getUser().getPhoneNumber() : "",
                 member.getClubPosition().getDescription(),
                 member.getCreatedAt().format(DATE_FORMATTER)
             ));
