@@ -33,11 +33,11 @@ public class ClubMemberSheetService {
 
     private static final String SHEET_RANGE = "A1";
     private static final String CLEAR_RANGE = "A:F";
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    private static final List<Object> HEADER_ROW = List.of(
-        "\uc774\ub984", "\ud559\ubc88", "\uc774\uba54\uc77c", "\uc804\ud654\ubc88\ud638", "\uc9c1\uccb8", "\uac00\uc785\uc77c"
-    );
+    private static final List<Object> HEADER_ROW =
+        List.of("Name", "StudentId", "Email", "Phone", "Position", "JoinedAt");
 
     private final Sheets googleSheetsService;
     private final ClubRepository clubRepository;
@@ -45,13 +45,20 @@ public class ClubMemberSheetService {
     private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
-    public void updateSheetId(Integer clubId, Integer requesterId, ClubSheetIdUpdateRequest request) {
+    public void updateSheetId(
+        Integer clubId,
+        Integer requesterId,
+        ClubSheetIdUpdateRequest request
+    ) {
         Club club = clubRepository.getById(clubId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         club.updateGoogleSheetId(request.spreadsheetId());
     }
 
-    public ClubMemberSheetSyncResponse syncMembersToSheet(Integer clubId, Integer requesterId) {
+    public ClubMemberSheetSyncResponse syncMembersToSheet(
+        Integer clubId,
+        Integer requesterId
+    ) {
         Club club = clubRepository.getById(clubId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
@@ -67,7 +74,7 @@ public class ClubMemberSheetService {
             writeSheet(spreadsheetId, buildRows(members));
         } catch (IOException e) {
             log.error(
-                "\uad6c\uae00 \uc2a4\ud504\ub808\ub4dc\uc2dc\ud2b8 \ub3d9\uae30\ud654 \uc2e4\ud328. spreadsheetId={}, cause={}",
+                "Google Sheets sync failed. spreadsheetId={}, cause={}",
                 spreadsheetId, e.getMessage(), e
             );
             throw CustomException.of(FAILED_SYNC_GOOGLE_SHEET);
