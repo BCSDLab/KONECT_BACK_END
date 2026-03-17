@@ -45,6 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SheetSyncExecutor {
 
     private static final String SHEET_RANGE = "A1";
+    private static final int ALPHABET_SIZE = 26;
     private static final DateTimeFormatter DATE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -280,8 +281,8 @@ public class SheetSyncExecutor {
         index++;
         while (index > 0) {
             index--;
-            sb.insert(0, (char)('A' + index % 26));
-            index /= 26;
+            sb.insert(0, (char)('A' + index % ALPHABET_SIZE));
+            index /= ALPHABET_SIZE;
         }
         return sb.toString();
     }

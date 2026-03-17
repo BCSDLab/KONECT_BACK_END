@@ -14,6 +14,15 @@ public class SheetColumnMapping {
     public static final String FEE_PAID = "feePaid";
     public static final String PAID_AT = "paidAt";
 
+    private static final int COL_NAME = 0;
+    private static final int COL_STUDENT_ID = 1;
+    private static final int COL_EMAIL = 2;
+    private static final int COL_PHONE = 3;
+    private static final int COL_POSITION = 4;
+    private static final int COL_JOINED_AT = 5;
+    private static final int COL_FEE_PAID = 6;
+    private static final int COL_PAID_AT = 7;
+
     private final Map<String, Integer> fieldToColumn;
 
     public SheetColumnMapping(Map<String, Integer> fieldToColumn) {
@@ -22,14 +31,14 @@ public class SheetColumnMapping {
 
     public static SheetColumnMapping defaultMapping() {
         Map<String, Integer> mapping = new HashMap<>();
-        mapping.put(NAME, 0);
-        mapping.put(STUDENT_ID, 1);
-        mapping.put(EMAIL, 2);
-        mapping.put(PHONE, 3);
-        mapping.put(POSITION, 4);
-        mapping.put(JOINED_AT, 5);
-        mapping.put(FEE_PAID, 6);
-        mapping.put(PAID_AT, 7);
+        mapping.put(NAME, COL_NAME);
+        mapping.put(STUDENT_ID, COL_STUDENT_ID);
+        mapping.put(EMAIL, COL_EMAIL);
+        mapping.put(PHONE, COL_PHONE);
+        mapping.put(POSITION, COL_POSITION);
+        mapping.put(JOINED_AT, COL_JOINED_AT);
+        mapping.put(FEE_PAID, COL_FEE_PAID);
+        mapping.put(PAID_AT, COL_PAID_AT);
         return new SheetColumnMapping(mapping);
     }
 
