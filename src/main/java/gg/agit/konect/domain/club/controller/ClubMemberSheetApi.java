@@ -20,7 +20,13 @@ import jakarta.validation.Valid;
 @RequestMapping("/clubs")
 public interface ClubMemberSheetApi {
 
-    @Operation(summary = "Register or update the Google Spreadsheet ID for a club.")
+    @Operation(
+        summary = "구글 스프레드시트 ID 등록 / 수정",
+        description = "동아리에서 사용 중인 구글 스프레드시트 ID를 등록하거나 수정합니다. "
+            + "등록 시 AI(Claude Haiku)가 시트 상단 10행을 자동으로 분석하여 "
+            + "이름·학번·연락처 등 컬럼 위치를 파악하고, 이후 동기화 시 해당 컬럼에만 값을 채웁니다. "
+            + "시트 양식이 변경된 경우 이 API를 다시 호출하면 AI가 재분석합니다."
+    )
     @PutMapping("/{clubId}/sheet")
     ResponseEntity<Void> updateSheetId(
         @PathVariable(name = "clubId") Integer clubId,
@@ -28,7 +34,13 @@ public interface ClubMemberSheetApi {
         @UserId Integer requesterId
     );
 
-    @Operation(summary = "Export club member list to the registered Google Spreadsheet.")
+    @Operation(
+        summary = "동아리 인명부 스프레드시트 동기화",
+        description = "등록된 구글 스프레드시트에 동아리 회원 인명부와 회비 납부 현황을 동기화합니다. "
+            + "sortKey로 정렬 기준(NAME, STUDENT_ID, POSITION, JOINED_AT, FEE_PAID)을 지정할 수 있으며, "
+            + "ascending으로 오름차순/내림차순을 설정합니다. "
+            + "가입 승인·탈퇴·회비 납부 승인 시에도 자동으로 동기화됩니다."
+    )
     @PostMapping("/{clubId}/members/sheet-sync")
     ResponseEntity<ClubMemberSheetSyncResponse> syncMembersToSheet(
         @PathVariable(name = "clubId") Integer clubId,
