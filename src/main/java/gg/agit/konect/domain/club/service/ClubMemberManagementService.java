@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
 import gg.agit.konect.domain.club.enums.ClubPosition;
+import gg.agit.konect.domain.club.event.ClubMemberChangedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.ClubPreMember;
@@ -42,6 +44,7 @@ public class ClubMemberManagementService {
     private final ClubPermissionValidator clubPermissionValidator;
     private final UserRepository userRepository;
     private final ChatRoomMembershipService chatRoomMembershipService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public ClubMember changeMemberPosition(
@@ -273,6 +276,7 @@ public class ClubMemberManagementService {
 
         clubMemberRepository.delete(target);
         chatRoomMembershipService.removeClubMember(clubId, targetUserId);
+        applicationEventPublisher.publishEvent(ClubMemberChangedEvent.of(clubId));
     }
 
     private void validateNotSelf(Integer userId1, Integer userId2, ApiResponseCode errorCode) {

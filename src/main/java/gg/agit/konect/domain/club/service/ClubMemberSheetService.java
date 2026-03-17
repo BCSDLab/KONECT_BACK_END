@@ -15,8 +15,12 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ClearValuesRequest;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
 import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
+import gg.agit.konect.domain.club.event.ClubMemberChangedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
@@ -43,6 +47,27 @@ public class ClubMemberSheetService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onClubMemberChanged(ClubMemberChangedEvent event) {
+        Club club = clubRepository.getById(event.clubId());
+        String spreadsheetId = club.getGoogleSheetId();
+        if (spreadsheetId == null || spreadsheetId.isBlank()) {
+            return;
+        }
+
+        List<ClubMember> members = clubMemberRepository.findAllByClubId(event.clubId());
+
+        try {
+            clearSheet(spreadsheetId);
+            writeSheet(spreadsheetId, buildRows(members));
+        } catch (IOException e) {
+            log.error(
+                "Auto sheet sync failed. clubId={}, spreadsheetId={}, cause={}",
+                event.clubId(), spreadsheetId, e.getMessage(), e
+            );
+        }
+    }
 
     @Transactional
     public void updateSheetId(
