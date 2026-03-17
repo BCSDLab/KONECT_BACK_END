@@ -106,7 +106,7 @@ public class SheetSyncExecutor {
                 mappingJson, new TypeReference<>() {}
             );
             int dataStartRow = raw.containsKey("dataStartRow")
-                ? ((Number) raw.get("dataStartRow")).intValue() : 2;
+                ? ((Number)raw.get("dataStartRow")).intValue() : 2;
             Map<String, Integer> fieldMap = new HashMap<>();
             raw.forEach((key, value) -> {
                 if (!"dataStartRow".equals(key) && value instanceof Number num) {
