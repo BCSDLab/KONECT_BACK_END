@@ -69,6 +69,6 @@ public class ClubMemberSheetService {
         long memberCount = clubMemberRepository.countByClubId(clubId);
         sheetSyncExecutor.executeWithSort(clubId, sortKey, ascending);
 
-        return ClubMemberSheetSyncResponse.of((int) memberCount, spreadsheetId);
+        return ClubMemberSheetSyncResponse.of((int)memberCount, spreadsheetId);
     }
 }

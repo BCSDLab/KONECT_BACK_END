@@ -9,12 +9,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Configuration
 public class AsyncConfig {
 
+    private static final int SHEET_SYNC_CORE_POOL_SIZE = 2;
+    private static final int SHEET_SYNC_MAX_POOL_SIZE = 4;
+    private static final int SHEET_SYNC_QUEUE_CAPACITY = 50;
+
     @Bean(name = "sheetSyncExecutor")
     public Executor sheetSyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
-        executor.setQueueCapacity(50);
+        executor.setCorePoolSize(SHEET_SYNC_CORE_POOL_SIZE);
+        executor.setMaxPoolSize(SHEET_SYNC_MAX_POOL_SIZE);
+        executor.setQueueCapacity(SHEET_SYNC_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("sheet-sync-");
         executor.initialize();
         return executor;
