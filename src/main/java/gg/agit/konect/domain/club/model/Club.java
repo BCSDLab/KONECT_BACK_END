@@ -87,6 +87,9 @@ public class Club extends BaseEntity {
     @Column(name = "google_sheet_id", length = 255)
     private String googleSheetId;
 
+    @Column(name = "sheet_column_mapping", columnDefinition = "JSON")
+    private String sheetColumnMapping;
+
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
 
@@ -230,5 +233,9 @@ public class Club extends BaseEntity {
 
     public void updateGoogleSheetId(String googleSheetId) {
         this.googleSheetId = googleSheetId;
+    }
+
+    public void updateSheetColumnMapping(String sheetColumnMapping) {
+        this.sheetColumnMapping = sheetColumnMapping;
     }
 }

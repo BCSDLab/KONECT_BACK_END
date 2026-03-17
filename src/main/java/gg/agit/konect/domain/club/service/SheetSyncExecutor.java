@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -12,6 +13,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.BasicFilter;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
@@ -21,6 +24,7 @@ import com.google.api.services.sheets.v4.model.GridRange;
 import com.google.api.services.sheets.v4.model.Request;
 import com.google.api.services.sheets.v4.model.SetBasicFilterRequest;
 import com.google.api.services.sheets.v4.model.SheetProperties;
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.UpdateSheetPropertiesRequest;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
@@ -28,6 +32,7 @@ import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubFeePayment;
 import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubFeePaymentRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
@@ -40,18 +45,14 @@ import lombok.extern.slf4j.Slf4j;
 public class SheetSyncExecutor {
 
     private static final String SHEET_RANGE = "A1";
-    private static final String CLEAR_RANGE = "A:H";
     private static final DateTimeFormatter DATE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    private static final List<Object> HEADER_ROW = List.of(
-        "Name", "StudentId", "Email", "Phone", "Position", "JoinedAt", "FeePaid", "PaidAt"
-    );
 
     private final Sheets googleSheetsService;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubFeePaymentRepository clubFeePaymentRepository;
+    private final ObjectMapper objectMapper;
 
     @Async("sheetSyncExecutor")
     @Transactional(readOnly = true)
@@ -68,6 +69,7 @@ public class SheetSyncExecutor {
             return;
         }
 
+        SheetColumnMapping mapping = resolveMapping(club);
         List<ClubMember> members = clubMemberRepository.findAllByClubId(clubId);
         List<ClubFeePayment> payments = clubFeePaymentRepository.findAllByClubId(clubId);
 
@@ -77,9 +79,12 @@ public class SheetSyncExecutor {
         List<ClubMember> sorted = sort(members, paymentMap, sortKey, ascending);
 
         try {
-            clearSheet(spreadsheetId);
-            writeSheet(spreadsheetId, buildRows(sorted, paymentMap));
-            applyFormat(spreadsheetId);
+            if (club.getSheetColumnMapping() != null) {
+                updateMappedColumns(spreadsheetId, sorted, paymentMap, mapping);
+            } else {
+                clearAndWriteAll(spreadsheetId, sorted, paymentMap);
+                applyFormat(spreadsheetId);
+            }
         } catch (IOException e) {
             log.error(
                 "Sheet sync failed. clubId={}, spreadsheetId={}, cause={}",
@@ -90,37 +95,134 @@ public class SheetSyncExecutor {
         log.info("Sheet sync done. clubId={}, members={}", clubId, members.size());
     }
 
-    private List<ClubMember> sort(
+    private SheetColumnMapping resolveMapping(Club club) {
+        String mappingJson = club.getSheetColumnMapping();
+        if (mappingJson == null || mappingJson.isBlank()) {
+            return SheetColumnMapping.defaultMapping();
+        }
+        try {
+            Map<String, Integer> map = objectMapper.readValue(
+                mappingJson, new TypeReference<>() {}
+            );
+            return new SheetColumnMapping(map);
+        } catch (Exception e) {
+            log.warn("Failed to parse sheet mapping, using default. cause={}", e.getMessage());
+            return SheetColumnMapping.defaultMapping();
+        }
+    }
+
+    private void updateMappedColumns(
+        String spreadsheetId,
         List<ClubMember> members,
         Map<Integer, ClubFeePayment> paymentMap,
-        ClubSheetSortKey sortKey,
-        boolean ascending
-    ) {
-        Comparator<ClubMember> comparator = switch (sortKey) {
-            case NAME -> Comparator.comparing(m -> m.getUser().getName());
-            case STUDENT_ID -> Comparator.comparing(m -> m.getUser().getStudentNumber());
-            case POSITION -> Comparator.comparingInt(m -> m.getClubPosition().getPriority());
-            case JOINED_AT -> Comparator.comparing(ClubMember::getCreatedAt);
-            case FEE_PAID -> Comparator.comparing(m -> {
-                ClubFeePayment p = paymentMap.get(m.getUser().getId());
-                return p != null && p.isPaid() ? 0 : 1;
-            });
-        };
+        SheetColumnMapping mapping
+    ) throws IOException {
+        int dataStartRow = 2;
+        Map<Integer, List<Object>> columnData = buildColumnData(members, paymentMap, mapping);
 
-        if (!ascending) {
-            comparator = comparator.reversed();
+        List<ValueRange> data = new ArrayList<>();
+        for (Map.Entry<Integer, List<Object>> entry : columnData.entrySet()) {
+            int colIndex = entry.getKey();
+            List<Object> values = entry.getValue();
+            String colLetter = columnLetter(colIndex);
+            String range = colLetter + dataStartRow + ":" + colLetter;
+            List<List<Object>> wrapped = values.stream().map(v -> List.of((Object)v)).toList();
+            data.add(new ValueRange().setRange(range).setValues(wrapped));
         }
 
-        return members.stream().sorted(comparator).toList();
+        if (!data.isEmpty()) {
+            googleSheetsService.spreadsheets().values()
+                .batchUpdate(spreadsheetId,
+                    new BatchUpdateValuesRequest()
+                        .setValueInputOption("USER_ENTERED")
+                        .setData(data))
+                .execute();
+        }
     }
 
-    private void clearSheet(String spreadsheetId) throws IOException {
+    private Map<Integer, List<Object>> buildColumnData(
+        List<ClubMember> members,
+        Map<Integer, ClubFeePayment> paymentMap,
+        SheetColumnMapping mapping
+    ) {
+        Map<Integer, List<Object>> columns = new HashMap<>();
+
+        for (ClubMember member : members) {
+            Integer userId = member.getUser().getId();
+            ClubFeePayment payment = paymentMap.get(userId);
+
+            putValue(columns, mapping, SheetColumnMapping.NAME,
+                member.getUser().getName());
+            putValue(columns, mapping, SheetColumnMapping.STUDENT_ID,
+                member.getUser().getStudentNumber());
+            putValue(columns, mapping, SheetColumnMapping.EMAIL,
+                member.getUser().getEmail());
+            putValue(columns, mapping, SheetColumnMapping.PHONE,
+                member.getUser().getPhoneNumber() != null
+                    ? "'" + member.getUser().getPhoneNumber() : "");
+            putValue(columns, mapping, SheetColumnMapping.POSITION,
+                member.getClubPosition().getDescription());
+            putValue(columns, mapping, SheetColumnMapping.JOINED_AT,
+                member.getCreatedAt().format(DATE_FORMATTER));
+            putValue(columns, mapping, SheetColumnMapping.FEE_PAID,
+                payment != null && payment.isPaid() ? "Y" : "N");
+            putValue(columns, mapping, SheetColumnMapping.PAID_AT,
+                payment != null && payment.getApprovedAt() != null
+                    ? payment.getApprovedAt().format(DATE_FORMATTER) : "");
+        }
+
+        return columns;
+    }
+
+    private void putValue(
+        Map<Integer, List<Object>> columns,
+        SheetColumnMapping mapping,
+        String field,
+        Object value
+    ) {
+        int colIndex = mapping.getColumnIndex(field);
+        if (colIndex >= 0) {
+            columns.computeIfAbsent(colIndex, k -> new ArrayList<>()).add(value);
+        }
+    }
+
+    private void clearAndWriteAll(
+        String spreadsheetId,
+        List<ClubMember> members,
+        Map<Integer, ClubFeePayment> paymentMap
+    ) throws IOException {
+        String clearRange = "A:H";
         googleSheetsService.spreadsheets().values()
-            .clear(spreadsheetId, CLEAR_RANGE, new ClearValuesRequest())
+            .clear(spreadsheetId, clearRange, new ClearValuesRequest())
             .execute();
-    }
 
-    private void writeSheet(String spreadsheetId, List<List<Object>> rows) throws IOException {
+        List<Object> headerRow = List.of(
+            "Name", "StudentId", "Email", "Phone", "Position", "JoinedAt", "FeePaid", "PaidAt"
+        );
+        List<List<Object>> rows = new ArrayList<>();
+        rows.add(headerRow);
+
+        for (ClubMember member : members) {
+            Integer userId = member.getUser().getId();
+            ClubFeePayment payment = paymentMap.get(userId);
+            String phone = member.getUser().getPhoneNumber() != null
+                ? "'" + member.getUser().getPhoneNumber() : "";
+            String feePaid = payment != null && payment.isPaid() ? "Y" : "N";
+            String paidAt = payment != null && payment.getApprovedAt() != null
+                ? payment.getApprovedAt().format(DATE_FORMATTER) : "";
+
+            rows.add(List.of(
+                member.getUser().getName(),
+                member.getUser().getStudentNumber(),
+                member.getUser().getEmail(),
+                phone,
+                member.getClubPosition().getDescription(),
+                member.getCreatedAt().format(DATE_FORMATTER),
+                feePaid,
+                paidAt
+            ));
+        }
+
         ValueRange body = new ValueRange().setValues(rows);
         googleSheetsService.spreadsheets().values()
             .update(spreadsheetId, SHEET_RANGE, body)
@@ -149,35 +251,38 @@ public class SheetSyncExecutor {
             .execute();
     }
 
-    private List<List<Object>> buildRows(
+    private List<ClubMember> sort(
         List<ClubMember> members,
-        Map<Integer, ClubFeePayment> paymentMap
+        Map<Integer, ClubFeePayment> paymentMap,
+        ClubSheetSortKey sortKey,
+        boolean ascending
     ) {
-        List<List<Object>> rows = new ArrayList<>();
-        rows.add(HEADER_ROW);
+        Comparator<ClubMember> comparator = switch (sortKey) {
+            case NAME -> Comparator.comparing(m -> m.getUser().getName());
+            case STUDENT_ID -> Comparator.comparing(m -> m.getUser().getStudentNumber());
+            case POSITION -> Comparator.comparingInt(m -> m.getClubPosition().getPriority());
+            case JOINED_AT -> Comparator.comparing(ClubMember::getCreatedAt);
+            case FEE_PAID -> Comparator.comparing(m -> {
+                ClubFeePayment p = paymentMap.get(m.getUser().getId());
+                return p != null && p.isPaid() ? 0 : 1;
+            });
+        };
 
-        for (ClubMember member : members) {
-            Integer userId = member.getUser().getId();
-            ClubFeePayment payment = paymentMap.get(userId);
-
-            String feePaid = payment != null && payment.isPaid() ? "Y" : "N";
-            String paidAt = (payment != null && payment.getApprovedAt() != null)
-                ? payment.getApprovedAt().format(DATE_FORMATTER) : "";
-            String phone = member.getUser().getPhoneNumber() != null
-                ? "'" + member.getUser().getPhoneNumber() : "";
-
-            rows.add(List.of(
-                member.getUser().getName(),
-                member.getUser().getStudentNumber(),
-                member.getUser().getEmail(),
-                phone,
-                member.getClubPosition().getDescription(),
-                member.getCreatedAt().format(DATE_FORMATTER),
-                feePaid,
-                paidAt
-            ));
+        if (!ascending) {
+            comparator = comparator.reversed();
         }
 
-        return rows;
+        return members.stream().sorted(comparator).toList();
+    }
+
+    private String columnLetter(int index) {
+        StringBuilder sb = new StringBuilder();
+        index++;
+        while (index > 0) {
+            index--;
+            sb.insert(0, (char)('A' + index % 26));
+            index /= 26;
+        }
+        return sb.toString();
     }
 }

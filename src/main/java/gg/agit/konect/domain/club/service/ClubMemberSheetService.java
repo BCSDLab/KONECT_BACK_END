@@ -7,12 +7,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
 import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import gg.agit.konect.domain.club.event.ClubFeePaymentApprovedEvent;
 import gg.agit.konect.domain.club.event.ClubMemberChangedEvent;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -30,6 +34,8 @@ public class ClubMemberSheetService {
     private final ClubPermissionValidator clubPermissionValidator;
     private final SheetSyncDebouncer sheetSyncDebouncer;
     private final SheetSyncExecutor sheetSyncExecutor;
+    private final SheetHeaderMapper sheetHeaderMapper;
+    private final ObjectMapper objectMapper;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onClubMemberChanged(ClubMemberChangedEvent event) {
@@ -50,6 +56,13 @@ public class ClubMemberSheetService {
         Club club = clubRepository.getById(clubId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         club.updateGoogleSheetId(request.spreadsheetId());
+
+        SheetColumnMapping mapping = sheetHeaderMapper.analyzeHeaders(request.spreadsheetId());
+        try {
+            club.updateSheetColumnMapping(objectMapper.writeValueAsString(mapping.toMap()));
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
+        }
     }
 
     public ClubMemberSheetSyncResponse syncMembersToSheet(
