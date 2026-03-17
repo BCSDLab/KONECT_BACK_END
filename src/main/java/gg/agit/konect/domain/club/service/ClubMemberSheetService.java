@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ClubMemberSheetService {
 
     private final ClubRepository clubRepository;
@@ -65,6 +64,7 @@ public class ClubMemberSheetService {
         }
     }
 
+    @Transactional(readOnly = true)
     public ClubMemberSheetSyncResponse syncMembersToSheet(
         Integer clubId,
         Integer requesterId,
