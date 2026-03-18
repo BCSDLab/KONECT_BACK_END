@@ -115,21 +115,21 @@ public class SlackEventController {
             if (slackAIService.isAIQuery(text)) {
                 log.debug("AI 질문 감지");
                 slackAIService.processAIQuery(text, channelId, effectiveThreadTs, null);
-            } else if (threadTs != null && slackAIService.isAppMention(text)) {
-                List<Map<String, Object>> aiReplies =
-                    slackAIService.fetchAIThreadReplies(channelId, threadTs);
-                if (!aiReplies.isEmpty()) {
-                    log.debug("AI 스레드 내 후속 질문 감지");
-                    slackAIService.processAIQuery(
-                        text, channelId, effectiveThreadTs, aiReplies);
-                }
             }
         }
 
         if ("app_mention".equals(eventType) && text != null) {
             String normalizedText = slackAIService.normalizeAppMentionText(text);
             log.debug("앱 멘션 감지");
-            slackAIService.processAIQuery(normalizedText, channelId, effectiveThreadTs, null);
+            if (threadTs != null) {
+                List<Map<String, Object>> aiReplies =
+                    slackAIService.fetchAIThreadReplies(channelId, threadTs);
+                slackAIService.processAIQuery(
+                    normalizedText, channelId, effectiveThreadTs,
+                    aiReplies.isEmpty() ? null : aiReplies);
+            } else {
+                slackAIService.processAIQuery(normalizedText, channelId, effectiveThreadTs, null);
+            }
         }
     }
 }
