@@ -23,15 +23,12 @@ import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.support.IntegrationTestSupport;
-import gg.agit.konect.support.fixture.ClubFixture;
-import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
@@ -59,24 +56,24 @@ class ChatApiTest extends IntegrationTestSupport {
     private User normalUser;
     private User targetUser;
     private User outsiderUser;
-    private Club club;
+    private University university;
 
     @BeforeEach
     void setUp() {
-        University university = persist(UniversityFixture.create());
-        adminUser = persist(UserFixture.createAdmin(university));
+        university = persist(UniversityFixture.create());
         normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
-        targetUser = persist(UserFixture.createUser(university, "상대유저", "2021136002"));
-        outsiderUser = persist(UserFixture.createUser(university, "외부유저", "2021136003"));
-        club = persist(ClubFixture.create(university, "BCSD Lab"));
-        persist(ClubMemberFixture.createPresident(club, normalUser));
-        persist(ClubMemberFixture.createMember(club, targetUser));
         clearPersistenceContext();
     }
 
     @Nested
     @DisplayName("POST /chats/rooms - 일반 채팅방 생성")
     class CreateDirectChatRoom {
+
+        @BeforeEach
+        void setUpDirectChatFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            clearPersistenceContext();
+        }
 
         @Test
         @DisplayName("일반 채팅방을 생성한다")
@@ -143,6 +140,12 @@ class ChatApiTest extends IntegrationTestSupport {
     @DisplayName("POST /chats/rooms/admin, GET /chats/rooms - 관리자 전용 방 생성 및 조회")
     class AdminChatRoom {
 
+        @BeforeEach
+        void setUpAdminChatFixture() {
+            adminUser = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+        }
+
         @Test
         @DisplayName("관리자 전용 방을 만들고 목록에서 조회한다")
         void createAdminChatRoomAndGetRoomsSuccess() throws Exception {
@@ -167,6 +170,12 @@ class ChatApiTest extends IntegrationTestSupport {
     @Nested
     @DisplayName("POST /chats/rooms/{chatRoomId}/messages - 메시지 전송")
     class SendMessage {
+
+        @BeforeEach
+        void setUpMessageFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            clearPersistenceContext();
+        }
 
         @Test
         @DisplayName("메시지를 전송하고 응답 형태를 반환한다")
@@ -227,6 +236,13 @@ class ChatApiTest extends IntegrationTestSupport {
     @DisplayName("GET /chats/rooms/{chatRoomId} - 채팅방 메시지 조회 실패")
     class GetMessagesFail {
 
+        @BeforeEach
+        void setUpMessageAccessFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            outsiderUser = createUser("외부유저", "2021136003");
+            clearPersistenceContext();
+        }
+
         @Test
         @DisplayName("존재하지 않는 채팅방이면 404를 반환한다")
         void getMessagesNotFound() throws Exception {
@@ -256,6 +272,12 @@ class ChatApiTest extends IntegrationTestSupport {
     @Nested
     @DisplayName("POST /chats/rooms/{chatRoomId}/mute - 채팅방 뮤트 토글")
     class ToggleMute {
+
+        @BeforeEach
+        void setUpMuteFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            clearPersistenceContext();
+        }
 
         @Test
         @DisplayName("뮤트를 켰다가 다시 끈다")
@@ -296,5 +318,9 @@ class ChatApiTest extends IntegrationTestSupport {
         persist(ChatRoomMember.of(managedChatRoom, managedSecondUser, joinedAt));
         clearPersistenceContext();
         return chatRoom;
+    }
+
+    private User createUser(String name, String studentId) {
+        return persist(UserFixture.createUser(university, name, studentId));
     }
 }
