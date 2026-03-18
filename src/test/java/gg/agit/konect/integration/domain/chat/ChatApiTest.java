@@ -20,6 +20,7 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.club.model.Club;
@@ -41,6 +42,9 @@ class ChatApiTest extends IntegrationTestSupport {
 
     @Autowired
     private ChatMessageRepository chatMessageRepository;
+
+    @Autowired
+    private ChatRoomMemberRepository chatRoomMemberRepository;
 
     @Autowired
     private NotificationMuteSettingRepository notificationMuteSettingRepository;
@@ -87,6 +91,51 @@ class ChatApiTest extends IntegrationTestSupport {
 
             clearPersistenceContext();
             assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId())).isPresent();
+        }
+
+        @Test
+        @DisplayName("자기 자신과 채팅방을 만들면 400을 반환한다")
+        void createDirectChatRoomWithSelfFails() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performPost("/chats/rooms", new ChatRoomCreateRequest(normalUser.getId()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_CREATE_CHAT_ROOM_WITH_SELF"));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 대상 유저면 404를 반환한다")
+        void createDirectChatRoomWithMissingUserFails() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performPost("/chats/rooms", new ChatRoomCreateRequest(99999))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND_USER"));
+        }
+
+        @Test
+        @DisplayName("이미 같은 상대와 채팅방이 있으면 기존 방을 반환한다")
+        void createDirectChatRoomReturnsExistingRoom() throws Exception {
+            // given
+            ChatRoom existingRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performPost("/chats/rooms", new ChatRoomCreateRequest(targetUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatRoomId").value(existingRoom.getId()));
+
+            clearPersistenceContext();
+            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId()))
+                .isPresent()
+                .get()
+                .extracting(ChatRoom::getId)
+                .isEqualTo(existingRoom.getId());
+            assertThat(chatRoomMemberRepository.findByChatRoomId(existingRoom.getId())).hasSize(2);
         }
     }
 
@@ -142,6 +191,35 @@ class ChatApiTest extends IntegrationTestSupport {
                 .hasSize(1)
                 .extracting(ChatMessage::getContent)
                 .containsExactly("안녕하세요");
+        }
+
+        @Test
+        @DisplayName("빈 메시지를 전송하면 400을 반환한다")
+        void sendBlankMessageFails() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest(" "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"))
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("content"));
+        }
+
+        @Test
+        @DisplayName("1000자를 초과한 메시지를 전송하면 400을 반환한다")
+        void sendTooLongMessageFails() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(normalUser.getId());
+            String tooLongContent = "a".repeat(1001);
+
+            // when & then
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest(tooLongContent))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"))
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("content"));
         }
     }
 
