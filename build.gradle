@@ -80,7 +80,7 @@ dependencies {
     implementation 'com.google.auth:google-auth-library-oauth2-http:1.23.0'
 
     // Google Drive API
-    implementation 'com.google.apis:google-api-services-drive:v3-rev20250218-2.0.0'
+    implementation 'com.google.apis:google-api-services-drive:v3-rev20250723-2.0.0'
 
     // Gemini AI - using REST API directly (no SDK dependency)
 
