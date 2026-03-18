@@ -11,8 +11,6 @@ public class SheetColumnMapping {
     public static final String PHONE = "phone";
     public static final String POSITION = "position";
     public static final String JOINED_AT = "joinedAt";
-    public static final String FEE_PAID = "feePaid";
-    public static final String PAID_AT = "paidAt";
 
     private static final int COL_NAME = 0;
     private static final int COL_STUDENT_ID = 1;
@@ -20,8 +18,6 @@ public class SheetColumnMapping {
     private static final int COL_PHONE = 3;
     private static final int COL_POSITION = 4;
     private static final int COL_JOINED_AT = 5;
-    private static final int COL_FEE_PAID = 6;
-    private static final int COL_PAID_AT = 7;
     private static final int DEFAULT_DATA_START_ROW = 2;
 
     private final Map<String, Integer> fieldToColumn;
@@ -44,8 +40,6 @@ public class SheetColumnMapping {
         mapping.put(PHONE, COL_PHONE);
         mapping.put(POSITION, COL_POSITION);
         mapping.put(JOINED_AT, COL_JOINED_AT);
-        mapping.put(FEE_PAID, COL_FEE_PAID);
-        mapping.put(PAID_AT, COL_PAID_AT);
         return new SheetColumnMapping(mapping, DEFAULT_DATA_START_ROW);
     }
 

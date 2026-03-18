@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
 import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
-import gg.agit.konect.domain.club.event.ClubFeePaymentApprovedEvent;
 import gg.agit.konect.domain.club.event.ClubMemberChangedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
@@ -40,11 +39,6 @@ public class ClubMemberSheetService {
         sheetSyncDebouncer.debounce(event.clubId());
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onClubFeePaymentApproved(ClubFeePaymentApprovedEvent event) {
-        sheetSyncDebouncer.debounce(event.clubId());
-    }
-
     @Transactional
     public void updateSheetId(
         Integer clubId,
@@ -61,12 +55,6 @@ public class ClubMemberSheetService {
             club.updateSheetColumnMapping(
                 objectMapper.writeValueAsString(result.memberListMapping().toMap())
             );
-            if (result.feeSheetId() != null && result.feeLedgerMapping() != null) {
-                club.updateFeeSheet(
-                    result.feeSheetId(),
-                    objectMapper.writeValueAsString(result.feeLedgerMapping().toMap())
-                );
-            }
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
         }

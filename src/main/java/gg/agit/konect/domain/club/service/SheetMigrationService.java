@@ -215,8 +215,7 @@ public class SheetMigrationService {
         for (String field : List.of(
             SheetColumnMapping.NAME, SheetColumnMapping.STUDENT_ID,
             SheetColumnMapping.EMAIL, SheetColumnMapping.PHONE,
-            SheetColumnMapping.POSITION, SheetColumnMapping.JOINED_AT,
-            SheetColumnMapping.FEE_PAID, SheetColumnMapping.PAID_AT
+            SheetColumnMapping.POSITION, SheetColumnMapping.JOINED_AT
         )) {
             int colIndex = mapping.getColumnIndex(field);
             if (colIndex >= 0) {

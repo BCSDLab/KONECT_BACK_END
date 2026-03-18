@@ -163,30 +163,21 @@ public class SheetHeaderMapper {
                 "sheetTitle": "sheet name containing member list",
                 "headerRow": 1,
                 "mapping": {"name": 0, "studentId": 1, "email": 2}
-              },
-              "feeLedger": {
-                "sheetTitle": "sheet name containing fee payment info, or null if none",
-                "headerRow": 1,
-                "mapping": {"name": 0, "feePaid": 1, "paidAt": 2}
               }
             }
 
             Field definitions:
             - memberList fields: name(이름/성명), studentId(학번), email(이메일),
-              phone(전화번호/연락처), position(직책), joinedAt(가입일),
-              feePaid(납부여부), paidAt(납부일)
-            - feeLedger fields: name(이름/성명), feePaid(납부여부/회비),
-              paidAt(납부일), studentId(학번)
+              phone(전화번호/연락처), position(직책), joinedAt(가입일)
 
             Rules:
             - "memberList.sheetTitle" must be one of: %s
-            - "feeLedger.sheetTitle" must be one of: %s (or null if no fee-related sheet exists)
             - "headerRow" is 1-indexed
             - "mapping" uses 0-indexed column positions
             - Only include fields you are confident about
             - Do not include explanation
             """,
-            sheetNames, sheetsDescription, sheetNames, sheetNames
+            sheetNames, sheetsDescription, sheetNames
         );
     }
 
