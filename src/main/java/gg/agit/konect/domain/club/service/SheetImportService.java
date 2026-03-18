@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
