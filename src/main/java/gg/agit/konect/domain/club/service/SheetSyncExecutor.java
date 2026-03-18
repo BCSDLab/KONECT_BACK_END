@@ -86,6 +86,10 @@ public class SheetSyncExecutor {
                 clearAndWriteAll(spreadsheetId, sorted, paymentMap);
                 applyFormat(spreadsheetId);
             }
+            if (club.getFeeSheetId() != null && club.getFeeSheetColumnMapping() != null) {
+                SheetColumnMapping feeMapping = resolveRawMapping(club.getFeeSheetColumnMapping());
+                syncFeeLedger(spreadsheetId, club.getFeeSheetId(), sorted, paymentMap, feeMapping);
+            }
         } catch (IOException e) {
             log.error(
                 "Sheet sync failed. clubId={}, spreadsheetId={}, cause={}",
@@ -96,11 +100,7 @@ public class SheetSyncExecutor {
         log.info("Sheet sync done. clubId={}, members={}", clubId, members.size());
     }
 
-    private SheetColumnMapping resolveMapping(Club club) {
-        String mappingJson = club.getSheetColumnMapping();
-        if (mappingJson == null || mappingJson.isBlank()) {
-            return SheetColumnMapping.defaultMapping();
-        }
+    private SheetColumnMapping resolveRawMapping(String mappingJson) {
         try {
             Map<String, Object> raw = objectMapper.readValue(
                 mappingJson, new TypeReference<>() {}
@@ -115,9 +115,64 @@ public class SheetSyncExecutor {
             });
             return new SheetColumnMapping(fieldMap, dataStartRow);
         } catch (Exception e) {
-            log.warn("Failed to parse sheet mapping, using default. cause={}", e.getMessage());
+            log.warn("Failed to parse raw mapping, using default. cause={}", e.getMessage());
             return SheetColumnMapping.defaultMapping();
         }
+    }
+
+    private void syncFeeLedger(
+        String spreadsheetId,
+        Integer feeSheetId,
+        List<ClubMember> members,
+        Map<Integer, ClubFeePayment> paymentMap,
+        SheetColumnMapping mapping
+    ) throws IOException {
+        int dataStartRow = mapping.getDataStartRow();
+        Map<Integer, List<Object>> columnData = buildColumnData(members, paymentMap, mapping);
+
+        List<ValueRange> data = new ArrayList<>();
+        for (Map.Entry<Integer, List<Object>> entry : columnData.entrySet()) {
+            int colIndex = entry.getKey();
+            String colLetter = columnLetter(colIndex);
+            String range = String.format("'%s'!%s%d:%s",
+                getSheetTitle(spreadsheetId, feeSheetId),
+                colLetter, dataStartRow, colLetter);
+            List<List<Object>> wrapped =
+                entry.getValue().stream().map(v -> List.of((Object)v)).toList();
+            data.add(new ValueRange().setRange(range).setValues(wrapped));
+        }
+
+        if (!data.isEmpty()) {
+            googleSheetsService.spreadsheets().values()
+                .batchUpdate(spreadsheetId,
+                    new BatchUpdateValuesRequest()
+                        .setValueInputOption("USER_ENTERED")
+                        .setData(data))
+                .execute();
+            log.info("Fee ledger synced. feeSheetId={}, members={}", feeSheetId, members.size());
+        }
+    }
+
+    private String getSheetTitle(String spreadsheetId, Integer sheetId) {
+        try {
+            return googleSheetsService.spreadsheets().get(spreadsheetId).execute()
+                .getSheets().stream()
+                .filter(s -> s.getProperties().getSheetId().equals(sheetId))
+                .map(s -> s.getProperties().getTitle())
+                .findFirst()
+                .orElse("Sheet1");
+        } catch (IOException e) {
+            log.warn("Failed to get sheet title for sheetId={}", sheetId);
+            return "Sheet1";
+        }
+    }
+
+    private SheetColumnMapping resolveMapping(Club club) {
+        String mappingJson = club.getSheetColumnMapping();
+        if (mappingJson == null || mappingJson.isBlank()) {
+            return SheetColumnMapping.defaultMapping();
+        }
+        return resolveRawMapping(mappingJson);
     }
 
     private void updateMappedColumns(

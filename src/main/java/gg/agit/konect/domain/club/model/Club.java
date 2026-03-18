@@ -90,6 +90,12 @@ public class Club extends BaseEntity {
     @Column(name = "sheet_column_mapping", columnDefinition = "JSON")
     private String sheetColumnMapping;
 
+    @Column(name = "fee_sheet_id")
+    private Integer feeSheetId;
+
+    @Column(name = "fee_sheet_column_mapping", columnDefinition = "JSON")
+    private String feeSheetColumnMapping;
+
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
 
@@ -237,5 +243,10 @@ public class Club extends BaseEntity {
 
     public void updateSheetColumnMapping(String sheetColumnMapping) {
         this.sheetColumnMapping = sheetColumnMapping;
+    }
+
+    public void updateFeeSheet(Integer feeSheetId, String feeSheetColumnMapping) {
+        this.feeSheetId = feeSheetId;
+        this.feeSheetColumnMapping = feeSheetColumnMapping;
     }
 }

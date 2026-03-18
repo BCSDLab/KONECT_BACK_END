@@ -56,11 +56,18 @@ public class ClubMemberSheetService {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         club.updateGoogleSheetId(request.spreadsheetId());
 
-        SheetColumnMapping mapping = sheetHeaderMapper.analyzeHeaders(request.spreadsheetId());
+        SheetHeaderMapper.SheetAnalysisResult result =
+            sheetHeaderMapper.analyzeAllSheets(request.spreadsheetId());
         try {
             club.updateSheetColumnMapping(
-                objectMapper.writeValueAsString(mapping.toMap())
+                objectMapper.writeValueAsString(result.memberListMapping().toMap())
             );
+            if (result.feeSheetId() != null && result.feeLedgerMapping() != null) {
+                club.updateFeeSheet(
+                    result.feeSheetId(),
+                    objectMapper.writeValueAsString(result.feeLedgerMapping().toMap())
+                );
+            }
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
         }
