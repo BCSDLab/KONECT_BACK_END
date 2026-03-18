@@ -28,6 +28,7 @@ import com.jayway.jsonpath.JsonPath;
 
 import gg.agit.konect.domain.upload.enums.UploadTarget;
 import gg.agit.konect.support.IntegrationTestSupport;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -185,6 +186,21 @@ class UploadApiTest extends IntegrationTestSupport {
             // given
             MockMultipartFile file = imageFile("club.png", "image/png", createPngBytes(8, 8));
             willThrow(S3Exception.builder().statusCode(500).message("upload failed").build())
+                .given(s3Client)
+                .putObject(any(PutObjectRequest.class), any(RequestBody.class));
+
+            // when & then
+            uploadImage(file, UploadTarget.CLUB)
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("FAILED_UPLOAD_FILE"));
+        }
+
+        @Test
+        @DisplayName("S3 클라이언트 오류가 발생하면 500을 반환한다")
+        void uploadImageWhenS3ClientFailsReturnsInternalServerError() throws Exception {
+            // given
+            MockMultipartFile file = imageFile("club.png", "image/png", createPngBytes(8, 8));
+            willThrow(SdkClientException.create("network failure"))
                 .given(s3Client)
                 .putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
