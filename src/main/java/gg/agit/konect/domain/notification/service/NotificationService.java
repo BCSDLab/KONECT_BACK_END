@@ -28,12 +28,10 @@ import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepo
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class NotificationService {
 
@@ -49,7 +47,20 @@ public class NotificationService {
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
     private final RestTemplate restTemplate;
     private final ChatPresenceService chatPresenceService;
-    private final ExpoPushClient expoPushClient;
+
+    public NotificationService(
+        UserRepository userRepository,
+        NotificationDeviceTokenRepository notificationDeviceTokenRepository,
+        NotificationMuteSettingRepository notificationMuteSettingRepository,
+        RestTemplate restTemplate,
+        ChatPresenceService chatPresenceService
+    ) {
+        this.userRepository = userRepository;
+        this.notificationDeviceTokenRepository = notificationDeviceTokenRepository;
+        this.notificationMuteSettingRepository = notificationMuteSettingRepository;
+        this.restTemplate = restTemplate;
+        this.chatPresenceService = chatPresenceService;
+    }
 
     public NotificationTokenResponse getMyToken(Integer userId) {
         NotificationDeviceToken token = notificationDeviceTokenRepository.getByUserId(userId);
@@ -326,14 +337,66 @@ public class NotificationService {
     }
 
     private void sendNotification(Integer receiverId, String title, String body, String path) {
-        List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(receiverId);
-        if (tokens.isEmpty()) {
-            log.debug("No device tokens found for user: receiverId={}", receiverId);
-            return;
-        }
+        try {
+            List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(receiverId);
+            if (tokens.isEmpty()) {
+                log.debug("No device tokens found for user: receiverId={}", receiverId);
+                return;
+            }
 
-        Map<String, Object> data = buildData(null, path);
-        expoPushClient.sendNotification(receiverId, tokens, title, body, data);
+            Map<String, Object> data = buildData(null, path);
+
+            List<ExpoPushMessage> messages = tokens.stream()
+                .map(token -> new ExpoPushMessage(token, title, body, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
+                .toList();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+            HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
+            ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
+                EXPO_PUSH_URL,
+                HttpMethod.POST,
+                entity,
+                ExpoPushResponse.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error(
+                    "Expo push response not successful: receiverId={}, status={}",
+                    receiverId,
+                    response.getStatusCode()
+                );
+                return;
+            }
+
+            ExpoPushResponse responseBody = response.getBody();
+            if (responseBody == null || responseBody.data == null) {
+                log.error("Expo push response body missing: receiverId={}", receiverId);
+                return;
+            }
+
+            for (int i = 0; i < responseBody.data.size(); i += 1) {
+                ExpoPushTicket ticket = responseBody.data.get(i);
+                if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
+                    continue;
+                }
+                String token = i < tokens.size() ? tokens.get(i) : "unknown";
+                log.error(
+                    "Expo push failed: receiverId={}, token={}, status={}, message={}, details={}",
+                    receiverId,
+                    token,
+                    ticket.status(),
+                    ticket.message(),
+                    ticket.details()
+                );
+            }
+
+            log.debug("Notification sent: receiverId={}, tokenCount={}", receiverId, tokens.size());
+        } catch (Exception e) {
+            log.error("Failed to send notification: receiverId={}", receiverId, e);
+        }
     }
 
     private Map<String, Object> buildData(Map<String, String> data, String path) {

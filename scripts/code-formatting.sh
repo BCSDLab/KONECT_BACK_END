@@ -14,7 +14,6 @@ pre_format_snapshot=""
 
 resolve_target_java_file() {
     local input_file="$1"
-    local candidate_path=""
     local resolved_file=""
     local matched_files=""
     local match_count
@@ -25,11 +24,11 @@ resolve_target_java_file() {
     esac
 
     if [ -f "$input_file" ]; then
-        candidate_path="$input_file"
+        resolved_file="$input_file"
     elif [ -f "$invocation_dir/$input_file" ]; then
-        candidate_path="$invocation_dir/$input_file"
+        resolved_file="$invocation_dir/$input_file"
     elif [ -f "$repo_root/$input_file" ]; then
-        candidate_path="$repo_root/$input_file"
+        resolved_file="$repo_root/$input_file"
     else
         matched_files="$(git ls-files -- "$input_file" "*/$input_file" 2>/dev/null || true)"
         if [ -z "$matched_files" ]; then
@@ -43,11 +42,7 @@ resolve_target_java_file() {
             return 1
         fi
 
-        candidate_path="$repo_root/$matched_files"
-    fi
-
-    if [ -n "$candidate_path" ]; then
-        resolved_file="$(cd "$(dirname "$candidate_path")" && pwd -P)/$(basename "$candidate_path")"
+        resolved_file="$repo_root/$matched_files"
     fi
 
     case "$resolved_file" in
