@@ -28,10 +28,12 @@ import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepo
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class NotificationService {
 
@@ -48,22 +50,6 @@ public class NotificationService {
     private final RestTemplate restTemplate;
     private final ChatPresenceService chatPresenceService;
     private final ExpoPushClient expoPushClient;
-
-    public NotificationService(
-        UserRepository userRepository,
-        NotificationDeviceTokenRepository notificationDeviceTokenRepository,
-        NotificationMuteSettingRepository notificationMuteSettingRepository,
-        RestTemplate restTemplate,
-        ChatPresenceService chatPresenceService,
-        ExpoPushClient expoPushClient
-    ) {
-        this.userRepository = userRepository;
-        this.notificationDeviceTokenRepository = notificationDeviceTokenRepository;
-        this.notificationMuteSettingRepository = notificationMuteSettingRepository;
-        this.restTemplate = restTemplate;
-        this.chatPresenceService = chatPresenceService;
-        this.expoPushClient = expoPushClient;
-    }
 
     public NotificationTokenResponse getMyToken(Integer userId) {
         NotificationDeviceToken token = notificationDeviceTokenRepository.getByUserId(userId);
