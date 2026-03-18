@@ -12,6 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import lombok.extern.slf4j.Slf4j;
@@ -68,7 +71,7 @@ public class ExpoPushClient {
             }
             String token = i < tokens.size() ? tokens.get(i) : "unknown";
             log.error(
-                "Expo push failed: receiverId={}, token={}, status={}, message={}, details={}",
+                "Expo 푸시 발송 실패: receiverId={}, token={}, status={}, message={}, details={}",
                 receiverId,
                 token,
                 ticket.status(),
@@ -77,13 +80,76 @@ public class ExpoPushClient {
             );
         }
 
-        log.debug("Notification sent: receiverId={}, tokenCount={}", receiverId, tokens.size());
+        log.debug("알림 발송 완료: receiverId={}, tokenCount={}", receiverId, tokens.size());
+    }
+
+    @Recover
+    public void sendNotificationRecover(HttpStatusCodeException e, Integer receiverId, List<String> tokens, String title,
+        String body,
+        Map<String, Object> data) {
+        log.error(
+            "알림 재시도 후에도 HTTP 오류로 발송에 실패했습니다: receiverId={}, tokenCount={}, statusCode={}, responseBody={}",
+            receiverId,
+            tokens.size(),
+            e.getStatusCode(),
+            e.getResponseBodyAsString(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendNotificationRecover(ResourceAccessException e, Integer receiverId, List<String> tokens, String title,
+        String body,
+        Map<String, Object> data) {
+        Throwable rootCause = e.getMostSpecificCause();
+        log.error(
+            "알림 재시도 후에도 연결 문제로 발송에 실패했습니다: receiverId={}, tokenCount={}, rootCauseType={}, rootCauseMessage={}",
+            receiverId,
+            tokens.size(),
+            rootCause.getClass().getSimpleName(),
+            rootCause.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendNotificationRecover(IllegalStateException e, Integer receiverId, List<String> tokens, String title,
+        String body,
+        Map<String, Object> data) {
+        log.error(
+            "알림 재시도 후에도 Expo 응답이 비정상이라 발송에 실패했습니다: receiverId={}, tokenCount={}, message={}",
+            receiverId,
+            tokens.size(),
+            e.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendNotificationRecover(RestClientException e, Integer receiverId, List<String> tokens, String title,
+        String body,
+        Map<String, Object> data) {
+        log.error(
+            "알림 재시도 후에도 Rest 클라이언트 오류로 발송에 실패했습니다: receiverId={}, tokenCount={}, exceptionType={}, message={}",
+            receiverId,
+            tokens.size(),
+            e.getClass().getSimpleName(),
+            e.getMessage(),
+            e
+        );
     }
 
     @Recover
     public void sendNotificationRecover(Exception e, Integer receiverId, List<String> tokens, String title, String body,
         Map<String, Object> data) {
-        log.error("Failed to send notification after retry: receiverId={}, tokenCount={}", receiverId, tokens.size(), e);
+        log.error(
+            "알림 재시도 후에도 예기치 못한 오류로 발송에 실패했습니다: receiverId={}, tokenCount={}, exceptionType={}, message={}",
+            receiverId,
+            tokens.size(),
+            e.getClass().getSimpleName(),
+            e.getMessage(),
+            e
+        );
     }
 
     private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data, String channelId) {
