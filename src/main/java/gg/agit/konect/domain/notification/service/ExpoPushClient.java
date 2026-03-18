@@ -33,7 +33,8 @@ public class ExpoPushClient {
     }
 
     @Retryable(maxAttempts = 2)
-    public void sendNotification(Integer receiverId, List<String> tokens, String title, String body, Map<String, Object> data) {
+    public void sendNotification(Integer receiverId, List<String> tokens, String title, String body,
+        Map<String, Object> data) {
         List<ExpoPushMessage> messages = tokens.stream()
             .map(token -> new ExpoPushMessage(token, title, body, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
             .toList();
@@ -84,7 +85,8 @@ public class ExpoPushClient {
     }
 
     @Recover
-    public void sendNotificationRecover(HttpStatusCodeException e, Integer receiverId, List<String> tokens, String title,
+    public void sendNotificationRecover(HttpStatusCodeException e, Integer receiverId, List<String> tokens,
+        String title,
         String body,
         Map<String, Object> data) {
         log.error(
@@ -98,7 +100,8 @@ public class ExpoPushClient {
     }
 
     @Recover
-    public void sendNotificationRecover(ResourceAccessException e, Integer receiverId, List<String> tokens, String title,
+    public void sendNotificationRecover(ResourceAccessException e, Integer receiverId, List<String> tokens,
+        String title,
         String body,
         Map<String, Object> data) {
         Throwable rootCause = e.getMostSpecificCause();
