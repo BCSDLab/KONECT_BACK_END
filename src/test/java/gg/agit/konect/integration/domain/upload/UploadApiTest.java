@@ -106,6 +106,34 @@ class UploadApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("content type 이 없으면 400을 반환한다")
+        void uploadImageWithoutContentTypeFails() throws Exception {
+            // given
+            MockMultipartFile file = imageFile("club.png", null, createPngBytes(8, 8));
+
+            // when & then
+            uploadImage(file, UploadTarget.CLUB)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_FILE_CONTENT_TYPE"));
+
+            verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        }
+
+        @Test
+        @DisplayName("content type 이 비어 있으면 400을 반환한다")
+        void uploadImageWithBlankContentTypeFails() throws Exception {
+            // given
+            MockMultipartFile file = imageFile("club.png", " ", createPngBytes(8, 8));
+
+            // when & then
+            uploadImage(file, UploadTarget.CLUB)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_FILE_CONTENT_TYPE"));
+
+            verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        }
+
+        @Test
         @DisplayName("최대 업로드 크기를 넘기면 400을 반환한다")
         void uploadImageWithTooLargeFileFails() throws Exception {
             // given
@@ -119,6 +147,34 @@ class UploadApiTest extends IntegrationTestSupport {
             uploadImage(file, UploadTarget.CLUB)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_FILE_SIZE"));
+
+            verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        }
+
+        @Test
+        @DisplayName("target 파라미터가 없으면 400을 반환한다")
+        void uploadImageWithoutTargetFails() throws Exception {
+            // given
+            MockMultipartFile file = imageFile("club.png", "image/png", createPngBytes(8, 8));
+
+            // when & then
+            uploadImageWithoutTarget(file)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MISSING_REQUIRED_PARAMETER"));
+
+            verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        }
+
+        @Test
+        @DisplayName("지원하지 않는 target 이면 400을 반환한다")
+        void uploadImageWithInvalidTargetFails() throws Exception {
+            // given
+            MockMultipartFile file = imageFile("club.png", "image/png", createPngBytes(8, 8));
+
+            // when & then
+            uploadImage(file, "INVALID")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_TYPE_VALUE"));
 
             verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
         }
@@ -140,10 +196,21 @@ class UploadApiTest extends IntegrationTestSupport {
     }
 
     private ResultActions uploadImage(MockMultipartFile file, UploadTarget target) throws Exception {
+        return uploadImage(file, target.name());
+    }
+
+    private ResultActions uploadImage(MockMultipartFile file, String target) throws Exception {
         return mockMvc.perform(
             multipart("/upload/image")
                 .file(file)
-                .param("target", target.name())
+                .param("target", target)
+        );
+    }
+
+    private ResultActions uploadImageWithoutTarget(MockMultipartFile file) throws Exception {
+        return mockMvc.perform(
+            multipart("/upload/image")
+                .file(file)
         );
     }
 
