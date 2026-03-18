@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -79,6 +80,7 @@ class ChatApiTest extends IntegrationTestSupport {
         @DisplayName("일반 채팅방을 생성한다")
         void createDirectChatRoomSuccess() throws Exception {
             // given
+            long beforeCount = countDirectRoomsBetween(normalUser, targetUser);
             mockLoginUser(normalUser.getId());
 
             // when & then
@@ -88,6 +90,7 @@ class ChatApiTest extends IntegrationTestSupport {
 
             clearPersistenceContext();
             assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId())).isPresent();
+            assertThat(countDirectRoomsBetween(normalUser, targetUser)).isEqualTo(beforeCount + 1);
         }
 
         @Test
@@ -119,6 +122,7 @@ class ChatApiTest extends IntegrationTestSupport {
         void createDirectChatRoomReturnsExistingRoom() throws Exception {
             // given
             ChatRoom existingRoom = createDirectChatRoom(normalUser, targetUser);
+            long beforeCount = countDirectRoomsBetween(normalUser, targetUser);
             mockLoginUser(normalUser.getId());
 
             // when & then
@@ -132,6 +136,7 @@ class ChatApiTest extends IntegrationTestSupport {
                 .get()
                 .extracting(ChatRoom::getId)
                 .isEqualTo(existingRoom.getId());
+            assertThat(countDirectRoomsBetween(normalUser, targetUser)).isEqualTo(beforeCount);
             assertThat(chatRoomMemberRepository.findByChatRoomId(existingRoom.getId())).hasSize(2);
         }
     }
@@ -322,5 +327,19 @@ class ChatApiTest extends IntegrationTestSupport {
 
     private User createUser(String name, String studentId) {
         return persist(UserFixture.createUser(university, name, studentId));
+    }
+
+    private long countDirectRoomsBetween(User firstUser, User secondUser) {
+        return chatRoomRepository.findByUserId(firstUser.getId()).stream()
+            .map(ChatRoom::getId)
+            .filter(roomId -> isDirectRoomBetween(roomId, firstUser.getId(), secondUser.getId()))
+            .count();
+    }
+
+    private boolean isDirectRoomBetween(Integer roomId, Integer firstUserId, Integer secondUserId) {
+        List<ChatRoomMember> roomMembers = chatRoomMemberRepository.findByChatRoomId(roomId);
+        return roomMembers.size() == 2
+            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(firstUserId))
+            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(secondUserId));
     }
 }
