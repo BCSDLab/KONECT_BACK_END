@@ -173,7 +173,8 @@ public class SheetHeaderMapper {
 
             Field definitions:
             - memberList fields: name(이름/성명), studentId(학번), email(이메일), phone(전화번호/연락처), position(직책), joinedAt(가입일), feePaid(납부여부), paidAt(납부일)
-            - feeLedger fields: name(이름/성명), feePaid(납부여부/회비), paidAt(납부일), studentId(학번)
+            - feeLedger fields: name(이름/성명), feePaid(납부여부/회비),
+              paidAt(납부일), studentId(학번)
 
             Rules:
             - "memberList.sheetTitle" must be one of: %s
@@ -234,7 +235,7 @@ public class SheetHeaderMapper {
             JsonNode feeLedgerNode = root.path("feeLedger");
             if (!feeLedgerNode.isMissingNode() && !feeLedgerNode.isNull()) {
                 String feeLedgerTitle = feeLedgerNode.path("sheetTitle").asText(null);
-                if (feeLedgerTitle != null && !feeLedgerTitle.equals("null")) {
+                if (feeLedgerTitle != null && !"null".equals(feeLedgerTitle)) {
                     feeLedgerMapping = parseSingleMapping(feeLedgerNode);
                     feeSheetId = sheets.stream()
                         .filter(s -> s.title().equals(feeLedgerTitle))
