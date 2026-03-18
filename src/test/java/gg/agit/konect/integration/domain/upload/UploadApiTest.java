@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -140,7 +141,7 @@ class UploadApiTest extends IntegrationTestSupport {
 
     private ResultActions uploadImage(MockMultipartFile file, UploadTarget target) throws Exception {
         return mockMvc.perform(
-            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/upload/image")
+            multipart("/upload/image")
                 .file(file)
                 .param("target", target.name())
         );
