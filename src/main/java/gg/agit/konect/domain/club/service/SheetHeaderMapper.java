@@ -172,7 +172,9 @@ public class SheetHeaderMapper {
             }
 
             Field definitions:
-            - memberList fields: name(이름/성명), studentId(학번), email(이메일), phone(전화번호/연락처), position(직책), joinedAt(가입일), feePaid(납부여부), paidAt(납부일)
+            - memberList fields: name(이름/성명), studentId(학번), email(이메일),
+              phone(전화번호/연락처), position(직책), joinedAt(가입일),
+              feePaid(납부여부), paidAt(납부일)
             - feeLedger fields: name(이름/성명), feePaid(납부여부/회비),
               paidAt(납부일), studentId(학번)
 
