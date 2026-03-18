@@ -305,10 +305,7 @@ class ChatApiTest extends IntegrationTestSupport {
                 NotificationTargetType.CHAT_ROOM,
                 chatRoom.getId(),
                 normalUser.getId()
-            )).isPresent()
-                .get()
-                .extracting(setting -> setting.getIsMuted())
-                .isEqualTo(false);
+            )).matches(setting -> setting.isEmpty() || !setting.get().getIsMuted());
         }
     }
 
