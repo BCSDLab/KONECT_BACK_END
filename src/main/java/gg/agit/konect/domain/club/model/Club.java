@@ -96,6 +96,12 @@ public class Club extends BaseEntity {
     @Column(name = "fee_sheet_column_mapping", columnDefinition = "JSON")
     private String feeSheetColumnMapping;
 
+    @Column(name = "drive_folder_id", length = 255)
+    private String driveFolderId;
+
+    @Column(name = "template_spreadsheet_id", length = 255)
+    private String templateSpreadsheetId;
+
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
 
@@ -248,5 +254,9 @@ public class Club extends BaseEntity {
     public void updateFeeSheet(Integer feeSheetId, String feeSheetColumnMapping) {
         this.feeSheetId = feeSheetId;
         this.feeSheetColumnMapping = feeSheetColumnMapping;
+    }
+
+    public void updateDriveFolderId(String driveFolderId) {
+        this.driveFolderId = driveFolderId;
     }
 }

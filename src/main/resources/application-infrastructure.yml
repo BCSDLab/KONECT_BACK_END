@@ -25,3 +25,4 @@ google:
   sheets:
     credentials-path: ${GOOGLE_SHEETS_CREDENTIALS_PATH}
     application-name: ${GOOGLE_SHEETS_APP_NAME:KONECT}
+    template-spreadsheet-id: ${GOOGLE_SHEETS_TEMPLATE_ID:}
