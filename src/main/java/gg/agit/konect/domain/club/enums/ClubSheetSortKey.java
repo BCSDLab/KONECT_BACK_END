@@ -4,6 +4,5 @@ public enum ClubSheetSortKey {
     NAME,
     STUDENT_ID,
     POSITION,
-    JOINED_AT,
-    FEE_PAID
+    JOINED_AT
 }

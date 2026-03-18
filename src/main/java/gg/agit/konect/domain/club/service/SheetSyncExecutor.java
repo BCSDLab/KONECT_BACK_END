@@ -247,7 +247,7 @@ public class SheetSyncExecutor {
             case STUDENT_ID -> Comparator.comparing(m -> m.getUser().getStudentNumber());
             case POSITION -> Comparator.comparingInt(m -> m.getClubPosition().getPriority());
             case JOINED_AT -> Comparator.comparing(ClubMember::getCreatedAt);
-            case FEE_PAID -> Comparator.comparing(m -> m.getClubPosition().getPriority());
+
         };
 
         if (!ascending) {
