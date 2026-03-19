@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import gg.agit.konect.admin.schedule.dto.AdminScheduleCreateRequest;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleUpsertItemRequest;
@@ -23,7 +22,6 @@ import gg.agit.konect.domain.schedule.model.ScheduleType;
 import gg.agit.konect.domain.schedule.model.UniversitySchedule;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.global.auth.web.AuthorizationInterceptor;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.IntegrationTestSupport;
@@ -34,9 +32,6 @@ import gg.agit.konect.support.fixture.UserFixture;
 class AdminScheduleApiTest extends IntegrationTestSupport {
 
     private static final String BASE_URL = "/admin/schedules";
-
-    @MockitoBean
-    private AuthorizationInterceptor realAuthorizationInterceptor;
 
     private University university;
     private User admin;
@@ -677,7 +672,6 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
                 ScheduleType.UNIVERSITY
             );
 
-            // 비관리자 요청 시 AuthorizationInterceptor가 예외를 던지도록 설정
             mockLoginUser(normalUser.getId());
             given(authorizationInterceptor.preHandle(any(), any(), any()))
                 .willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_ROLE_ACCESS));
@@ -703,7 +697,6 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             );
             clearPersistenceContext();
 
-            // 비관리자 요청 시 AuthorizationInterceptor가 예외를 던지도록 설정
             mockLoginUser(normalUser.getId());
             given(authorizationInterceptor.preHandle(any(), any(), any()))
                 .willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_ROLE_ACCESS));
@@ -731,7 +724,6 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
 
             var request = new AdminScheduleUpsertRequest(List.of(item));
 
-            // 비관리자 요청 시 AuthorizationInterceptor가 예외를 던지도록 설정
             mockLoginUser(normalUser.getId());
             given(authorizationInterceptor.preHandle(any(), any(), any()))
                 .willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_ROLE_ACCESS));
