@@ -11,8 +11,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "advertisement")
 @NoArgsConstructor(access = PROTECTED)
@@ -90,41 +92,5 @@ public class Advertisement extends BaseEntity {
 
     public void increaseClickCount() {
         this.clickCount++;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public String getLinkUrl() {
-        return linkUrl;
-    }
-
-    public Boolean getIsVisible() {
-        return isVisible;
-    }
-
-    public Integer getClickCount() {
-        return clickCount;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return super.getCreatedAt();
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return super.getUpdatedAt();
     }
 }
