@@ -292,6 +292,7 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
             mockLoginUser(president.getId());
 
             performGet("/clubs/" + club.getId() + "/settings")
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isRecruitmentEnabled").value(false))
                 .andExpect(jsonPath("$.isApplicationEnabled").value(false))
                 .andExpect(jsonPath("$.isFeeEnabled").value(true));
