@@ -503,7 +503,17 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
 
             // when & then
             performPut(BASE_URL + "/batch", request)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_DATE_TIME.getCode()));
+
+            clearPersistenceContext();
+
+            List<UniversitySchedule> saved = entityManager.createQuery(
+                    "SELECT us FROM UniversitySchedule us WHERE us.university.id = :universityId",
+                    UniversitySchedule.class)
+                .setParameter("universityId", university.getId())
+                .getResultList();
+            assertThat(saved).isEmpty();
         }
 
         @Test
