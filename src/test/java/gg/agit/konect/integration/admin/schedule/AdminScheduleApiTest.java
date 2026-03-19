@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -522,7 +523,7 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             // given
             LocalDateTime baseDate = LocalDateTime.now().plusDays(1);
 
-            var items = java.util.stream.IntStream.range(0, 50)
+            var items = IntStream.range(0, 50)
                 .mapToObj(i -> new AdminScheduleUpsertItemRequest(
                     null,
                     "일정 " + i,
