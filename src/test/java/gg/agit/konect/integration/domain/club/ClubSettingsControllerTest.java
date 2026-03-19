@@ -22,6 +22,8 @@ import gg.agit.konect.support.fixture.UserFixture;
 @DisplayName("ClubSettingsController 통합 테스트")
 class ClubSettingsControllerTest extends IntegrationTestSupport {
 
+    private static final long NON_EXISTENT_ID = Long.MAX_VALUE;
+
     private University university;
     private User president;
     private User vicePresident;
@@ -112,7 +114,7 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
         void getSettingsNotFoundClub() throws Exception {
             mockLoginUser(president.getId());
 
-            performGet("/clubs/99999/settings")
+            performGet("/clubs/" + NON_EXISTENT_ID + "/settings")
                 .andExpect(status().isNotFound());
         }
 
@@ -247,7 +249,7 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
                 false
             );
 
-            performPatch("/clubs/99999/settings", request)
+            performPatch("/clubs/" + NON_EXISTENT_ID + "/settings", request)
                 .andExpect(status().isNotFound());
         }
 
