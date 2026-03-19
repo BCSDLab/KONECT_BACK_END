@@ -98,7 +98,7 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             // when & then
             performPost(BASE_URL, request)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
 
         @Test
@@ -142,7 +142,7 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             // when & then
             performPost(BASE_URL, request)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
 
         @Test
@@ -163,7 +163,7 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             // when & then
             performPost(BASE_URL, request)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
 
         @Test
@@ -184,7 +184,7 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             // when & then
             performPost(BASE_URL, request)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
 
         @Test
@@ -206,7 +206,7 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             // when & then
             performPost(BASE_URL, request)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
 
         @Test
@@ -385,7 +385,7 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             // when & then
             performPut(BASE_URL + "/batch", request)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
 
         @Test
