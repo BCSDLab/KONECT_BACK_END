@@ -28,7 +28,7 @@ public class AdvertisementService {
     public AdvertisementResponse getVisibleAdvertisement(Integer id) {
         Advertisement advertisement = advertisementRepository.getById(id);
 
-        if (!advertisement.getIsVisible()) {
+        if (!Boolean.TRUE.equals(advertisement.getIsVisible())) {
             throw CustomException.of(NOT_FOUND_ADVERTISEMENT);
         }
 
