@@ -291,8 +291,8 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             assertThat(saved).hasSize(2);
         }
 
-    @Test
-    @DisplayName("기존 일정을 수정한다")
+        @Test
+        @DisplayName("기존 일정을 수정한다")
         void upsertSchedulesUpdateSuccess() throws Exception {
             // given
             Schedule schedule = persist(ScheduleFixture.createUniversity(
