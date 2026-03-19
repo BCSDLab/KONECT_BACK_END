@@ -1,7 +1,5 @@
 package gg.agit.konect.integration.domain.club;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -50,8 +48,6 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
         persist(ClubMemberFixture.createMember(club, regularMember));
 
         clearPersistenceContext();
-
-        given(authorizationInterceptor.preHandle(any(), any(), any())).willReturn(true);
     }
 
     @Nested
