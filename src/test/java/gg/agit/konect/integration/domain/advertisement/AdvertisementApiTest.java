@@ -1,9 +1,11 @@
 package gg.agit.konect.integration.domain.advertisement;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -83,7 +85,7 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             clearPersistenceContext();
             Advertisement foundAdvertisement = entityManager.find(Advertisement.class, advertisement.getId());
-            org.assertj.core.api.Assertions.assertThat(foundAdvertisement.getClickCount()).isEqualTo(1);
+            assertThat(foundAdvertisement.getClickCount()).isEqualTo(1);
         }
     }
 
@@ -110,7 +112,7 @@ class AdvertisementApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
             Long count = entityManager.createQuery("select count(a) from Advertisement a", Long.class)
                 .getSingleResult();
-            org.assertj.core.api.Assertions.assertThat(count).isEqualTo(1L);
+            assertThat(count).isEqualTo(1L);
         }
 
         @Test
@@ -152,8 +154,8 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             clearPersistenceContext();
             Advertisement foundAdvertisement = entityManager.find(Advertisement.class, advertisement.getId());
-            org.assertj.core.api.Assertions.assertThat(foundAdvertisement.getTitle()).isEqualTo("수정 후 광고");
-            org.assertj.core.api.Assertions.assertThat(foundAdvertisement.getIsVisible()).isFalse();
+            assertThat(foundAdvertisement.getTitle()).isEqualTo("수정 후 광고");
+            assertThat(foundAdvertisement.getIsVisible()).isFalse();
         }
 
         @Test
@@ -169,7 +171,7 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             clearPersistenceContext();
             Advertisement foundAdvertisement = entityManager.find(Advertisement.class, advertisement.getId());
-            org.assertj.core.api.Assertions.assertThat(foundAdvertisement).isNull();
+            assertThat(foundAdvertisement).isNull();
         }
     }
 }
