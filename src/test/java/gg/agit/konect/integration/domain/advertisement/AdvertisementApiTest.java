@@ -7,13 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementCreateRequest;
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementUpdateRequest;
