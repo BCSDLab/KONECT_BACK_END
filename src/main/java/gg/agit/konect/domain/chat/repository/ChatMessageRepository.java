@@ -79,6 +79,17 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
     );
 
     @Query("""
+        SELECT DISTINCT cm.chatRoom.id
+        FROM ChatMessage cm
+        WHERE cm.chatRoom.id IN :chatRoomIds
+          AND cm.sender.role != :adminRole
+        """)
+    List<Integer> findRoomIdsWithUserReplyByRoomIds(
+        @Param("chatRoomIds") List<Integer> chatRoomIds,
+        @Param("adminRole") UserRole adminRole
+    );
+
+    @Query("""
         SELECT m
         FROM ChatMessage m
         JOIN FETCH m.sender
