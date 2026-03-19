@@ -1,6 +1,5 @@
 package gg.agit.konect.unit.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
@@ -123,9 +122,11 @@ class AuthorizationInterceptorTest {
 
     static class AuthMethods {
         @Auth(roles = {UserRole.ADMIN})
-        void adminOnly() {}
+        void adminOnly() {
+        }
 
         @Auth(roles = {UserRole.ADMIN, UserRole.USER})
-        void multiRole() {}
+        void multiRole() {
+        }
     }
 }
