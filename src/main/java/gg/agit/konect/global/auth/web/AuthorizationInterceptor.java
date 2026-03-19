@@ -58,14 +58,14 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
 
     private Auth findAuthAnnotation(HandlerMethod handlerMethod) {
         Auth methodAnnotation = AnnotatedElementUtils.findMergedAnnotation(
-                handlerMethod.getMethod(), Auth.class);
+            handlerMethod.getMethod(), Auth.class);
 
         if (methodAnnotation != null) {
             return methodAnnotation;
         }
 
         return AnnotatedElementUtils.findMergedAnnotation(
-                handlerMethod.getBeanType(), Auth.class);
+            handlerMethod.getBeanType(), Auth.class);
     }
 
     // 요청자의 권한과 @Auth에서 지정된 권한을 비교하여 검증

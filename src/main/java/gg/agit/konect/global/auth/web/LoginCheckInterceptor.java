@@ -52,9 +52,9 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
 
     private boolean isPublicEndpoint(HandlerMethod handlerMethod) {
         return AnnotatedElementUtils.findMergedAnnotation(
-                handlerMethod.getMethod(), PublicApi.class) != null
+            handlerMethod.getMethod(), PublicApi.class) != null
             || AnnotatedElementUtils.findMergedAnnotation(
-                handlerMethod.getBeanType(), PublicApi.class) != null;
+            handlerMethod.getBeanType(), PublicApi.class) != null;
     }
 
     private String resolveBearerToken(HttpServletRequest request) {
