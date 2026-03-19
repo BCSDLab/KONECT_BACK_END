@@ -245,7 +245,7 @@ public class ChatService {
         Map<Integer, User> userMap = allUserIds.isEmpty()
             ? Map.of()
             : userRepository.findAllByIdIn(allUserIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
+            .collect(Collectors.toMap(User::getId, u -> u));
 
         for (ChatRoom chatRoom : personalChatRooms) {
             List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
@@ -298,7 +298,7 @@ public class ChatService {
         Map<Integer, User> userMap = allUserIds.isEmpty()
             ? Map.of()
             : userRepository.findAllByIdIn(allUserIds).stream()
-                .collect(Collectors.toMap(User::getId, user -> user));
+            .collect(Collectors.toMap(User::getId, user -> user));
 
         for (ChatRoom chatRoom : adminUserRooms) {
             List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
@@ -597,7 +597,8 @@ public class ChatService {
             .map(ClubMember::getClub)
             .collect(Collectors.toMap(Club::getId, club -> club, (a, b) -> a));
 
-        Map<Integer, ChatRoom> roomByClubId = chatRoomRepository.findByClubIds(new ArrayList<>(clubById.keySet())).stream()
+        Map<Integer, ChatRoom> roomByClubId = chatRoomRepository.findByClubIds(new ArrayList<>(clubById.keySet()))
+            .stream()
             .filter(room -> room.getClub() != null)
             .collect(Collectors.toMap(room -> room.getClub().getId(), room -> room, (a, b) -> a));
 
