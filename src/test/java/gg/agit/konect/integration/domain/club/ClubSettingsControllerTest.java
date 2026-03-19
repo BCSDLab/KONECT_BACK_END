@@ -123,8 +123,7 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
         @Test
         @DisplayName("모집공고가 설정된 동아리는 recruitment 필드를 반환한다")
         void getSettingsWithRecruitmentInfo() throws Exception {
-            Club freshClub = entityManager.find(Club.class, club.getId());
-            persist(ClubRecruitmentFixture.createAlwaysRecruiting(freshClub));
+            persist(ClubRecruitmentFixture.createAlwaysRecruiting(club));
             clearPersistenceContext();
 
             mockLoginUser(president.getId());
