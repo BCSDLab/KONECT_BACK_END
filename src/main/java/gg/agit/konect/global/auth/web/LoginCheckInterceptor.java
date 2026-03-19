@@ -1,5 +1,6 @@
 package gg.agit.konect.global.auth.web;
 
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -50,8 +51,10 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
     }
 
     private boolean isPublicEndpoint(HandlerMethod handlerMethod) {
-        return handlerMethod.hasMethodAnnotation(PublicApi.class)
-            || handlerMethod.getBeanType().isAnnotationPresent(PublicApi.class);
+        return AnnotatedElementUtils.findMergedAnnotation(
+                handlerMethod.getMethod(), PublicApi.class) != null
+            || AnnotatedElementUtils.findMergedAnnotation(
+                handlerMethod.getBeanType(), PublicApi.class) != null;
     }
 
     private String resolveBearerToken(HttpServletRequest request) {

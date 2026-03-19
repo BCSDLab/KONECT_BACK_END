@@ -1,5 +1,6 @@
 package gg.agit.konect.global.auth.web;
 
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -56,13 +57,15 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
     }
 
     private Auth findAuthAnnotation(HandlerMethod handlerMethod) {
-        Auth methodAnnotation = handlerMethod.getMethodAnnotation(Auth.class);
+        Auth methodAnnotation = AnnotatedElementUtils.findMergedAnnotation(
+                handlerMethod.getMethod(), Auth.class);
 
         if (methodAnnotation != null) {
             return methodAnnotation;
         }
 
-        return handlerMethod.getBeanType().getAnnotation(Auth.class);
+        return AnnotatedElementUtils.findMergedAnnotation(
+                handlerMethod.getBeanType(), Auth.class);
     }
 
     // 요청자의 권한과 @Auth에서 지정된 권한을 비교하여 검증
