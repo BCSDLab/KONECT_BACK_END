@@ -548,6 +548,8 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             performPut(BASE_URL + "/batch", request)
                 .andExpect(status().isOk());
 
+            clearPersistenceContext();
+
             List<UniversitySchedule> saved = entityManager.createQuery(
                     "SELECT us FROM UniversitySchedule us WHERE us.university.id = :universityId",
                     UniversitySchedule.class)
