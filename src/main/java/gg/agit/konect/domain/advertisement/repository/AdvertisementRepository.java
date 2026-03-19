@@ -25,12 +25,15 @@ public interface AdvertisementRepository extends Repository<Advertisement, Integ
     void delete(Advertisement advertisement);
 
     /**
-     * 광고 클릭 수를 원자적으로 증가시킵니다.
+     * 노출 중인 광고의 클릭 수를 원자적으로 증가시킵니다.
      * 동시성 문제를 방지하기 위해 DB 레벨에서 UPDATE ... SET click_count = click_count + 1을 수행합니다.
+     * isVisible=true인 광고만 클릭 수를 증가시키며, 해당하는 광고가 없으면 0을 반환합니다.
+     *
+     * @return 업데이트된 행 수 (0이면 노출 중인 광고가 없음)
      */
     @Modifying
-    @Query("UPDATE Advertisement a SET a.clickCount = a.clickCount + 1 WHERE a.id = :id")
-    void incrementClickCount(@Param("id") Integer id);
+    @Query("UPDATE Advertisement a SET a.clickCount = a.clickCount + 1 WHERE a.id = :id AND a.isVisible = true")
+    int incrementClickCount(@Param("id") Integer id);
 
     default Advertisement getById(Integer id) {
         return findById(id)

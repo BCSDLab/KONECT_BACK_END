@@ -37,6 +37,9 @@ public class AdvertisementService {
 
     @Transactional
     public void increaseClickCount(Integer id) {
-        advertisementRepository.incrementClickCount(id);
+        int updatedCount = advertisementRepository.incrementClickCount(id);
+        if (updatedCount == 0) {
+            throw CustomException.of(NOT_FOUND_ADVERTISEMENT);
+        }
     }
 }
