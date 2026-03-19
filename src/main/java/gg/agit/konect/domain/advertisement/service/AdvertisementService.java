@@ -25,24 +25,27 @@ public class AdvertisementService {
     }
 
     public AdvertisementsResponse getRandomAdvertisements(int count) {
-        List<Advertisement> visibleAdvertisements = advertisementRepository
-            .findAllByIsVisibleTrueOrderByCreatedAtDesc();
+        List<Integer> visibleIds = advertisementRepository.findAllVisibleIds();
 
-        if (visibleAdvertisements.isEmpty()) {
+        if (visibleIds.isEmpty()) {
             return AdvertisementsResponse.from(List.of());
         }
 
-        List<Advertisement> result = new ArrayList<>();
+        List<Integer> selectedIds = new ArrayList<>();
 
-        if (visibleAdvertisements.size() >= count) {
-            Collections.shuffle(visibleAdvertisements);
-            result.addAll(visibleAdvertisements.subList(0, count));
+        if (visibleIds.size() >= count) {
+            Collections.shuffle(visibleIds);
+            selectedIds.addAll(visibleIds.subList(0, count));
         } else {
             for (int i = 0; i < count; i++) {
-                int randomIndex = (int)(Math.random() * visibleAdvertisements.size());
-                result.add(visibleAdvertisements.get(randomIndex));
+                int randomIndex = (int)(Math.random() * visibleIds.size());
+                selectedIds.add(visibleIds.get(randomIndex));
             }
         }
+
+        List<Advertisement> result = selectedIds.stream()
+            .map(advertisementRepository::getById)
+            .toList();
 
         return AdvertisementsResponse.from(result);
     }
