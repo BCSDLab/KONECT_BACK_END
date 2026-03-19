@@ -3,10 +3,17 @@ package gg.agit.konect.integration.domain.club;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.test.web.servlet.ResultActions;
 
 import gg.agit.konect.domain.club.dto.ClubSettingsUpdateRequest;
 import gg.agit.konect.domain.club.model.Club;
@@ -54,59 +61,44 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
 
     @Nested
     @DisplayName("GET /clubs/{clubId}/settings - 동아리 설정 조회")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     class GetSettings {
 
-        @Test
-        @DisplayName("회장 권한으로 설정 조회에 성공한다")
-        void getSettingsAsPresident() throws Exception {
-            mockLoginUser(president.getId());
+        @ParameterizedTest(name = "{0} 권한으로 설정 조회 시 {2}를 반환한다")
+        @MethodSource("getSettingsAccessCases")
+        void getSettingsByRole(String roleName, Integer userId, int expectedStatus, boolean verifyDetailedPayload)
+            throws Exception {
+            mockLoginUser(userId);
 
-            performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isRecruitmentEnabled").value(true))
+            ResultActions result = performGet("/clubs/" + club.getId() + "/settings")
+                .andExpect(status().is(expectedStatus));
+
+            if (expectedStatus == 200) {
+                result.andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
+            }
+
+            if (verifyDetailedPayload) {
+                assertPresidentSettingsPayload(result);
+            }
+        }
+
+        Stream<Arguments> getSettingsAccessCases() {
+            return Stream.of(
+                Arguments.of("회장", president.getId(), 200, true),
+                Arguments.of("부회장", vicePresident.getId(), 200, false),
+                Arguments.of("운영진", manager.getId(), 200, false),
+                Arguments.of("일반 회원", regularMember.getId(), 403, false),
+                Arguments.of("비회원", nonMember.getId(), 403, false)
+            );
+        }
+
+        private void assertPresidentSettingsPayload(ResultActions result) throws Exception {
+            result
                 .andExpect(jsonPath("$.isApplicationEnabled").value(true))
                 .andExpect(jsonPath("$.isFeeEnabled").value(false))
                 .andExpect(jsonPath("$.application").exists())
                 .andExpect(jsonPath("$.application.questionCount").isNumber())
                 .andExpect(jsonPath("$.fee").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("부회장 권한으로 설정 조회에 성공한다")
-        void getSettingsAsVicePresident() throws Exception {
-            mockLoginUser(vicePresident.getId());
-
-            performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
-        }
-
-        @Test
-        @DisplayName("운영진 권한으로 설정 조회에 성공한다")
-        void getSettingsAsManager() throws Exception {
-            mockLoginUser(manager.getId());
-
-            performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
-        }
-
-        @Test
-        @DisplayName("일반 회원은 설정 조회에 실패한다 (403 Forbidden)")
-        void getSettingsAsRegularMemberFails() throws Exception {
-            mockLoginUser(regularMember.getId());
-
-            performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("비회원은 설정 조회에 실패한다 (403 Forbidden)")
-        void getSettingsAsNonMemberFails() throws Exception {
-            mockLoginUser(nonMember.getId());
-
-            performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isForbidden());
         }
 
         @Test
