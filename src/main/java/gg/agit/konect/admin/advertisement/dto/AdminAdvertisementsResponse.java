@@ -8,14 +8,14 @@ import gg.agit.konect.domain.advertisement.model.Advertisement;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record AdminAdvertisementsResponse(
-    @Schema(description = "광고 리스트", requiredMode = REQUIRED)
-    List<AdminAdvertisementResponse> advertisements
+        @Schema(description = "광고 리스트", requiredMode = REQUIRED)
+        List<AdminAdvertisementResponse> advertisements
 ) {
     public static AdminAdvertisementsResponse from(List<Advertisement> advertisements) {
         return new AdminAdvertisementsResponse(
-            advertisements.stream()
-                .map(AdminAdvertisementResponse::from)
-                .toList()
+                advertisements.stream()
+                        .map(AdminAdvertisementResponse::from)
+                        .toList()
         );
     }
 }
