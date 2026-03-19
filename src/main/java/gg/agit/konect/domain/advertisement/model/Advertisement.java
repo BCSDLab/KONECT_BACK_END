@@ -3,7 +3,6 @@ package gg.agit.konect.domain.advertisement.model;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-import java.time.LocalDateTime;
 
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
