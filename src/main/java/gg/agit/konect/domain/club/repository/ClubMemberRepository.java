@@ -52,7 +52,6 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.club c
-        JOIN FETCH cm.user
         WHERE cm.id.userId = :userId
         """)
     List<ClubMember> findAllByUserId(Integer userId);
