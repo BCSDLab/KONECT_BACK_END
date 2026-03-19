@@ -37,7 +37,6 @@ public class AdvertisementService {
 
     @Transactional
     public void increaseClickCount(Integer id) {
-        Advertisement advertisement = advertisementRepository.getById(id);
-        advertisement.increaseClickCount();
+        advertisementRepository.incrementClickCount(id);
     }
 }
