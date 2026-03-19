@@ -658,7 +658,8 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
 
             // when & then
             performDelete(BASE_URL + "/-1")
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_SCHEDULE.getCode()));
         }
     }
 
