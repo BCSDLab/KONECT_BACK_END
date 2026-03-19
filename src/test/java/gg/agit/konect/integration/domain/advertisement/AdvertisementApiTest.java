@@ -5,12 +5,20 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementCreateRequest;
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementUpdateRequest;
+import gg.agit.konect.domain.advertisement.dto.AdvertisementResponse;
+import gg.agit.konect.domain.advertisement.dto.AdvertisementsResponse;
 import gg.agit.konect.domain.advertisement.model.Advertisement;
 import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.AdvertisementFixture;
@@ -22,7 +30,7 @@ class AdvertisementApiTest extends IntegrationTestSupport {
     class GetAdvertisements {
 
         @Test
-        @DisplayName("노출 가능한 광고를 랜덤으로 count개 조회한다")
+        @DisplayName("노출 가능한 광고를 랜덤으로 count개 조회한다 - 비노출 광고는 제외")
         void getRandomAdvertisements() throws Exception {
             // given
             persist(AdvertisementFixture.create("광고1", true));
@@ -31,10 +39,39 @@ class AdvertisementApiTest extends IntegrationTestSupport {
             persist(AdvertisementFixture.create("비노출 광고", false));
             clearPersistenceContext();
 
-            // when & then
+            // when & then - 반환된 광고는 모두 노출 광고만 포함
             performGet("/advertisements?count=2")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.advertisements", hasSize(2)));
+                .andExpect(jsonPath("$.advertisements", hasSize(2)))
+                .andExpect(jsonPath("$.advertisements[*].title").value(org.hamcrest.Matchers.not("비노출 광고")));
+        }
+
+        @Test
+        @DisplayName("count가 visible 광고 수 이하면 중복 없이 반환한다")
+        void getRandomAdvertisementsNoDuplicate() throws Exception {
+            // given
+            persist(AdvertisementFixture.create("광고1", true));
+            persist(AdvertisementFixture.create("광고2", true));
+            persist(AdvertisementFixture.create("광고3", true));
+            clearPersistenceContext();
+
+            // when
+            String responseJson = performGet("/advertisements?count=3")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.advertisements", hasSize(3)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+            AdvertisementsResponse response = objectMapper.readValue(
+                responseJson, AdvertisementsResponse.class);
+
+            // then - 반환된 ID는 모두 distinct
+            List<Integer> ids = response.advertisements().stream()
+                .map(AdvertisementResponse::id)
+                .toList();
+            Set<Integer> uniqueIds = Set.copyOf(ids);
+            assertThat(uniqueIds).hasSize(3);
         }
 
         @Test
