@@ -2,10 +2,13 @@ package gg.agit.konect.domain.advertisement.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_ADVERTISEMENT;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.advertisement.dto.AdvertisementResponse;
 import gg.agit.konect.domain.advertisement.dto.AdvertisementsResponse;
 import gg.agit.konect.domain.advertisement.model.Advertisement;
 import gg.agit.konect.domain.advertisement.repository.AdvertisementRepository;
@@ -21,18 +24,30 @@ public class AdvertisementService {
         this.advertisementRepository = advertisementRepository;
     }
 
-    public AdvertisementsResponse getVisibleAdvertisements() {
-        return AdvertisementsResponse.from(advertisementRepository.findAllByIsVisibleTrueOrderByCreatedAtDesc());
-    }
+    public AdvertisementsResponse getRandomAdvertisements(int count) {
+        List<Integer> visibleIds = advertisementRepository.findAllVisibleIds();
 
-    public AdvertisementResponse getVisibleAdvertisement(Integer id) {
-        Advertisement advertisement = advertisementRepository.getById(id);
-
-        if (!Boolean.TRUE.equals(advertisement.getIsVisible())) {
-            throw CustomException.of(NOT_FOUND_ADVERTISEMENT);
+        if (visibleIds.isEmpty()) {
+            return AdvertisementsResponse.from(List.of());
         }
 
-        return AdvertisementResponse.from(advertisement);
+        List<Integer> selectedIds = new ArrayList<>();
+
+        if (visibleIds.size() >= count) {
+            Collections.shuffle(visibleIds);
+            selectedIds.addAll(visibleIds.subList(0, count));
+        } else {
+            for (int i = 0; i < count; i++) {
+                int randomIndex = (int)(Math.random() * visibleIds.size());
+                selectedIds.add(visibleIds.get(randomIndex));
+            }
+        }
+
+        List<Advertisement> result = selectedIds.stream()
+            .map(advertisementRepository::getById)
+            .toList();
+
+        return AdvertisementsResponse.from(result);
     }
 
     @Transactional
