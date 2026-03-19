@@ -34,6 +34,6 @@ public interface AdvertisementRepository extends Repository<Advertisement, Integ
 
     default Advertisement getById(Integer id) {
         return findById(id)
-                .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_ADVERTISEMENT));
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_ADVERTISEMENT));
     }
 }

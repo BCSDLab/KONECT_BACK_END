@@ -3,7 +3,6 @@ package gg.agit.konect.domain.advertisement.model;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
-
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,12 +42,12 @@ public class Advertisement extends BaseEntity {
     private Integer clickCount;
 
     private Advertisement(
-            String title,
-            String description,
-            String imageUrl,
-            String linkUrl,
-            Boolean isVisible,
-            Integer clickCount
+        String title,
+        String description,
+        String imageUrl,
+        String linkUrl,
+        Boolean isVisible,
+        Integer clickCount
     ) {
         this.title = title;
         this.description = description;
@@ -59,28 +58,28 @@ public class Advertisement extends BaseEntity {
     }
 
     public static Advertisement of(
-            String title,
-            String description,
-            String imageUrl,
-            String linkUrl,
-            Boolean isVisible
+        String title,
+        String description,
+        String imageUrl,
+        String linkUrl,
+        Boolean isVisible
     ) {
         return new Advertisement(
-                title,
-                description,
-                imageUrl,
-                linkUrl,
-                isVisible,
-                0
+            title,
+            description,
+            imageUrl,
+            linkUrl,
+            isVisible,
+            0
         );
     }
 
     public void update(
-            String title,
-            String description,
-            String imageUrl,
-            String linkUrl,
-            Boolean isVisible
+        String title,
+        String description,
+        String imageUrl,
+        String linkUrl,
+        Boolean isVisible
     ) {
         this.title = title;
         this.description = description;

@@ -39,8 +39,8 @@ public interface AdminAdvertisementApi {
     @Operation(summary = "광고를 수정한다.")
     @PutMapping("/{id}")
     ResponseEntity<Void> updateAdvertisement(
-            @PathVariable Integer id,
-            @Valid @RequestBody AdminAdvertisementUpdateRequest request
+        @PathVariable Integer id,
+        @Valid @RequestBody AdminAdvertisementUpdateRequest request
     );
 
     @Operation(summary = "광고를 삭제한다.")

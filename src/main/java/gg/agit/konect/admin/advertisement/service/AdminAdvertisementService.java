@@ -32,11 +32,11 @@ public class AdminAdvertisementService {
     @Transactional
     public void createAdvertisement(AdminAdvertisementCreateRequest request) {
         Advertisement advertisement = Advertisement.of(
-                request.title(),
-                request.description(),
-                request.imageUrl(),
-                request.linkUrl(),
-                request.isVisible()
+            request.title(),
+            request.description(),
+            request.imageUrl(),
+            request.linkUrl(),
+            request.isVisible()
         );
         advertisementRepository.save(advertisement);
     }
@@ -45,11 +45,11 @@ public class AdminAdvertisementService {
     public void updateAdvertisement(Integer id, AdminAdvertisementUpdateRequest request) {
         Advertisement advertisement = advertisementRepository.getById(id);
         advertisement.update(
-                request.title(),
-                request.description(),
-                request.imageUrl(),
-                request.linkUrl(),
-                request.isVisible()
+            request.title(),
+            request.description(),
+            request.imageUrl(),
+            request.linkUrl(),
+            request.isVisible()
         );
     }
 

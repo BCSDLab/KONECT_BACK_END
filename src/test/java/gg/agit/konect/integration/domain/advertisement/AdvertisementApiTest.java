@@ -30,9 +30,9 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             // when & then
             performGet("/advertisements")
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.advertisements", hasSize(1)))
-                    .andExpect(jsonPath("$.advertisements[0].title").value("노출 광고"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.advertisements", hasSize(1)))
+                .andExpect(jsonPath("$.advertisements[0].title").value("노출 광고"));
         }
     }
 
@@ -49,8 +49,8 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             // when & then
             performGet("/advertisements/" + advertisement.getId())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.title").value("단건 광고"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("단건 광고"));
         }
 
         @Test
@@ -62,7 +62,7 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             // when & then
             performGet("/advertisements/" + advertisement.getId())
-                    .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
         }
     }
 
@@ -79,7 +79,7 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             // when & then
             performPost("/advertisements/" + advertisement.getId() + "/clicks")
-                    .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent());
 
             clearPersistenceContext();
             Advertisement foundAdvertisement = entityManager.find(Advertisement.class, advertisement.getId());
@@ -96,20 +96,20 @@ class AdvertisementApiTest extends IntegrationTestSupport {
         void createAdvertisement() throws Exception {
             // given
             AdminAdvertisementCreateRequest request = new AdminAdvertisementCreateRequest(
-                    "생성 광고",
-                    "생성 설명",
-                    "https://example.com/create.png",
-                    "https://example.com/create",
-                    true
+                "생성 광고",
+                "생성 설명",
+                "https://example.com/create.png",
+                "https://example.com/create",
+                true
             );
 
             // when & then
             performPost("/admin/advertisements", request)
-                    .andExpect(status().isOk());
+                .andExpect(status().isOk());
 
             clearPersistenceContext();
             Long count = entityManager.createQuery("select count(a) from Advertisement a", Long.class)
-                    .getSingleResult();
+                .getSingleResult();
             org.assertj.core.api.Assertions.assertThat(count).isEqualTo(1L);
         }
 
@@ -122,13 +122,13 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             // when & then
             performGet("/admin/advertisements")
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.advertisements", hasSize(1)))
-                    .andExpect(jsonPath("$.advertisements[0].title").value("관리 광고"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.advertisements", hasSize(1)))
+                .andExpect(jsonPath("$.advertisements[0].title").value("관리 광고"));
 
             performGet("/admin/advertisements/" + advertisement.getId())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.title").value("관리 광고"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("관리 광고"));
         }
 
         @Test
@@ -139,16 +139,16 @@ class AdvertisementApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             AdminAdvertisementUpdateRequest request = new AdminAdvertisementUpdateRequest(
-                    "수정 후 광고",
-                    "수정 설명",
-                    "https://example.com/update.png",
-                    "https://example.com/update",
-                    false
+                "수정 후 광고",
+                "수정 설명",
+                "https://example.com/update.png",
+                "https://example.com/update",
+                false
             );
 
             // when & then
             performPut("/admin/advertisements/" + advertisement.getId(), request)
-                    .andExpect(status().isOk());
+                .andExpect(status().isOk());
 
             clearPersistenceContext();
             Advertisement foundAdvertisement = entityManager.find(Advertisement.class, advertisement.getId());
@@ -165,7 +165,7 @@ class AdvertisementApiTest extends IntegrationTestSupport {
 
             // when & then
             performDelete("/admin/advertisements/" + advertisement.getId())
-                    .andExpect(status().isOk());
+                .andExpect(status().isOk());
 
             clearPersistenceContext();
             Advertisement foundAdvertisement = entityManager.find(Advertisement.class, advertisement.getId());

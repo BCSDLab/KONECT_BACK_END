@@ -43,8 +43,8 @@ public class AdminAdvertisementController implements AdminAdvertisementApi {
 
     @Override
     public ResponseEntity<Void> updateAdvertisement(
-            @PathVariable Integer id,
-            @Valid @RequestBody AdminAdvertisementUpdateRequest request
+        @PathVariable Integer id,
+        @Valid @RequestBody AdminAdvertisementUpdateRequest request
     ) {
         adminAdvertisementService.updateAdvertisement(id, request);
         return ResponseEntity.ok().build();
