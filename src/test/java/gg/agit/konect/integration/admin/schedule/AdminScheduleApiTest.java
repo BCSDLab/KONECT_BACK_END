@@ -68,6 +68,8 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             performPost(BASE_URL, request)
                 .andExpect(status().isOk());
 
+            clearPersistenceContext();
+
             // 데이터 저장 검증
             List<UniversitySchedule> saved = entityManager.createQuery(
                     "SELECT us FROM UniversitySchedule us WHERE us.university.id = :universityId",
@@ -230,6 +232,8 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             performPost(BASE_URL, request)
                 .andExpect(status().isOk());
 
+            clearPersistenceContext();
+
             List<UniversitySchedule> saved = entityManager.createQuery(
                     "SELECT us FROM UniversitySchedule us WHERE us.university.id = :universityId",
                     UniversitySchedule.class)
@@ -276,6 +280,8 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             performPut(BASE_URL + "/batch", request)
                 .andExpect(status().isOk());
 
+            clearPersistenceContext();
+
             List<UniversitySchedule> saved = entityManager.createQuery(
                     "SELECT us FROM UniversitySchedule us WHERE us.university.id = :universityId",
                     UniversitySchedule.class)
@@ -285,8 +291,8 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
             assertThat(saved).hasSize(2);
         }
 
-        @Test
-        @DisplayName("기존 일정을 수정한다")
+    @Test
+    @DisplayName("기존 일정을 수정한다")
         void upsertSchedulesUpdateSuccess() throws Exception {
             // given
             Schedule schedule = persist(ScheduleFixture.createUniversity(
