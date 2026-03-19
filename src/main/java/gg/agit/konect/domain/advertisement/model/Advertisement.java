@@ -87,8 +87,4 @@ public class Advertisement extends BaseEntity {
         this.linkUrl = linkUrl;
         this.isVisible = isVisible;
     }
-
-    public void increaseClickCount() {
-        this.clickCount++;
-    }
 }
