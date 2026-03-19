@@ -2,10 +2,13 @@ package gg.agit.konect.domain.advertisement.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_ADVERTISEMENT;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.advertisement.dto.AdvertisementResponse;
 import gg.agit.konect.domain.advertisement.dto.AdvertisementsResponse;
 import gg.agit.konect.domain.advertisement.model.Advertisement;
 import gg.agit.konect.domain.advertisement.repository.AdvertisementRepository;
@@ -21,18 +24,27 @@ public class AdvertisementService {
         this.advertisementRepository = advertisementRepository;
     }
 
-    public AdvertisementsResponse getVisibleAdvertisements() {
-        return AdvertisementsResponse.from(advertisementRepository.findAllByIsVisibleTrueOrderByCreatedAtDesc());
-    }
+    public AdvertisementsResponse getRandomAdvertisements(int count) {
+        List<Advertisement> visibleAdvertisements = advertisementRepository
+            .findAllByIsVisibleTrueOrderByCreatedAtDesc();
 
-    public AdvertisementResponse getVisibleAdvertisement(Integer id) {
-        Advertisement advertisement = advertisementRepository.getById(id);
-
-        if (!Boolean.TRUE.equals(advertisement.getIsVisible())) {
-            throw CustomException.of(NOT_FOUND_ADVERTISEMENT);
+        if (visibleAdvertisements.isEmpty()) {
+            return AdvertisementsResponse.from(List.of());
         }
 
-        return AdvertisementResponse.from(advertisement);
+        List<Advertisement> result = new ArrayList<>();
+
+        if (visibleAdvertisements.size() >= count) {
+            Collections.shuffle(visibleAdvertisements);
+            result.addAll(visibleAdvertisements.subList(0, count));
+        } else {
+            for (int i = 0; i < count; i++) {
+                int randomIndex = (int)(Math.random() * visibleAdvertisements.size());
+                result.add(visibleAdvertisements.get(randomIndex));
+            }
+        }
+
+        return AdvertisementsResponse.from(result);
     }
 
     @Transactional

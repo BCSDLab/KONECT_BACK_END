@@ -5,7 +5,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.domain.advertisement.dto.AdvertisementResponse;
 import gg.agit.konect.domain.advertisement.dto.AdvertisementsResponse;
 import gg.agit.konect.domain.advertisement.service.AdvertisementService;
 
@@ -20,14 +19,8 @@ public class AdvertisementController implements AdvertisementApi {
     }
 
     @Override
-    public ResponseEntity<AdvertisementsResponse> getAdvertisements() {
-        AdvertisementsResponse response = advertisementService.getVisibleAdvertisements();
-        return ResponseEntity.ok(response);
-    }
-
-    @Override
-    public ResponseEntity<AdvertisementResponse> getAdvertisement(@PathVariable Integer id) {
-        AdvertisementResponse response = advertisementService.getVisibleAdvertisement(id);
+    public ResponseEntity<AdvertisementsResponse> getAdvertisements(int count) {
+        AdvertisementsResponse response = advertisementService.getRandomAdvertisements(count);
         return ResponseEntity.ok(response);
     }
 
