@@ -58,11 +58,6 @@ public class SheetSyncExecutor {
 
     @Async("sheetSyncTaskExecutor")
     @Transactional(readOnly = true)
-    public void execute(Integer clubId) {
-        executeWithSort(clubId, ClubSheetSortKey.POSITION, true);
-    }
-
-    @Transactional(readOnly = true)
     public void executeWithSort(Integer clubId, ClubSheetSortKey sortKey, boolean ascending) {
         Club club = clubRepository.getById(clubId);
         String spreadsheetId = club.getGoogleSheetId();

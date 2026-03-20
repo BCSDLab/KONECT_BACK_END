@@ -39,6 +39,7 @@ public class ClubMemberSheetService {
         sheetSyncDebouncer.debounce(event.clubId());
     }
 
+    @Transactional
     public void updateSheetId(
         Integer clubId,
         Integer requesterId,
@@ -52,19 +53,10 @@ public class ClubMemberSheetService {
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
         }
-        persistSheetId(clubId, requesterId, request.spreadsheetId(), mappingJson);
-    }
 
-    @Transactional
-    protected void persistSheetId(
-        Integer clubId,
-        Integer requesterId,
-        String spreadsheetId,
-        String mappingJson
-    ) {
         Club club = clubRepository.getById(clubId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-        club.updateGoogleSheetId(spreadsheetId);
+        club.updateGoogleSheetId(request.spreadsheetId());
         if (mappingJson != null) {
             club.updateSheetColumnMapping(mappingJson);
         }

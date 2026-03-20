@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Component;
 
+import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,7 +34,7 @@ public class SheetSyncDebouncer {
             }
             return scheduler.schedule(() -> {
                 pendingTasks.remove(id);
-                sheetSyncExecutor.execute(id);
+                sheetSyncExecutor.executeWithSort(id, ClubSheetSortKey.POSITION, true);
             }, DEBOUNCE_DELAY_SECONDS, TimeUnit.SECONDS);
         });
     }
