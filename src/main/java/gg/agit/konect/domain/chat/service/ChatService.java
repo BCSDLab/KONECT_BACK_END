@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -244,7 +245,7 @@ public class ChatService {
         Map<Integer, User> userMap = allUserIds.isEmpty()
             ? Map.of()
             : userRepository.findAllByIdIn(allUserIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
+            .collect(Collectors.toMap(User::getId, u -> u));
 
         for (ChatRoom chatRoom : personalChatRooms) {
             List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
@@ -281,8 +282,12 @@ public class ChatService {
         List<ChatRoom> adminUserRooms = chatRoomRepository.findAllSystemAdminDirectRooms(
             SYSTEM_ADMIN_ID, UserRole.ADMIN
         );
+        List<Integer> roomIds = extractChatRoomIds(adminUserRooms);
         Map<Integer, List<MemberInfo>> roomMemberInfoMap = getRoomMemberInfoMap(adminUserRooms);
-        Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(extractChatRoomIds(adminUserRooms));
+        Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(roomIds);
+        Set<Integer> repliedRoomIds = roomIds.isEmpty()
+            ? Set.of()
+            : new HashSet<>(chatMessageRepository.findRoomIdsWithUserReplyByRoomIds(roomIds, UserRole.ADMIN));
 
         List<Integer> allUserIds = roomMemberInfoMap.values().stream()
             .flatMap(List::stream)
@@ -293,7 +298,7 @@ public class ChatService {
         Map<Integer, User> userMap = allUserIds.isEmpty()
             ? Map.of()
             : userRepository.findAllByIdIn(allUserIds).stream()
-                .collect(Collectors.toMap(User::getId, user -> user));
+            .collect(Collectors.toMap(User::getId, user -> user));
 
         for (ChatRoom chatRoom : adminUserRooms) {
             List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
@@ -301,7 +306,7 @@ public class ChatService {
             if (nonAdminUser == null) {
                 continue;
             }
-            if (!chatMessageRepository.existsUserReplyByRoomId(chatRoom.getId(), UserRole.ADMIN)) {
+            if (!repliedRoomIds.contains(chatRoom.getId())) {
                 continue;
             }
 
@@ -441,17 +446,8 @@ public class ChatService {
         Map<Integer, ClubMember> membershipByClubId = memberships.stream()
             .collect(Collectors.toMap(cm -> cm.getClub().getId(), cm -> cm, (a, b) -> a));
 
-        List<ChatRoom> rooms = memberships.stream()
-            .map(ClubMember::getClub)
-            .map(this::resolveOrCreateClubRoom)
-            .toList();
-
-        for (ChatRoom room : rooms) {
-            ClubMember member = membershipByClubId.get(room.getClub().getId());
-            if (member != null) {
-                ensureRoomMember(room, member.getUser(), member.getCreatedAt());
-            }
-        }
+        List<ChatRoom> rooms = resolveOrCreateClubRooms(memberships);
+        ensureClubRoomMembers(rooms, membershipByClubId, userId);
 
         List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
         Map<Integer, ChatMessage> lastMessageMap = getLastMessageMap(roomIds);
@@ -596,9 +592,61 @@ public class ChatService {
         return room;
     }
 
-    private ChatRoom resolveOrCreateClubRoom(Club club) {
-        return chatRoomRepository.findByClubId(club.getId())
-            .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(club)));
+    private List<ChatRoom> resolveOrCreateClubRooms(List<ClubMember> memberships) {
+        Map<Integer, Club> clubById = memberships.stream()
+            .map(ClubMember::getClub)
+            .collect(Collectors.toMap(Club::getId, club -> club, (a, b) -> a));
+
+        Map<Integer, ChatRoom> roomByClubId = chatRoomRepository.findByClubIds(new ArrayList<>(clubById.keySet()))
+            .stream()
+            .filter(room -> room.getClub() != null)
+            .collect(Collectors.toMap(room -> room.getClub().getId(), room -> room, (a, b) -> a));
+
+        for (Map.Entry<Integer, Club> clubEntry : clubById.entrySet()) {
+            if (roomByClubId.containsKey(clubEntry.getKey())) {
+                continue;
+            }
+
+            ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.groupOf(clubEntry.getValue()));
+            roomByClubId.put(clubEntry.getKey(), createdRoom);
+        }
+
+        return memberships.stream()
+            .map(membership -> roomByClubId.get(membership.getClub().getId()))
+            .toList();
+    }
+
+    private void ensureClubRoomMembers(
+        List<ChatRoom> rooms,
+        Map<Integer, ClubMember> membershipByClubId,
+        Integer userId
+    ) {
+        if (rooms.isEmpty()) {
+            return;
+        }
+
+        Map<Integer, ChatRoomMember> memberByRoomId = chatRoomMemberRepository
+            .findByChatRoomIdsAndUserId(extractChatRoomIds(rooms), userId)
+            .stream()
+            .collect(Collectors.toMap(ChatRoomMember::getChatRoomId, member -> member, (a, b) -> a));
+
+        for (ChatRoom room : rooms) {
+            ClubMember member = membershipByClubId.get(room.getClub().getId());
+            if (member == null) {
+                continue;
+            }
+
+            ChatRoomMember existingMember = memberByRoomId.get(room.getId());
+            if (existingMember != null) {
+                LocalDateTime lastReadAt = existingMember.getLastReadAt();
+                if (lastReadAt == null || lastReadAt.isBefore(member.getCreatedAt())) {
+                    existingMember.updateLastReadAt(member.getCreatedAt());
+                }
+                continue;
+            }
+
+            chatRoomMemberRepository.save(ChatRoomMember.of(room, member.getUser(), member.getCreatedAt()));
+        }
     }
 
     private List<Integer> extractChatRoomIds(List<ChatRoom> chatRooms) {

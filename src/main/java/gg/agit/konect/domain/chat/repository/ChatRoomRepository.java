@@ -55,6 +55,14 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     Optional<ChatRoom> findByClubId(@Param("clubId") Integer clubId);
 
     @Query("""
+        SELECT cr
+        FROM ChatRoom cr
+        LEFT JOIN FETCH cr.club c
+        WHERE c.id IN :clubIds
+        """)
+    List<ChatRoom> findByClubIds(@Param("clubIds") List<Integer> clubIds);
+
+    @Query("""
         SELECT DISTINCT cr
         FROM ChatRoom cr
         JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
