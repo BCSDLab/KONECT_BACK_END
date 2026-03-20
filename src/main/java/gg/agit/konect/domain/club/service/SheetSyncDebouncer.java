@@ -26,17 +26,15 @@ public class SheetSyncDebouncer {
     private final SheetSyncExecutor sheetSyncExecutor;
 
     public void debounce(Integer clubId) {
-        ScheduledFuture<?> existing = pendingTasks.get(clubId);
-        if (existing != null && !existing.isDone()) {
-            existing.cancel(false);
-            log.debug("Sheet sync debounced. clubId={}", clubId);
-        }
-
-        ScheduledFuture<?> future = scheduler.schedule(() -> {
-            pendingTasks.remove(clubId);
-            sheetSyncExecutor.execute(clubId);
-        }, DEBOUNCE_DELAY_SECONDS, TimeUnit.SECONDS);
-
-        pendingTasks.put(clubId, future);
+        pendingTasks.compute(clubId, (id, existing) -> {
+            if (existing != null && !existing.isDone()) {
+                existing.cancel(false);
+                log.debug("Sheet sync debounced. clubId={}", id);
+            }
+            return scheduler.schedule(() -> {
+                pendingTasks.remove(id);
+                sheetSyncExecutor.execute(id);
+            }, DEBOUNCE_DELAY_SECONDS, TimeUnit.SECONDS);
+        });
     }
 }

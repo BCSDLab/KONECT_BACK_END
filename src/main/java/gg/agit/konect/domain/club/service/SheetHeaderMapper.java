@@ -28,6 +28,8 @@ public class SheetHeaderMapper {
 
     private static final String API_URL = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
+    // 헤더 분석용으로 haiku 모델을 고정 사용 (ClaudeProperties.model()과 의도적으로 분리)
+    // 운영 모델과 다르게 비용/속도 최적화를 위해 저비용 모델을 선택
     private static final String MAPPING_MODEL = "claude-haiku-4-5-20251001";
     private static final int MAX_TOKENS = 1024;
     private static final int SCAN_ROWS = 10;
@@ -199,7 +201,11 @@ public class SheetHeaderMapper {
                 .body(String.class);
 
             JsonNode root = objectMapper.readTree(response);
-            return root.path("content").get(0).path("text").asText();
+            JsonNode content = root.path("content");
+            if (!content.isArray() || content.isEmpty()) {
+                throw new RuntimeException("Claude API returned empty content. response=" + response);
+            }
+            return content.get(0).path("text").asText();
 
         } catch (RestClientException | IOException e) {
             throw new RuntimeException("Claude API call failed", e);

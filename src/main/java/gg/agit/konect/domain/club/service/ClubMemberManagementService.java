@@ -75,6 +75,7 @@ public class ClubMemberManagementService {
         validatePositionLimit(clubId, newPosition, target);
 
         target.changePosition(newPosition);
+        applicationEventPublisher.publishEvent(ClubMemberChangedEvent.of(clubId));
 
         return target;
     }
@@ -133,6 +134,7 @@ public class ClubMemberManagementService {
 
         ClubMember savedMember = clubMemberRepository.save(clubMember);
         chatRoomMembershipService.addClubMember(savedMember);
+        applicationEventPublisher.publishEvent(ClubMemberChangedEvent.of(club.getId()));
         return ClubPreMemberAddResponse.from(savedMember);
     }
 
@@ -197,6 +199,7 @@ public class ClubMemberManagementService {
 
         currentPresident.changePosition(MEMBER);
         newPresident.changePosition(PRESIDENT);
+        applicationEventPublisher.publishEvent(ClubMemberChangedEvent.of(clubId));
 
         return List.of(currentPresident, newPresident);
     }
@@ -226,6 +229,7 @@ public class ClubMemberManagementService {
                 ClubMember currentVicePresident = currentVicePresidentOpt.get();
                 currentVicePresident.changePosition(MEMBER);
                 changedMembers.add(currentVicePresident);
+                applicationEventPublisher.publishEvent(ClubMemberChangedEvent.of(clubId));
             }
             return changedMembers;
         }
@@ -244,6 +248,7 @@ public class ClubMemberManagementService {
 
         newVicePresident.changePosition(VICE_PRESIDENT);
         changedMembers.add(newVicePresident);
+        applicationEventPublisher.publishEvent(ClubMemberChangedEvent.of(clubId));
 
         return changedMembers;
     }

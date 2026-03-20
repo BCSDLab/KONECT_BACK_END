@@ -62,7 +62,6 @@ public class SheetSyncExecutor {
         executeWithSort(clubId, ClubSheetSortKey.POSITION, true);
     }
 
-    @Async("sheetSyncTaskExecutor")
     @Transactional(readOnly = true)
     public void executeWithSort(Integer clubId, ClubSheetSortKey sortKey, boolean ascending) {
         Club club = clubRepository.getById(clubId);
@@ -82,14 +81,13 @@ public class SheetSyncExecutor {
                 clearAndWriteAll(spreadsheetId, sorted);
                 applyFormat(spreadsheetId);
             }
+            log.info("Sheet sync done. clubId={}, members={}", clubId, members.size());
         } catch (IOException e) {
             log.error(
                 "Sheet sync failed. clubId={}, spreadsheetId={}, cause={}",
                 clubId, spreadsheetId, e.getMessage(), e
             );
         }
-
-        log.info("Sheet sync done. clubId={}, members={}", clubId, members.size());
     }
 
     private SheetColumnMapping resolveRawMapping(String mappingJson) {

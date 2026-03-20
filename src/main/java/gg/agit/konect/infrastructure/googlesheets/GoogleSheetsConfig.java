@@ -28,12 +28,13 @@ public class GoogleSheetsConfig {
 
     @Bean
     public GoogleCredentials googleCredentials() throws IOException {
-        InputStream in = new FileInputStream(googleSheetsProperties.credentialsPath());
-        return GoogleCredentials.fromStream(in)
-            .createScoped(Arrays.asList(
-                SheetsScopes.SPREADSHEETS,
-                DriveScopes.DRIVE
-            ));
+        try (InputStream in = new FileInputStream(googleSheetsProperties.credentialsPath())) {
+            return GoogleCredentials.fromStream(in)
+                .createScoped(Arrays.asList(
+                    SheetsScopes.SPREADSHEETS,
+                    DriveScopes.DRIVE
+                ));
+        }
     }
 
     @Bean
