@@ -17,9 +17,13 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
+import com.google.api.services.drive.model.Permission;
+
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.code.ApiResponseCode;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +49,7 @@ public class SheetMigrationService {
     private final Sheets googleSheetsService;
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public String migrateToTemplate(
@@ -53,6 +58,7 @@ public class SheetMigrationService {
         String sourceSpreadsheetUrl
     ) {
         Club club = clubRepository.getById(clubId);
+        User requester = userRepository.getById(requesterId);
         String templateId = defaultTemplateSpreadsheetId;
 
         if (templateId == null || templateId.isBlank()) {
@@ -62,7 +68,7 @@ public class SheetMigrationService {
         String sourceSpreadsheetId = extractSpreadsheetId(sourceSpreadsheetUrl);
         String folderId = resolveFolderId(sourceSpreadsheetUrl, sourceSpreadsheetId);
 
-        String newSpreadsheetId = copyTemplate(templateId, club.getName(), folderId);
+        String newSpreadsheetId = copyTemplate(templateId, club.getName(), folderId, requester.getEmail());
 
         SheetHeaderMapper.SheetAnalysisResult sourceAnalysis =
             sheetHeaderMapper.analyzeAllSheets(sourceSpreadsheetId);
@@ -126,7 +132,7 @@ public class SheetMigrationService {
         return null;
     }
 
-    private String copyTemplate(String templateId, String clubName, String targetFolderId) {
+    private String copyTemplate(String templateId, String clubName, String targetFolderId, String ownerEmail) {
         try {
             String title = NEW_SHEET_TITLE_PREFIX + clubName;
             File copyMetadata = new File().setName(title);
@@ -140,11 +146,31 @@ public class SheetMigrationService {
                 .execute();
 
             log.info("Template copied. newId={}, folderId={}", copied.getId(), targetFolderId);
+
+            transferOwnership(copied.getId(), ownerEmail);
+
             return copied.getId();
 
         } catch (IOException e) {
             log.error("Failed to copy template. cause={}", e.getMessage(), e);
             throw new RuntimeException("Failed to copy template spreadsheet", e);
+        }
+    }
+
+    private void transferOwnership(String fileId, String ownerEmail) {
+        try {
+            Permission permission = new Permission()
+                .setType("user")
+                .setRole("owner")
+                .setEmailAddress(ownerEmail);
+
+            googleDriveService.permissions().create(fileId, permission)
+                .setTransferOwnership(true)
+                .execute();
+
+            log.info("Ownership transferred. fileId={}, ownerEmail={}", fileId, ownerEmail);
+        } catch (IOException e) {
+            log.warn("Failed to transfer ownership. fileId={}, cause={}", fileId, e.getMessage());
         }
     }
 
