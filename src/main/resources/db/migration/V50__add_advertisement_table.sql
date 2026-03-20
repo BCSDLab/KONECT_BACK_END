@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS advertisement
+(
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(100) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    image_url   VARCHAR(255) NOT NULL,
+    link_url    VARCHAR(255) NOT NULL,
+    is_visible  TINYINT(1)   NOT NULL DEFAULT 1,
+    click_count INT          NOT NULL DEFAULT 0,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

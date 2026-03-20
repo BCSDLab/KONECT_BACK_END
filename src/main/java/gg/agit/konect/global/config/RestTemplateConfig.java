@@ -15,6 +15,8 @@ public class RestTemplateConfig {
 
     private static final Integer CONNECT_TIMEOUT = 5000;
     private static final Integer READ_TIMEOUT = 5000;
+    private static final Integer EXPO_CONNECT_TIMEOUT = 10000;
+    private static final Integer EXPO_READ_TIMEOUT = 10000;
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
@@ -23,6 +25,19 @@ public class RestTemplateConfig {
                 SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
                 factory.setConnectTimeout(CONNECT_TIMEOUT);
                 factory.setReadTimeout(READ_TIMEOUT);
+                return new BufferingClientHttpRequestFactory(factory);
+            })
+            .additionalMessageConverters(new StringHttpMessageConverter(UTF_8))
+            .build();
+    }
+
+    @Bean("expoRestTemplate")
+    public RestTemplate expoRestTemplate(RestTemplateBuilder restTemplateBuilder) {
+        return restTemplateBuilder
+            .requestFactory(() -> {
+                SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+                factory.setConnectTimeout(EXPO_CONNECT_TIMEOUT);
+                factory.setReadTimeout(EXPO_READ_TIMEOUT);
                 return new BufferingClientHttpRequestFactory(factory);
             })
             .additionalMessageConverters(new StringHttpMessageConverter(UTF_8))

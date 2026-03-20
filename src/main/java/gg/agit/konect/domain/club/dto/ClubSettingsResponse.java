@@ -6,6 +6,8 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -30,6 +32,7 @@ public record ClubSettingsResponse(
     FeeSummary fee
 ) {
     @Schema(description = "모집공고 요약")
+    @JsonInclude(Include.NON_NULL)
     public record RecruitmentSummary(
         @Schema(description = "모집 시작일시", example = "2026.02.02 09:00", requiredMode = NOT_REQUIRED)
         @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
