@@ -84,6 +84,18 @@ public class Club extends BaseEntity {
     @Column(name = "is_application_enabled")
     private Boolean isApplicationEnabled;
 
+    @Column(name = "google_sheet_id", length = 255)
+    private String googleSheetId;
+
+    @Column(name = "sheet_column_mapping", columnDefinition = "JSON")
+    private String sheetColumnMapping;
+
+    @Column(name = "drive_folder_id", length = 255)
+    private String driveFolderId;
+
+    @Column(name = "template_spreadsheet_id", length = 255)
+    private String templateSpreadsheetId;
+
     @OneToOne(mappedBy = "club", fetch = LAZY, cascade = ALL, orphanRemoval = true)
     private ClubRecruitment clubRecruitment;
 
@@ -223,5 +235,17 @@ public class Club extends BaseEntity {
         this.feeBank = null;
         this.feeAccountNumber = null;
         this.feeAccountHolder = null;
+    }
+
+    public void updateGoogleSheetId(String googleSheetId) {
+        this.googleSheetId = googleSheetId;
+    }
+
+    public void updateSheetColumnMapping(String sheetColumnMapping) {
+        this.sheetColumnMapping = sheetColumnMapping;
+    }
+
+    public void updateDriveFolderId(String driveFolderId) {
+        this.driveFolderId = driveFolderId;
     }
 }

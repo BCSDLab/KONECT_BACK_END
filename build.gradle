@@ -75,6 +75,13 @@ dependencies {
     // notification
     implementation 'com.google.firebase:firebase-admin:9.2.0'
 
+    // Google Sheets API
+    implementation 'com.google.apis:google-api-services-sheets:v4-rev20251110-2.0.0'
+    implementation 'com.google.auth:google-auth-library-oauth2-http:1.23.0'
+
+    // Google Drive API
+    implementation 'com.google.apis:google-api-services-drive:v3-rev20250723-2.0.0'
+
     // Gemini AI - using REST API directly (no SDK dependency)
 
     // test
