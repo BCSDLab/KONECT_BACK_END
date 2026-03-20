@@ -50,6 +50,7 @@ public class SheetMigrationService {
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
     private final UserRepository userRepository;
+    private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
     public String migrateToTemplate(
@@ -59,6 +60,7 @@ public class SheetMigrationService {
     ) {
         Club club = clubRepository.getById(clubId);
         User requester = userRepository.getById(requesterId);
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         String templateId = defaultTemplateSpreadsheetId;
 
         if (templateId == null || templateId.isBlank()) {

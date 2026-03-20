@@ -259,7 +259,7 @@ public class SheetHeaderMapper {
     }
 
     private SheetColumnMapping parseSingleMapping(JsonNode node) {
-        int headerRow = node.path("headerRow").asInt(1);
+        int headerRow = Math.max(1, node.path("headerRow").asInt(1));
         int dataStartRow = headerRow + 1;
 
         JsonNode mappingNode = node.path("mapping");

@@ -6,6 +6,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.annotation.PreDestroy;
+
 import org.springframework.stereotype.Component;
 
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
@@ -25,6 +27,12 @@ public class SheetSyncDebouncer {
         Executors.newSingleThreadScheduledExecutor();
 
     private final SheetSyncExecutor sheetSyncExecutor;
+
+    @PreDestroy
+    public void shutdown() {
+        scheduler.shutdown();
+        log.info("SheetSyncDebouncer scheduler shutdown.");
+    }
 
     public void debounce(Integer clubId) {
         pendingTasks.compute(clubId, (id, existing) -> {
