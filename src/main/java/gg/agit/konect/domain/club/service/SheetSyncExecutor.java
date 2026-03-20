@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.BasicFilter;
+import com.google.api.services.sheets.v4.model.BatchClearValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.ClearValuesRequest;
@@ -125,6 +126,7 @@ public class SheetSyncExecutor {
         SheetColumnMapping mapping
     ) throws IOException {
         int dataStartRow = mapping.getDataStartRow();
+        clearMappedColumns(spreadsheetId, mapping, dataStartRow);
         Map<Integer, List<Object>> columnData = buildColumnData(members, mapping);
 
         List<ValueRange> data = new ArrayList<>();
@@ -143,6 +145,29 @@ public class SheetSyncExecutor {
                     new BatchUpdateValuesRequest()
                         .setValueInputOption("USER_ENTERED")
                         .setData(data))
+                .execute();
+        }
+    }
+
+    private void clearMappedColumns(
+        String spreadsheetId,
+        SheetColumnMapping mapping,
+        int dataStartRow
+    ) throws IOException {
+        List<String> clearRanges = new ArrayList<>();
+        for (String field : List.of(
+            SheetColumnMapping.NAME, SheetColumnMapping.STUDENT_ID, SheetColumnMapping.EMAIL,
+            SheetColumnMapping.PHONE, SheetColumnMapping.POSITION, SheetColumnMapping.JOINED_AT
+        )) {
+            int colIndex = mapping.getColumnIndex(field);
+            if (colIndex >= 0) {
+                String colLetter = columnLetter(colIndex);
+                clearRanges.add(colLetter + dataStartRow + ":" + colLetter);
+            }
+        }
+        if (!clearRanges.isEmpty()) {
+            googleSheetsService.spreadsheets().values()
+                .batchClear(spreadsheetId, new BatchClearValuesRequest().setRanges(clearRanges))
                 .execute();
         }
     }
