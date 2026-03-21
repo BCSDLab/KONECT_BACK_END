@@ -90,6 +90,27 @@ class ImageConversionServiceTest {
         assertThat(convertedImage.getHeight()).isEqualTo(540);
     }
 
+    @Test
+    @DisplayName("투명 PNG가 리사이즈 경로를 타도 알파 채널을 유지한다")
+    void convertToWebPWhenTransparentPngResizesPreservesAlpha() throws Exception {
+        byte[] originalBytes = createTransparentPngBytes(2160, 1080);
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "transparent.png",
+            "image/png",
+            originalBytes
+        );
+
+        ImageConversionService.ConversionResult result = imageConversionService.convertToWebP(file);
+        BufferedImage convertedImage = ImmutableImage.loader().fromBytes(result.bytes()).awt();
+
+        assertThat(convertedImage).isNotNull();
+        assertThat(convertedImage.getColorModel().hasAlpha()).isTrue();
+        assertThat(convertedImage.getWidth()).isEqualTo(1080);
+        assertThat(convertedImage.getHeight()).isEqualTo(540);
+        assertThat((convertedImage.getRGB(0, 0) >>> 24) & 0xff).isEqualTo(0);
+    }
+
     private byte[] createPngBytes(int width, int height) throws Exception {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -101,5 +122,15 @@ class ImageConversionServiceTest {
     private byte[] createWebpBytes(int width, int height) throws Exception {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         return new AwtImage(image).bytes(WebpWriter.DEFAULT);
+    }
+
+    private byte[] createTransparentPngBytes(int width, int height) throws Exception {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        image.setRGB(width / 2, height / 2, 0xFFFF0000);
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", outputStream);
+            return outputStream.toByteArray();
+        }
     }
 }
