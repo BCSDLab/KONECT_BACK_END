@@ -192,9 +192,7 @@ public class ImageConversionService {
     private BufferedImage rotate90(BufferedImage image) {
         int w = image.getWidth();
         int h = image.getHeight();
-        BufferedImage rotated = new BufferedImage(h,
-            w,
-            image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        BufferedImage rotated = new BufferedImage(h, w, resolveBufferedImageType(image));
         Graphics2D g = rotated.createGraphics();
         g.translate((h - w) / 2, (h - w) / 2);
         g.rotate(Math.PI / 2, h / 2.0, w / 2.0);
@@ -206,9 +204,7 @@ public class ImageConversionService {
     private BufferedImage rotate180(BufferedImage image) {
         int w = image.getWidth();
         int h = image.getHeight();
-        BufferedImage rotated = new BufferedImage(w,
-            h,
-            image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        BufferedImage rotated = new BufferedImage(w, h, resolveBufferedImageType(image));
         Graphics2D g = rotated.createGraphics();
         g.rotate(Math.PI, w / 2.0, h / 2.0);
         g.drawRenderedImage(image, null);
@@ -219,9 +215,7 @@ public class ImageConversionService {
     private BufferedImage rotate270(BufferedImage image) {
         int w = image.getWidth();
         int h = image.getHeight();
-        BufferedImage rotated = new BufferedImage(h,
-            w,
-            image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        BufferedImage rotated = new BufferedImage(h, w, resolveBufferedImageType(image));
         Graphics2D g = rotated.createGraphics();
         g.translate((h - w) / 2, (h - w) / 2);
         g.rotate(-Math.PI / 2, h / 2.0, w / 2.0);
@@ -233,9 +227,7 @@ public class ImageConversionService {
     private BufferedImage flipHorizontal(BufferedImage image) {
         int w = image.getWidth();
         int h = image.getHeight();
-        BufferedImage flipped = new BufferedImage(w,
-            h,
-            image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        BufferedImage flipped = new BufferedImage(w, h, resolveBufferedImageType(image));
         Graphics2D g = flipped.createGraphics();
         g.drawImage(image, w, 0, -w, h, null);
         g.dispose();
@@ -245,9 +237,7 @@ public class ImageConversionService {
     private BufferedImage flipVertical(BufferedImage image) {
         int w = image.getWidth();
         int h = image.getHeight();
-        BufferedImage flipped = new BufferedImage(w,
-            h,
-            image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType());
+        BufferedImage flipped = new BufferedImage(w, h, resolveBufferedImageType(image));
         Graphics2D g = flipped.createGraphics();
         g.drawImage(image, 0, h, w, -h, null);
         g.dispose();
@@ -294,8 +284,7 @@ public class ImageConversionService {
     }
 
     private BufferedImage resizeImage(BufferedImage image, int resizedWidth, int resizedHeight, String logMessage) {
-        int imageType = image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType();
-        BufferedImage resized = new BufferedImage(resizedWidth, resizedHeight, imageType);
+        BufferedImage resized = new BufferedImage(resizedWidth, resizedHeight, resolveBufferedImageType(image));
         Graphics2D g = resized.createGraphics();
         g.drawImage(image, 0, 0, resizedWidth, resizedHeight, null);
         g.dispose();
@@ -309,6 +298,13 @@ public class ImageConversionService {
             resizedHeight
         );
         return resized;
+    }
+
+    private int resolveBufferedImageType(BufferedImage image) {
+        if (image.getType() != 0) {
+            return image.getType();
+        }
+        return image.getColorModel().hasAlpha() ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
     }
 
     private int toWebpQualityPercent(float quality) {
