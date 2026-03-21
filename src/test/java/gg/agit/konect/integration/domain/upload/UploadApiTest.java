@@ -79,6 +79,29 @@ class UploadApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("jpeg 이미지를 업로드하면 webp 로 변환해 저장한다")
+        void uploadJpegImageSuccess() throws Exception {
+            // given
+            MockMultipartFile file = imageFile("club.jpg", "image/jpeg", createJpegBytes(8, 8));
+
+            // when
+            MvcResult result = uploadImage(file, UploadTarget.CLUB)
+                .andExpect(status().isOk())
+                .andReturn();
+
+            // then
+            String responseBody = result.getResponse().getContentAsString();
+            String key = JsonPath.read(responseBody, "$.key");
+
+            assertThat(key).startsWith("test/club/");
+            assertThat(key).endsWith(".webp");
+
+            ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+            verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
+            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
+        }
+
+        @Test
         @DisplayName("빈 파일을 업로드하면 400을 반환한다")
         void uploadEmptyFileFails() throws Exception {
             // given
@@ -238,6 +261,14 @@ class UploadApiTest extends IntegrationTestSupport {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             ImageIO.write(image, "png", outputStream);
+            return outputStream.toByteArray();
+        }
+    }
+
+    private byte[] createJpegBytes(int width, int height) throws Exception {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "jpg", outputStream);
             return outputStream.toByteArray();
         }
     }
