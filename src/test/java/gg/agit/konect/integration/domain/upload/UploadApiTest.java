@@ -25,7 +25,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.jayway.jsonpath.JsonPath;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.sksamuel.scrimage.AwtImage;
+import com.sksamuel.scrimage.ImmutableImage;
 import com.sksamuel.scrimage.webp.WebpWriter;
 
 import gg.agit.konect.domain.upload.enums.UploadTarget;
@@ -43,6 +45,9 @@ class UploadApiTest extends IntegrationTestSupport {
 
     @MockitoBean
     private S3Client s3Client;
+
+    @MockitoBean
+    private GoogleCredentials googleCredentials;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -153,6 +158,34 @@ class UploadApiTest extends IntegrationTestSupport {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
             assertThat(outputStream.toByteArray()).isEqualTo(webpBytes);
+        }
+
+        @Test
+        @DisplayName("가로가 1080을 넘는 이미지는 비율 유지로 축소한 뒤 webp 로 업로드한다")
+        void uploadWideImageResizesAndConvertsToWebP() throws Exception {
+            MockMultipartFile file = imageFile("wide.png", "image/png", createPngBytes(2160, 1080));
+
+            MvcResult result = uploadImage(file, UploadTarget.CLUB)
+                .andExpect(status().isOk())
+                .andReturn();
+
+            String responseBody = result.getResponse().getContentAsString();
+            String key = JsonPath.read(responseBody, "$.key");
+
+            assertThat(key).startsWith("test/club/");
+            assertThat(key).endsWith(".webp");
+
+            ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+            ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+            verify(s3Client).putObject(requestCaptor.capture(), bodyCaptor.capture());
+            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
+            BufferedImage uploadedImage = ImmutableImage.loader().fromBytes(outputStream.toByteArray()).awt();
+            assertThat(uploadedImage).isNotNull();
+            assertThat(uploadedImage.getWidth()).isEqualTo(1080);
+            assertThat(uploadedImage.getHeight()).isEqualTo(540);
         }
 
         @Test
