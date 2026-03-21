@@ -76,8 +76,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return buildErrorResponse(ApiResponseCode.CLIENT_ABORTED);
     }
 
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<Object> handleMaxUploadSizeExceededException() {
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+        MaxUploadSizeExceededException ex,
+        HttpHeaders headers,
+        HttpStatusCode status,
+        WebRequest request
+    ) {
         return buildErrorResponse(ApiResponseCode.PAYLOAD_TOO_LARGE);
     }
 
