@@ -33,8 +33,6 @@ public class ImageConversionService {
     private static final float DEFAULT_WEBP_QUALITY = 0.8f;
     private static final int WEBP_QUALITY_PERCENT_SCALE = 100;
 
-    private static final int MAX_IMAGE_DIMENSION = 8000;
-
     private static final int ORIENTATION_NORMAL = 1;
     private static final int ORIENTATION_FLIP_HORIZONTAL = 2;
     private static final int ORIENTATION_ROTATE_180 = 3;
@@ -62,8 +60,6 @@ public class ImageConversionService {
 
             ImageReader reader = readers.next();
             try {
-                validateImageDimensions(reader, iis);
-
                 ImageReadParam readParam = reader.getDefaultReadParam();
                 BufferedImage image = reader.read(0, readParam);
 
@@ -80,17 +76,6 @@ public class ImageConversionService {
             } finally {
                 reader.dispose();
             }
-        }
-    }
-
-    private void validateImageDimensions(ImageReader reader, ImageInputStream iis) throws IOException {
-        reader.setInput(iis);
-        int width = reader.getWidth(0);
-        int height = reader.getHeight(0);
-
-        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
-            log.warn("이미지 해상도 초과: {}x{} (최대 {}px)", width, height, MAX_IMAGE_DIMENSION);
-            throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         }
     }
 
