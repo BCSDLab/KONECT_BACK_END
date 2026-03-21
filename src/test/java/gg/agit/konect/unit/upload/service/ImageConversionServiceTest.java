@@ -11,9 +11,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.sksamuel.scrimage.AwtImage;
 import gg.agit.konect.domain.upload.service.ImageConversionService;
 
 import com.sksamuel.scrimage.ImmutableImage;
+import com.sksamuel.scrimage.webp.WebpWriter;
 
 class ImageConversionServiceTest {
 
@@ -65,11 +67,39 @@ class ImageConversionServiceTest {
         assertThat(convertedImage.getHeight()).isEqualTo(2160);
     }
 
+    @Test
+    @DisplayName("가로가 1080을 넘는 webp 이미지는 비율을 유지한 채 1080 폭으로 축소한다")
+    void convertToWebPWhenWebpWidthExceedsLimitResizesToMaxWidth() throws Exception {
+        byte[] originalBytes = createWebpBytes(2160, 1080);
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "wide.webp",
+            "image/webp",
+            originalBytes
+        );
+
+        ImageConversionService.ConversionResult result = imageConversionService.convertToWebP(file);
+        BufferedImage convertedImage = ImmutableImage.loader().fromBytes(result.bytes()).awt();
+
+        assertThat(result.bytes()).isNotEmpty();
+        assertThat(result.bytes()).isNotEqualTo(originalBytes);
+        assertThat(result.contentType()).isEqualTo("image/webp");
+        assertThat(result.extension()).isEqualTo("webp");
+        assertThat(convertedImage).isNotNull();
+        assertThat(convertedImage.getWidth()).isEqualTo(1080);
+        assertThat(convertedImage.getHeight()).isEqualTo(540);
+    }
+
     private byte[] createPngBytes(int width, int height) throws Exception {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             ImageIO.write(image, "png", outputStream);
             return outputStream.toByteArray();
         }
+    }
+
+    private byte[] createWebpBytes(int width, int height) throws Exception {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        return new AwtImage(image).bytes(WebpWriter.DEFAULT);
     }
 }

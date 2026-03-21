@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sksamuel.scrimage.AwtImage;
+import com.sksamuel.scrimage.ImmutableImage;
 import com.sksamuel.scrimage.webp.WebpWriter;
 
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -46,10 +47,10 @@ public class ImageConversionService {
 
     public ConversionResult convertToWebP(MultipartFile file) throws IOException {
         String contentType = file.getContentType();
+        boolean isWebp = contentType != null && SKIP_CONVERSION_TYPES.contains(contentType.toLowerCase());
 
-        if (contentType != null && SKIP_CONVERSION_TYPES.contains(contentType.toLowerCase())) {
-            log.debug("WEBP 이미지는 변환을 건너뜁니다: contentType={}", contentType);
-            return new ConversionResult(file.getBytes(), contentType, getExtension(contentType));
+        if (isWebp) {
+            return normalizeWebp(file, contentType);
         }
 
         try (InputStream input = file.getInputStream();
@@ -72,9 +73,16 @@ public class ImageConversionService {
                     throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
                 }
 
+                int originalWidth = image.getWidth();
+                int originalHeight = image.getHeight();
                 image = applyExifOrientation(reader, image);
                 image = resizeToMaxWidthIfNeeded(image);
                 image = resizeForWebpIfNeeded(image);
+
+                if (isWebp && originalWidth == image.getWidth() && originalHeight == image.getHeight()) {
+                    log.debug("WEBP 이미지는 크기 변경이 없어 원본을 유지합니다: contentType={}", contentType);
+                    return new ConversionResult(file.getBytes(), contentType, getExtension(contentType));
+                }
 
                 byte[] webpBytes = convertImageToWebP(image, DEFAULT_WEBP_QUALITY);
                 log.info("이미지 WEBP 변환 완료: 원본 {} bytes → WEBP {} bytes", file.getSize(), webpBytes.length);
@@ -84,6 +92,27 @@ public class ImageConversionService {
                 reader.dispose();
             }
         }
+    }
+
+    private ConversionResult normalizeWebp(MultipartFile file, String contentType) throws IOException {
+        BufferedImage image = ImmutableImage.loader().fromBytes(file.getBytes()).awt();
+        if (image == null) {
+            throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
+        }
+
+        int originalWidth = image.getWidth();
+        int originalHeight = image.getHeight();
+        image = resizeToMaxWidthIfNeeded(image);
+        image = resizeForWebpIfNeeded(image);
+
+        if (originalWidth == image.getWidth() && originalHeight == image.getHeight()) {
+            log.debug("WEBP 이미지는 크기 변경이 없어 원본을 유지합니다: contentType={}", contentType);
+            return new ConversionResult(file.getBytes(), contentType, getExtension(contentType));
+        }
+
+        byte[] webpBytes = convertImageToWebP(image, DEFAULT_WEBP_QUALITY);
+        log.info("WEBP 이미지 크기 정규화 완료: 원본 {} bytes → WEBP {} bytes", file.getSize(), webpBytes.length);
+        return new ConversionResult(webpBytes, "image/webp", "webp");
     }
 
     private BufferedImage applyExifOrientation(ImageReader reader, BufferedImage image) {

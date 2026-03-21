@@ -161,6 +161,36 @@ class UploadApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("가로가 1080을 넘는 webp 이미지는 비율 유지로 축소한 뒤 다시 webp 로 업로드한다")
+        void uploadWideWebpImageResizesAndKeepsWebp() throws Exception {
+            byte[] webpBytes = createWebpBytes(2160, 1080);
+            MockMultipartFile file = imageFile("wide.webp", "image/webp", webpBytes);
+
+            MvcResult result = uploadImage(file, UploadTarget.CLUB)
+                .andExpect(status().isOk())
+                .andReturn();
+
+            String responseBody = result.getResponse().getContentAsString();
+            String key = JsonPath.read(responseBody, "$.key");
+
+            assertThat(key).startsWith("test/club/");
+            assertThat(key).endsWith(".webp");
+
+            ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+            ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+            verify(s3Client).putObject(requestCaptor.capture(), bodyCaptor.capture());
+            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
+            BufferedImage uploadedImage = ImmutableImage.loader().fromBytes(outputStream.toByteArray()).awt();
+            assertThat(uploadedImage).isNotNull();
+            assertThat(uploadedImage.getWidth()).isEqualTo(1080);
+            assertThat(uploadedImage.getHeight()).isEqualTo(540);
+            assertThat(outputStream.toByteArray()).isNotEqualTo(webpBytes);
+        }
+
+        @Test
         @DisplayName("가로가 1080을 넘는 이미지는 비율 유지로 축소한 뒤 webp 로 업로드한다")
         void uploadWideImageResizesAndConvertsToWebP() throws Exception {
             MockMultipartFile file = imageFile("wide.png", "image/png", createPngBytes(2160, 1080));
