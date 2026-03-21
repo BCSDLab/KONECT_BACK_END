@@ -23,7 +23,7 @@ class ImageConversionServiceTest {
     private final ImageConversionService imageConversionService = new ImageConversionService();
 
     @Test
-    @DisplayName("가로가 1080을 넘는 이미지는 비율을 유지한 채 1080 폭으로 축소한다")
+    @DisplayName("가로가 1800을 넘는 이미지는 비율을 유지한 채 1800 폭으로 축소한다")
     void convertToWebPWhenWidthExceedsLimitResizesToMaxWidth() throws Exception {
         byte[] originalBytes = createPngBytes(2160, 1080);
         MockMultipartFile file = new MockMultipartFile(
@@ -41,12 +41,12 @@ class ImageConversionServiceTest {
         assertThat(result.contentType()).isEqualTo("image/webp");
         assertThat(result.extension()).isEqualTo("webp");
         assertThat(convertedImage).isNotNull();
-        assertThat(convertedImage.getWidth()).isEqualTo(1080);
-        assertThat(convertedImage.getHeight()).isEqualTo(540);
+        assertThat(convertedImage.getWidth()).isEqualTo(1800);
+        assertThat(convertedImage.getHeight()).isEqualTo(900);
     }
 
     @Test
-    @DisplayName("가로가 1080을 넘는 세로형 이미지는 비율을 유지한 채 축소한다")
+    @DisplayName("가로가 1800을 넘는 세로형 이미지는 비율을 유지한 채 축소한다")
     void convertToWebPWhenPortraitWidthExceedsLimitResizesByRatio() throws Exception {
         byte[] originalBytes = createPngBytes(2160, 4320);
         MockMultipartFile file = new MockMultipartFile(
@@ -64,12 +64,12 @@ class ImageConversionServiceTest {
         assertThat(result.contentType()).isEqualTo("image/webp");
         assertThat(result.extension()).isEqualTo("webp");
         assertThat(convertedImage).isNotNull();
-        assertThat(convertedImage.getWidth()).isEqualTo(1080);
-        assertThat(convertedImage.getHeight()).isEqualTo(2160);
+        assertThat(convertedImage.getWidth()).isEqualTo(1800);
+        assertThat(convertedImage.getHeight()).isEqualTo(3600);
     }
 
     @Test
-    @DisplayName("가로가 1080을 넘는 webp 이미지는 비율을 유지한 채 1080 폭으로 축소한다")
+    @DisplayName("가로가 1800을 넘는 webp 이미지는 비율을 유지한 채 1800 폭으로 축소한다")
     void convertToWebPWhenWebpWidthExceedsLimitResizesToMaxWidth() throws Exception {
         byte[] originalBytes = createWebpBytes(2160, 1080);
         MockMultipartFile file = new MockMultipartFile(
@@ -87,8 +87,8 @@ class ImageConversionServiceTest {
         assertThat(result.contentType()).isEqualTo("image/webp");
         assertThat(result.extension()).isEqualTo("webp");
         assertThat(convertedImage).isNotNull();
-        assertThat(convertedImage.getWidth()).isEqualTo(1080);
-        assertThat(convertedImage.getHeight()).isEqualTo(540);
+        assertThat(convertedImage.getWidth()).isEqualTo(1800);
+        assertThat(convertedImage.getHeight()).isEqualTo(900);
     }
 
     @Test
@@ -107,8 +107,8 @@ class ImageConversionServiceTest {
 
         assertThat(convertedImage).isNotNull();
         assertThat(convertedImage.getColorModel().hasAlpha()).isTrue();
-        assertThat(convertedImage.getWidth()).isEqualTo(1080);
-        assertThat(convertedImage.getHeight()).isEqualTo(540);
+        assertThat(convertedImage.getWidth()).isEqualTo(1800);
+        assertThat(convertedImage.getHeight()).isEqualTo(900);
         assertThat((convertedImage.getRGB(0, 0) >>> 24) & 0xff).isEqualTo(0);
     }
 

@@ -31,9 +31,9 @@ public class ImageConversionService {
 
     private static final Set<String> SKIP_CONVERSION_TYPES = Set.of("image/webp");
 
-    private static final float DEFAULT_WEBP_QUALITY = 0.8f;
+    private static final float DEFAULT_WEBP_QUALITY = 1.0f;
     private static final int WEBP_QUALITY_PERCENT_SCALE = 100;
-    private static final int MAX_UPLOAD_WIDTH = 1080;
+    private static final int MAX_UPLOAD_WIDTH = 1800;
     private static final int MAX_WEBP_DIMENSION = 16383;
 
     private static final int ORIENTATION_NORMAL = 1;

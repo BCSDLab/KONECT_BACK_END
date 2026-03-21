@@ -161,7 +161,7 @@ class UploadApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("가로가 1080을 넘는 webp 이미지는 비율 유지로 축소한 뒤 다시 webp 로 업로드한다")
+        @DisplayName("가로가 1800을 넘는 webp 이미지는 비율 유지로 축소한 뒤 다시 webp 로 업로드한다")
         void uploadWideWebpImageResizesAndKeepsWebp() throws Exception {
             byte[] webpBytes = createWebpBytes(2160, 1080);
             MockMultipartFile file = imageFile("wide.webp", "image/webp", webpBytes);
@@ -185,13 +185,13 @@ class UploadApiTest extends IntegrationTestSupport {
             bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
             BufferedImage uploadedImage = ImmutableImage.loader().fromBytes(outputStream.toByteArray()).awt();
             assertThat(uploadedImage).isNotNull();
-            assertThat(uploadedImage.getWidth()).isEqualTo(1080);
-            assertThat(uploadedImage.getHeight()).isEqualTo(540);
+            assertThat(uploadedImage.getWidth()).isEqualTo(1800);
+            assertThat(uploadedImage.getHeight()).isEqualTo(900);
             assertThat(outputStream.toByteArray()).isNotEqualTo(webpBytes);
         }
 
         @Test
-        @DisplayName("가로가 1080을 넘는 이미지는 비율 유지로 축소한 뒤 webp 로 업로드한다")
+        @DisplayName("가로가 1800을 넘는 이미지는 비율 유지로 축소한 뒤 webp 로 업로드한다")
         void uploadWideImageResizesAndConvertsToWebP() throws Exception {
             MockMultipartFile file = imageFile("wide.png", "image/png", createPngBytes(2160, 1080));
 
@@ -214,8 +214,8 @@ class UploadApiTest extends IntegrationTestSupport {
             bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
             BufferedImage uploadedImage = ImmutableImage.loader().fromBytes(outputStream.toByteArray()).awt();
             assertThat(uploadedImage).isNotNull();
-            assertThat(uploadedImage.getWidth()).isEqualTo(1080);
-            assertThat(uploadedImage.getHeight()).isEqualTo(540);
+            assertThat(uploadedImage.getWidth()).isEqualTo(1800);
+            assertThat(uploadedImage.getHeight()).isEqualTo(900);
         }
 
         @Test
