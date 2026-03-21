@@ -32,6 +32,8 @@ public class ImageConversionService {
 
     private static final float DEFAULT_WEBP_QUALITY = 0.8f;
     private static final int WEBP_QUALITY_PERCENT_SCALE = 100;
+    private static final int MAX_UPLOAD_WIDTH = 1080;
+    private static final int MAX_WEBP_DIMENSION = 16383;
 
     private static final int ORIENTATION_NORMAL = 1;
     private static final int ORIENTATION_FLIP_HORIZONTAL = 2;
@@ -71,6 +73,8 @@ public class ImageConversionService {
                 }
 
                 image = applyExifOrientation(reader, image);
+                image = resizeToMaxWidthIfNeeded(image);
+                image = resizeForWebpIfNeeded(image);
 
                 byte[] webpBytes = convertImageToWebP(image, DEFAULT_WEBP_QUALITY);
                 log.info("이미지 WEBP 변환 완료: 원본 {} bytes → WEBP {} bytes", file.getSize(), webpBytes.length);
@@ -228,6 +232,53 @@ public class ImageConversionService {
         } catch (RuntimeException e) {
             throw new IOException("WEBP 이미지 변환에 실패했습니다.", e);
         }
+    }
+
+    private boolean exceedsWebpDimension(BufferedImage image) {
+        return image.getWidth() > MAX_WEBP_DIMENSION || image.getHeight() > MAX_WEBP_DIMENSION;
+    }
+
+    private BufferedImage resizeToMaxWidthIfNeeded(BufferedImage image) {
+        if (image.getWidth() <= MAX_UPLOAD_WIDTH) {
+            return image;
+        }
+
+        int resizedHeight = Math.max(1, (int)Math.floor((double)image.getHeight() * MAX_UPLOAD_WIDTH / image.getWidth()));
+        return resizeImage(image, MAX_UPLOAD_WIDTH, resizedHeight, "업로드 최대 가로 길이에 맞게 이미지를 축소합니다");
+    }
+
+    private BufferedImage resizeForWebpIfNeeded(BufferedImage image) {
+        if (!exceedsWebpDimension(image)) {
+            return image;
+        }
+
+        int originalWidth = image.getWidth();
+        int originalHeight = image.getHeight();
+        double scale = Math.min(
+            (double)MAX_WEBP_DIMENSION / originalWidth,
+            (double)MAX_WEBP_DIMENSION / originalHeight
+        );
+        int resizedWidth = Math.max(1, (int)Math.floor(originalWidth * scale));
+        int resizedHeight = Math.max(1, (int)Math.floor(originalHeight * scale));
+        return resizeImage(image, resizedWidth, resizedHeight, "WebP 차원 제한에 맞게 이미지를 축소합니다");
+    }
+
+    private BufferedImage resizeImage(BufferedImage image, int resizedWidth, int resizedHeight, String logMessage) {
+        int imageType = image.getType() == 0 ? BufferedImage.TYPE_INT_RGB : image.getType();
+        BufferedImage resized = new BufferedImage(resizedWidth, resizedHeight, imageType);
+        Graphics2D g = resized.createGraphics();
+        g.drawImage(image, 0, 0, resizedWidth, resizedHeight, null);
+        g.dispose();
+
+        log.info(
+            "{}: {}x{} -> {}x{}",
+            logMessage,
+            image.getWidth(),
+            image.getHeight(),
+            resizedWidth,
+            resizedHeight
+        );
+        return resized;
     }
 
     private int toWebpQualityPercent(float quality) {
