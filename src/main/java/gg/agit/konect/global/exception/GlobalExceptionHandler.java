@@ -78,7 +78,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Object> handleMaxUploadSizeExceededException() {
-        return buildErrorResponse(ApiResponseCode.INVALID_FILE_SIZE);
+        return buildErrorResponse(ApiResponseCode.PAYLOAD_TOO_LARGE);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

@@ -114,6 +114,9 @@ public enum ApiResponseCode {
     OAUTH_ACCOUNT_ALREADY_LINKED(HttpStatus.CONFLICT, "해당 OAuth 계정은 이미 다른 사용자에게 연동되어 있습니다."),
     OAUTH_PROVIDER_ALREADY_LINKED(HttpStatus.CONFLICT, "이 계정에는 해당 OAuth 제공자가 이미 연동되어 있습니다."),
 
+    // 413 Payload Too Large (요청 본문 크기 초과)
+    PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기가 제한을 초과했습니다."),
+
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
     FAILED_UPLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
