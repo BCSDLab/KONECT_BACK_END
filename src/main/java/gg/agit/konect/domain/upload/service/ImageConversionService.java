@@ -243,7 +243,8 @@ public class ImageConversionService {
             return image;
         }
 
-        int resizedHeight = Math.max(1, (int)Math.floor((double)image.getHeight() * MAX_UPLOAD_WIDTH / image.getWidth()));
+        int resizedHeight = Math.max(1,
+            (int)Math.floor((double)image.getHeight() * MAX_UPLOAD_WIDTH / image.getWidth()));
         return resizeImage(image, MAX_UPLOAD_WIDTH, resizedHeight, "업로드 최대 가로 길이에 맞게 이미지를 축소합니다");
     }
 
