@@ -60,6 +60,9 @@ public class ImageConversionService {
 
             ImageReader reader = readers.next();
             try {
+                // TwelveMonkeys reader requires the ImageInputStream to be bound explicitly
+                // before read/getImageMetadata; otherwise JPEG uploads can fail with getInput() == null.
+                reader.setInput(iis);
                 ImageReadParam readParam = reader.getDefaultReadParam();
                 BufferedImage image = reader.read(0, readParam);
 
