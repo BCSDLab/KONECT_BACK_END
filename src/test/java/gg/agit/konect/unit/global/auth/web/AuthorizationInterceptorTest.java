@@ -1,4 +1,4 @@
-package gg.agit.konect.unit.auth;
+package gg.agit.konect.unit.global.auth.web;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
