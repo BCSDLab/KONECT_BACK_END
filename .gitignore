@@ -50,4 +50,4 @@ logs
 mcp-bridge/node_modules/
 mcp-bridge/.env
 
-google-service-account.json
+**/google-service-account.json
