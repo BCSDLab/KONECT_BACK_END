@@ -20,10 +20,10 @@ public interface UploadApi {
 
     @Operation(summary = "이미지 파일을 업로드한다.", description = """
         서버가 multipart 파일을 받아 S3에 업로드합니다.
-
+        
         - target 쿼리파라미터로 이미지 저장 대상 도메인을 지정합니다. (CLUB, BANK, COUNCIL, USER)
         - 응답의 fileUrl을 기존 도메인 API의 imageUrl로 사용합니다.
-
+        
         ## 에러
         - MISSING_ACCESS_TOKEN (401): 액세스 토큰이 필요합니다.
         - INVALID_REQUEST_BODY (400): 파일이 비어있거나 요청 형식이 올바르지 않은 경우
