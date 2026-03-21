@@ -135,7 +135,7 @@ class UploadApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("최대 업로드 크기를 넘기면 400을 반환한다")
+        @DisplayName("최대 업로드 크기를 넘기면 413을 반환한다")
         void uploadImageWithTooLargeFileFails() throws Exception {
             // given
             MockMultipartFile file = imageFile(
@@ -146,8 +146,8 @@ class UploadApiTest extends IntegrationTestSupport {
 
             // when & then
             uploadImage(file, UploadTarget.CLUB)
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_FILE_SIZE"));
+                .andExpect(status().isPayloadTooLarge())
+                .andExpect(jsonPath("$.code").value("PAYLOAD_TOO_LARGE"));
 
             verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
         }

@@ -102,10 +102,6 @@ public class UploadService {
             throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         }
 
-        Long maxUploadBytes = s3StorageProperties.maxUploadBytes();
-        if (maxUploadBytes != null && file.getSize() > maxUploadBytes) {
-            throw CustomException.of(ApiResponseCode.INVALID_FILE_SIZE);
-        }
     }
 
     private String buildKey(String extension, UploadTarget target) {

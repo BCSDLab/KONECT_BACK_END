@@ -28,7 +28,7 @@ public interface UploadApi {
         - MISSING_ACCESS_TOKEN (401): 액세스 토큰이 필요합니다.
         - INVALID_REQUEST_BODY (400): 파일이 비어있거나 요청 형식이 올바르지 않은 경우
         - INVALID_FILE_CONTENT_TYPE (400): 지원하지 않는 Content-Type 인 경우
-        - INVALID_FILE_SIZE (400): 파일 크기가 제한을 초과한 경우
+        - PAYLOAD_TOO_LARGE (413): 파일 크기가 제한을 초과한 경우
         - FAILED_UPLOAD_FILE (500): S3 업로드에 실패한 경우
         """)
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
