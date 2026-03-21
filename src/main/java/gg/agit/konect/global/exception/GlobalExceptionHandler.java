@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -73,6 +74,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ClientAbortException.class)
     public ResponseEntity<Object> handleClientAbortException() {
         return buildErrorResponse(ApiResponseCode.CLIENT_ABORTED);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Object> handleMaxUploadSizeExceededException() {
+        return buildErrorResponse(ApiResponseCode.PAYLOAD_TOO_LARGE);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
