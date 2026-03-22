@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import org.slf4j.MDC;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.PathMatcher;
@@ -24,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
@@ -58,7 +61,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             stopWatch.stop();
             log.info("request end [requestId: {}, uri: {} {}, time: {}ms, status: {}]",
                 requestId, method, uri, stopWatch.getTotalTimeMillis(), cachedResponse.getStatus());
-            MDC.clear();
+            MDC.remove(REQUEST_ID);
             cachedResponse.copyBodyToResponse();
         }
     }
