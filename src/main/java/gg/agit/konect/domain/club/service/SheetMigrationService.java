@@ -170,7 +170,7 @@ public class SheetMigrationService {
 
         } catch (IOException e) {
             log.error("Failed to copy template. cause={}", e.getMessage(), e);
-            throw new RuntimeException("Failed to copy template spreadsheet", e);
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 
