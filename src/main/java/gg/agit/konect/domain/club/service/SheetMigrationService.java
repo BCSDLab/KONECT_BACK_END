@@ -39,8 +39,6 @@ public class SheetMigrationService {
 
     private static final Pattern FOLDER_ID_PATTERN =
         Pattern.compile("(?:folders/|id=)([a-zA-Z0-9_-]{20,})");
-    private static final Pattern SPREADSHEET_ID_PATTERN =
-        Pattern.compile("/spreadsheets/d/([a-zA-Z0-9_-]+)");
     private static final String MIME_TYPE_SPREADSHEET =
         "application/vnd.google-apps.spreadsheet";
     private static final String NEW_SHEET_TITLE_PREFIX = "KONECT_인명부_";
@@ -87,7 +85,7 @@ public class SheetMigrationService {
             throw CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
         }
 
-        String sourceSpreadsheetId = extractSpreadsheetId(sourceSpreadsheetUrl);
+        String sourceSpreadsheetId = SpreadsheetUrlParser.extractId(sourceSpreadsheetUrl);
         String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
 
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
@@ -123,14 +121,6 @@ public class SheetMigrationService {
         );
 
         return newSpreadsheetId;
-    }
-
-    private String extractSpreadsheetId(String url) {
-        Matcher m = SPREADSHEET_ID_PATTERN.matcher(url);
-        if (m.find()) {
-            return m.group(1);
-        }
-        return url;
     }
 
     private String resolveFolderId(Drive driveService, String url, String spreadsheetId) {
