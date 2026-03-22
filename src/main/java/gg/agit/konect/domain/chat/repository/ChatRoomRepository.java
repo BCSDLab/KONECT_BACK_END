@@ -140,25 +140,18 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         FROM ChatRoom cr
         JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
         JOIN User u ON u.id = crm.id.userId
+        JOIN ChatRoomMember adminCrm ON adminCrm.id.chatRoomId = cr.id
+            AND adminCrm.id.userId = :systemAdminId
         LEFT JOIN ChatMessage cm ON cm.chatRoom.id = cr.id
             AND cm.sender.id <> :systemAdminId
-            AND cm.createdAt > (
-                SELECT MAX(crm2.lastReadAt)
-                FROM ChatRoomMember crm2
-                WHERE crm2.id.chatRoomId = cr.id
-                  AND crm2.id.userId = :systemAdminId
-            )
+            AND cm.createdAt > adminCrm.lastReadAt
         WHERE cr.club IS NULL
-          AND EXISTS (
-              SELECT 1 FROM ChatRoomMember systemAdminCrm
-              WHERE systemAdminCrm.id.chatRoomId = cr.id
-                AND systemAdminCrm.id.userId = :systemAdminId
-          )
           AND u.role != :adminRole
           AND EXISTS (
-              SELECT 1 FROM ChatMessage replyMsg
-              WHERE replyMsg.chatRoom.id = cr.id
-                AND replyMsg.sender.id = :systemAdminId
+              SELECT 1 FROM ChatMessage userReply
+              JOIN userReply.sender userSender
+              WHERE userReply.chatRoom.id = cr.id
+                AND userSender.role != :adminRole
           )
         GROUP BY cr.id, cr.lastMessageContent, cr.lastMessageSentAt, u.id, u.name, u.imageUrl
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
