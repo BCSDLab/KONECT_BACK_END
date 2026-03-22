@@ -72,6 +72,11 @@ public class GoogleDriveOAuthService {
 
     @Transactional
     public void exchangeAndSaveToken(String code, String state) {
+        if (!StringUtils.hasText(code) || !StringUtils.hasText(state)) {
+            log.warn("Drive OAuth callback received empty code or state.");
+            throw CustomException.of(ApiResponseCode.INVALID_SESSION);
+        }
+
         String stateKey = STATE_KEY_PREFIX + state;
         String userIdStr = redis.execute(GET_DEL_SCRIPT, List.of(stateKey));
 
@@ -104,7 +109,7 @@ public class GoogleDriveOAuthService {
             .orElse(false);
     }
 
-    protected void persistGoogleRefreshToken(Integer userId, String refreshToken) {
+    private void persistGoogleRefreshToken(Integer userId, String refreshToken) {
         UserOAuthAccount account = userOAuthAccountRepository
             .findByUserIdAndProvider(userId, Provider.GOOGLE)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_GOOGLE_DRIVE_AUTH));
