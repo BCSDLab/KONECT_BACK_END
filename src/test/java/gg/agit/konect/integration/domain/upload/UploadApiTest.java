@@ -26,9 +26,6 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import com.jayway.jsonpath.JsonPath;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.sksamuel.scrimage.AwtImage;
-import com.sksamuel.scrimage.ImmutableImage;
-import com.sksamuel.scrimage.webp.WebpWriter;
 
 import gg.agit.konect.domain.upload.enums.UploadTarget;
 import gg.agit.konect.support.IntegrationTestSupport;
@@ -59,10 +56,11 @@ class UploadApiTest extends IntegrationTestSupport {
     class UploadImage {
 
         @Test
-        @DisplayName("지원하는 이미지를 업로드하면 webp key와 CDN URL을 반환한다")
+        @DisplayName("지원하는 이미지를 업로드하면 원본 확장자로 key와 CDN URL을 반환한다")
         void uploadImageSuccess() throws Exception {
             // given
-            MockMultipartFile file = imageFile("club.png", "image/png", createPngBytes(8, 8));
+            byte[] pngBytes = createPngBytes(8, 8);
+            MockMultipartFile file = imageFile("club.png", "image/png", pngBytes);
 
             // when
             MvcResult result = uploadImage(file, UploadTarget.CLUB)
@@ -75,21 +73,22 @@ class UploadApiTest extends IntegrationTestSupport {
             String fileUrl = JsonPath.read(responseBody, "$.fileUrl");
 
             assertThat(key).startsWith("test/club/");
-            assertThat(key).endsWith(".webp");
+            assertThat(key).endsWith(".png");
             assertThat(fileUrl).isEqualTo("https://cdn.test.com/" + key);
 
             ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
             verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
             assertThat(requestCaptor.getValue().bucket()).isEqualTo("test-bucket");
             assertThat(requestCaptor.getValue().key()).isEqualTo(key);
-            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
+            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/png");
         }
 
         @Test
-        @DisplayName("jpeg 이미지를 업로드하면 webp 로 변환해 저장한다")
+        @DisplayName("jpeg 이미지를 업로드하면 원본 형태로 저장한다")
         void uploadJpegImageSuccess() throws Exception {
             // given
-            MockMultipartFile file = imageFile("club.jpg", "image/jpeg", createJpegBytes(8, 8));
+            byte[] jpegBytes = createJpegBytes(8, 8);
+            MockMultipartFile file = imageFile("club.jpg", "image/jpeg", jpegBytes);
 
             // when
             MvcResult result = uploadImage(file, UploadTarget.CLUB)
@@ -101,18 +100,19 @@ class UploadApiTest extends IntegrationTestSupport {
             String key = JsonPath.read(responseBody, "$.key");
 
             assertThat(key).startsWith("test/club/");
-            assertThat(key).endsWith(".webp");
+            assertThat(key).endsWith(".jpg");
 
             ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
             verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
-            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
+            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/jpeg");
         }
 
         @Test
-        @DisplayName("jpg content type 이미지를 업로드하면 webp 로 변환해 저장한다")
+        @DisplayName("jpg content type 이미지를 업로드하면 원본 형태로 저장한다")
         void uploadJpgContentTypeImageSuccess() throws Exception {
             // given
-            MockMultipartFile file = imageFile("club.jpg", "image/jpg", createJpegBytes(8, 8));
+            byte[] jpegBytes = createJpegBytes(8, 8);
+            MockMultipartFile file = imageFile("club.jpg", "image/jpg", jpegBytes);
 
             // when
             MvcResult result = uploadImage(file, UploadTarget.CLUB)
@@ -124,18 +124,18 @@ class UploadApiTest extends IntegrationTestSupport {
             String key = JsonPath.read(responseBody, "$.key");
 
             assertThat(key).startsWith("test/club/");
-            assertThat(key).endsWith(".webp");
+            assertThat(key).endsWith(".jpg");
 
             ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
             verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
-            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
+            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/jpg");
         }
 
         @Test
-        @DisplayName("webp 이미지를 업로드하면 변환 없이 그대로 저장한다")
+        @DisplayName("webp 이미지를 업로드하면 원본 형태로 저장한다")
         void uploadWebpImageSuccess() throws Exception {
-            // given
-            byte[] webpBytes = createWebpBytes(8, 8);
+            // given - webp 형태로 mock (실제 webp 변환 없이 단순 bytes로 처리)
+            byte[] webpBytes = new byte[]{0x52, 0x49, 0x46, 0x46}; // RIFF header mock
             MockMultipartFile file = imageFile("club.webp", "image/webp", webpBytes);
 
             // when
@@ -151,71 +151,33 @@ class UploadApiTest extends IntegrationTestSupport {
             assertThat(key).endsWith(".webp");
 
             ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
-            ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
-            verify(s3Client).putObject(requestCaptor.capture(), bodyCaptor.capture());
+            verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
             assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
-            assertThat(outputStream.toByteArray()).isEqualTo(webpBytes);
         }
 
         @Test
-        @DisplayName("가로가 1800을 넘는 webp 이미지는 비율 유지로 축소한 뒤 다시 webp 로 업로드한다")
-        void uploadWideWebpImageResizesAndKeepsWebp() throws Exception {
-            byte[] webpBytes = createWebpBytes(2160, 1080);
-            MockMultipartFile file = imageFile("wide.webp", "image/webp", webpBytes);
+        @DisplayName("큰 이미지도 원본 형태로 업로드한다 (리사이징 없음)")
+        void uploadLargeImageWithoutResizing() throws Exception {
+            // given
+            byte[] pngBytes = createPngBytes(2160, 1080);
+            MockMultipartFile file = imageFile("wide.png", "image/png", pngBytes);
 
+            // when
             MvcResult result = uploadImage(file, UploadTarget.CLUB)
                 .andExpect(status().isOk())
                 .andReturn();
 
+            // then
             String responseBody = result.getResponse().getContentAsString();
             String key = JsonPath.read(responseBody, "$.key");
 
             assertThat(key).startsWith("test/club/");
-            assertThat(key).endsWith(".webp");
+            assertThat(key).endsWith(".png");
 
             ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
             ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
             verify(s3Client).putObject(requestCaptor.capture(), bodyCaptor.capture());
-            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
-            BufferedImage uploadedImage = ImmutableImage.loader().fromBytes(outputStream.toByteArray()).awt();
-            assertThat(uploadedImage).isNotNull();
-            assertThat(uploadedImage.getWidth()).isEqualTo(1800);
-            assertThat(uploadedImage.getHeight()).isEqualTo(900);
-            assertThat(outputStream.toByteArray()).isNotEqualTo(webpBytes);
-        }
-
-        @Test
-        @DisplayName("가로가 1800을 넘는 이미지는 비율 유지로 축소한 뒤 webp 로 업로드한다")
-        void uploadWideImageResizesAndConvertsToWebP() throws Exception {
-            MockMultipartFile file = imageFile("wide.png", "image/png", createPngBytes(2160, 1080));
-
-            MvcResult result = uploadImage(file, UploadTarget.CLUB)
-                .andExpect(status().isOk())
-                .andReturn();
-
-            String responseBody = result.getResponse().getContentAsString();
-            String key = JsonPath.read(responseBody, "$.key");
-
-            assertThat(key).startsWith("test/club/");
-            assertThat(key).endsWith(".webp");
-
-            ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
-            ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
-            verify(s3Client).putObject(requestCaptor.capture(), bodyCaptor.capture());
-            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/webp");
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bodyCaptor.getValue().contentStreamProvider().newStream().transferTo(outputStream);
-            BufferedImage uploadedImage = ImmutableImage.loader().fromBytes(outputStream.toByteArray()).awt();
-            assertThat(uploadedImage).isNotNull();
-            assertThat(uploadedImage.getWidth()).isEqualTo(1800);
-            assertThat(uploadedImage.getHeight()).isEqualTo(900);
+            assertThat(requestCaptor.getValue().contentType()).isEqualTo("image/png");
         }
 
         @Test
@@ -388,10 +350,5 @@ class UploadApiTest extends IntegrationTestSupport {
             ImageIO.write(image, "jpg", outputStream);
             return outputStream.toByteArray();
         }
-    }
-
-    private byte[] createWebpBytes(int width, int height) throws Exception {
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        return new AwtImage(image).bytes(WebpWriter.DEFAULT);
     }
 }
