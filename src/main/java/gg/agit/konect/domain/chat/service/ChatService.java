@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +29,7 @@ import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
+import gg.agit.konect.domain.chat.dto.AdminChatRoomProjection;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
@@ -277,59 +277,22 @@ public class ChatService {
     }
 
     private List<ChatRoomSummaryResponse> getAdminDirectChatRooms() {
-        List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
-
-        List<ChatRoom> adminUserRooms = chatRoomRepository.findAllSystemAdminDirectRooms(
+        List<AdminChatRoomProjection> projections = chatRoomRepository.findAdminChatRoomsOptimized(
             SYSTEM_ADMIN_ID, UserRole.ADMIN
         );
-        List<Integer> roomIds = extractChatRoomIds(adminUserRooms);
-        Map<Integer, List<MemberInfo>> roomMemberInfoMap = getRoomMemberInfoMap(adminUserRooms);
-        Map<Integer, Integer> adminUnreadCountMap = getAdminUnreadCountMap(roomIds);
-        Set<Integer> repliedRoomIds = roomIds.isEmpty()
-            ? Set.of()
-            : new HashSet<>(chatMessageRepository.findRoomIdsWithUserReplyByRoomIds(roomIds, UserRole.ADMIN));
 
-        List<Integer> allUserIds = roomMemberInfoMap.values().stream()
-            .flatMap(List::stream)
-            .map(MemberInfo::userId)
-            .distinct()
-            .toList();
-
-        Map<Integer, User> userMap = allUserIds.isEmpty()
-            ? Map.of()
-            : userRepository.findAllByIdIn(allUserIds).stream()
-            .collect(Collectors.toMap(User::getId, user -> user));
-
-        for (ChatRoom chatRoom : adminUserRooms) {
-            List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
-            User nonAdminUser = findNonAdminUserFromMemberInfo(memberInfos, userMap);
-            if (nonAdminUser == null) {
-                continue;
-            }
-            if (!repliedRoomIds.contains(chatRoom.getId())) {
-                continue;
-            }
-
-            roomSummaries.add(new ChatRoomSummaryResponse(
-                chatRoom.getId(),
+        return projections.stream()
+            .map(projection -> new ChatRoomSummaryResponse(
+                projection.roomId(),
                 ChatType.DIRECT,
-                nonAdminUser.getName(),
-                nonAdminUser.getImageUrl(),
-                chatRoom.getLastMessageContent(),
-                chatRoom.getLastMessageSentAt(),
-                adminUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
+                projection.nonAdminUserName(),
+                projection.nonAdminImageUrl(),
+                projection.lastMessage(),
+                projection.lastSentAt(),
+                projection.unreadCount().intValue(),
                 false
-            ));
-        }
-
-        roomSummaries.sort(Comparator
-            .comparing(
-                ChatRoomSummaryResponse::lastSentAt,
-                Comparator.nullsLast(Comparator.reverseOrder())
-            )
-            .thenComparing(ChatRoomSummaryResponse::roomId));
-
-        return roomSummaries;
+            ))
+            .toList();
     }
 
     private ChatMessagePageResponse getDirectChatRoomMessages(
