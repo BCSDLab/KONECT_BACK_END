@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Pattern;
 public record SheetImportRequest(
     @NotBlank
     @Pattern(
-        regexp = "^https://docs\\.google\\.com/spreadsheets/.*",
+        regexp = "^https://docs\\.google\\.com/spreadsheets/(?:u/\\d+/)?d/[A-Za-z0-9_-]+.*",
         message = "유효한 구글 스프레드시트 URL을 입력해주세요."
     )
     @Schema(
