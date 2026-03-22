@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.service;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,20 +13,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
-import com.google.api.services.drive.model.Permission;
-
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.user.model.User;
-import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
+import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.infrastructure.googlesheets.GoogleSheetsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,8 +39,6 @@ public class SheetMigrationService {
 
     private static final Pattern FOLDER_ID_PATTERN =
         Pattern.compile("(?:folders/|id=)([a-zA-Z0-9_-]{20,})");
-    private static final Pattern SPREADSHEET_ID_PATTERN =
-        Pattern.compile("/spreadsheets/d/([a-zA-Z0-9_-]+)");
     private static final String MIME_TYPE_SPREADSHEET =
         "application/vnd.google-apps.spreadsheet";
     private static final String NEW_SHEET_TITLE_PREFIX = "KONECT_인명부_";
@@ -45,12 +46,13 @@ public class SheetMigrationService {
     @Value("${google.sheets.template-spreadsheet-id:}")
     private String defaultTemplateSpreadsheetId;
 
-    private final Drive googleDriveService;
     private final Sheets googleSheetsService;
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
-    private final UserRepository userRepository;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final ClubPermissionValidator clubPermissionValidator;
+    private final GoogleSheetsConfig googleSheetsConfig;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public String migrateToTemplate(
@@ -59,18 +61,34 @@ public class SheetMigrationService {
         String sourceSpreadsheetUrl
     ) {
         Club club = clubRepository.getById(clubId);
-        User requester = userRepository.getById(requesterId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-        String templateId = defaultTemplateSpreadsheetId;
 
+        String templateId = defaultTemplateSpreadsheetId;
         if (templateId == null || templateId.isBlank()) {
             throw CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_SHEET_ID);
         }
 
-        String sourceSpreadsheetId = extractSpreadsheetId(sourceSpreadsheetUrl);
-        String folderId = resolveFolderId(sourceSpreadsheetUrl, sourceSpreadsheetId);
+        UserOAuthAccount oauthAccount = userOAuthAccountRepository
+            .findByUserIdAndProvider(requesterId, Provider.GOOGLE)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_GOOGLE_DRIVE_AUTH));
 
-        String newSpreadsheetId = copyTemplate(templateId, club.getName(), folderId, requester.getEmail());
+        String driveRefreshToken = oauthAccount.getGoogleDriveRefreshToken();
+        if (driveRefreshToken == null || driveRefreshToken.isBlank()) {
+            throw CustomException.of(ApiResponseCode.NOT_FOUND_GOOGLE_DRIVE_AUTH);
+        }
+
+        Drive userDriveService;
+        try {
+            userDriveService = googleSheetsConfig.buildUserDriveService(driveRefreshToken);
+        } catch (IOException | GeneralSecurityException e) {
+            log.error("Failed to build user Drive service. requesterId={}", requesterId, e);
+            throw CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
+        }
+
+        String sourceSpreadsheetId = SpreadsheetUrlParser.extractId(sourceSpreadsheetUrl);
+        String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
+
+        String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
 
         SheetHeaderMapper.SheetAnalysisResult sourceAnalysis =
             sheetHeaderMapper.analyzeAllSheets(sourceSpreadsheetId);
@@ -90,10 +108,8 @@ public class SheetMigrationService {
         SheetHeaderMapper.SheetAnalysisResult newAnalysis =
             sheetHeaderMapper.analyzeAllSheets(newSpreadsheetId);
         try {
-            com.fasterxml.jackson.databind.ObjectMapper om =
-                new com.fasterxml.jackson.databind.ObjectMapper();
             club.updateSheetColumnMapping(
-                om.writeValueAsString(newAnalysis.memberListMapping().toMap())
+                objectMapper.writeValueAsString(newAnalysis.memberListMapping().toMap())
             );
         } catch (Exception e) {
             log.warn("Failed to serialize new mapping. cause={}", e.getMessage());
@@ -107,21 +123,13 @@ public class SheetMigrationService {
         return newSpreadsheetId;
     }
 
-    private String extractSpreadsheetId(String url) {
-        Matcher m = SPREADSHEET_ID_PATTERN.matcher(url);
-        if (m.find()) {
-            return m.group(1);
-        }
-        return url;
-    }
-
-    private String resolveFolderId(String url, String spreadsheetId) {
+    private String resolveFolderId(Drive driveService, String url, String spreadsheetId) {
         Matcher m = FOLDER_ID_PATTERN.matcher(url);
         if (m.find()) {
             return m.group(1);
         }
         try {
-            File file = googleDriveService.files().get(spreadsheetId)
+            File file = driveService.files().get(spreadsheetId)
                 .setFields("parents")
                 .execute();
             List<String> parents = file.getParents();
@@ -134,7 +142,7 @@ public class SheetMigrationService {
         return null;
     }
 
-    private String copyTemplate(String templateId, String clubName, String targetFolderId, String ownerEmail) {
+    private String copyTemplate(Drive driveService, String templateId, String clubName, String targetFolderId) {
         try {
             String title = NEW_SHEET_TITLE_PREFIX + clubName;
             File copyMetadata = new File().setName(title);
@@ -143,36 +151,16 @@ public class SheetMigrationService {
                 copyMetadata.setParents(Collections.singletonList(targetFolderId));
             }
 
-            File copied = googleDriveService.files().copy(templateId, copyMetadata)
+            File copied = driveService.files().copy(templateId, copyMetadata)
                 .setFields("id")
                 .execute();
 
-            log.info("Template copied. newId={}, folderId={}", copied.getId(), targetFolderId);
-
-            transferOwnership(copied.getId(), ownerEmail);
-
+            log.info("Template copied by user. newId={}, folderId={}", copied.getId(), targetFolderId);
             return copied.getId();
 
         } catch (IOException e) {
             log.error("Failed to copy template. cause={}", e.getMessage(), e);
-            throw new RuntimeException("Failed to copy template spreadsheet", e);
-        }
-    }
-
-    private void transferOwnership(String fileId, String ownerEmail) {
-        try {
-            Permission permission = new Permission()
-                .setType("user")
-                .setRole("owner")
-                .setEmailAddress(ownerEmail);
-
-            googleDriveService.permissions().create(fileId, permission)
-                .setTransferOwnership(true)
-                .execute();
-
-            log.info("Ownership transferred. fileId={}, ownerEmail={}", fileId, ownerEmail);
-        } catch (IOException e) {
-            log.warn("Failed to transfer ownership. fileId={}, cause={}", fileId, e.getMessage());
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 

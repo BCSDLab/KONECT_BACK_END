@@ -31,7 +31,6 @@ import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.event.ClubApplicationApprovedEvent;
 import gg.agit.konect.domain.club.event.ClubApplicationSubmittedEvent;
-import gg.agit.konect.domain.club.event.ClubMemberChangedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
@@ -252,7 +251,6 @@ public class ClubApplicationService {
             clubId,
             club.getName()
         ));
-        applicationEventPublisher.publishEvent(ClubMemberChangedEvent.of(clubId));
     }
 
     @Transactional

@@ -93,6 +93,7 @@ public enum ApiResponseCode {
     NOT_FOUND_NOTIFICATION_TOKEN(HttpStatus.NOT_FOUND, "알림 토큰을 찾을 수 없습니다."),
     NOT_FOUND_ADVERTISEMENT(HttpStatus.NOT_FOUND, "광고를 찾을 수 없습니다."),
     NOT_FOUND_CLUB_SHEET_ID(HttpStatus.NOT_FOUND, "등록된 스프레드시트 ID가 없습니다. 먼저 스프레드시트 ID를 등록해 주세요."),
+    NOT_FOUND_GOOGLE_DRIVE_AUTH(HttpStatus.NOT_FOUND, "Google Drive 권한이 연결되지 않았습니다. 먼저 Drive 권한을 연결해 주세요."),
 
     // 405 Method Not Allowed (지원하지 않는 HTTP 메소드)
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 HTTP 메소드 입니다."),
@@ -121,6 +122,8 @@ public enum ApiResponseCode {
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
     FAILED_UPLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
     FAILED_SYNC_GOOGLE_SHEET(HttpStatus.INTERNAL_SERVER_ERROR, "구글 스프레드시트 동기화에 실패했습니다."),
+    FAILED_INIT_GOOGLE_DRIVE(HttpStatus.INTERNAL_SERVER_ERROR, "Google Drive 서비스 초기화에 실패했습니다."),
+    FAILED_GOOGLE_DRIVE_AUTH(HttpStatus.INTERNAL_SERVER_ERROR, "Google Drive 인증 코드 교환에 실패했습니다."),
     FAILED_SEND_NOTIFICATION(HttpStatus.INTERNAL_SERVER_ERROR, "알림 전송에 실패했습니다."),
     UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 예기치 못한 에러가 발생했습니다.");
 

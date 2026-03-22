@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.UserCredentials;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,6 +59,25 @@ public class GoogleSheetsConfig {
             GoogleNetHttpTransport.newTrustedTransport(),
             GsonFactory.getDefaultInstance(),
             new HttpCredentialsAdapter(googleCredentials))
+            .setApplicationName(googleSheetsProperties.applicationName())
+            .build();
+    }
+
+    public Drive buildUserDriveService(String refreshToken) throws IOException, GeneralSecurityException {
+        UserCredentials credentials = UserCredentials.newBuilder()
+            .setClientId(googleSheetsProperties.oauthClientId())
+            .setClientSecret(googleSheetsProperties.oauthClientSecret())
+            .setRefreshToken(refreshToken)
+            .build();
+
+        GoogleCredentials scoped = credentials.createScoped(
+            Collections.singletonList(DriveScopes.DRIVE)
+        );
+
+        return new Drive.Builder(
+            GoogleNetHttpTransport.newTrustedTransport(),
+            GsonFactory.getDefaultInstance(),
+            new HttpCredentialsAdapter(scoped))
             .setApplicationName(googleSheetsProperties.applicationName())
             .build();
     }

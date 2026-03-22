@@ -4,8 +4,6 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_SHEET_ID
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
 import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
-import gg.agit.konect.domain.club.event.ClubMemberChangedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
@@ -29,15 +26,9 @@ public class ClubMemberSheetService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
-    private final SheetSyncDebouncer sheetSyncDebouncer;
     private final SheetSyncExecutor sheetSyncExecutor;
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ObjectMapper objectMapper;
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onClubMemberChanged(ClubMemberChangedEvent event) {
-        sheetSyncDebouncer.debounce(event.clubId());
-    }
 
     @Transactional
     public void updateSheetId(
@@ -45,8 +36,13 @@ public class ClubMemberSheetService {
         Integer requesterId,
         ClubSheetIdUpdateRequest request
     ) {
+        Club club = clubRepository.getById(clubId);
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        String spreadsheetId = SpreadsheetUrlParser.extractId(request.spreadsheetUrl());
+
         SheetHeaderMapper.SheetAnalysisResult result =
-            sheetHeaderMapper.analyzeAllSheets(request.spreadsheetId());
+            sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
         String mappingJson = null;
         try {
             mappingJson = objectMapper.writeValueAsString(result.memberListMapping().toMap());
@@ -54,9 +50,7 @@ public class ClubMemberSheetService {
             log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
         }
 
-        Club club = clubRepository.getById(clubId);
-        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-        club.updateGoogleSheetId(request.spreadsheetId());
+        club.updateGoogleSheetId(spreadsheetId);
         if (mappingJson != null) {
             club.updateSheetColumnMapping(mappingJson);
         }
