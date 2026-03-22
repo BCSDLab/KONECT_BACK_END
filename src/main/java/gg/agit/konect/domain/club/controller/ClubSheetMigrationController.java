@@ -43,7 +43,7 @@ public class ClubSheetMigrationController implements ClubSheetMigrationApi {
         @UserId Integer requesterId
     ) {
         int count = sheetImportService.importPreMembersFromSheet(
-            clubId, requesterId, request.spreadsheetId()
+            clubId, requesterId, request.spreadsheetUrl()
         );
         return ResponseEntity.ok(SheetImportResponse.of(count));
     }

@@ -33,10 +33,12 @@ public class SheetImportService {
     public int importPreMembersFromSheet(
         Integer clubId,
         Integer requesterId,
-        String spreadsheetId
+        String spreadsheetUrl
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         Club club = clubRepository.getById(clubId);
+
+        String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
 
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
