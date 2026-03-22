@@ -135,7 +135,7 @@ class UploadApiTest extends IntegrationTestSupport {
         @DisplayName("webp 이미지를 업로드하면 원본 형태로 저장한다")
         void uploadWebpImageSuccess() throws Exception {
             // given - webp 형태로 mock (실제 webp 변환 없이 단순 bytes로 처리)
-            byte[] webpBytes = new byte[]{0x52, 0x49, 0x46, 0x46}; // RIFF header mock
+            byte[] webpBytes = new byte[] {0x52, 0x49, 0x46, 0x46}; // RIFF header mock
             MockMultipartFile file = imageFile("club.webp", "image/webp", webpBytes);
 
             // when
