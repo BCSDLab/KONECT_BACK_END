@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: konect-backend
   config:
     import:
       - classpath:application-db.yml
