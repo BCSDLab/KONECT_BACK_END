@@ -122,6 +122,8 @@ public enum ApiResponseCode {
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
     FAILED_UPLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
     FAILED_SYNC_GOOGLE_SHEET(HttpStatus.INTERNAL_SERVER_ERROR, "구글 스프레드시트 동기화에 실패했습니다."),
+    FAILED_INIT_GOOGLE_DRIVE(HttpStatus.INTERNAL_SERVER_ERROR, "Google Drive 서비스 초기화에 실패했습니다."),
+    FAILED_GOOGLE_DRIVE_AUTH(HttpStatus.INTERNAL_SERVER_ERROR, "Google Drive 인증 코드 교환에 실패했습니다."),
     FAILED_SEND_NOTIFICATION(HttpStatus.INTERNAL_SERVER_ERROR, "알림 전송에 실패했습니다."),
     UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 예기치 못한 에러가 발생했습니다.");
 

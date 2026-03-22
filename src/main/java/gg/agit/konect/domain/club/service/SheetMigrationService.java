@@ -84,7 +84,7 @@ public class SheetMigrationService {
             userDriveService = googleSheetsConfig.buildUserDriveService(driveRefreshToken);
         } catch (IOException | GeneralSecurityException e) {
             log.error("Failed to build user Drive service. requesterId={}", requesterId, e);
-            throw new RuntimeException("Failed to initialize Google Drive with user credentials", e);
+            throw CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
         }
 
         String sourceSpreadsheetId = extractSpreadsheetId(sourceSpreadsheetUrl);

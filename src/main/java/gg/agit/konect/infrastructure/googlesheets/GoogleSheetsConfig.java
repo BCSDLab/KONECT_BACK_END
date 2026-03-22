@@ -71,7 +71,7 @@ public class GoogleSheetsConfig {
             .build();
 
         GoogleCredentials scoped = credentials.createScoped(
-            Collections.singletonList(DriveScopes.DRIVE_FILE)
+            Collections.singletonList(DriveScopes.DRIVE)
         );
 
         return new Drive.Builder(

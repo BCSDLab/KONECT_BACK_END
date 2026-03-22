@@ -36,6 +36,9 @@ public class ClubMemberSheetService {
         Integer requesterId,
         ClubSheetIdUpdateRequest request
     ) {
+        Club club = clubRepository.getById(clubId);
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
         String spreadsheetId = SpreadsheetUrlParser.extractId(request.spreadsheetUrl());
 
         SheetHeaderMapper.SheetAnalysisResult result =
@@ -47,8 +50,6 @@ public class ClubMemberSheetService {
             log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
         }
 
-        Club club = clubRepository.getById(clubId);
-        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         club.updateGoogleSheetId(spreadsheetId);
         if (mappingJson != null) {
             club.updateSheetColumnMapping(mappingJson);
