@@ -70,6 +70,7 @@ public class GoogleDriveOAuthService {
             .toUriString();
     }
 
+    @Transactional
     public void exchangeAndSaveToken(String code, String state) {
         String stateKey = STATE_KEY_PREFIX + state;
         String userIdStr = redis.execute(GET_DEL_SCRIPT, List.of(stateKey));
@@ -103,7 +104,6 @@ public class GoogleDriveOAuthService {
             .orElse(false);
     }
 
-    @Transactional
     protected void persistGoogleRefreshToken(Integer userId, String refreshToken) {
         UserOAuthAccount account = userOAuthAccountRepository
             .findByUserIdAndProvider(userId, Provider.GOOGLE)
