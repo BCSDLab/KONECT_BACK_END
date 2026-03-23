@@ -130,8 +130,10 @@ public class SheetMigrationService {
 
     private void grantServiceAccountAccess(Drive userDriveService, String fileId) {
         if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
-            log.warn("Google credentials is not a service account. Skipping permission grant.");
-            return;
+            throw new IllegalStateException(
+                "Google credentials is not a ServiceAccountCredentials. actual type="
+                    + googleCredentials.getClass().getName()
+            );
         }
         String serviceAccountEmail = sac.getClientEmail();
         try {
@@ -145,6 +147,7 @@ public class SheetMigrationService {
             log.info("Service account granted access. fileId={}, email={}", fileId, serviceAccountEmail);
         } catch (IOException e) {
             log.error("Failed to grant service account access. fileId={}, cause={}", fileId, e.getMessage(), e);
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 
