@@ -12,12 +12,17 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.Permission;
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.club.model.Club;
@@ -47,6 +52,7 @@ public class SheetMigrationService {
     private String defaultTemplateSpreadsheetId;
 
     private final Sheets googleSheetsService;
+    private final GoogleCredentials googleCredentials;
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
@@ -89,6 +95,8 @@ public class SheetMigrationService {
         String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
 
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
+        registerDriveRollback(userDriveService, newSpreadsheetId);
+        grantServiceAccountAccess(userDriveService, newSpreadsheetId);
 
         SheetHeaderMapper.SheetAnalysisResult sourceAnalysis =
             sheetHeaderMapper.analyzeAllSheets(sourceSpreadsheetId);
@@ -121,6 +129,49 @@ public class SheetMigrationService {
         );
 
         return newSpreadsheetId;
+    }
+
+    private void grantServiceAccountAccess(Drive userDriveService, String fileId) {
+        if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
+            throw new IllegalStateException(
+                "Google credentials is not a ServiceAccountCredentials. actual type="
+                    + googleCredentials.getClass().getName()
+            );
+        }
+        String serviceAccountEmail = sac.getClientEmail();
+        try {
+            Permission permission = new Permission()
+                .setType("user")
+                .setRole("writer")
+                .setEmailAddress(serviceAccountEmail);
+            userDriveService.permissions().create(fileId, permission)
+                .setSendNotificationEmail(false)
+                .execute();
+            log.info("Service account granted access. fileId={}, email={}", fileId, serviceAccountEmail);
+        } catch (IOException e) {
+            log.error("Failed to grant service account access. fileId={}, cause={}", fileId, e.getMessage(), e);
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
+        }
+    }
+
+    private void registerDriveRollback(Drive driveService, String fileId) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    deleteFile(driveService, fileId);
+                }
+            }
+        });
+    }
+
+    private void deleteFile(Drive driveService, String fileId) {
+        try {
+            driveService.files().delete(fileId).execute();
+            log.info("Orphaned file deleted. fileId={}", fileId);
+        } catch (IOException ex) {
+            log.warn("Failed to delete orphaned file. fileId={}, cause={}", fileId, ex.getMessage());
+        }
     }
 
     private String resolveFolderId(Drive driveService, String url, String spreadsheetId) {
@@ -180,7 +231,7 @@ public class SheetMigrationService {
 
         } catch (IOException e) {
             log.error("Failed to read source data. cause={}", e.getMessage(), e);
-            return List.of();
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 
@@ -223,6 +274,7 @@ public class SheetMigrationService {
 
         } catch (IOException e) {
             log.error("Failed to write data to template. cause={}", e.getMessage(), e);
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 
