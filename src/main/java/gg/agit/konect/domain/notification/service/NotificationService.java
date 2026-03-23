@@ -314,7 +314,8 @@ public class NotificationService {
     ) {
         String body = applicantName + "님이 동아리 가입을 신청했어요.";
         String path = "mypage/manager/" + clubId + "/applications/" + applicationId;
-        notificationInboxService.save(receiverId, NotificationInboxType.CLUB_APPLICATION_SUBMITTED, clubName, body, path);
+        notificationInboxService.save(
+            receiverId, NotificationInboxType.CLUB_APPLICATION_SUBMITTED, clubName, body, path);
         sendNotification(receiverId, clubName, body, path);
     }
 
@@ -322,7 +323,8 @@ public class NotificationService {
     public void sendClubApplicationApprovedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 승인되었어요.";
         String path = "clubs/" + clubId;
-        notificationInboxService.save(receiverId, NotificationInboxType.CLUB_APPLICATION_APPROVED, clubName, body, path);
+        notificationInboxService.save(
+            receiverId, NotificationInboxType.CLUB_APPLICATION_APPROVED, clubName, body, path);
         sendNotification(receiverId, clubName, body, path);
     }
 
@@ -330,7 +332,8 @@ public class NotificationService {
     public void sendClubApplicationRejectedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 거절되었어요.";
         String path = "clubs/" + clubId;
-        notificationInboxService.save(receiverId, NotificationInboxType.CLUB_APPLICATION_REJECTED, clubName, body, path);
+        notificationInboxService.save(
+            receiverId, NotificationInboxType.CLUB_APPLICATION_REJECTED, clubName, body, path);
         sendNotification(receiverId, clubName, body, path);
     }
 
