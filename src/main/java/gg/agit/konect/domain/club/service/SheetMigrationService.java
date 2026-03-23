@@ -17,7 +17,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.Permission;
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.club.model.Club;
@@ -47,6 +50,7 @@ public class SheetMigrationService {
     private String defaultTemplateSpreadsheetId;
 
     private final Sheets googleSheetsService;
+    private final GoogleCredentials googleCredentials;
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
@@ -89,6 +93,7 @@ public class SheetMigrationService {
         String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
 
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
+        grantServiceAccountAccess(userDriveService, newSpreadsheetId);
 
         SheetHeaderMapper.SheetAnalysisResult sourceAnalysis =
             sheetHeaderMapper.analyzeAllSheets(sourceSpreadsheetId);
@@ -121,6 +126,26 @@ public class SheetMigrationService {
         );
 
         return newSpreadsheetId;
+    }
+
+    private void grantServiceAccountAccess(Drive userDriveService, String fileId) {
+        if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
+            log.warn("Google credentials is not a service account. Skipping permission grant.");
+            return;
+        }
+        String serviceAccountEmail = sac.getServiceAccountId();
+        try {
+            Permission permission = new Permission()
+                .setType("user")
+                .setRole("writer")
+                .setEmailAddress(serviceAccountEmail);
+            userDriveService.permissions().create(fileId, permission)
+                .setSendNotificationEmail(false)
+                .execute();
+            log.info("Service account granted access. fileId={}, email={}", fileId, serviceAccountEmail);
+        } catch (IOException e) {
+            log.error("Failed to grant service account access. fileId={}, cause={}", fileId, e.getMessage(), e);
+        }
     }
 
     private String resolveFolderId(Drive driveService, String url, String spreadsheetId) {
