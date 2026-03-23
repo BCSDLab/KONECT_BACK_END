@@ -236,7 +236,7 @@ public class SheetMigrationService {
 
         } catch (IOException e) {
             log.error("Failed to read source data. cause={}", e.getMessage(), e);
-            return List.of();
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 
@@ -279,6 +279,7 @@ public class SheetMigrationService {
 
         } catch (IOException e) {
             log.error("Failed to write data to template. cause={}", e.getMessage(), e);
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 
