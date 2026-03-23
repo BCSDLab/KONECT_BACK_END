@@ -32,6 +32,10 @@ import lombok.NoArgsConstructor;
         @UniqueConstraint(
             name = "uq_user_oauth_account_user_provider",
             columnNames = {"user_id", "provider"}
+        ),
+        @UniqueConstraint(
+            name = "uq_user_oauth_account_provider_oauth_email",
+            columnNames = {"provider", "oauth_email"}
         )
     }
 )

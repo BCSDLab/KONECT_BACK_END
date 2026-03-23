@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.MCP_BRIDGE_PORT || 3100;
-const HOST = process.env.MCP_BRIDGE_HOST || '127.0.0.1';
+const HOST = process.env.MCP_BRIDGE_HOST || '0.0.0.0';
 
 let mcpProcess = null;
 let requestId = 0;

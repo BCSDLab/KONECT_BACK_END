@@ -25,6 +25,7 @@ import com.jayway.jsonpath.JsonPath;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.global.auth.oauth.NativeSessionBridgeService;
 import gg.agit.konect.global.auth.oauth.OAuthLoginHelper;
@@ -266,6 +267,44 @@ class AuthApiTest extends IntegrationTestSupport {
                             .isEqualTo("no-store, no-cache, must-revalidate");
                     }
                 );
+        }
+    }
+
+    @Nested
+    class OAuthLink {
+
+        @Test
+        void 다른_사용자에게_연결된_구글_이메일이면_계정_연동_충돌을_반환한다() throws Exception {
+            // given
+            User currentUser = persist(UserFixture.createUser(university, "카카오회원", "2024001010"));
+            User existingGoogleUser = persist(UserFixture.createUser(university, "구글회원", "2024001011"));
+            persist(UserOAuthAccount.of(currentUser, Provider.GOOGLE, null, null, null));
+            persist(
+                UserOAuthAccount.of(
+                    existingGoogleUser,
+                    Provider.GOOGLE,
+                    "existing-google-provider-id",
+                    "younguk0128@naver.com",
+                    null
+                )
+            );
+            clearPersistenceContext();
+            mockLoginUser(currentUser.getId());
+
+            given(googleTokenVerifier.verify(any())).willReturn(
+                new VerifiedOAuthUser("new-google-provider-id", "younguk0128@naver.com", null)
+            );
+
+            // when, then
+            performPost(
+                "/users/me/oauth/links",
+                Map.of(
+                    "provider", "GOOGLE",
+                    "idToken", "google-id-token"
+                )
+            )
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("OAUTH_ACCOUNT_ALREADY_LINKED"));
         }
     }
 
