@@ -72,6 +72,7 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
 
     interface PreMemberKey {
         String getStudentNumber();
+
         String getName();
     }
 
