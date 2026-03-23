@@ -13,6 +13,7 @@ import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
+import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class SheetImportService {
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
     private final ClubPreMemberRepository clubPreMemberRepository;
+    private final ClubMemberRepository clubMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
@@ -57,6 +59,13 @@ public class SheetImportService {
 
             if (clubPreMemberRepository.existsByClubIdAndStudentNumberAndName(
                 clubId, studentNumber, name
+            )) {
+                continue;
+            }
+
+            // 이미 실제 동아리 부원인 경우 skip
+            if (clubMemberRepository.existsByClubIdAndUserStudentNumber(
+                clubId, studentNumber
             )) {
                 continue;
             }

@@ -193,4 +193,16 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
 
     @Query("SELECT COUNT(cm) FROM ClubMember cm")
     long countAll();
+
+    @Query("""
+        SELECT COUNT(cm) > 0
+        FROM ClubMember cm
+        WHERE cm.club.id = :clubId
+        AND cm.user.studentNumber = :studentNumber
+        AND cm.user.deletedAt IS NULL
+        """)
+    boolean existsByClubIdAndUserStudentNumber(
+        @Param("clubId") Integer clubId,
+        @Param("studentNumber") String studentNumber
+    );
 }
