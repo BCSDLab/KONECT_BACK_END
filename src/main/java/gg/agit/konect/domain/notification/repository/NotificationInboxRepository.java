@@ -25,8 +25,7 @@ public interface NotificationInboxRepository extends Repository<NotificationInbo
     Optional<NotificationInbox> findByIdAndUserId(Integer id, Integer userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE NotificationInbox n SET n.isRead = true, n.updatedAt = CURRENT_TIMESTAMP "
-        + "WHERE n.user.id = :userId AND n.isRead = false")
+    @Query("UPDATE NotificationInbox n SET n.isRead = true WHERE n.user.id = :userId AND n.isRead = false")
     void markAllAsReadByUserId(@Param("userId") Integer userId);
 
     default NotificationInbox getByIdAndUserId(Integer id, Integer userId) {

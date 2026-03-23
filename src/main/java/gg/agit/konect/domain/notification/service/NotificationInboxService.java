@@ -26,6 +26,7 @@ public class NotificationInboxService {
     private final NotificationInboxRepository notificationInboxRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public void save(Integer userId, NotificationInboxType type, String title, String body, String path) {
         try {
             User user = userRepository.getById(userId);
