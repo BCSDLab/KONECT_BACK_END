@@ -195,14 +195,10 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
     long countAll();
 
     @Query("""
-        SELECT COUNT(cm) > 0
+        SELECT cm.user.studentNumber
         FROM ClubMember cm
         WHERE cm.club.id = :clubId
-        AND cm.user.studentNumber = :studentNumber
         AND cm.user.deletedAt IS NULL
         """)
-    boolean existsByClubIdAndUserStudentNumber(
-        @Param("clubId") Integer clubId,
-        @Param("studentNumber") String studentNumber
-    );
+    Set<String> findStudentNumbersByClubId(@Param("clubId") Integer clubId);
 }

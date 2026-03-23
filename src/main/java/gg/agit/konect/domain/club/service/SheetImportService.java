@@ -2,6 +2,7 @@ package gg.agit.konect.domain.club.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,13 @@ public class SheetImportService {
         SheetColumnMapping mapping = analysis.memberListMapping();
 
         List<List<Object>> rows = readDataRows(spreadsheetId, mapping);
+
+        // N+1 방지: 루프 전에 기존 부원/사전 회원 학번 Set을 한 번만 조회
+        Set<String> existingMemberStudentNumbers =
+            clubMemberRepository.findStudentNumbersByClubId(clubId);
+        Set<String> existingPreMemberKeys =
+            clubPreMemberRepository.findStudentNumberNameKeysByClubId(clubId);
+
         int imported = 0;
 
         for (List<Object> row : rows) {
@@ -57,16 +65,11 @@ public class SheetImportService {
                 continue;
             }
 
-            if (clubPreMemberRepository.existsByClubIdAndStudentNumberAndName(
-                clubId, studentNumber, name
-            )) {
+            if (existingPreMemberKeys.contains(studentNumber + "|" + name)) {
                 continue;
             }
 
-            // 이미 실제 동아리 부원인 경우 skip
-            if (clubMemberRepository.existsByClubIdAndUserStudentNumber(
-                clubId, studentNumber
-            )) {
+            if (existingMemberStudentNumbers.contains(studentNumber)) {
                 continue;
             }
 

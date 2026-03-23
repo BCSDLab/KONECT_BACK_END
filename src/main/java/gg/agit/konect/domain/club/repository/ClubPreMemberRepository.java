@@ -2,6 +2,7 @@ package gg.agit.konect.domain.club.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -62,6 +63,13 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
     void deleteAll(Iterable<ClubPreMember> preMembers);
 
     boolean existsByClubIdAndStudentNumberAndName(Integer clubId, String studentNumber, String name);
+
+    @Query("""
+        SELECT CONCAT(cpm.studentNumber, '|', cpm.name)
+        FROM ClubPreMember cpm
+        WHERE cpm.club.id = :clubId
+        """)
+    Set<String> findStudentNumberNameKeysByClubId(@Param("clubId") Integer clubId);
 
     void deleteByClubIdAndStudentNumber(Integer clubId, String studentNumber);
 
