@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -108,15 +107,20 @@ public class UserOAuthAccountService {
         if (StringUtils.hasText(providerId)) {
             restoreOrCleanupWithdrawnByLinkedProvider(provider, providerId);
             validatePrimaryProviderOwnership(user, provider, providerId);
-        } else if (StringUtils.hasText(oauthEmail)) {
+        }
+
+        if (StringUtils.hasText(oauthEmail)) {
             restoreOrCleanupWithdrawnByOauthEmail(provider, oauthEmail);
+            validateOauthEmailOwnership(user, provider, oauthEmail);
         }
 
         UserOAuthAccount account = userOAuthAccountRepository.findByUserIdAndProvider(userId, provider)
             .orElse(null);
 
         if (account == null) {
-            saveWithConflictHandling(userId, user, provider, providerId, oauthEmail, appleRefreshToken);
+            userOAuthAccountRepository.save(
+                UserOAuthAccount.of(user, provider, providerId, oauthEmail, appleRefreshToken)
+            );
             return;
         }
 
@@ -126,7 +130,6 @@ public class UserOAuthAccountService {
                 // provider_id가 NULL이거나 다른 값이면 업데이트
                 if (account.getProviderId() == null || !StringUtils.hasText(account.getProviderId())) {
                     account.updateProviderId(providerId);
-                    userOAuthAccountRepository.save(account);
                 } else {
                     // 이미 다른 provider_id가 있으면 충돌
                     throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
@@ -136,15 +139,16 @@ public class UserOAuthAccountService {
 
         if (StringUtils.hasText(oauthEmail)) {
             account.updateOauthEmail(oauthEmail);
-            userOAuthAccountRepository.save(account);
         }
 
         if (provider == Provider.APPLE && StringUtils.hasText(appleRefreshToken)) {
             account.updateAppleRefreshToken(appleRefreshToken);
-            userOAuthAccountRepository.save(account);
         }
+
+        userOAuthAccountRepository.save(account);
     }
 
+    // 다른 활성 사용자가 같은 providerId를 이미 연동한 경우를 사전에 막는다.
     private void validatePrimaryProviderOwnership(User user, Provider provider, String providerId) {
         Integer userId = user.getId();
 
@@ -156,21 +160,16 @@ public class UserOAuthAccountService {
             });
     }
 
-    private void saveWithConflictHandling(
-        Integer userId,
-        User user,
-        Provider provider,
-        String providerId,
-        String oauthEmail,
-        String appleRefreshToken
-    ) {
-        try {
-            userOAuthAccountRepository.saveAndFlush(
-                UserOAuthAccount.of(user, provider, providerId, oauthEmail, appleRefreshToken)
-            );
-        } catch (DataIntegrityViolationException e) {
-            throw CustomException.of(ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED);
-        }
+    // 다른 활성 사용자가 같은 소셜 이메일을 이미 연동한 경우를 사전에 막는다.
+    private void validateOauthEmailOwnership(User user, Provider provider, String oauthEmail) {
+        Integer userId = user.getId();
+
+        userOAuthAccountRepository.findUserByOauthEmailAndProvider(oauthEmail, provider)
+            .ifPresent(ownedUser -> {
+                if (!ownedUser.getId().equals(userId)) {
+                    throw CustomException.of(ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED);
+                }
+            });
     }
 
     private void restoreOrCleanupWithdrawnByLinkedProvider(Provider provider, String providerId) {
