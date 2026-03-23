@@ -63,6 +63,19 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
 
     boolean existsByClubIdAndStudentNumberAndName(Integer clubId, String studentNumber, String name);
 
+    @Query("""
+        SELECT cpm.studentNumber as studentNumber, cpm.name as name
+        FROM ClubPreMember cpm
+        WHERE cpm.club.id = :clubId
+        """)
+    List<PreMemberKey> findStudentNumberAndNameByClubId(@Param("clubId") Integer clubId);
+
+    interface PreMemberKey {
+        String getStudentNumber();
+
+        String getName();
+    }
+
     void deleteByClubIdAndStudentNumber(Integer clubId, String studentNumber);
 
     void delete(ClubPreMember preMember);

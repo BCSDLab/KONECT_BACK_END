@@ -198,16 +198,28 @@ public class SheetMigrationService {
             String title = NEW_SHEET_TITLE_PREFIX + clubName;
             File copyMetadata = new File().setName(title);
 
-            if (targetFolderId != null) {
-                copyMetadata.setParents(Collections.singletonList(targetFolderId));
-            }
-
+            // Drive API v3에서 files().copy() 바디의 parents 필드는 무시됨.
+            // 복사 후 files().update()로 addParents/removeParents를 명시적으로 호출해야 폴더 이동이 적용됨.
             File copied = driveService.files().copy(templateId, copyMetadata)
-                .setFields("id")
+                .setFields("id, parents")
                 .execute();
 
-            log.info("Template copied by user. newId={}, folderId={}", copied.getId(), targetFolderId);
-            return copied.getId();
+            String newFileId = copied.getId();
+
+            if (targetFolderId != null) {
+                List<String> currentParents = copied.getParents();
+                String removeParents = (currentParents != null && !currentParents.isEmpty())
+                    ? String.join(",", currentParents)
+                    : "";
+                driveService.files().update(newFileId, new File())
+                    .setAddParents(targetFolderId)
+                    .setRemoveParents(removeParents)
+                    .setFields("id, parents")
+                    .execute();
+            }
+
+            log.info("Template copied by user. newId={}, folderId={}", newFileId, targetFolderId);
+            return newFileId;
 
         } catch (IOException e) {
             log.error("Failed to copy template. cause={}", e.getMessage(), e);

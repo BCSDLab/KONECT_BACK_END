@@ -1,7 +1,9 @@
 package gg.agit.konect.domain.club.service;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,7 @@ import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
+import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class SheetImportService {
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
     private final ClubPreMemberRepository clubPreMemberRepository;
+    private final ClubMemberRepository clubMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
 
     @Transactional
@@ -45,6 +49,12 @@ public class SheetImportService {
         SheetColumnMapping mapping = analysis.memberListMapping();
 
         List<List<Object>> rows = readDataRows(spreadsheetId, mapping);
+
+        // N+1 방지: 루프 전에 기존 부원/사전 회원 학번 Set을 한 번만 조회
+        Set<String> existingMemberStudentNumbers =
+            clubMemberRepository.findStudentNumbersByClubId(clubId);
+        Set<String> existingPreMemberKeys = buildPreMemberKeySet(clubId);
+
         int imported = 0;
 
         for (List<Object> row : rows) {
@@ -55,9 +65,11 @@ public class SheetImportService {
                 continue;
             }
 
-            if (clubPreMemberRepository.existsByClubIdAndStudentNumberAndName(
-                clubId, studentNumber, name
-            )) {
+            if (existingPreMemberKeys.contains(preMemberKey(studentNumber, name))) {
+                continue;
+            }
+
+            if (existingMemberStudentNumbers.contains(studentNumber)) {
                 continue;
             }
 
@@ -72,6 +84,7 @@ public class SheetImportService {
                 .build();
 
             clubPreMemberRepository.save(preMember);
+            existingPreMemberKeys.add(preMemberKey(studentNumber, name));
             imported++;
         }
 
@@ -119,5 +132,16 @@ public class SheetImportService {
             }
         }
         return ClubPosition.MEMBER;
+    }
+
+    private Set<String> buildPreMemberKeySet(Integer clubId) {
+        Set<String> keys = new HashSet<>();
+        clubPreMemberRepository.findStudentNumberAndNameByClubId(clubId)
+            .forEach(k -> keys.add(preMemberKey(k.getStudentNumber(), k.getName())));
+        return keys;
+    }
+
+    private String preMemberKey(String studentNumber, String name) {
+        return studentNumber + "\u0000" + name;
     }
 }
