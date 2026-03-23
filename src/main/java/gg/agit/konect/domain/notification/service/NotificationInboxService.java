@@ -26,7 +26,6 @@ public class NotificationInboxService {
     private final NotificationInboxRepository notificationInboxRepository;
     private final UserRepository userRepository;
 
-    @Transactional
     public void save(Integer userId, NotificationInboxType type, String title, String body, String path) {
         try {
             User user = userRepository.getById(userId);
@@ -38,7 +37,7 @@ public class NotificationInboxService {
     }
 
     public NotificationInboxesResponse getMyInboxes(Integer userId, int page) {
-        PageRequest pageable = PageRequest.of(page, DEFAULT_PAGE_SIZE);
+        PageRequest pageable = PageRequest.of(page - 1, DEFAULT_PAGE_SIZE);
         Page<NotificationInbox> result = notificationInboxRepository
             .findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
         return NotificationInboxesResponse.from(result);

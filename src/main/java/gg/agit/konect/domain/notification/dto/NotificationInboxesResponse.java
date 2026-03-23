@@ -16,7 +16,7 @@ public record NotificationInboxesResponse(
     public static NotificationInboxesResponse from(Page<NotificationInbox> page) {
         return new NotificationInboxesResponse(
             page.getContent().stream().map(NotificationInboxResponse::from).toList(),
-            page.getNumber(),
+            page.getNumber() + 1,
             page.getTotalPages(),
             page.getTotalElements(),
             page.hasNext()
