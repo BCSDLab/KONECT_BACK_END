@@ -93,7 +93,12 @@ public class SheetMigrationService {
         String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
 
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
-        grantServiceAccountAccess(userDriveService, newSpreadsheetId);
+        try {
+            grantServiceAccountAccess(userDriveService, newSpreadsheetId);
+        } catch (Exception e) {
+            deleteFile(userDriveService, newSpreadsheetId);
+            throw e;
+        }
 
         SheetHeaderMapper.SheetAnalysisResult sourceAnalysis =
             sheetHeaderMapper.analyzeAllSheets(sourceSpreadsheetId);
@@ -148,6 +153,15 @@ public class SheetMigrationService {
         } catch (IOException e) {
             log.error("Failed to grant service account access. fileId={}, cause={}", fileId, e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
+        }
+    }
+
+    private void deleteFile(Drive driveService, String fileId) {
+        try {
+            driveService.files().delete(fileId).execute();
+            log.info("Orphaned file deleted. fileId={}", fileId);
+        } catch (IOException ex) {
+            log.warn("Failed to delete orphaned file. fileId={}, cause={}", fileId, ex.getMessage());
         }
     }
 
