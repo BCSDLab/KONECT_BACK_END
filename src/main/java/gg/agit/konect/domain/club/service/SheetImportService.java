@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.service;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -52,8 +53,7 @@ public class SheetImportService {
         // N+1 방지: 루프 전에 기존 부원/사전 회원 학번 Set을 한 번만 조회
         Set<String> existingMemberStudentNumbers =
             clubMemberRepository.findStudentNumbersByClubId(clubId);
-        Set<String> existingPreMemberKeys =
-            clubPreMemberRepository.findStudentNumberNameKeysByClubId(clubId);
+        Set<String> existingPreMemberKeys = buildPreMemberKeySet(clubId);
 
         int imported = 0;
 
@@ -65,7 +65,7 @@ public class SheetImportService {
                 continue;
             }
 
-            if (existingPreMemberKeys.contains(studentNumber + "|" + name)) {
+            if (existingPreMemberKeys.contains(preMemberKey(studentNumber, name))) {
                 continue;
             }
 
@@ -84,6 +84,7 @@ public class SheetImportService {
                 .build();
 
             clubPreMemberRepository.save(preMember);
+            existingPreMemberKeys.add(preMemberKey(studentNumber, name));
             imported++;
         }
 
@@ -131,5 +132,16 @@ public class SheetImportService {
             }
         }
         return ClubPosition.MEMBER;
+    }
+
+    private Set<String> buildPreMemberKeySet(Integer clubId) {
+        Set<String> keys = new HashSet<>();
+        clubPreMemberRepository.findStudentNumberAndNameByClubId(clubId)
+            .forEach(k -> keys.add(preMemberKey(k.getStudentNumber(), k.getName())));
+        return keys;
+    }
+
+    private String preMemberKey(String studentNumber, String name) {
+        return studentNumber + "\u0000" + name;
     }
 }
