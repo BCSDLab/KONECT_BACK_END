@@ -133,7 +133,7 @@ public class SheetMigrationService {
             log.warn("Google credentials is not a service account. Skipping permission grant.");
             return;
         }
-        String serviceAccountEmail = sac.getServiceAccountId();
+        String serviceAccountEmail = sac.getClientEmail();
         try {
             Permission permission = new Permission()
                 .setType("user")
