@@ -96,12 +96,7 @@ public class SheetMigrationService {
 
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
         registerDriveRollback(userDriveService, newSpreadsheetId);
-        try {
-            grantServiceAccountAccess(userDriveService, newSpreadsheetId);
-        } catch (Exception e) {
-            deleteFile(userDriveService, newSpreadsheetId);
-            throw e;
-        }
+        grantServiceAccountAccess(userDriveService, newSpreadsheetId);
 
         SheetHeaderMapper.SheetAnalysisResult sourceAnalysis =
             sheetHeaderMapper.analyzeAllSheets(sourceSpreadsheetId);
