@@ -12,6 +12,8 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -93,6 +95,7 @@ public class SheetMigrationService {
         String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
 
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
+        registerDriveRollback(userDriveService, newSpreadsheetId);
         try {
             grantServiceAccountAccess(userDriveService, newSpreadsheetId);
         } catch (Exception e) {
@@ -154,6 +157,17 @@ public class SheetMigrationService {
             log.error("Failed to grant service account access. fileId={}, cause={}", fileId, e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
+    }
+
+    private void registerDriveRollback(Drive driveService, String fileId) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    deleteFile(driveService, fileId);
+                }
+            }
+        });
     }
 
     private void deleteFile(Drive driveService, String fileId) {
