@@ -3,6 +3,7 @@ package gg.agit.konect.domain.notification.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.notification.dto.NotificationInboxesResponse;
@@ -26,7 +27,7 @@ public class NotificationInboxService {
     private final NotificationInboxRepository notificationInboxRepository;
     private final UserRepository userRepository;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(Integer userId, NotificationInboxType type, String title, String body, String path) {
         try {
             User user = userRepository.getById(userId);
@@ -40,7 +41,7 @@ public class NotificationInboxService {
     public NotificationInboxesResponse getMyInboxes(Integer userId, int page) {
         PageRequest pageable = PageRequest.of(page - 1, DEFAULT_PAGE_SIZE);
         Page<NotificationInbox> result = notificationInboxRepository
-            .findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+            .findAllByUserIdOrderByCreatedAtDescIdDesc(userId, pageable);
         return NotificationInboxesResponse.from(result);
     }
 

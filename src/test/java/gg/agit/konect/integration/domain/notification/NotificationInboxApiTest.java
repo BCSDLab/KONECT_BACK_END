@@ -49,6 +49,7 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         void getMyInboxesSuccess() throws Exception {
             // given
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "동아리 승인");
+            Thread.sleep(1);
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_REJECTED, "동아리 거절");
             clearPersistenceContext();
             mockLoginUser(user.getId());

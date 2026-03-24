@@ -18,7 +18,7 @@ public interface NotificationInboxRepository extends Repository<NotificationInbo
 
     NotificationInbox save(NotificationInbox notificationInbox);
 
-    Page<NotificationInbox> findAllByUserIdOrderByCreatedAtDesc(Integer userId, Pageable pageable);
+    Page<NotificationInbox> findAllByUserIdOrderByCreatedAtDescIdDesc(Integer userId, Pageable pageable);
 
     long countByUserIdAndIsReadFalse(Integer userId);
 
