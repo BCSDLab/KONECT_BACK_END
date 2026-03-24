@@ -142,32 +142,7 @@ public class SheetMigrationService {
      * migrate 시 서비스 계정 Sheets API로 소스 데이터를 읽어야 하므로 필요합니다.
      */
     private void grantServiceAccountReadAccess(Drive userDriveService, String fileId) {
-        if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
-            throw new IllegalStateException(
-                "Google credentials is not a ServiceAccountCredentials. actual type="
-                    + googleCredentials.getClass().getName()
-            );
-        }
-        String serviceAccountEmail = sac.getClientEmail();
-        try {
-            Permission permission = new Permission()
-                .setType("user")
-                .setRole("reader")
-                .setEmailAddress(serviceAccountEmail);
-            userDriveService.permissions().create(fileId, permission)
-                .setSendNotificationEmail(false)
-                .execute();
-            log.info(
-                "Service account reader access granted to source file. fileId={}, email={}",
-                fileId, serviceAccountEmail
-            );
-        } catch (IOException e) {
-            log.error(
-                "Failed to grant service account reader access to source file. fileId={}, cause={}",
-                fileId, e.getMessage(), e
-            );
-            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
-        }
+        grantServiceAccountPermission(userDriveService, fileId, "reader");
     }
 
     /**
@@ -220,6 +195,13 @@ public class SheetMigrationService {
     }
 
     private void grantServiceAccountAccess(Drive userDriveService, String fileId) {
+        grantServiceAccountPermission(userDriveService, fileId, "writer");
+    }
+
+    /**
+     * 서비스 계정에 지정된 role로 Drive 접근 권한을 부여하는 공통 메서드입니다.
+     */
+    private void grantServiceAccountPermission(Drive userDriveService, String fileId, String role) {
         if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
             throw new IllegalStateException(
                 "Google credentials is not a ServiceAccountCredentials. actual type="
@@ -230,14 +212,20 @@ public class SheetMigrationService {
         try {
             Permission permission = new Permission()
                 .setType("user")
-                .setRole("writer")
+                .setRole(role)
                 .setEmailAddress(serviceAccountEmail);
             userDriveService.permissions().create(fileId, permission)
                 .setSendNotificationEmail(false)
                 .execute();
-            log.info("Service account granted access. fileId={}, email={}", fileId, serviceAccountEmail);
+            log.info(
+                "Service account {} access granted. fileId={}, email={}",
+                role, fileId, serviceAccountEmail
+            );
         } catch (IOException e) {
-            log.error("Failed to grant service account access. fileId={}, cause={}", fileId, e.getMessage(), e);
+            log.error(
+                "Failed to grant service account {} access. fileId={}, cause={}",
+                role, fileId, e.getMessage(), e
+            );
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }

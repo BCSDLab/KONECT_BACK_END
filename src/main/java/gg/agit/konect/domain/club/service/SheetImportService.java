@@ -27,6 +27,8 @@ import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.util.PhoneNumberNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,18 +65,19 @@ public class SheetImportService {
 
         List<List<Object>> rows = readDataRows(spreadsheetId, mapping);
 
-        // N+1 방지: 루프 전 기존 부원 / 사전 회원 정보 일괄 조회
+        // N+1 방지: 루프 전 기존 부원 학번 Set / 사전 회원 key Set / 부원 userId Set 일괄 조회
         Set<String> existingMemberStudentNumbers =
             clubMemberRepository.findStudentNumbersByClubId(clubId);
         Set<String> existingPreMemberKeys = buildPreMemberKeySet(clubId);
+        Set<Integer> existingMemberUserIds =
+            new HashSet<>(clubMemberRepository.findUserIdsByClubId(clubId));
 
-        // 시트에 등장하는 모든 학번 수집 (bulk 조회용)
+        // 시트에 등장하는 모든 학번 수집 → users 일괄 조회
         Set<String> allStudentNumbers = rows.stream()
             .map(row -> getCell(row, mapping, SheetColumnMapping.STUDENT_ID))
             .filter(s -> !s.isBlank())
             .collect(Collectors.toSet());
 
-        // 대학 + 학번 IN 으로 users 일괄 조회 → Map<학번, List<User>>
         Map<String, List<User>> usersByStudentNumber = new HashMap<>();
         if (!allStudentNumbers.isEmpty()) {
             userRepository.findAllByUniversityIdAndStudentNumberIn(universityId, allStudentNumbers)
@@ -83,10 +86,13 @@ public class SheetImportService {
                     .add(u));
         }
 
+        // 루프에서 수집할 배치 작업 대상
+        List<ClubMember> clubMembersToSave = new ArrayList<>();
+        Set<String> studentNumbersToCleanFromPre = new HashSet<>();
+        List<ClubPreMember> preMembersToSave = new ArrayList<>();
+
         List<String> warnings = new ArrayList<>();
         int presidentCount = 0;
-        int imported = 0;
-        int autoRegistered = 0;
 
         for (List<Object> row : rows) {
             String name = getCell(row, mapping, SheetColumnMapping.NAME);
@@ -96,7 +102,7 @@ public class SheetImportService {
                 continue;
             }
 
-            // 전화번호 형식 유효성 경고 (phone 칸이 있고 값도 있는데 전화번호처럼 안 보이면)
+            // 전화번호 형식 유효성 경고
             String phone = getCell(row, mapping, SheetColumnMapping.PHONE);
             if (!phone.isBlank() && !PhoneNumberNormalizer.looksLikePhoneNumber(phone)) {
                 warnings.add(String.format(
@@ -130,34 +136,29 @@ public class SheetImportService {
             }
 
             // users 테이블에서 동일 대학 + 학번으로 매칭, 이름까지 일치하는 유저 탐색
+            // trim() 적용으로 공백 차이에 의한 매칭 실패 방지
             List<User> candidates = usersByStudentNumber.getOrDefault(studentNumber, List.of());
             List<User> matched = candidates.stream()
-                .filter(u -> name.equals(u.getName()))
+                .filter(u -> name.trim().equalsIgnoreCase(u.getName().trim()))
                 .toList();
 
             if (matched.size() == 1) {
-                // 정확히 1명 매칭 → club_member 직접 등록
                 User matchedUser = matched.get(0);
-                if (!clubMemberRepository.existsByClubIdAndUserId(clubId, matchedUser.getId())) {
-                    // 기존 pre_member에 동일 학번이 있으면 제거
-                    clubPreMemberRepository.deleteByClubIdAndStudentNumber(
-                        clubId, matchedUser.getStudentNumber()
-                    );
-                    ClubMember clubMember = ClubMember.builder()
+                // userId Set으로 중복 체크 (N+1 없음)
+                if (!existingMemberUserIds.contains(matchedUser.getId())) {
+                    studentNumbersToCleanFromPre.add(matchedUser.getStudentNumber());
+                    clubMembersToSave.add(ClubMember.builder()
                         .club(club)
                         .user(matchedUser)
                         .clubPosition(position)
-                        .build();
-                    ClubMember saved = clubMemberRepository.save(clubMember);
-                    chatRoomMembershipService.addClubMember(saved);
+                        .build());
                     existingMemberStudentNumbers.add(studentNumber);
-                    autoRegistered++;
+                    existingMemberUserIds.add(matchedUser.getId());
                 }
                 continue;
             }
 
             if (matched.size() > 1) {
-                // 동명이인 2명 이상 → 모호성 경고, pre_member로 등록
                 warnings.add(String.format(
                     "동명이인이 여러 명 존재하여 자동 매칭할 수 없습니다 - 학번: %s, 이름: %s",
                     studentNumber, name
@@ -165,19 +166,39 @@ public class SheetImportService {
             }
 
             // users 미매칭 또는 동명이인 → pre_member 등록
-            ClubPreMember preMember = ClubPreMember.builder()
+            preMembersToSave.add(ClubPreMember.builder()
                 .club(club)
                 .studentNumber(studentNumber)
                 .name(name)
                 .clubPosition(position)
-                .build();
-            clubPreMemberRepository.save(preMember);
+                .build());
             existingPreMemberKeys.add(preMemberKey(studentNumber, name));
-            imported++;
         }
 
+        // 배치 처리: pre_member 정리 → club_member 일괄 저장 → 채팅방 등록
+        if (!studentNumbersToCleanFromPre.isEmpty()) {
+            clubPreMemberRepository.deleteByClubIdAndStudentNumberIn(
+                clubId, studentNumbersToCleanFromPre
+            );
+        }
+        List<ClubMember> savedMembers = clubMembersToSave.isEmpty()
+            ? List.of()
+            : clubMemberRepository.saveAll(clubMembersToSave);
+
+        for (ClubMember saved : savedMembers) {
+            chatRoomMembershipService.addClubMember(saved);
+        }
+
+        for (ClubPreMember pre : preMembersToSave) {
+            clubPreMemberRepository.save(pre);
+        }
+
+        int autoRegistered = savedMembers.size();
+        int imported = preMembersToSave.size();
+
         log.info(
-            "Sheet import done. clubId={}, spreadsheetId={}, imported={}, autoRegistered={}, warnings={}",
+            "Sheet import done. clubId={}, spreadsheetId={}, imported={}, autoRegistered={}, "
+                + "warnings={}",
             clubId, spreadsheetId, imported, autoRegistered, warnings.size()
         );
         return SheetImportResponse.of(imported, autoRegistered, warnings);
@@ -196,7 +217,7 @@ public class SheetImportService {
 
         } catch (IOException e) {
             log.error("Failed to read sheet data. spreadsheetId={}", spreadsheetId, e);
-            return List.of();
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 

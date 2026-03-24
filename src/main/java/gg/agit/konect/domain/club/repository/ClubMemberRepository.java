@@ -189,6 +189,8 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
 
     ClubMember save(ClubMember clubMember);
 
+    List<ClubMember> saveAll(Iterable<ClubMember> clubMembers);
+
     void deleteByUserId(Integer userId);
 
     @Query("SELECT COUNT(cm) FROM ClubMember cm")
