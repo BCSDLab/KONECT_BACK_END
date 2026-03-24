@@ -39,9 +39,6 @@ public class NotificationInboxService {
     }
 
     public NotificationInboxesResponse getMyInboxes(Integer userId, int page) {
-        if (page < 1) {
-            throw new IllegalArgumentException("page must be >= 1, but was: " + page);
-        }
         PageRequest pageable = PageRequest.of(page - 1, DEFAULT_PAGE_SIZE);
         Page<NotificationInbox> result = notificationInboxRepository
             .findAllByUserIdOrderByCreatedAtDescIdDesc(userId, pageable);

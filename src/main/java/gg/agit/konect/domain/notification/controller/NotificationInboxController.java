@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.notification.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -9,6 +10,7 @@ import gg.agit.konect.domain.notification.dto.NotificationInboxUnreadCountRespon
 import gg.agit.konect.domain.notification.service.NotificationInboxService;
 import lombok.RequiredArgsConstructor;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/notifications/inbox")

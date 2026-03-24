@@ -16,6 +16,8 @@ public record ClubApplicationSubmittedEvent(
         String clubName,
         String applicantName
     ) {
-        return new ClubApplicationSubmittedEvent(receiverIds, applicationId, clubId, clubName, applicantName);
+        return new ClubApplicationSubmittedEvent(
+            List.copyOf(receiverIds), applicationId, clubId, clubName, applicantName
+        );
     }
 }
