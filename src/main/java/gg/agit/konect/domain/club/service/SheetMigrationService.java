@@ -164,12 +164,16 @@ public class SheetMigrationService {
         }
         String serviceAccountEmail = sac.getClientEmail();
         try {
-            // permissionId 조회 후 삭제
-            driveService.permissions().list(fileId)
-                .setFields("permissions(id,emailAddress)")
-                .execute()
-                .getPermissions()
-                .stream()
+            // permissionId 조회 후 삭제 (getPermissions()는 빈 경우 null 반환 가능)
+            List<Permission> permissions =
+                driveService.permissions().list(fileId)
+                    .setFields("permissions(id,emailAddress)")
+                    .execute()
+                    .getPermissions();
+            if (permissions == null) {
+                return;
+            }
+            permissions.stream()
                 .filter(p -> serviceAccountEmail.equals(p.getEmailAddress()))
                 .findFirst()
                 .ifPresent(p -> {
@@ -312,6 +316,7 @@ public class SheetMigrationService {
             String range = "A" + dataStartRow + ":Z";
             ValueRange response = googleSheetsService.spreadsheets().values()
                 .get(spreadsheetId, range)
+                .setValueRenderOption("FORMATTED_VALUE")
                 .execute();
 
             List<List<Object>> values = response.getValues();

@@ -130,22 +130,21 @@ public class SheetImportService {
                 continue;
             }
 
-            // 이미 club_pre_member에 있는 (학번+이름) 조합은 스킵
-            if (existingPreMemberKeys.contains(preMemberKey(studentNumber, name))) {
-                continue;
-            }
-
             // users 테이블에서 동일 대학 + 학번으로 매칭, 이름까지 일치하는 유저 탐색
-            // trim() 적용으로 공백 차이에 의한 매칭 실패 방지
+            // trim() / equalsIgnoreCase로 공백·대소문자 차이 허용
+            // 주의: existingPreMemberKeys 체크보다 먼저 수행하여
+            // 이미 pre_member로 등록된 행도 User 생성 후 재-import 시 club_member로 승격 가능하게 함
             List<User> candidates = usersByStudentNumber.getOrDefault(studentNumber, List.of());
             List<User> matched = candidates.stream()
-                .filter(u -> name.trim().equalsIgnoreCase(u.getName().trim()))
+                .filter(u -> name != null && u.getName() != null
+                    && name.trim().equalsIgnoreCase(u.getName().trim()))
                 .toList();
 
             if (matched.size() == 1) {
                 User matchedUser = matched.get(0);
                 // userId Set으로 중복 체크 (N+1 없음)
                 if (!existingMemberUserIds.contains(matchedUser.getId())) {
+                    // 기존 pre_member 행도 함께 정리 (중복 방지)
                     studentNumbersToCleanFromPre.add(matchedUser.getStudentNumber());
                     clubMembersToSave.add(ClubMember.builder()
                         .club(club)
@@ -154,6 +153,7 @@ public class SheetImportService {
                         .build());
                     existingMemberStudentNumbers.add(studentNumber);
                     existingMemberUserIds.add(matchedUser.getId());
+                    existingPreMemberKeys.remove(preMemberKey(studentNumber, name));
                 }
                 continue;
             }
@@ -165,7 +165,11 @@ public class SheetImportService {
                 ));
             }
 
-            // users 미매칭 또는 동명이인 → pre_member 등록
+            // users 미매칭 또는 동명이인 → 이미 pre_member에 있으면 스킵, 없으면 등록
+            if (existingPreMemberKeys.contains(preMemberKey(studentNumber, name))) {
+                continue;
+            }
+
             preMembersToSave.add(ClubPreMember.builder()
                 .club(club)
                 .studentNumber(studentNumber)
@@ -210,6 +214,7 @@ public class SheetImportService {
             String range = "A" + dataStartRow + ":Z";
             ValueRange response = googleSheetsService.spreadsheets().values()
                 .get(spreadsheetId, range)
+                .setValueRenderOption("FORMATTED_VALUE")
                 .execute();
 
             List<List<Object>> values = response.getValues();

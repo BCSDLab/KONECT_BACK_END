@@ -15,10 +15,14 @@ public final class PhoneNumberNormalizer {
      *     010 1234 5678  -> 01012345678
      */
     public static String normalize(String phone) {
-        if (phone == null || phone.isBlank()) {
-            return phone;
+        if (phone == null) {
+            return null;
         }
-        return phone.replaceAll("[^0-9]", "");
+        String trimmed = phone.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        return trimmed.replaceAll("[^0-9]", "");
     }
 
     /**
