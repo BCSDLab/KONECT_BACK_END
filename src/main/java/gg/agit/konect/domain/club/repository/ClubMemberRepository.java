@@ -70,6 +70,19 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
+        WHERE cm.club.id = :clubId
+        AND cm.clubPosition IN :positions
+        AND cm.user.deletedAt IS NULL
+        """)
+    List<ClubMember> findAllByClubIdAndPositionIn(
+        @Param("clubId") Integer clubId,
+        @Param("positions") Set<ClubPosition> positions
+    );
+
+    @Query("""
+        SELECT cm
+        FROM ClubMember cm
+        JOIN FETCH cm.user
         WHERE cm.user.id = :userId
         AND cm.clubPosition = :clubPosition
         """)

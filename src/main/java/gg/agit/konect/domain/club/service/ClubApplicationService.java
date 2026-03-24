@@ -1,6 +1,8 @@
 package gg.agit.konect.domain.club.service;
 
 import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
+
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;
@@ -299,14 +301,21 @@ public class ClubApplicationService {
             clubApplyAnswerRepository.saveAll(applyAnswers);
         }
 
-        clubMemberRepository.findPresidentByClubId(clubId)
-            .ifPresent(president -> applicationEventPublisher.publishEvent(ClubApplicationSubmittedEvent.of(
-                president.getUser().getId(),
+        List<Integer> managerIds = clubMemberRepository
+            .findAllByClubIdAndPositionIn(clubId, ClubPosition.MANAGERS)
+            .stream()
+            .map(manager -> manager.getUser().getId())
+            .toList();
+
+        if (!managerIds.isEmpty()) {
+            applicationEventPublisher.publishEvent(ClubApplicationSubmittedEvent.of(
+                managerIds,
                 apply.getId(),
                 clubId,
                 club.getName(),
                 user.getName()
-            )));
+            ));
+        }
 
         Integer bankId = resolveBankId(club.getFeeBank());
         return ClubFeeInfoResponse.of(club, bankId, club.getFeeBank());

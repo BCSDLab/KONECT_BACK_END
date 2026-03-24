@@ -48,9 +48,8 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @DisplayName("알림 목록을 최신순으로 조회한다")
         void getMyInboxesSuccess() throws Exception {
             // given
-            createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "동아리 승인");
-            Thread.sleep(1);
-            createInbox(user, NotificationInboxType.CLUB_APPLICATION_REJECTED, "동아리 거절");
+            NotificationInbox first = createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "동아리 승인");
+            NotificationInbox second = createInbox(user, NotificationInboxType.CLUB_APPLICATION_REJECTED, "동아리 거절");
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
@@ -60,8 +59,8 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.notifications").isArray())
                 .andExpect(jsonPath("$.notifications.length()").value(2))
                 .andExpect(jsonPath("$.currentPage").value(1))
-                .andExpect(jsonPath("$.notifications[0].title").value("동아리 거절"))
-                .andExpect(jsonPath("$.notifications[1].title").value("동아리 승인"));
+                .andExpect(jsonPath("$.notifications[0].id").value(second.getId()))
+                .andExpect(jsonPath("$.notifications[1].id").value(first.getId()));
         }
 
         @Test
