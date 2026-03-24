@@ -274,6 +274,8 @@ public class SheetMigrationService {
     }
 
     private String copyTemplate(Drive driveService, String templateId, String clubName, String targetFolderId) {
+        // newFileId를 try 바깥에서 선언하여 예외 경로에서도 고아 파일 정리가 가능하도록 함
+        String newFileId = null;
         try {
             String title = NEW_SHEET_TITLE_PREFIX + clubName;
             File copyMetadata = new File().setName(title);
@@ -284,7 +286,7 @@ public class SheetMigrationService {
                 .setFields("id, parents")
                 .execute();
 
-            String newFileId = copied.getId();
+            newFileId = copied.getId();
 
             if (targetFolderId != null) {
                 List<String> currentParents = copied.getParents();
@@ -304,12 +306,14 @@ public class SheetMigrationService {
                             "Failed to re-fetch parents for copied file. fileId={}, cause={}",
                             newFileId, ex.getMessage()
                         );
+                        deleteFile(driveService, newFileId);
                         throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
                     }
                 }
                 // parents를 끝내 확보하지 못한 경우, 폴더 이동이 보장되지 않으므로 예외로 처리해 롤백
                 if (currentParents == null || currentParents.isEmpty()) {
                     log.error("Cannot determine parents for copied file. fileId={}", newFileId);
+                    deleteFile(driveService, newFileId);
                     throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
                 }
                 String removeParents = String.join(",", currentParents);
@@ -324,6 +328,9 @@ public class SheetMigrationService {
             return newFileId;
 
         } catch (IOException e) {
+            if (newFileId != null) {
+                deleteFile(driveService, newFileId);
+            }
             log.error("Failed to copy template. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
