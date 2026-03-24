@@ -2,6 +2,7 @@ package gg.agit.konect.domain.user.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -40,6 +41,18 @@ public interface UserRepository extends Repository<User, Integer> {
     List<User> findAllByUniversityIdAndStudentNumber(
         @Param("universityId") Integer universityId,
         @Param("studentNumber") String studentNumber
+    );
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.university.id = :universityId
+        AND u.studentNumber IN :studentNumbers
+        AND u.deletedAt IS NULL
+        """)
+    List<User> findAllByUniversityIdAndStudentNumberIn(
+        @Param("universityId") Integer universityId,
+        @Param("studentNumbers") Set<String> studentNumbers
     );
 
     User save(User user);

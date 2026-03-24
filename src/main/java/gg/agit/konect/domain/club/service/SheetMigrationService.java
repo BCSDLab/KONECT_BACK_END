@@ -21,9 +21,9 @@ import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.Permission;
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
-import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
@@ -31,8 +31,9 @@ import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
-import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
+import gg.agit.konect.global.util.PhoneNumberNormalizer;
 import gg.agit.konect.infrastructure.googlesheets.GoogleSheetsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -94,6 +95,11 @@ public class SheetMigrationService {
         String sourceSpreadsheetId = SpreadsheetUrlParser.extractId(sourceSpreadsheetUrl);
         String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
 
+        // 소스 파일에 서비스 계정 reader 권한을 먼저 부여해야 readAllData()가 성공함
+        grantServiceAccountReadAccess(userDriveService, sourceSpreadsheetId);
+        // 트랜잭션 실패 / 완료 후 소스 파일 서비스 계정 권한 제거 (보상 처리)
+        registerSourceFilePermissionCleanup(userDriveService, sourceSpreadsheetId);
+
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
         registerDriveRollback(userDriveService, newSpreadsheetId);
         grantServiceAccountAccess(userDriveService, newSpreadsheetId);
@@ -131,7 +137,75 @@ public class SheetMigrationService {
         return newSpreadsheetId;
     }
 
+    /**
+     * 소스 파일에 서비스 계정 reader 권한을 부여합니다.
+     * migrate 시 서비스 계정 Sheets API로 소스 데이터를 읽어야 하므로 필요합니다.
+     */
+    private void grantServiceAccountReadAccess(Drive userDriveService, String fileId) {
+        grantServiceAccountPermission(userDriveService, fileId, "reader");
+    }
+
+    /**
+     * 트랜잭션 완료(성공/실패 모두) 후 소스 파일에서 서비스 계정 권한을 제거합니다.
+     * 서비스 계정의 파일 접근을 최소화하기 위한 보상 처리입니다.
+     */
+    private void registerSourceFilePermissionCleanup(Drive driveService, String fileId) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                removeServiceAccountPermission(driveService, fileId);
+            }
+        });
+    }
+
+    private void removeServiceAccountPermission(Drive driveService, String fileId) {
+        if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
+            return;
+        }
+        String serviceAccountEmail = sac.getClientEmail();
+        try {
+            // permissionId 조회 후 삭제 (getPermissions()는 빈 경우 null 반환 가능)
+            List<Permission> permissions =
+                driveService.permissions().list(fileId)
+                    .setFields("permissions(id,emailAddress)")
+                    .execute()
+                    .getPermissions();
+            if (permissions == null) {
+                return;
+            }
+            permissions.stream()
+                .filter(p -> serviceAccountEmail.equals(p.getEmailAddress()))
+                .findFirst()
+                .ifPresent(p -> {
+                    try {
+                        driveService.permissions().delete(fileId, p.getId()).execute();
+                        log.info(
+                            "Service account permission removed from source file. fileId={}",
+                            fileId
+                        );
+                    } catch (IOException ex) {
+                        log.warn(
+                            "Failed to remove service account permission. fileId={}, cause={}",
+                            fileId, ex.getMessage()
+                        );
+                    }
+                });
+        } catch (IOException e) {
+            log.warn(
+                "Failed to list permissions for source file cleanup. fileId={}, cause={}",
+                fileId, e.getMessage()
+            );
+        }
+    }
+
     private void grantServiceAccountAccess(Drive userDriveService, String fileId) {
+        grantServiceAccountPermission(userDriveService, fileId, "writer");
+    }
+
+    /**
+     * 서비스 계정에 지정된 role로 Drive 접근 권한을 부여하는 공통 메서드입니다.
+     */
+    private void grantServiceAccountPermission(Drive userDriveService, String fileId, String role) {
         if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
             throw new IllegalStateException(
                 "Google credentials is not a ServiceAccountCredentials. actual type="
@@ -142,14 +216,20 @@ public class SheetMigrationService {
         try {
             Permission permission = new Permission()
                 .setType("user")
-                .setRole("writer")
+                .setRole(role)
                 .setEmailAddress(serviceAccountEmail);
             userDriveService.permissions().create(fileId, permission)
                 .setSendNotificationEmail(false)
                 .execute();
-            log.info("Service account granted access. fileId={}, email={}", fileId, serviceAccountEmail);
+            log.info(
+                "Service account {} access granted. fileId={}, email={}",
+                role, fileId, serviceAccountEmail
+            );
         } catch (IOException e) {
-            log.error("Failed to grant service account access. fileId={}, cause={}", fileId, e.getMessage(), e);
+            log.error(
+                "Failed to grant service account {} access. fileId={}, cause={}",
+                role, fileId, e.getMessage(), e
+            );
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
@@ -236,6 +316,7 @@ public class SheetMigrationService {
             String range = "A" + dataStartRow + ":Z";
             ValueRange response = googleSheetsService.spreadsheets().values()
                 .get(spreadsheetId, range)
+                .setValueRenderOption("FORMATTED_VALUE")
                 .execute();
 
             List<List<Object>> values = response.getValues();
@@ -326,7 +407,12 @@ public class SheetMigrationService {
             int targetCol = targetMapping.getColumnIndex(field);
 
             if (targetCol >= 0 && sourceCol < sourceRow.size()) {
-                row.set(targetCol, sourceRow.get(sourceCol));
+                Object cellValue = sourceRow.get(sourceCol);
+                // 전화번호 컬럼은 저장 전 형식 정규화 (010-xxxx-xxxx -> 01xxxxxxxxxx)
+                if (SheetColumnMapping.PHONE.equals(field) && cellValue != null) {
+                    cellValue = PhoneNumberNormalizer.normalize(cellValue.toString());
+                }
+                row.set(targetCol, cellValue);
             }
         }
 
