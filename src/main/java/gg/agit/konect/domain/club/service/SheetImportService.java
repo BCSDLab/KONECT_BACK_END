@@ -193,8 +193,8 @@ public class SheetImportService {
             chatRoomMembershipService.addClubMember(saved);
         }
 
-        for (ClubPreMember pre : preMembersToSave) {
-            clubPreMemberRepository.save(pre);
+        if (!preMembersToSave.isEmpty()) {
+            clubPreMemberRepository.saveAll(preMembersToSave);
         }
 
         int autoRegistered = savedMembers.size();

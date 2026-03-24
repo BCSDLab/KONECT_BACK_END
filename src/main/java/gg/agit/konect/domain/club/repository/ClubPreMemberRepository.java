@@ -93,4 +93,6 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
     void delete(ClubPreMember preMember);
 
     ClubPreMember save(ClubPreMember preMember);
+
+    List<ClubPreMember> saveAll(Iterable<ClubPreMember> preMembers);
 }
