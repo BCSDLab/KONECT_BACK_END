@@ -274,6 +274,8 @@ public class SheetMigrationService {
     }
 
     private String copyTemplate(Drive driveService, String templateId, String clubName, String targetFolderId) {
+        // newFileId를 try 바깥에서 선언하여 예외 경로에서도 고아 파일 정리가 가능하도록 함
+        String newFileId = null;
         try {
             String title = NEW_SHEET_TITLE_PREFIX + clubName;
             File copyMetadata = new File().setName(title);
@@ -284,13 +286,37 @@ public class SheetMigrationService {
                 .setFields("id, parents")
                 .execute();
 
-            String newFileId = copied.getId();
+            newFileId = copied.getId();
 
             if (targetFolderId != null) {
                 List<String> currentParents = copied.getParents();
-                String removeParents = (currentParents != null && !currentParents.isEmpty())
-                    ? String.join(",", currentParents)
-                    : "";
+                // copy() 응답에서 parents가 null로 오는 경우 별도 GET 으로 재조회
+                if (currentParents == null || currentParents.isEmpty()) {
+                    try {
+                        File fileInfo = driveService.files().get(newFileId)
+                            .setFields("parents")
+                            .execute();
+                        currentParents = fileInfo.getParents();
+                        log.debug(
+                            "Re-fetched parents for copied file. fileId={}, parents={}",
+                            newFileId, currentParents
+                        );
+                    } catch (IOException ex) {
+                        log.error(
+                            "Failed to re-fetch parents for copied file. fileId={}, cause={}",
+                            newFileId, ex.getMessage()
+                        );
+                        deleteFile(driveService, newFileId);
+                        throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
+                    }
+                }
+                // parents를 끝내 확보하지 못한 경우, 폴더 이동이 보장되지 않으므로 예외로 처리해 롤백
+                if (currentParents == null || currentParents.isEmpty()) {
+                    log.error("Cannot determine parents for copied file. fileId={}", newFileId);
+                    deleteFile(driveService, newFileId);
+                    throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
+                }
+                String removeParents = String.join(",", currentParents);
                 driveService.files().update(newFileId, new File())
                     .setAddParents(targetFolderId)
                     .setRemoveParents(removeParents)
@@ -302,6 +328,9 @@ public class SheetMigrationService {
             return newFileId;
 
         } catch (IOException e) {
+            if (newFileId != null) {
+                deleteFile(driveService, newFileId);
+            }
             log.error("Failed to copy template. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
@@ -408,9 +437,9 @@ public class SheetMigrationService {
 
             if (targetCol >= 0 && sourceCol < sourceRow.size()) {
                 Object cellValue = sourceRow.get(sourceCol);
-                // 전화번호 컬럼은 저장 전 형식 정규화 (010-xxxx-xxxx -> 01xxxxxxxxxx)
+                // 전화번호 컬럼은 010-xxxx-xxxx 형식으로 포맷팅 (0 잘림 복구 포함)
                 if (SheetColumnMapping.PHONE.equals(field) && cellValue != null) {
-                    cellValue = PhoneNumberNormalizer.normalize(cellValue.toString());
+                    cellValue = PhoneNumberNormalizer.format(cellValue.toString());
                 }
                 row.set(targetCol, cellValue);
             }

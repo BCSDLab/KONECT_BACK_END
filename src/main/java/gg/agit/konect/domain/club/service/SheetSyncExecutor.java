@@ -34,6 +34,7 @@ import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.global.util.PhoneNumberNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -179,8 +180,7 @@ public class SheetSyncExecutor {
             putValue(columns, mapping, SheetColumnMapping.EMAIL,
                 member.getUser().getEmail());
             putValue(columns, mapping, SheetColumnMapping.PHONE,
-                member.getUser().getPhoneNumber() != null
-                    ? "'" + member.getUser().getPhoneNumber() : "");
+                PhoneNumberNormalizer.format(member.getUser().getPhoneNumber()));
             putValue(columns, mapping, SheetColumnMapping.POSITION,
                 member.getClubPosition().getDescription());
             putValue(columns, mapping, SheetColumnMapping.JOINED_AT,
@@ -198,7 +198,7 @@ public class SheetSyncExecutor {
     ) {
         int colIndex = mapping.getColumnIndex(field);
         if (colIndex >= 0) {
-            columns.computeIfAbsent(colIndex, k -> new ArrayList<>()).add(value);
+            columns.computeIfAbsent(colIndex, k -> new ArrayList<>()).add(value != null ? value : "");
         }
     }
 
@@ -215,13 +215,12 @@ public class SheetSyncExecutor {
         rows.add(HEADER_ROW);
 
         for (ClubMember member : members) {
-            String phone = member.getUser().getPhoneNumber() != null
-                ? "'" + member.getUser().getPhoneNumber() : "";
+            String phone = PhoneNumberNormalizer.format(member.getUser().getPhoneNumber());
             rows.add(List.of(
                 member.getUser().getName(),
                 member.getUser().getStudentNumber(),
                 member.getUser().getEmail(),
-                phone,
+                phone != null ? phone : "",
                 member.getClubPosition().getDescription(),
                 member.getCreatedAt().format(DATE_FORMATTER)
             ));
