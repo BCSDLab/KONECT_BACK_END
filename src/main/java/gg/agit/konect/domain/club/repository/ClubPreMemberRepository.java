@@ -84,7 +84,7 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
         WHERE cpm.club.id = :clubId
         AND cpm.studentNumber IN :studentNumbers
         """)
-    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
     void deleteByClubIdAndStudentNumberIn(
         @Param("clubId") Integer clubId,
         @Param("studentNumbers") Set<String> studentNumbers

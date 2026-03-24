@@ -67,7 +67,7 @@ public class SheetImportService {
 
         // N+1 방지: 루프 전 기존 부원 학번 Set / 사전 회원 key Set / 부원 userId Set 일괄 조회
         Set<String> existingMemberStudentNumbers =
-            clubMemberRepository.findStudentNumbersByClubId(clubId);
+            new HashSet<>(clubMemberRepository.findStudentNumbersByClubId(clubId));
         Set<String> existingPreMemberKeys = buildPreMemberKeySet(clubId);
         Set<Integer> existingMemberUserIds =
             new HashSet<>(clubMemberRepository.findUserIdsByClubId(clubId));
