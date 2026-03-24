@@ -300,15 +300,19 @@ public class SheetMigrationService {
                             newFileId, currentParents
                         );
                     } catch (IOException ex) {
-                        log.warn(
+                        log.error(
                             "Failed to re-fetch parents for copied file. fileId={}, cause={}",
                             newFileId, ex.getMessage()
                         );
+                        throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
                     }
                 }
-                String removeParents = (currentParents != null && !currentParents.isEmpty())
-                    ? String.join(",", currentParents)
-                    : "";
+                // parents를 끝내 확보하지 못한 경우, 폴더 이동이 보장되지 않으므로 예외로 처리해 롤백
+                if (currentParents == null || currentParents.isEmpty()) {
+                    log.error("Cannot determine parents for copied file. fileId={}", newFileId);
+                    throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
+                }
+                String removeParents = String.join(",", currentParents);
                 driveService.files().update(newFileId, new File())
                     .setAddParents(targetFolderId)
                     .setRemoveParents(removeParents)
