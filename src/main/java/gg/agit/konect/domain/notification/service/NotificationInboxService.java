@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.notification.dto.NotificationInboxResponse;
 import gg.agit.konect.domain.notification.dto.NotificationInboxesResponse;
 import gg.agit.konect.domain.notification.dto.NotificationInboxUnreadCountResponse;
 import gg.agit.konect.domain.notification.enums.NotificationInboxType;
@@ -26,13 +27,15 @@ public class NotificationInboxService {
 
     private final NotificationInboxRepository notificationInboxRepository;
     private final UserRepository userRepository;
+    private final NotificationInboxSseService notificationInboxSseService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(Integer userId, NotificationInboxType type, String title, String body, String path) {
         try {
             User user = userRepository.getById(userId);
             NotificationInbox inbox = NotificationInbox.of(user, type, title, body, path);
-            notificationInboxRepository.save(inbox);
+            NotificationInbox saved = notificationInboxRepository.save(inbox);
+            notificationInboxSseService.send(userId, NotificationInboxResponse.from(saved));
         } catch (Exception e) {
             log.error("Failed to save notification inbox: userId={}, type={}", userId, type, e);
         }
