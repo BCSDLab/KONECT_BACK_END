@@ -21,11 +21,14 @@ public class NotificationInboxSseService {
     public SseEmitter subscribe(Integer userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
 
-        emitter.onCompletion(() -> emitters.remove(userId));
-        emitter.onTimeout(() -> emitters.remove(userId));
-        emitter.onError(e -> emitters.remove(userId));
+        emitter.onCompletion(() -> emitters.remove(userId, emitter));
+        emitter.onTimeout(() -> emitters.remove(userId, emitter));
+        emitter.onError(e -> emitters.remove(userId, emitter));
 
-        emitters.put(userId, emitter);
+        SseEmitter previous = emitters.put(userId, emitter);
+        if (previous != null) {
+            previous.complete();
+        }
 
         try {
             emitter.send(SseEmitter.event().name("connect").data("connected"));
