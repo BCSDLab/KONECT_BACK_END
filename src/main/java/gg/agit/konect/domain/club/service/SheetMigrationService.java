@@ -288,6 +288,24 @@ public class SheetMigrationService {
 
             if (targetFolderId != null) {
                 List<String> currentParents = copied.getParents();
+                // copy() 응답에서 parents가 null로 오는 경우 별도 GET 으로 재조회
+                if (currentParents == null || currentParents.isEmpty()) {
+                    try {
+                        File fileInfo = driveService.files().get(newFileId)
+                            .setFields("parents")
+                            .execute();
+                        currentParents = fileInfo.getParents();
+                        log.debug(
+                            "Re-fetched parents for copied file. fileId={}, parents={}",
+                            newFileId, currentParents
+                        );
+                    } catch (IOException ex) {
+                        log.warn(
+                            "Failed to re-fetch parents for copied file. fileId={}, cause={}",
+                            newFileId, ex.getMessage()
+                        );
+                    }
+                }
                 String removeParents = (currentParents != null && !currentParents.isEmpty())
                     ? String.join(",", currentParents)
                     : "";
@@ -408,9 +426,9 @@ public class SheetMigrationService {
 
             if (targetCol >= 0 && sourceCol < sourceRow.size()) {
                 Object cellValue = sourceRow.get(sourceCol);
-                // 전화번호 컬럼은 저장 전 형식 정규화 (010-xxxx-xxxx -> 01xxxxxxxxxx)
+                // 전화번호 컬럼은 010-xxxx-xxxx 형식으로 포맷팅 (0 잘림 복구 포함)
                 if (SheetColumnMapping.PHONE.equals(field) && cellValue != null) {
-                    cellValue = PhoneNumberNormalizer.normalize(cellValue.toString());
+                    cellValue = PhoneNumberNormalizer.format(cellValue.toString());
                 }
                 row.set(targetCol, cellValue);
             }
