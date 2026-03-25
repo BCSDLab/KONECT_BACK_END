@@ -99,15 +99,25 @@ public class NotificationService {
                 return;
             }
 
+            String truncatedBody = buildPreview(messageContent);
+            String path = "chats/" + roomId;
+
+            notificationInboxService.save(
+                receiverId,
+                NotificationInboxType.CHAT_MESSAGE,
+                senderName,
+                truncatedBody,
+                path
+            );
+
             List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(receiverId);
             if (tokens.isEmpty()) {
                 log.debug("No device tokens found for user: receiverId={}", receiverId);
                 return;
             }
 
-            String truncatedBody = buildPreview(messageContent);
             Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/" + roomId);
+            data.put("path", path);
 
             List<ExpoPushMessage> messages = tokens.stream()
                 .map(token -> new ExpoPushMessage(
@@ -223,6 +233,14 @@ public class NotificationService {
                         );
                         continue;
                     }
+
+                    notificationInboxService.save(
+                        recipientId,
+                        NotificationInboxType.GROUP_CHAT_MESSAGE,
+                        clubName,
+                        previewBody,
+                        "chats/" + roomId
+                    );
 
                     List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(recipientId);
                     if (tokens.isEmpty()) {
