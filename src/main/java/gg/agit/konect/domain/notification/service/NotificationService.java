@@ -21,6 +21,7 @@ import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenResponse;
+import gg.agit.konect.domain.notification.enums.NotificationInboxType;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
@@ -50,6 +51,7 @@ public class NotificationService {
     private final RestTemplate restTemplate;
     private final ChatPresenceService chatPresenceService;
     private final ExpoPushClient expoPushClient;
+    private final NotificationInboxService notificationInboxService;
 
     public NotificationTokenResponse getMyToken(Integer userId) {
         NotificationDeviceToken token = notificationDeviceTokenRepository.getByUserId(userId);
@@ -312,17 +314,27 @@ public class NotificationService {
     ) {
         String body = applicantName + "님이 동아리 가입을 신청했어요.";
         String path = "mypage/manager/" + clubId + "/applications/" + applicationId;
+        notificationInboxService.save(
+            receiverId, NotificationInboxType.CLUB_APPLICATION_SUBMITTED, clubName, body, path);
         sendNotification(receiverId, clubName, body, path);
     }
 
     @Async
     public void sendClubApplicationApprovedNotification(Integer receiverId, Integer clubId, String clubName) {
-        sendNotification(receiverId, clubName, "동아리 지원이 승인되었어요.", "clubs/" + clubId);
+        String body = "동아리 지원이 승인되었어요.";
+        String path = "clubs/" + clubId;
+        notificationInboxService.save(
+            receiverId, NotificationInboxType.CLUB_APPLICATION_APPROVED, clubName, body, path);
+        sendNotification(receiverId, clubName, body, path);
     }
 
     @Async
     public void sendClubApplicationRejectedNotification(Integer receiverId, Integer clubId, String clubName) {
-        sendNotification(receiverId, clubName, "동아리 지원이 거절되었어요.", "clubs/" + clubId);
+        String body = "동아리 지원이 거절되었어요.";
+        String path = "clubs/" + clubId;
+        notificationInboxService.save(
+            receiverId, NotificationInboxType.CLUB_APPLICATION_REJECTED, clubName, body, path);
+        sendNotification(receiverId, clubName, body, path);
     }
 
     private void sendNotification(Integer receiverId, String title, String body, String path) {
