@@ -2,9 +2,10 @@ logging:
   ignored-url-patterns:
     - /**/api-docs/**
     - /**/swagger-ui/**
-    - /error,
-    - /favicon.ico,
+    - /error
+    - /favicon.ico
     - /actuator/**
+    - /notifications/inbox/stream 
 
 management:
   endpoints:
