@@ -33,7 +33,7 @@ public class NotificationInboxSseService {
         try {
             emitter.send(SseEmitter.event().name("connect").data("connected"));
         } catch (IOException e) {
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
             emitter.completeWithError(e);
         }
 
@@ -49,7 +49,7 @@ public class NotificationInboxSseService {
             emitter.send(SseEmitter.event().name("notification").data(notification));
         } catch (IOException e) {
             log.warn("SSE send failed: userId={}", userId, e);
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
             emitter.completeWithError(e);
         }
     }
