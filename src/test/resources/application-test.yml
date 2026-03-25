@@ -129,6 +129,14 @@ claude:
 mcp:
   url: http://localhost:3100
 
+google:
+  sheets:
+    credentials-path: classpath:test-credentials.json
+    application-name: test-app
+    oauth-client-id: test-google-sheets-client-id
+    oauth-client-secret: test-google-sheets-client-secret
+    oauth-callback-base-url: http://localhost:8080
+
 logging:
   ignored-url-patterns:
     - /**/api-docs/**
