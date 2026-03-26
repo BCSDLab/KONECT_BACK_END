@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
@@ -29,11 +30,14 @@ class AuthorizationInterceptorTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private HandlerExceptionResolver handlerExceptionResolver;
+
     private AuthorizationInterceptor interceptor;
 
     @BeforeEach
     void setUp() {
-        interceptor = new AuthorizationInterceptor(userRepository);
+        interceptor = new AuthorizationInterceptor(userRepository, handlerExceptionResolver);
     }
 
     @Nested

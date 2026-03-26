@@ -1,5 +1,6 @@
 package gg.agit.konect.global.auth.web;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
 
     public AuthorizationInterceptor(
         UserRepository userRepository,
-        HandlerExceptionResolver handlerExceptionResolver
+        @Lazy HandlerExceptionResolver handlerExceptionResolver
     ) {
         this.userRepository = userRepository;
         this.handlerExceptionResolver = handlerExceptionResolver;
