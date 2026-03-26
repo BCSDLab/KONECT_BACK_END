@@ -27,15 +27,16 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     public AuthorizationInterceptor(
-            UserRepository userRepository,
-            HandlerExceptionResolver handlerExceptionResolver
+        UserRepository userRepository,
+        HandlerExceptionResolver handlerExceptionResolver
     ) {
         this.userRepository = userRepository;
         this.handlerExceptionResolver = handlerExceptionResolver;
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws
+        Exception {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
         }

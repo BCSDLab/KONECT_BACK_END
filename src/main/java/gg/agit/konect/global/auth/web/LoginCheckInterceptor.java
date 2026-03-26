@@ -17,7 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * 로그인 체크 인터셉터.
  * JWT 액세스 토큰을 검증하고 인증된 사용자 ID를 request attribute에 설정합니다.
  * @PublicApi 어노테이션이 있는 경우 인증을 건너뜁니다.
- * 
+ *
  * 예외 발생 시 HandlerExceptionResolver를 통해 GlobalExceptionHandler로 위임합니다.
  */
 @Component
@@ -32,15 +32,16 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     public LoginCheckInterceptor(
-            JwtProvider jwtProvider,
-            HandlerExceptionResolver handlerExceptionResolver
+        JwtProvider jwtProvider,
+        HandlerExceptionResolver handlerExceptionResolver
     ) {
         this.jwtProvider = jwtProvider;
         this.handlerExceptionResolver = handlerExceptionResolver;
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws
+        Exception {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
         }
