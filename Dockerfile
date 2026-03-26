@@ -1,4 +1,4 @@
-FROM amazoncorretto:17-alpine
+FROM amazoncorretto:21-alpine
 
 ARG OTEL_JAVA_AGENT_VERSION=2.18.1
 
