@@ -55,8 +55,9 @@ public class NotificationInboxService {
                 .map(user -> NotificationInbox.of(user, type, title, body, path))
                 .toList();
 
-            for (NotificationInbox inbox : inboxes) {
-                NotificationInbox saved = notificationInboxRepository.save(inbox);
+            notificationInboxRepository.saveAll(inboxes);
+
+            for (NotificationInbox saved : inboxes) {
                 notificationInboxSseService.send(saved.getUser().getId(), NotificationInboxResponse.from(saved));
             }
         } catch (Exception e) {
