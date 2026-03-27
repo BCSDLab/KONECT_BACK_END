@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.notification.dto.NotificationInboxResponse;
@@ -31,37 +30,43 @@ public class NotificationInboxService {
     private final UserRepository userRepository;
     private final NotificationInboxSseService notificationInboxSseService;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void save(Integer userId, NotificationInboxType type, String title, String body, String path) {
+    @Transactional
+    public NotificationInbox save(Integer userId, NotificationInboxType type, String title, String body, String path) {
+        User user = userRepository.getById(userId);
+        return notificationInboxRepository.save(NotificationInbox.of(user, type, title, body, path));
+    }
+
+    @Transactional
+    public List<NotificationInbox> saveAll(
+        List<Integer> userIds,
+        NotificationInboxType type,
+        String title,
+        String body,
+        String path
+    ) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<User> users = userRepository.findAllByIdIn(userIds);
+        List<NotificationInbox> inboxes = users.stream()
+            .map(user -> NotificationInbox.of(user, type, title, body, path))
+            .toList();
+
+        return notificationInboxRepository.saveAll(inboxes);
+    }
+
+    public void sendSse(Integer userId, NotificationInboxResponse response) {
         try {
-            User user = userRepository.getById(userId);
-            NotificationInbox inbox = NotificationInbox.of(user, type, title, body, path);
-            NotificationInbox saved = notificationInboxRepository.save(inbox);
-            notificationInboxSseService.send(userId, NotificationInboxResponse.from(saved));
+            notificationInboxSseService.send(userId, response);
         } catch (Exception e) {
-            log.error("Failed to save notification inbox: userId={}, type={}", userId, type, e);
+            log.warn("Failed to send SSE notification: userId={}", userId, e);
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveAll(List<Integer> userIds, NotificationInboxType type, String title, String body, String path) {
-        if (userIds == null || userIds.isEmpty()) {
-            return;
-        }
-
-        try {
-            List<User> users = userRepository.findAllByIdIn(userIds);
-            List<NotificationInbox> inboxes = users.stream()
-                .map(user -> NotificationInbox.of(user, type, title, body, path))
-                .toList();
-
-            notificationInboxRepository.saveAll(inboxes);
-
-            for (NotificationInbox saved : inboxes) {
-                notificationInboxSseService.send(saved.getUser().getId(), NotificationInboxResponse.from(saved));
-            }
-        } catch (Exception e) {
-            log.error("Failed to save notification inboxes: userIds={}, type={}", userIds, type, e);
+    public void sendSseBatch(List<NotificationInbox> inboxes) {
+        for (NotificationInbox inbox : inboxes) {
+            sendSse(inbox.getUser().getId(), NotificationInboxResponse.from(inbox));
         }
     }
 

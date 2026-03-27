@@ -14,12 +14,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
+import gg.agit.konect.domain.notification.dto.NotificationInboxResponse;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenRegisterRequest;
 import gg.agit.konect.domain.notification.dto.NotificationTokenResponse;
 import gg.agit.konect.domain.notification.enums.NotificationInboxType;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
+import gg.agit.konect.domain.notification.model.NotificationInbox;
 import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.user.model.User;
@@ -168,13 +170,15 @@ public class NotificationService {
             String previewBody = senderName + ": " + truncatedBody;
             String path = "chats/" + roomId;
 
-            notificationInboxService.saveAll(
+            List<NotificationInbox> savedInboxes = notificationInboxService.saveAll(
                 targetRecipients,
                 NotificationInboxType.GROUP_CHAT_MESSAGE,
                 clubName,
                 previewBody,
                 path
             );
+
+            notificationInboxService.sendSseBatch(savedInboxes);
 
             List<Object[]> userIdAndTokens = notificationDeviceTokenRepository.findUserIdAndTokenByUserIds(targetRecipients);
             Map<Integer, List<String>> tokensByUser = new HashMap<>();
@@ -222,8 +226,9 @@ public class NotificationService {
     ) {
         String body = applicantName + "님이 동아리 가입을 신청했어요.";
         String path = "mypage/manager/" + clubId + "/applications/" + applicationId;
-        notificationInboxService.save(
+        NotificationInbox saved = notificationInboxService.save(
             receiverId, NotificationInboxType.CLUB_APPLICATION_SUBMITTED, clubName, body, path);
+        notificationInboxService.sendSse(receiverId, NotificationInboxResponse.from(saved));
         sendNotification(receiverId, clubName, body, path);
     }
 
@@ -231,8 +236,9 @@ public class NotificationService {
     public void sendClubApplicationApprovedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 승인되었어요.";
         String path = "clubs/" + clubId;
-        notificationInboxService.save(
+        NotificationInbox saved = notificationInboxService.save(
             receiverId, NotificationInboxType.CLUB_APPLICATION_APPROVED, clubName, body, path);
+        notificationInboxService.sendSse(receiverId, NotificationInboxResponse.from(saved));
         sendNotification(receiverId, clubName, body, path);
     }
 
@@ -240,8 +246,9 @@ public class NotificationService {
     public void sendClubApplicationRejectedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 거절되었어요.";
         String path = "clubs/" + clubId;
-        notificationInboxService.save(
+        NotificationInbox saved = notificationInboxService.save(
             receiverId, NotificationInboxType.CLUB_APPLICATION_REJECTED, clubName, body, path);
+        notificationInboxService.sendSse(receiverId, NotificationInboxResponse.from(saved));
         sendNotification(receiverId, clubName, body, path);
     }
 
