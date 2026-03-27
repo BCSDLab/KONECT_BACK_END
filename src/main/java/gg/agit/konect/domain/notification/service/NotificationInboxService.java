@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.notification.dto.NotificationInboxResponse;
@@ -30,13 +31,13 @@ public class NotificationInboxService {
     private final UserRepository userRepository;
     private final NotificationInboxSseService notificationInboxSseService;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationInbox save(Integer userId, NotificationInboxType type, String title, String body, String path) {
         User user = userRepository.getById(userId);
         return notificationInboxRepository.save(NotificationInbox.of(user, type, title, body, path));
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<NotificationInbox> saveAll(
         List<Integer> userIds,
         NotificationInboxType type,
