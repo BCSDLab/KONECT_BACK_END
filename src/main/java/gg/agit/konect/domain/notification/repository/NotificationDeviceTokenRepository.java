@@ -35,6 +35,7 @@ public interface NotificationDeviceTokenRepository extends Repository<Notificati
         SELECT ndt.token
         FROM NotificationDeviceToken ndt
         WHERE ndt.user.id = :userId
+        AND ndt.user.deletedAt IS NULL
         """)
     List<String> findTokensByUserId(@Param("userId") Integer userId);
 
@@ -42,6 +43,7 @@ public interface NotificationDeviceTokenRepository extends Repository<Notificati
         SELECT ndt.token
         FROM NotificationDeviceToken ndt
         WHERE ndt.user.id IN :userIds
+        AND ndt.user.deletedAt IS NULL
         """)
     List<String> findTokensByUserIds(@Param("userIds") List<Integer> userIds);
 
