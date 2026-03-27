@@ -61,11 +61,19 @@ public class ChatPresenceService {
             return Set.of();
         }
 
+        List<String> keys = userIds.stream()
+            .map(userId -> presenceKey(roomId, userId))
+            .toList();
+
+        List<String> values = redis.opsForValue().multiGet(keys);
+        if (values == null) {
+            return Set.of();
+        }
+
         Set<Integer> activeUsers = new HashSet<>();
-        for (Integer userId : userIds) {
-            String key = presenceKey(roomId, userId);
-            if (redis.opsForValue().get(key) != null) {
-                activeUsers.add(userId);
+        for (int i = 0; i < userIds.size(); i++) {
+            if (values.get(i) != null) {
+                activeUsers.add(userIds.get(i));
             }
         }
         return activeUsers;
