@@ -2,20 +2,17 @@ package gg.agit.konect.domain.notification.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.INVALID_NOTIFICATION_TOKEN;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.notification.dto.NotificationTokenDeleteRequest;
@@ -24,6 +21,7 @@ import gg.agit.konect.domain.notification.dto.NotificationTokenResponse;
 import gg.agit.konect.domain.notification.enums.NotificationInboxType;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
+import gg.agit.konect.domain.notification.model.NotificationMuteSetting;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
 import gg.agit.konect.domain.user.model.User;
@@ -48,7 +46,6 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final NotificationDeviceTokenRepository notificationDeviceTokenRepository;
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
-    private final RestTemplate restTemplate;
     private final ChatPresenceService chatPresenceService;
     private final ExpoPushClient expoPushClient;
     private final NotificationInboxService notificationInboxService;
@@ -119,62 +116,7 @@ public class NotificationService {
             Map<String, Object> data = new HashMap<>();
             data.put("path", path);
 
-            List<ExpoPushMessage> messages = tokens.stream()
-                .map(token -> new ExpoPushMessage(
-                    token, senderName, truncatedBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
-                .toList();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
-            HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
-            ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
-                EXPO_PUSH_URL,
-                HttpMethod.POST,
-                entity,
-                ExpoPushResponse.class
-            );
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error(
-                    "Expo push response not successful: roomId={}, receiverId={}, status={}",
-                    roomId,
-                    receiverId,
-                    response.getStatusCode()
-                );
-                return;
-            }
-
-            ExpoPushResponse body = response.getBody();
-            if (body == null || body.data == null) {
-                log.error("Expo push response body missing: roomId={}, receiverId={}", roomId, receiverId);
-                return;
-            }
-
-            for (int i = 0; i < body.data.size(); i += 1) {
-                ExpoPushTicket ticket = body.data.get(i);
-                if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
-                    continue;
-                }
-                String token = i < tokens.size() ? tokens.get(i) : "unknown";
-                log.error(
-                    "Expo push failed: roomId={}, receiverId={}, token={}, status={}, message={}, details={}",
-                    roomId,
-                    receiverId,
-                    token,
-                    ticket.status(),
-                    ticket.message(),
-                    ticket.details()
-                );
-            }
-
-            log.debug(
-                "Chat notification sent: roomId={}, receiverId={}, tokenCount={}",
-                roomId,
-                receiverId,
-                tokens.size()
-            );
+            expoPushClient.sendNotification(receiverId, tokens, senderName, truncatedBody, data);
         } catch (Exception e) {
             log.error("Failed to send chat notification: roomId={}, receiverId={}", roomId, receiverId, e);
         }
@@ -200,123 +142,78 @@ public class NotificationService {
                 return;
             }
 
-            String truncatedBody = buildPreview(messageContent);
-            String previewBody = senderName + ": " + truncatedBody;
-            Map<String, Object> data = new HashMap<>();
-            data.put("path", "chats/" + roomId);
+            // 채팅방에 접속하고 있는 유저 목록
+            Set<Integer> activeUsers = chatPresenceService.findUsersInChatRoom(roomId, filteredRecipients);
 
-            for (Integer recipientId : filteredRecipients) {
-                try {
-                    // 사용자가 현재 채팅방에 접속 중인 경우 알림 전송 생략
-                    if (chatPresenceService.isUserInChatRoom(roomId, recipientId)) {
-                        log.debug(
-                            "User in group chat room, skipping notification: roomId={}, recipientId={}",
-                            roomId,
-                            recipientId
-                        );
-                        continue;
-                    }
-
-                    boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
-                            NotificationTargetType.CHAT_ROOM,
-                            roomId,
-                            recipientId
-                        )
-                        .map(setting -> Boolean.TRUE.equals(setting.getIsMuted()))
-                        .orElse(false);
-
-                    if (isMuted) {
-                        log.debug(
-                            "Group chat muted, skipping notification: roomId={}, recipientId={}",
-                            roomId,
-                            recipientId
-                        );
-                        continue;
-                    }
-
-                    notificationInboxService.save(
-                        recipientId,
-                        NotificationInboxType.GROUP_CHAT_MESSAGE,
-                        clubName,
-                        previewBody,
-                        "chats/" + roomId
-                    );
-
-                    List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(recipientId);
-                    if (tokens.isEmpty()) {
-                        log.debug("No device tokens found for user: recipientId={}", recipientId);
-                        continue;
-                    }
-
-                    List<ExpoPushMessage> messages = tokens.stream()
-                        .map(token -> new ExpoPushMessage(
-                            token, clubName, previewBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
-                        .toList();
-
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setContentType(MediaType.APPLICATION_JSON);
-                    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
-                    HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(messages, headers);
-                    ResponseEntity<ExpoPushResponse> response = restTemplate.exchange(
-                        EXPO_PUSH_URL,
-                        HttpMethod.POST,
-                        entity,
-                        ExpoPushResponse.class
-                    );
-
-                    if (!response.getStatusCode().is2xxSuccessful()) {
-                        log.error(
-                            "Expo push response not successful: roomId={}, recipientId={}, status={}",
-                            roomId,
-                            recipientId,
-                            response.getStatusCode()
-                        );
-                        continue;
-                    }
-
-                    ExpoPushResponse body = response.getBody();
-                    if (body == null || body.data == null) {
-                        log.error(
-                            "Expo push response body missing: roomId={}, recipientId={}",
-                            roomId,
-                            recipientId
-                        );
-                        continue;
-                    }
-
-                    for (int i = 0; i < body.data.size(); i += 1) {
-                        ExpoPushTicket ticket = body.data.get(i);
-                        if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
-                            continue;
-                        }
-                        String token = i < tokens.size() ? tokens.get(i) : "unknown";
-                        log.error(
-                            "Expo push failed: roomId={}, recipientId={}, token={}, status={}, message={}, details={}",
-                            roomId,
-                            recipientId,
-                            token,
-                            ticket.status(),
-                            ticket.message(),
-                            ticket.details()
-                        );
-                    }
-
-                    log.debug(
-                        "Group chat notification sent: roomId={}, recipientId={}, tokenCount={}",
-                        roomId,
-                        recipientId,
-                        tokens.size()
-                    );
-                } catch (Exception e) {
-                    log.error(
-                        "Failed to send group chat notification to recipient: roomId={}, recipientId={}",
-                        roomId,
-                        recipientId,
-                        e
-                    );
+            // 채팅방 알림을 뮤트 처리한 유저 목록
+            List<NotificationMuteSetting> muteSettings = notificationMuteSettingRepository
+                .findByTargetTypeAndTargetIdAndIsMutedTrue(NotificationTargetType.CHAT_ROOM, roomId);
+            Set<Integer> mutedUsers = new HashSet<>();
+            for (NotificationMuteSetting setting : muteSettings) {
+                if (filteredRecipients.contains(setting.getUser().getId())) {
+                    mutedUsers.add(setting.getUser().getId());
                 }
             }
+
+            List<Integer> targetRecipients = filteredRecipients.stream()
+                .filter(id -> !activeUsers.contains(id))
+                .filter(id -> !mutedUsers.contains(id))
+                .toList();
+
+            if (targetRecipients.isEmpty()) {
+                log.info(
+                    "Group chat notification completed: roomId={}, totalRecipients={}, active={}, muted={}, target=0",
+                    roomId,
+                    filteredRecipients.size(),
+                    activeUsers.size(),
+                    mutedUsers.size()
+                );
+                return;
+            }
+
+            String truncatedBody = buildPreview(messageContent);
+            String previewBody = senderName + ": " + truncatedBody;
+            String path = "chats/" + roomId;
+
+            notificationInboxService.saveAll(
+                targetRecipients,
+                NotificationInboxType.GROUP_CHAT_MESSAGE,
+                clubName,
+                previewBody,
+                path
+            );
+
+            List<Object[]> userIdAndTokens = notificationDeviceTokenRepository.findUserIdAndTokenByUserIds(targetRecipients);
+            Map<Integer, List<String>> tokensByUser = new HashMap<>();
+
+            for (Object[] row : userIdAndTokens) {
+                Integer userId = (Integer) row[0];
+                String token = (String) row[1];
+                tokensByUser.computeIfAbsent(userId, k -> new ArrayList<>()).add(token);
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("path", path);
+
+            List<ExpoPushClient.ExpoPushMessage> messages = tokensByUser.values().stream()
+                .flatMap(List::stream)
+                .map(token -> new ExpoPushClient.ExpoPushMessage(
+                    token, clubName, previewBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
+                .toList();
+
+            if (!messages.isEmpty()) {
+                expoPushClient.sendBatchNotifications(messages);
+            }
+
+            log.info(
+                "Group chat notification completed: roomId={}, totalRecipients={}, active={}, muted={}, target={}, tokenCount={}",
+                roomId,
+                filteredRecipients.size(),
+                activeUsers.size(),
+                mutedUsers.size(),
+                targetRecipients.size(),
+                messages.size()
+            );
         } catch (Exception e) {
             log.error("Failed to send group chat notification: roomId={}, senderId={}", roomId, senderId, e);
         }
@@ -389,12 +286,6 @@ public class NotificationService {
 
         int endIndex = messageContent.offsetByCodePoints(0, CHAT_MESSAGE_PREVIEW_MAX_LENGTH);
         return messageContent.substring(0, endIndex) + CHAT_MESSAGE_PREVIEW_SUFFIX;
-    }
-
-    private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data, String channelId) {
-    }
-
-    private record ExpoPushResponse(List<ExpoPushTicket> data) {
     }
 
     private void validateExpoToken(String token) {

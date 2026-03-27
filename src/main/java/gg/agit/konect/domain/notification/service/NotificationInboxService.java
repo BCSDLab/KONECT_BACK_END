@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.notification.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,27 @@ public class NotificationInboxService {
             notificationInboxSseService.send(userId, NotificationInboxResponse.from(saved));
         } catch (Exception e) {
             log.error("Failed to save notification inbox: userId={}, type={}", userId, type, e);
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveAll(List<Integer> userIds, NotificationInboxType type, String title, String body, String path) {
+        if (userIds == null || userIds.isEmpty()) {
+            return;
+        }
+
+        try {
+            List<User> users = userRepository.findAllByIdIn(userIds);
+            List<NotificationInbox> inboxes = users.stream()
+                .map(user -> NotificationInbox.of(user, type, title, body, path))
+                .toList();
+
+            for (NotificationInbox inbox : inboxes) {
+                NotificationInbox saved = notificationInboxRepository.save(inbox);
+                notificationInboxSseService.send(saved.getUser().getId(), NotificationInboxResponse.from(saved));
+            }
+        } catch (Exception e) {
+            log.error("Failed to save notification inboxes: userIds={}, type={}", userIds, type, e);
         }
     }
 

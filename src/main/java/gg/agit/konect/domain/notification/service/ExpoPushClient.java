@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.notification.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -84,6 +85,70 @@ public class ExpoPushClient {
         log.debug("알림 발송 완료: receiverId={}, tokenCount={}", receiverId, tokens.size());
     }
 
+    @Retryable(maxAttempts = 2)
+    public void sendBatchNotifications(List<ExpoPushMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+
+        int batchSize = 100;
+        List<List<ExpoPushMessage>> batches = partition(messages, batchSize);
+
+        for (List<ExpoPushMessage> batch : batches) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+            HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(batch, headers);
+            ResponseEntity<ExpoPushResponse> response = expoRestTemplate.exchange(
+                EXPO_PUSH_URL,
+                HttpMethod.POST,
+                entity,
+                ExpoPushResponse.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new IllegalStateException(
+                    "Expo push batch response not successful: status=%s"
+                        .formatted(response.getStatusCode())
+                );
+            }
+
+            ExpoPushResponse responseBody = response.getBody();
+            if (responseBody == null || responseBody.data() == null) {
+                throw new IllegalStateException("Expo push batch response body missing");
+            }
+
+            for (int i = 0; i < responseBody.data().size(); i += 1) {
+                ExpoPushTicket ticket = responseBody.data().get(i);
+                if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
+                    continue;
+                }
+                String token = i < batch.size() ? batch.get(i).to() : "unknown";
+                log.error(
+                    "Expo 푸시 배치 발송 실패: token={}, status={}, message={}, details={}",
+                    token,
+                    ticket.status(),
+                    ticket.message(),
+                    ticket.details()
+                );
+            }
+        }
+
+        log.debug("배치 알림 발송 완료: messageCount={}", messages.size());
+    }
+
+    private <T> List<List<T>> partition(List<T> list, int size) {
+        List<List<T>> partitions = new ArrayList<>();
+        for (int i = 0; i < list.size(); i += size) {
+            partitions.add(list.subList(i, Math.min(i + size, list.size())));
+        }
+        return partitions;
+    }
+
+    public record ExpoPushMessage(String to, String title, String body, Map<String, Object> data, String channelId) {
+    }
+
     @Recover
     public void sendNotificationRecover(HttpStatusCodeException e, Integer receiverId, List<String> tokens,
         String title,
@@ -153,9 +218,6 @@ public class ExpoPushClient {
             e.getMessage(),
             e
         );
-    }
-
-    private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data, String channelId) {
     }
 
     private record ExpoPushResponse(List<ExpoPushTicket> data) {
