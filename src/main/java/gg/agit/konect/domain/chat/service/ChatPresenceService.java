@@ -1,6 +1,9 @@
 package gg.agit.konect.domain.chat.service;
 
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -53,13 +56,29 @@ public class ChatPresenceService {
         return redis.opsForValue().get(key) != null;
     }
 
-    /**
-     * Redis 키를 생성합니다.
-     *
-     * @param roomId 채팅방 ID
-     * @param userId 사용자 ID
-     * @return Redis 키 (형식: chat:presence:room:{roomId}:user:{userId})
-     */
+    public Set<Integer> findUsersInChatRoom(Integer roomId, List<Integer> userIds) {
+        if (roomId == null || userIds == null || userIds.isEmpty()) {
+            return Set.of();
+        }
+
+        List<String> keys = userIds.stream()
+            .map(userId -> presenceKey(roomId, userId))
+            .toList();
+
+        List<String> values = redis.opsForValue().multiGet(keys);
+        if (values == null) {
+            return Set.of();
+        }
+
+        Set<Integer> activeUsers = new HashSet<>();
+        for (int i = 0; i < userIds.size(); i++) {
+            if (values.get(i) != null) {
+                activeUsers.add(userIds.get(i));
+            }
+        }
+        return activeUsers;
+    }
+
     private String presenceKey(Integer roomId, Integer userId) {
         return PRESENCE_PREFIX + roomId + USER_SUFFIX + userId;
     }

@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.notification.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,7 @@ public class ExpoPushClient {
 
     private static final String EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
     private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "default_notifications";
+    private static final int BATCH_SIZE = 100;
 
     private final RestTemplate expoRestTemplate;
 
@@ -82,6 +84,73 @@ public class ExpoPushClient {
         }
 
         log.debug("알림 발송 완료: receiverId={}, tokenCount={}", receiverId, tokens.size());
+    }
+
+    public void sendBatchNotifications(List<ExpoPushMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+
+        List<List<ExpoPushMessage>> batches = partition(messages, BATCH_SIZE);
+
+        for (List<ExpoPushMessage> batch : batches) {
+            sendSingleBatch(batch);
+        }
+
+        log.debug("배치 알림 발송 완료: messageCount={}", messages.size());
+    }
+
+    @Retryable(maxAttempts = 2)
+    public void sendSingleBatch(List<ExpoPushMessage> batch) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        HttpEntity<List<ExpoPushMessage>> entity = new HttpEntity<>(batch, headers);
+        ResponseEntity<ExpoPushResponse> response = expoRestTemplate.exchange(
+            EXPO_PUSH_URL,
+            HttpMethod.POST,
+            entity,
+            ExpoPushResponse.class
+        );
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException(
+                "Expo push batch response not successful: status=%s"
+                    .formatted(response.getStatusCode())
+            );
+        }
+
+        ExpoPushResponse responseBody = response.getBody();
+        if (responseBody == null || responseBody.data() == null) {
+            throw new IllegalStateException("Expo push batch response body missing");
+        }
+
+        for (int i = 0; i < responseBody.data().size(); i += 1) {
+            ExpoPushTicket ticket = responseBody.data().get(i);
+            if (ticket == null || "ok".equalsIgnoreCase(ticket.status())) {
+                continue;
+            }
+            String token = i < batch.size() ? batch.get(i).to() : "unknown";
+            log.error(
+                "Expo 푸시 배치 발송 실패: token={}, status={}, message={}, details={}",
+                token,
+                ticket.status(),
+                ticket.message(),
+                ticket.details()
+            );
+        }
+    }
+
+    private <T> List<List<T>> partition(List<T> list, int size) {
+        List<List<T>> partitions = new ArrayList<>();
+        for (int i = 0; i < list.size(); i += size) {
+            partitions.add(list.subList(i, Math.min(i + size, list.size())));
+        }
+        return partitions;
+    }
+
+    public record ExpoPushMessage(String to, String title, String body, Map<String, Object> data, String channelId) {
     }
 
     @Recover
@@ -143,6 +212,61 @@ public class ExpoPushClient {
     }
 
     @Recover
+    public void sendSingleBatchRecover(HttpStatusCodeException e, List<ExpoPushMessage> batch) {
+        log.error(
+            "배치 알림 재시도 후에도 HTTP 오류로 발송에 실패했습니다: batchSize={}, statusCode={}, responseBody={}",
+            batch.size(),
+            e.getStatusCode(),
+            e.getResponseBodyAsString(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendSingleBatchRecover(ResourceAccessException e, List<ExpoPushMessage> batch) {
+        Throwable rootCause = e.getMostSpecificCause();
+        log.error(
+            "배치 알림 재시도 후에도 연결 문제로 발송에 실패했습니다: batchSize={}, rootCauseType={}, rootCauseMessage={}",
+            batch.size(),
+            rootCause.getClass().getSimpleName(),
+            rootCause.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendSingleBatchRecover(IllegalStateException e, List<ExpoPushMessage> batch) {
+        log.error(
+            "배치 알림 재시도 후에도 Expo 응답이 비정상이라 발송에 실패했습니다: batchSize={}, message={}",
+            batch.size(),
+            e.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendSingleBatchRecover(RestClientException e, List<ExpoPushMessage> batch) {
+        log.error(
+            "배치 알림 재시도 후에도 Rest 클라이언트 오류로 발송에 실패했습니다: batchSize={}, exceptionType={}, message={}",
+            batch.size(),
+            e.getClass().getSimpleName(),
+            e.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendSingleBatchRecover(Exception e, List<ExpoPushMessage> batch) {
+        log.error(
+            "배치 알림 재시도 후에도 예기치 못한 오류로 발송에 실패했습니다: batchSize={}, exceptionType={}, message={}",
+            batch.size(),
+            e.getClass().getSimpleName(),
+            e.getMessage(),
+            e
+        );
+    }
+
+    @Recover
     public void sendNotificationRecover(Exception e, Integer receiverId, List<String> tokens, String title, String body,
         Map<String, Object> data) {
         log.error(
@@ -153,9 +277,6 @@ public class ExpoPushClient {
             e.getMessage(),
             e
         );
-    }
-
-    private record ExpoPushMessage(String to, String title, String body, Map<String, Object> data, String channelId) {
     }
 
     private record ExpoPushResponse(List<ExpoPushTicket> data) {

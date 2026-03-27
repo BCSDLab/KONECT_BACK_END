@@ -2,6 +2,7 @@ package gg.agit.konect.domain.notification.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -50,5 +51,19 @@ public interface NotificationMuteSettingRepository extends Repository<Notificati
     List<NotificationMuteSetting> findByTargetTypeAndTargetIdAndIsMutedTrue(
         @Param("targetType") NotificationTargetType targetType,
         @Param("targetId") Integer targetId
+    );
+
+    @Query("""
+        SELECT s.user.id
+        FROM NotificationMuteSetting s
+        WHERE s.targetType = :targetType
+        AND s.targetId = :targetId
+        AND s.user.id IN :userIds
+        AND s.isMuted = true
+        """)
+    Set<Integer> findMutedUserIdsByTargetTypeAndTargetIdAndUserIds(
+        @Param("targetType") NotificationTargetType targetType,
+        @Param("targetId") Integer targetId,
+        @Param("userIds") List<Integer> userIds
     );
 }

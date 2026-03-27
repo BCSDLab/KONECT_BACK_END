@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.notification.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -17,6 +18,8 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_NOTIFICATION_
 public interface NotificationInboxRepository extends Repository<NotificationInbox, Integer> {
 
     NotificationInbox save(NotificationInbox notificationInbox);
+
+    List<NotificationInbox> saveAll(Iterable<NotificationInbox> notificationInboxes);
 
     Page<NotificationInbox> findAllByUserIdOrderByCreatedAtDescIdDesc(Integer userId, Pageable pageable);
 
