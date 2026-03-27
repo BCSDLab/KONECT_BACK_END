@@ -178,7 +178,7 @@ public class NotificationService {
                 path
             );
 
-            notificationInboxService.sendSseBatch(targetRecipients, savedInboxes);
+            notificationInboxService.sendSseBatch(savedInboxes);
 
             List<String> tokens = notificationDeviceTokenRepository.findTokensByUserIds(targetRecipients);
 

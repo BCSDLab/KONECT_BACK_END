@@ -1,10 +1,6 @@
 package gg.agit.konect.domain.notification.service;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -54,15 +50,11 @@ public class NotificationInboxService {
         }
 
         List<User> users = userRepository.findAllByIdIn(userIds);
-        Map<Integer, User> userMap = users.stream()
-            .collect(Collectors.toMap(User::getId, Function.identity()));
-
-        return userIds.stream()
-            .map(userMap::get)
-            .filter(Objects::nonNull)
+        List<NotificationInbox> inboxes = users.stream()
             .map(user -> NotificationInbox.of(user, type, title, body, path))
-            .map(notificationInboxRepository::save)
             .toList();
+
+        return notificationInboxRepository.saveAll(inboxes);
     }
 
     public void sendSse(Integer userId, NotificationInboxResponse response) {
@@ -73,9 +65,9 @@ public class NotificationInboxService {
         }
     }
 
-    public void sendSseBatch(List<Integer> userIds, List<NotificationInbox> inboxes) {
-        for (int i = 0; i < inboxes.size(); i++) {
-            sendSse(userIds.get(i), NotificationInboxResponse.from(inboxes.get(i)));
+    public void sendSseBatch(List<NotificationInbox> inboxes) {
+        for (NotificationInbox inbox : inboxes) {
+            sendSse(inbox.getUser().getId(), NotificationInboxResponse.from(inbox));
         }
     }
 
