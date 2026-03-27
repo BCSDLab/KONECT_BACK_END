@@ -24,6 +24,7 @@ import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
 import gg.agit.konect.domain.notification.model.NotificationInbox;
 import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
+import gg.agit.konect.domain.notification.repository.UserIdTokenProjection;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -180,14 +181,14 @@ public class NotificationService {
 
             notificationInboxService.sendSseBatch(savedInboxes);
 
-            List<Object[]> userIdAndTokens = notificationDeviceTokenRepository.findUserIdAndTokenByUserIds(
+            List<UserIdTokenProjection> userIdAndTokens = notificationDeviceTokenRepository.findUserIdAndTokenByUserIds(
                 targetRecipients);
             Map<Integer, List<String>> tokensByUser = new HashMap<>();
 
-            for (Object[] row : userIdAndTokens) {
-                Integer userId = (Integer)row[0];
-                String token = (String)row[1];
-                tokensByUser.computeIfAbsent(userId, k -> new ArrayList<>()).add(token);
+            for (UserIdTokenProjection projection : userIdAndTokens) {
+                tokensByUser
+                    .computeIfAbsent(projection.getUserId(), k -> new ArrayList<>())
+                    .add(projection.getToken());
             }
 
             Map<String, Object> data = new HashMap<>();
