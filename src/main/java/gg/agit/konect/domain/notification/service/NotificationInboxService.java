@@ -5,12 +5,11 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.notification.dto.NotificationInboxResponse;
-import gg.agit.konect.domain.notification.dto.NotificationInboxesResponse;
 import gg.agit.konect.domain.notification.dto.NotificationInboxUnreadCountResponse;
+import gg.agit.konect.domain.notification.dto.NotificationInboxesResponse;
 import gg.agit.konect.domain.notification.enums.NotificationInboxType;
 import gg.agit.konect.domain.notification.model.NotificationInbox;
 import gg.agit.konect.domain.notification.repository.NotificationInboxRepository;
@@ -31,13 +30,13 @@ public class NotificationInboxService {
     private final UserRepository userRepository;
     private final NotificationInboxSseService notificationInboxSseService;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public NotificationInbox save(Integer userId, NotificationInboxType type, String title, String body, String path) {
         User user = userRepository.getById(userId);
         return notificationInboxRepository.save(NotificationInbox.of(user, type, title, body, path));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public List<NotificationInbox> saveAll(
         List<Integer> userIds,
         NotificationInboxType type,
