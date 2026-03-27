@@ -208,6 +208,61 @@ public class ExpoPushClient {
     }
 
     @Recover
+    public void sendBatchNotificationsRecover(HttpStatusCodeException e, List<ExpoPushMessage> messages) {
+        log.error(
+            "배치 알림 재시도 후에도 HTTP 오류로 발송에 실패했습니다: messageCount={}, statusCode={}, responseBody={}",
+            messages.size(),
+            e.getStatusCode(),
+            e.getResponseBodyAsString(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendBatchNotificationsRecover(ResourceAccessException e, List<ExpoPushMessage> messages) {
+        Throwable rootCause = e.getMostSpecificCause();
+        log.error(
+            "배치 알림 재시도 후에도 연결 문제로 발송에 실패했습니다: messageCount={}, rootCauseType={}, rootCauseMessage={}",
+            messages.size(),
+            rootCause.getClass().getSimpleName(),
+            rootCause.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendBatchNotificationsRecover(IllegalStateException e, List<ExpoPushMessage> messages) {
+        log.error(
+            "배치 알림 재시도 후에도 Expo 응답이 비정상이라 발송에 실패했습니다: messageCount={}, message={}",
+            messages.size(),
+            e.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendBatchNotificationsRecover(RestClientException e, List<ExpoPushMessage> messages) {
+        log.error(
+            "배치 알림 재시도 후에도 Rest 클라이언트 오류로 발송에 실패했습니다: messageCount={}, exceptionType={}, message={}",
+            messages.size(),
+            e.getClass().getSimpleName(),
+            e.getMessage(),
+            e
+        );
+    }
+
+    @Recover
+    public void sendBatchNotificationsRecover(Exception e, List<ExpoPushMessage> messages) {
+        log.error(
+            "배치 알림 재시도 후에도 예기치 못한 오류로 발송에 실패했습니다: messageCount={}, exceptionType={}, message={}",
+            messages.size(),
+            e.getClass().getSimpleName(),
+            e.getMessage(),
+            e
+        );
+    }
+
+    @Recover
     public void sendNotificationRecover(Exception e, Integer receiverId, List<String> tokens, String title, String body,
         Map<String, Object> data) {
         log.error(
