@@ -98,13 +98,15 @@ public class NotificationService {
             String truncatedBody = buildPreview(messageContent);
             String path = "chats/" + roomId;
 
-            notificationInboxService.save(
+            NotificationInbox saved = notificationInboxService.save(
                 receiverId,
                 NotificationInboxType.CHAT_MESSAGE,
                 senderName,
                 truncatedBody,
                 path
             );
+
+            notificationInboxService.sendSse(receiverId, NotificationInboxResponse.from(saved));
 
             List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(receiverId);
             if (tokens.isEmpty()) {
