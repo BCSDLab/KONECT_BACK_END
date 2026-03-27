@@ -26,10 +26,9 @@ public class ExpoPushClient {
 
     private static final String EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
     private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "default_notifications";
+    private static final int BATCH_SIZE = 100;
 
     private final RestTemplate expoRestTemplate;
-
-    private final int BATCH_SIZE = 100;
 
     public ExpoPushClient(@Qualifier("expoRestTemplate") RestTemplate expoRestTemplate) {
         this.expoRestTemplate = expoRestTemplate;

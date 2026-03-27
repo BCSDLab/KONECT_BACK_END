@@ -180,12 +180,13 @@ public class NotificationService {
 
             notificationInboxService.sendSseBatch(savedInboxes);
 
-            List<Object[]> userIdAndTokens = notificationDeviceTokenRepository.findUserIdAndTokenByUserIds(targetRecipients);
+            List<Object[]> userIdAndTokens = notificationDeviceTokenRepository.findUserIdAndTokenByUserIds(
+                targetRecipients);
             Map<Integer, List<String>> tokensByUser = new HashMap<>();
 
             for (Object[] row : userIdAndTokens) {
-                Integer userId = (Integer) row[0];
-                String token = (String) row[1];
+                Integer userId = (Integer)row[0];
+                String token = (String)row[1];
                 tokensByUser.computeIfAbsent(userId, k -> new ArrayList<>()).add(token);
             }
 
@@ -203,7 +204,7 @@ public class NotificationService {
             }
 
             log.info(
-                "Group chat notification completed: roomId={}, totalRecipients={}, active={}, muted={}, target={}, tokenCount={}",
+                "Group chat notification completed: roomId={}, total={}, active={}, muted={}, target={}, tokens={}",
                 roomId,
                 filteredRecipients.size(),
                 activeUsers.size(),
