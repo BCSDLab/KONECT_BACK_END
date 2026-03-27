@@ -29,6 +29,8 @@ public class ExpoPushClient {
 
     private final RestTemplate expoRestTemplate;
 
+    private final int BATCH_SIZE = 100;
+
     public ExpoPushClient(@Qualifier("expoRestTemplate") RestTemplate expoRestTemplate) {
         this.expoRestTemplate = expoRestTemplate;
     }
@@ -91,8 +93,7 @@ public class ExpoPushClient {
             return;
         }
 
-        int batchSize = 100;
-        List<List<ExpoPushMessage>> batches = partition(messages, batchSize);
+        List<List<ExpoPushMessage>> batches = partition(messages, BATCH_SIZE);
 
         for (List<ExpoPushMessage> batch : batches) {
             HttpHeaders headers = new HttpHeaders();
