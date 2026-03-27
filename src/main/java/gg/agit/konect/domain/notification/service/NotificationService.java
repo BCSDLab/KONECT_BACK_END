@@ -74,6 +74,7 @@ public class NotificationService {
     }
 
     @Async
+    @Transactional
     public void sendChatNotification(Integer receiverId, Integer roomId, String senderName, String messageContent) {
         try {
             if (chatPresenceService.isUserInChatRoom(roomId, receiverId)) {
@@ -123,6 +124,7 @@ public class NotificationService {
     }
 
     @Async
+    @Transactional
     public void sendGroupChatNotification(
         Integer roomId,
         Integer senderId,
@@ -209,6 +211,7 @@ public class NotificationService {
     }
 
     @Async
+    @Transactional
     public void sendClubApplicationSubmittedNotification(
         Integer receiverId,
         Integer applicationId,
