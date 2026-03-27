@@ -228,6 +228,7 @@ public class NotificationService {
     }
 
     @Async
+    @Transactional
     public void sendClubApplicationApprovedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 승인되었어요.";
         String path = "clubs/" + clubId;
@@ -238,6 +239,7 @@ public class NotificationService {
     }
 
     @Async
+    @Transactional
     public void sendClubApplicationRejectedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 거절되었어요.";
         String path = "clubs/" + clubId;
