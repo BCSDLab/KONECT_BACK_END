@@ -39,11 +39,11 @@ public interface NotificationDeviceTokenRepository extends Repository<Notificati
     List<String> findTokensByUserId(@Param("userId") Integer userId);
 
     @Query("""
-        SELECT ndt.user.id AS userId, ndt.token AS token
+        SELECT ndt.token
         FROM NotificationDeviceToken ndt
         WHERE ndt.user.id IN :userIds
         """)
-    List<UserIdTokenProjection> findUserIdAndTokenByUserIds(@Param("userIds") List<Integer> userIds);
+    List<String> findTokensByUserIds(@Param("userIds") List<Integer> userIds);
 
     void save(NotificationDeviceToken notificationDeviceToken);
 

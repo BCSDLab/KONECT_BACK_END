@@ -2,7 +2,6 @@ package gg.agit.konect.domain.notification.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.INVALID_NOTIFICATION_TOKEN;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,6 @@ import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
 import gg.agit.konect.domain.notification.model.NotificationInbox;
 import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
-import gg.agit.konect.domain.notification.repository.UserIdTokenProjection;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -181,21 +179,12 @@ public class NotificationService {
 
             notificationInboxService.sendSseBatch(savedInboxes);
 
-            List<UserIdTokenProjection> userIdAndTokens = notificationDeviceTokenRepository.findUserIdAndTokenByUserIds(
-                targetRecipients);
-            Map<Integer, List<String>> tokensByUser = new HashMap<>();
-
-            for (UserIdTokenProjection projection : userIdAndTokens) {
-                tokensByUser
-                    .computeIfAbsent(projection.getUserId(), k -> new ArrayList<>())
-                    .add(projection.getToken());
-            }
+            List<String> tokens = notificationDeviceTokenRepository.findTokensByUserIds(targetRecipients);
 
             Map<String, Object> data = new HashMap<>();
             data.put("path", path);
 
-            List<ExpoPushClient.ExpoPushMessage> messages = tokensByUser.values().stream()
-                .flatMap(List::stream)
+            List<ExpoPushClient.ExpoPushMessage> messages = tokens.stream()
                 .map(token -> new ExpoPushClient.ExpoPushMessage(
                     token, clubName, previewBody, data, DEFAULT_NOTIFICATION_CHANNEL_ID))
                 .toList();
