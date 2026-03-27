@@ -35,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class NotificationService {
 
-    private static final String EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
     private static final Pattern EXPO_PUSH_TOKEN_PATTERN =
         Pattern.compile("^(ExponentPushToken|ExpoPushToken)\\[[^\\]]+\\]$");
     private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "default_notifications";
@@ -285,8 +284,5 @@ public class NotificationService {
         if (!EXPO_PUSH_TOKEN_PATTERN.matcher(token).matches()) {
             throw CustomException.of(INVALID_NOTIFICATION_TOKEN);
         }
-    }
-
-    private record ExpoPushTicket(String status, String message, Map<String, Object> details) {
     }
 }
