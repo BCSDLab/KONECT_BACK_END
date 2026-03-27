@@ -4,7 +4,6 @@ import static gg.agit.konect.global.code.ApiResponseCode.INVALID_NOTIFICATION_TO
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,9 +20,8 @@ import gg.agit.konect.domain.notification.dto.NotificationTokenResponse;
 import gg.agit.konect.domain.notification.enums.NotificationInboxType;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
-import gg.agit.konect.domain.notification.model.NotificationMuteSetting;
-import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
+import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -146,14 +144,9 @@ public class NotificationService {
             Set<Integer> activeUsers = chatPresenceService.findUsersInChatRoom(roomId, filteredRecipients);
 
             // 채팅방 알림을 뮤트 처리한 유저 목록
-            List<NotificationMuteSetting> muteSettings = notificationMuteSettingRepository
-                .findByTargetTypeAndTargetIdAndIsMutedTrue(NotificationTargetType.CHAT_ROOM, roomId);
-            Set<Integer> mutedUsers = new HashSet<>();
-            for (NotificationMuteSetting setting : muteSettings) {
-                if (filteredRecipients.contains(setting.getUser().getId())) {
-                    mutedUsers.add(setting.getUser().getId());
-                }
-            }
+            Set<Integer> mutedUsers = notificationMuteSettingRepository
+                .findMutedUserIdsByTargetTypeAndTargetIdAndUserIds(
+                    NotificationTargetType.CHAT_ROOM, roomId, filteredRecipients);
 
             List<Integer> targetRecipients = filteredRecipients.stream()
                 .filter(id -> !activeUsers.contains(id))
