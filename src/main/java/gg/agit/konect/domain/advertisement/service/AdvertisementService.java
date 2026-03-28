@@ -26,7 +26,8 @@ public class AdvertisementService {
     }
 
     public AdvertisementsResponse getRandomAdvertisements(int count) {
-        List<Advertisement> visibleAdvertisements = advertisementRepository.findAllByIsVisibleTrueOrderByCreatedAtDesc();
+        List<Advertisement> visibleAdvertisements =
+            advertisementRepository.findAllByIsVisibleTrueOrderByCreatedAtDesc();
 
         if (visibleAdvertisements.isEmpty()) {
             return AdvertisementsResponse.from(List.of());
