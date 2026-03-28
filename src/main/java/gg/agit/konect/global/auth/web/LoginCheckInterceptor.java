@@ -2,8 +2,11 @@ package gg.agit.konect.global.auth.web;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -62,10 +65,45 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             request.setAttribute(AUTHENTICATED_USER_ID_ATTRIBUTE, userId);
             return true;
         } catch (CustomException e) {
+            if (isSseRequest(request, handlerMethod)) {
+                response.setStatus(e.getErrorCode().getHttpStatus().value());
+                return false;
+            }
+
             // GlobalExceptionHandler가 처리하도록 위임
             handlerExceptionResolver.resolveException(request, response, handler, e);
             return false;
         }
+    }
+
+    private boolean isSseRequest(HttpServletRequest request, HandlerMethod handlerMethod) {
+        String accept = request.getHeader("Accept");
+        if (accept != null && accept.contains(MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            return true;
+        }
+
+        GetMapping getMapping = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), GetMapping.class);
+        if (getMapping != null) {
+            for (String producedType : getMapping.produces()) {
+                if (MediaType.TEXT_EVENT_STREAM_VALUE.equals(producedType)) {
+                    return true;
+                }
+            }
+        }
+
+        RequestMapping requestMapping = AnnotatedElementUtils.findMergedAnnotation(
+            handlerMethod.getMethod(), RequestMapping.class);
+        if (requestMapping == null) {
+            return false;
+        }
+
+        for (String producedType : requestMapping.produces()) {
+            if (MediaType.TEXT_EVENT_STREAM_VALUE.equals(producedType)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean isPublicEndpoint(HandlerMethod handlerMethod) {
