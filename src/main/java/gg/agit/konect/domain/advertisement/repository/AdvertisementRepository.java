@@ -22,9 +22,6 @@ public interface AdvertisementRepository extends Repository<Advertisement, Integ
 
     List<Advertisement> findAllByIsVisibleTrueOrderByCreatedAtDesc();
 
-    @Query("SELECT a.id FROM Advertisement a WHERE a.isVisible = true")
-    List<Integer> findAllVisibleIds();
-
     void delete(Advertisement advertisement);
 
     /**

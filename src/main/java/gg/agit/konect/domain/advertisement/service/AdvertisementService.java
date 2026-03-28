@@ -5,6 +5,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_ADVERTISEMENT
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,29 +26,27 @@ public class AdvertisementService {
     }
 
     public AdvertisementsResponse getRandomAdvertisements(int count) {
-        List<Integer> visibleIds = advertisementRepository.findAllVisibleIds();
+        List<Advertisement> visibleAdvertisements = advertisementRepository.findAllByIsVisibleTrueOrderByCreatedAtDesc();
 
-        if (visibleIds.isEmpty()) {
+        if (visibleAdvertisements.isEmpty()) {
             return AdvertisementsResponse.from(List.of());
         }
 
-        List<Integer> selectedIds = new ArrayList<>();
+        List<Advertisement> selectedAdvertisements = new ArrayList<>();
 
-        if (visibleIds.size() >= count) {
-            Collections.shuffle(visibleIds);
-            selectedIds.addAll(visibleIds.subList(0, count));
+        if (visibleAdvertisements.size() >= count) {
+            List<Advertisement> shuffledAdvertisements = new ArrayList<>(visibleAdvertisements);
+            Collections.shuffle(shuffledAdvertisements);
+            selectedAdvertisements.addAll(shuffledAdvertisements.subList(0, count));
         } else {
             for (int i = 0; i < count; i++) {
-                int randomIndex = (int)(Math.random() * visibleIds.size());
-                selectedIds.add(visibleIds.get(randomIndex));
+                // 등록된 노출 광고 수보다 많은 개수를 요청하면 기존 정책대로 중복 선택을 허용한다.
+                int randomIndex = ThreadLocalRandom.current().nextInt(visibleAdvertisements.size());
+                selectedAdvertisements.add(visibleAdvertisements.get(randomIndex));
             }
         }
 
-        List<Advertisement> result = selectedIds.stream()
-            .map(advertisementRepository::getById)
-            .toList();
-
-        return AdvertisementsResponse.from(result);
+        return AdvertisementsResponse.from(selectedAdvertisements);
     }
 
     @Transactional
