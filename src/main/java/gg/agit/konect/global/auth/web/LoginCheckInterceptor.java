@@ -16,6 +16,7 @@ import gg.agit.konect.global.auth.annotation.PublicApi;
 import gg.agit.konect.global.exception.CustomException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 로그인 체크 인터셉터.
@@ -24,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
  *
  * 예외 발생 시 HandlerExceptionResolver를 통해 GlobalExceptionHandler로 위임합니다.
  */
+@Slf4j
 @Component
 public class LoginCheckInterceptor implements HandlerInterceptor {
 
@@ -66,6 +68,13 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             return true;
         } catch (CustomException e) {
             if (isSseRequest(request, handlerMethod)) {
+                log.warn(
+                    "SSE authentication failed: method={} uri={} status={} code={}",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    e.getErrorCode().getHttpStatus().value(),
+                    e.getErrorCode().getCode()
+                );
                 response.setStatus(e.getErrorCode().getHttpStatus().value());
                 return false;
             }
