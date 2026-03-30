@@ -118,22 +118,31 @@ public class ChatRoomMembershipService {
 
         ensureDirectRoomMemberExists(room, user);
 
-        if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(roomId)) {
+        if (user.getRole() == UserRole.ADMIN) {
             List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-            for (ChatRoomMember member : members) {
-                if (member.getUser().getRole() == UserRole.ADMIN) {
-                    chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, member.getUserId(), readAt);
+            boolean isSystemAdmin = members.stream()
+                .anyMatch(member -> Objects.equals(member.getUserId(), SYSTEM_ADMIN_ID));
+
+            if (isSystemAdmin) {
+                for (ChatRoomMember member : members) {
+                    if (member.getUser().getRole() == UserRole.ADMIN) {
+                        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, member.getUserId(), readAt);
+                    }
                 }
+                return;
             }
-        } else {
-            chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, readAt);
         }
+
+        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, readAt);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void ensureClubRoomMember(Integer roomId, Integer userId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+        if (!room.isGroupRoom() || room.getClub() == null) {
+            throw CustomException.of(NOT_FOUND_CHAT_ROOM);
+        }
         ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
         ensureMember(room, member.getUser(), member.getCreatedAt());
     }
