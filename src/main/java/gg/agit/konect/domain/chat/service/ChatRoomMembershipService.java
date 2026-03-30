@@ -45,8 +45,7 @@ public class ChatRoomMembershipService {
     @Transactional
     public void addClubMember(ClubMember clubMember) {
         LocalDateTime baseline = Objects.requireNonNull(clubMember.getCreatedAt());
-        ChatRoom room = chatRoomRepository.findByClubId(clubMember.getClub().getId())
-            .orElseGet(() -> chatRoomRepository.save(ChatRoom.groupOf(clubMember.getClub())));
+        ChatRoom room = findOrCreateClubRoom(clubMember.getClub());
         ensureMember(room, clubMember.getUser(), baseline);
     }
 
@@ -116,7 +115,7 @@ public class ChatRoomMembershipService {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
 
-        ensureDirectRoomMemberExists(room, user);
+        ensureDirectRoomMemberExists(room, user, readAt);
 
         if (user.getRole() == UserRole.ADMIN) {
             List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
@@ -145,6 +144,19 @@ public class ChatRoomMembershipService {
         }
         ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
         ensureMember(room, member.getUser(), member.getCreatedAt());
+    }
+
+    private ChatRoom findOrCreateClubRoom(Club club) {
+        return chatRoomRepository.findByClubId(club.getId())
+            .orElseGet(() -> {
+                try {
+                    return chatRoomRepository.save(ChatRoom.groupOf(club));
+                } catch (DataIntegrityViolationException e) {
+                    log.debug("클럽 채팅방 동시 생성 감지, 재조회: clubId={}", club.getId());
+                    return chatRoomRepository.findByClubId(club.getId())
+                        .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+                }
+            });
     }
 
     private List<ChatRoom> resolveOrCreateClubRooms(List<ClubMember> memberships) {
@@ -195,14 +207,14 @@ public class ChatRoomMembershipService {
         }
     }
 
-    private void ensureDirectRoomMemberExists(ChatRoom room, User user) {
+    private void ensureDirectRoomMemberExists(ChatRoom room, User user, LocalDateTime readAt) {
         boolean exists = chatRoomMemberRepository.existsByChatRoomIdAndUserId(room.getId(), user.getId());
         if (exists) {
             return;
         }
 
         if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room.getId())) {
-            saveRoomMemberIgnoringDuplicate(room, user, LocalDateTime.now());
+            saveRoomMemberIgnoringDuplicate(room, user, readAt);
             return;
         }
 
