@@ -17,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
@@ -234,6 +235,88 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"))
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("content"));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /chats/rooms/{chatRoomId}/name - 채팅방 이름 수정")
+    class UpdateChatRoomName {
+
+        @BeforeEach
+        void setUpRoomNameFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            outsiderUser = createUser("외부유저", "2021136003");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("내가 수정한 채팅방 이름은 내 목록에만 반영된다")
+        void updateChatRoomNameOnlyForCurrentUser() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("알바 이야기방"))
+                .andExpect(status().isOk());
+
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId()))
+                .isPresent()
+                .get()
+                .extracting(ChatRoomMember::getCustomRoomName)
+                .isEqualTo("알바 이야기방");
+
+            // when & then
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomName").value("알바 이야기방"));
+
+            mockLoginUser(targetUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomName").value(normalUser.getName()));
+        }
+
+        @Test
+        @DisplayName("공백 이름으로 요청하면 기본 채팅방 이름으로 되돌린다")
+        void blankRoomNameResetsToDefault() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(normalUser.getId());
+
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("알바 이야기방"))
+                .andExpect(status().isOk());
+
+            // when
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("   "))
+                .andExpect(status().isOk());
+
+            // then
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId()))
+                .isPresent()
+                .get()
+                .extracting(ChatRoomMember::getCustomRoomName)
+                .isNull();
+
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomName").value(targetUser.getName()));
+        }
+
+        @Test
+        @DisplayName("참여하지 않은 사용자는 채팅방 이름을 수정할 수 없다")
+        void updateChatRoomNameForbidden() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(outsiderUser.getId());
+
+            // when & then
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("몰래 바꾸기"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
         }
     }
 

@@ -13,6 +13,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.service.ChatService;
@@ -80,5 +81,15 @@ public class ChatController implements ChatApi {
         @UserId Integer userId
     ) {
         return ResponseEntity.ok(chatService.toggleMute(userId, chatRoomId));
+    }
+
+    @Override
+    public ResponseEntity<Void> updateChatRoomName(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @Valid @RequestBody ChatRoomNameUpdateRequest request,
+        @UserId Integer userId
+    ) {
+        chatService.updateChatRoomName(userId, chatRoomId, request);
+        return ResponseEntity.ok().build();
     }
 }

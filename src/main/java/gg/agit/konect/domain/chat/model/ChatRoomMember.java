@@ -40,17 +40,22 @@ public class ChatRoomMember extends BaseEntity {
     @Column(name = "last_read_at", nullable = false)
     private LocalDateTime lastReadAt;
 
+    @Column(name = "custom_room_name", length = 30)
+    private String customRoomName;
+
     @Builder
     private ChatRoomMember(
         ChatRoomMemberId id,
         ChatRoom chatRoom,
         User user,
-        LocalDateTime lastReadAt
+        LocalDateTime lastReadAt,
+        String customRoomName
     ) {
         this.id = id;
         this.chatRoom = chatRoom;
         this.user = user;
         this.lastReadAt = lastReadAt;
+        this.customRoomName = customRoomName;
     }
 
     public static ChatRoomMember of(ChatRoom chatRoom, User user, LocalDateTime lastReadAt) {
@@ -78,5 +83,9 @@ public class ChatRoomMember extends BaseEntity {
         if (this.lastReadAt == null || this.lastReadAt.isBefore(lastReadAt)) {
             this.lastReadAt = lastReadAt;
         }
+    }
+
+    public void updateCustomRoomName(String customRoomName) {
+        this.customRoomName = customRoomName;
     }
 }
