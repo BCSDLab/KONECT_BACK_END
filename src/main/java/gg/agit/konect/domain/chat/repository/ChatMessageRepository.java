@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.chat.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -44,7 +45,7 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         """)
     Page<ChatMessage> findByChatRoomId(
         @Param("chatRoomId") Integer chatRoomId,
-        @Param("visibleMessageFrom") java.time.LocalDateTime visibleMessageFrom,
+        @Param("visibleMessageFrom") LocalDateTime visibleMessageFrom,
         Pageable pageable
     );
 
@@ -56,7 +57,7 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         """)
     long countByChatRoomId(
         @Param("chatRoomId") Integer chatRoomId,
-        @Param("visibleMessageFrom") java.time.LocalDateTime visibleMessageFrom
+        @Param("visibleMessageFrom") LocalDateTime visibleMessageFrom
     );
 
     @Query("""
