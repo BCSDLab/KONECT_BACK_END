@@ -1,6 +1,7 @@
 package gg.agit.konect.global.config;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
@@ -38,7 +39,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(DEFAULT_MAX_POOL_SIZE);
         executor.setQueueCapacity(DEFAULT_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("async-default-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS);
         executor.initialize();
@@ -71,10 +72,11 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(NOTIFICATION_MAX_POOL_SIZE);
         executor.setQueueCapacity(NOTIFICATION_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("notification-");
-        executor.setRejectedExecutionHandler((runnable, pool) ->
-            log.warn("알림 스레드풀 포화로 작업이 드롭되었습니다. poolSize={}, activeCount={}, queueSize={}",
-                pool.getPoolSize(), pool.getActiveCount(), pool.getQueue().size())
-        );
+        executor.setRejectedExecutionHandler((runnable, pool) -> {
+            log.warn("알림 스레드풀 포화로 작업이 거절되었습니다. poolSize={}, activeCount={}, queueSize={}",
+                pool.getPoolSize(), pool.getActiveCount(), pool.getQueue().size());
+            throw new RejectedExecutionException("notificationTaskExecutor saturated");
+        });
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(NOTIFICATION_AWAIT_TERMINATION_SECONDS);
         executor.initialize();
