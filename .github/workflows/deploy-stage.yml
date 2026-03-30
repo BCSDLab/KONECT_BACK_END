@@ -29,6 +29,21 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
+      - name: Cache OpenTelemetry Java Agent
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/otel-java-agent
+          key: otel-agent-2.18.1
+
+      - name: Prepare OpenTelemetry Agent
+        run: |
+          mkdir -p ~/.cache/otel-java-agent
+          if [ ! -f ~/.cache/otel-java-agent/opentelemetry-javaagent.jar ]; then
+            wget -O ~/.cache/otel-java-agent/opentelemetry-javaagent.jar \
+              "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.18.1/opentelemetry-javaagent.jar"
+          fi
+          cp ~/.cache/otel-java-agent/opentelemetry-javaagent.jar .
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
