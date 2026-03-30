@@ -40,6 +40,12 @@ public class ChatRoomMember extends BaseEntity {
     @Column(name = "last_read_at", nullable = false)
     private LocalDateTime lastReadAt;
 
+    @Column(name = "visible_message_from")
+    private LocalDateTime visibleMessageFrom;
+
+    @Column(name = "left_at")
+    private LocalDateTime leftAt;
+
     @Column(name = "custom_room_name", length = 30)
     private String customRoomName;
 
@@ -49,12 +55,16 @@ public class ChatRoomMember extends BaseEntity {
         ChatRoom chatRoom,
         User user,
         LocalDateTime lastReadAt,
+        LocalDateTime visibleMessageFrom,
+        LocalDateTime leftAt,
         String customRoomName
     ) {
         this.id = id;
         this.chatRoom = chatRoom;
         this.user = user;
         this.lastReadAt = lastReadAt;
+        this.visibleMessageFrom = visibleMessageFrom;
+        this.leftAt = leftAt;
         this.customRoomName = customRoomName;
     }
 
@@ -87,5 +97,37 @@ public class ChatRoomMember extends BaseEntity {
 
     public void updateCustomRoomName(String customRoomName) {
         this.customRoomName = customRoomName;
+    }
+
+    public boolean hasLeft() {
+        return leftAt != null;
+    }
+
+    public void leaveDirectRoom(LocalDateTime leftAt) {
+        this.leftAt = leftAt;
+        this.visibleMessageFrom = leftAt;
+        updateLastReadAt(leftAt);
+    }
+
+    public void restoreDirectRoom() {
+        this.leftAt = null;
+    }
+
+    public void reopenDirectRoom(LocalDateTime visibleMessageFrom) {
+        this.leftAt = null;
+        this.visibleMessageFrom = visibleMessageFrom;
+        updateLastReadAt(visibleMessageFrom);
+    }
+
+    public boolean hasVisibleMessages(ChatRoom room) {
+        if (room.getLastMessageSentAt() == null) {
+            return false;
+        }
+
+        if (visibleMessageFrom == null) {
+            return true;
+        }
+
+        return room.getLastMessageSentAt().isAfter(visibleMessageFrom);
     }
 }
