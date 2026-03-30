@@ -16,6 +16,3 @@ ALTER TABLE chat_room_member
 
 CREATE INDEX idx_chat_room_member_user_left_at
     ON chat_room_member (user_id, left_at);
-
-CREATE INDEX idx_chat_room_room_type
-    ON chat_room (room_type);
