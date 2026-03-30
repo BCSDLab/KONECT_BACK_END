@@ -53,7 +53,7 @@ jobs:
           source .env.example
           set +a
           unset JAVA_TOOL_OPTIONS
-          ./gradlew clean build -x test -Dspring.profiles.active=stage
+          ./gradlew bootJar -x test --build-cache -Dspring.profiles.active=stage
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
