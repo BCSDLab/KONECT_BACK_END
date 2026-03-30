@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.chat.service;
+﻿package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
@@ -55,7 +55,9 @@ import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -180,13 +182,13 @@ public class ChatService {
 
         if (room.isDirectRoom()) {
             chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, userId, readAt);
-            chatPresenceService.recordPresence(roomId, userId);
+            recordPresenceSafely(roomId, userId);
             return getDirectChatRoomMessages(userId, roomId, page, limit, readAt);
         }
 
         chatRoomMembershipService.ensureClubRoomMember(roomId, userId);
         chatRoomMembershipService.updateLastReadAt(roomId, userId, readAt);
-        chatPresenceService.recordPresence(roomId, userId);
+        recordPresenceSafely(roomId, userId);
         return getClubMessagesByRoomId(roomId, userId, page, limit);
     }
 
@@ -779,7 +781,15 @@ public class ChatService {
             });
     }
 
-    private boolean isSystemAdminRoom(ChatRoom chatRoom) {
+       private void recordPresenceSafely(Integer roomId, Integer userId) {
+        try {
+            chatPresenceService.recordPresence(roomId, userId);
+        } catch (Exception e) {
+            log.warn("Redis presence 기록 실패, 메시지 조회는 계속 진행: roomId={}, userId={}, roomId, userId, e);
+ }
+ }
+
+ private boolean isSystemAdminRoom(ChatRoom chatRoom) {
         List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
             List.of(chatRoom.getId())
         );
