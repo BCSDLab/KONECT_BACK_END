@@ -33,14 +33,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/otel-java-agent
-          key: otel-agent-2.18.1
+          key: otel-agent-${{ vars.OTEL_JAVA_AGENT_VERSION }}
 
       - name: Prepare OpenTelemetry Agent
         run: |
           mkdir -p ~/.cache/otel-java-agent
           if [ ! -f ~/.cache/otel-java-agent/opentelemetry-javaagent.jar ]; then
             wget -O ~/.cache/otel-java-agent/opentelemetry-javaagent.jar \
-              "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.18.1/opentelemetry-javaagent.jar"
+              "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${{ vars.OTEL_JAVA_AGENT_VERSION }}/opentelemetry-javaagent.jar"
           fi
           cp ~/.cache/otel-java-agent/opentelemetry-javaagent.jar .
 
@@ -83,6 +83,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            OTEL_JAVA_AGENT_VERSION=${{ vars.OTEL_JAVA_AGENT_VERSION }}
 
       - name: Backup prod MySQL before deploy
         uses: appleboy/ssh-action@v0.1.8
