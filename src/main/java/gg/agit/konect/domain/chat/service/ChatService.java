@@ -21,11 +21,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
@@ -136,12 +138,13 @@ public class ChatService {
         roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
 
         Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
+        Map<Integer, String> customRoomNameMap = getCustomRoomNameMap(roomIds, userId);
         List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
 
         directRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
             room.roomId(),
             room.chatType(),
-            room.roomName(),
+            resolveRoomName(room.roomId(), room.roomName(), customRoomNameMap),
             room.roomImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
@@ -152,7 +155,7 @@ public class ChatService {
         clubRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
             room.roomId(),
             room.chatType(),
-            room.roomName(),
+            resolveRoomName(room.roomId(), room.roomName(), customRoomNameMap),
             room.roomImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
@@ -234,6 +237,15 @@ public class ChatService {
         return new ChatMuteResponse(isMuted);
     }
 
+    @Transactional
+    public void updateChatRoomName(Integer userId, Integer roomId, ChatRoomNameUpdateRequest request) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+
+        ChatRoomMember roomMember = getAccessibleRoomMember(room, userId);
+        roomMember.updateCustomRoomName(normalizeCustomRoomName(request.roomName()));
+    }
+
     private List<ChatRoomSummaryResponse> getDirectChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
 
@@ -255,7 +267,7 @@ public class ChatService {
         Map<Integer, User> userMap = allUserIds.isEmpty()
             ? Map.of()
             : userRepository.findAllByIdIn(allUserIds).stream()
-            .collect(Collectors.toMap(User::getId, u -> u));
+              .collect(Collectors.toMap(User::getId, u -> u));
 
         for (ChatRoom chatRoom : personalChatRooms) {
             List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
@@ -534,6 +546,20 @@ public class ChatService {
         return muteMap;
     }
 
+    private Map<Integer, String> getCustomRoomNameMap(List<Integer> roomIds, Integer userId) {
+        if (roomIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return chatRoomMemberRepository.findByChatRoomIdsAndUserId(roomIds, userId).stream()
+            .filter(member -> StringUtils.hasText(member.getCustomRoomName()))
+            .collect(Collectors.toMap(ChatRoomMember::getChatRoomId, ChatRoomMember::getCustomRoomName));
+    }
+
+    private String resolveRoomName(Integer roomId, String defaultRoomName, Map<Integer, String> customRoomNameMap) {
+        return customRoomNameMap.getOrDefault(roomId, defaultRoomName);
+    }
+
     private ChatRoom getDirectRoom(Integer roomId) {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
@@ -605,6 +631,22 @@ public class ChatService {
         }
     }
 
+    private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
+        return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
+            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
+    }
+
+    private ChatRoomMember getAccessibleRoomMember(ChatRoom room, Integer userId) {
+        if (room.isGroupRoom()) {
+            ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
+            ensureRoomMember(room, member.getUser(), member.getCreatedAt());
+            return getRoomMember(room.getId(), userId);
+        }
+
+        User user = userRepository.getById(userId);
+        return getOrCreateDirectRoomMember(room, user);
+    }
+
     private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
@@ -613,6 +655,14 @@ public class ChatService {
                     member.updateLastReadAt(joinedAt);
                 }
             }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, joinedAt)));
+    }
+
+    private String normalizeCustomRoomName(String roomName) {
+        if (!StringUtils.hasText(roomName)) {
+            return null;
+        }
+
+        return roomName.trim();
     }
 
     private void updateMemberLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {

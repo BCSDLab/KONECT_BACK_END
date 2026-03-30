@@ -7,8 +7,7 @@ WORKDIR /app
 RUN addgroup -S konect && adduser -S konect -G konect
 
 COPY build/libs/KONECT_API.jar KONECT_API.jar
-
-RUN wget -O opentelemetry-javaagent.jar "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/opentelemetry-javaagent.jar"
+COPY opentelemetry-javaagent.jar opentelemetry-javaagent.jar
 
 RUN chown -R konect:konect /app
 
