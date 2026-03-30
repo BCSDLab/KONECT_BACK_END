@@ -16,7 +16,7 @@ public class InquirySlackListener {
 
     private final SlackNotificationService slackNotificationService;
 
-    @Async
+    @Async("slackTaskExecutor")
     @TransactionalEventListener(phase = AFTER_COMMIT)
     public void handleInquirySubmitted(InquirySubmittedEvent event) {
         slackNotificationService.notifyInquiry(event.content());

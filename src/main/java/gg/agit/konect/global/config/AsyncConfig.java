@@ -32,6 +32,11 @@ public class AsyncConfig implements AsyncConfigurer {
     private static final int NOTIFICATION_QUEUE_CAPACITY = 100;
     private static final int NOTIFICATION_AWAIT_TERMINATION_SECONDS = 30;
 
+    private static final int SLACK_CORE_POOL_SIZE = 1;
+    private static final int SLACK_MAX_POOL_SIZE = 3;
+    private static final int SLACK_QUEUE_CAPACITY = 50;
+    private static final int SLACK_AWAIT_TERMINATION_SECONDS = 30;
+
     @Override
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -79,6 +84,20 @@ public class AsyncConfig implements AsyncConfigurer {
         });
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(NOTIFICATION_AWAIT_TERMINATION_SECONDS);
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean(name = "slackTaskExecutor")
+    public Executor slackTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(SLACK_CORE_POOL_SIZE);
+        executor.setMaxPoolSize(SLACK_MAX_POOL_SIZE);
+        executor.setQueueCapacity(SLACK_QUEUE_CAPACITY);
+        executor.setThreadNamePrefix("slack-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(SLACK_AWAIT_TERMINATION_SECONDS);
         executor.initialize();
         return executor;
     }

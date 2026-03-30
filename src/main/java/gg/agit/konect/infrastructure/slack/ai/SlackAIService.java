@@ -81,7 +81,7 @@ public class SlackAIService {
         return new ArrayList<>();
     }
 
-    @Async
+    @Async("slackTaskExecutor")
     public void processAIQuery(String text, String channelId, String threadTs,
             List<Map<String, Object>> cachedReplies) {
         try {
