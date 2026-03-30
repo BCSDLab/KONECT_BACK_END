@@ -33,7 +33,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/otel-java-agent
-          key: otel-agent-${{ vars.OTEL_JAVA_AGENT_VERSION }}
+          key: otel-agent-${{ runner.os }}-${{ vars.OTEL_JAVA_AGENT_VERSION }}-${{ vars.OTEL_JAVA_AGENT_SHA256 }}
 
       - name: Prepare OpenTelemetry Agent
         run: |
