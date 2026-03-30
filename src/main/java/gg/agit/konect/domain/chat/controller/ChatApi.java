@@ -49,10 +49,10 @@ public interface ChatApi {
     @Operation(summary = "어드민과의 채팅방을 생성하거나 기존 채팅방을 반환한다.", description = """
         ## 설명
         - 문의하기 버튼에서 즉시 어드민과의 1:1 채팅으로 이동할 때 사용합니다.
-
+        
         ## 로직
         - 시스템의 기준 어드민 계정을 찾아 해당 계정과의 채팅방을 생성하거나 기존 채팅방을 반환합니다.
-
+        
         ## 에러
         - NOT_FOUND_USER (404): 어드민 계정을 찾을 수 없습니다.
         - CANNOT_CREATE_CHAT_ROOM_WITH_SELF (400): 자기 자신과는 채팅방을 만들 수 없습니다.
@@ -87,7 +87,7 @@ public interface ChatApi {
         - 채팅방 참여자만 메시지를 조회할 수 있습니다.
         - 일반 유저는 자신이 참여한 채팅방만 조회할 수 있습니다.
         - 어드민은 모든 어드민 채팅방을 조회할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
         """)
@@ -134,7 +134,7 @@ public interface ChatApi {
         - 현재 사용자 기준으로만 보이는 채팅방 이름을 수정합니다.
         - 다른 참여자에게는 영향을 주지 않습니다.
         - null 또는 공백으로 보내면 기본 이름으로 되돌립니다.
-
+        
         ## 에러
         - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.

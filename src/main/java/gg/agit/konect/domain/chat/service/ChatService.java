@@ -257,7 +257,7 @@ public class ChatService {
         Map<Integer, User> userMap = allUserIds.isEmpty()
             ? Map.of()
             : userRepository.findAllByIdIn(allUserIds).stream()
-            .collect(Collectors.toMap(User::getId, u -> u));
+              .collect(Collectors.toMap(User::getId, u -> u));
 
         for (ChatRoom chatRoom : personalChatRooms) {
             List<MemberInfo> memberInfos = roomMemberInfoMap.getOrDefault(chatRoom.getId(), List.of());
