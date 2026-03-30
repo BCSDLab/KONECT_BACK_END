@@ -152,6 +152,9 @@ public class ChatRoomMembershipService {
                 try {
                     return chatRoomRepository.save(ChatRoom.groupOf(club));
                 } catch (DataIntegrityViolationException e) {
+                    if (!isDuplicateKeyException(e)) {
+                        throw e;
+                    }
                     log.debug("클럽 채팅방 동시 생성 감지, 재조회: clubId={}", club.getId());
                     return chatRoomRepository.findByClubId(club.getId())
                         .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
@@ -177,6 +180,9 @@ public class ChatRoomMembershipService {
                 ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.groupOf(clubEntry.getValue()));
                 roomByClubId.put(clubEntry.getKey(), createdRoom);
             } catch (DataIntegrityViolationException e) {
+                if (!isDuplicateKeyException(e)) {
+                    throw e;
+                }
                 log.debug("클럽 채팅방 동시 생성 감지, 재조회: clubId={}", clubEntry.getKey());
                 chatRoomRepository.findByClubId(clubEntry.getKey())
                     .ifPresent(room -> roomByClubId.put(clubEntry.getKey(), room));
@@ -203,6 +209,9 @@ public class ChatRoomMembershipService {
         try {
             chatRoomMemberRepository.save(ChatRoomMember.of(room, user, baseline));
         } catch (DataIntegrityViolationException e) {
+            if (!isDuplicateKeyException(e)) {
+                throw e;
+            }
             log.debug("채팅방 멤버 동시 생성 감지, 무시: roomId={}, userId={}", room.getId(), user.getId());
         }
     }
@@ -226,5 +235,14 @@ public class ChatRoomMembershipService {
         return memberIds.stream()
             .map(row -> (Integer)row[1])
             .anyMatch(userId -> userId.equals(SYSTEM_ADMIN_ID));
+    }
+
+    private boolean isDuplicateKeyException(DataIntegrityViolationException e) {
+        Throwable rootCause = e.getRootCause();
+        if (rootCause == null) {
+            return false;
+        }
+        String message = rootCause.getMessage();
+        return message != null && message.contains("Duplicate");
     }
 }
