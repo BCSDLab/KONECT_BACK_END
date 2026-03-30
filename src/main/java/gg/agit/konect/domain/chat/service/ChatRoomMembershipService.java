@@ -185,7 +185,7 @@ public class ChatRoomMembershipService {
     private boolean isSystemAdminRoom(Integer roomId) {
         List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(roomId));
         return memberIds.stream()
-            .map(row -> (Integer) row[1])
+            .map(row -> (Integer)row[1])
             .anyMatch(userId -> userId.equals(SYSTEM_ADMIN_ID));
     }
 }
