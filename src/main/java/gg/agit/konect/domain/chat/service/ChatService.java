@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
@@ -123,7 +124,7 @@ public class ChatService {
         return createOrGetChatRoom(currentUserId, new ChatRoomCreateRequest(adminUser.getId()));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ChatRoomsSummaryResponse getChatRooms(Integer userId) {
         chatRoomMembershipService.ensureClubRoomMemberships(userId);
 
@@ -167,21 +168,22 @@ public class ChatService {
         return new ChatRoomsSummaryResponse(rooms);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ChatMessagePageResponse getMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
 
         LocalDateTime readAt = LocalDateTime.now();
-        chatPresenceService.recordPresence(roomId, userId);
 
         if (room.isDirectRoom()) {
             chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, userId, readAt);
+            chatPresenceService.recordPresence(roomId, userId);
             return getDirectChatRoomMessages(userId, roomId, page, limit, readAt);
         }
 
         chatRoomMembershipService.ensureClubRoomMember(roomId, userId);
         chatRoomMembershipService.updateLastReadAt(roomId, userId, readAt);
+        chatPresenceService.recordPresence(roomId, userId);
         return getClubMessagesByRoomId(roomId, userId, page, limit);
     }
 
