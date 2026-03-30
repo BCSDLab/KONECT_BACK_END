@@ -138,7 +138,6 @@ public interface ChatApi {
         ## 에러
         - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
-        - FORBIDDEN_GROUP_CHAT_ACCESS (403): 단체 채팅방에 접근할 권한이 없습니다.
         """)
     @PatchMapping("/rooms/{chatRoomId}/name")
     ResponseEntity<Void> updateChatRoomName(
