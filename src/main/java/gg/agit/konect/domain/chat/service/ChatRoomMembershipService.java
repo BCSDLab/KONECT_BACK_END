@@ -243,6 +243,6 @@ public class ChatRoomMembershipService {
             return false;
         }
         String message = rootCause.getMessage();
-        return message != null && message.contains("Duplicate");
+        return message != null && (message.contains("Duplicate") || message.contains("duplicate key"));
     }
 }
