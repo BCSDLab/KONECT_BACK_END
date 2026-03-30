@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +27,9 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -98,7 +101,7 @@ public class ChatRoomMembershipService {
                 continue;
             }
 
-            chatRoomMemberRepository.save(ChatRoomMember.of(room, member.getUser(), member.getCreatedAt()));
+            saveRoomMemberIgnoringDuplicate(room, member.getUser(), member.getCreatedAt());
         }
     }
 
@@ -149,12 +152,19 @@ public class ChatRoomMembershipService {
             if (roomByClubId.containsKey(clubEntry.getKey())) {
                 continue;
             }
-            ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.groupOf(clubEntry.getValue()));
-            roomByClubId.put(clubEntry.getKey(), createdRoom);
+            try {
+                ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.groupOf(clubEntry.getValue()));
+                roomByClubId.put(clubEntry.getKey(), createdRoom);
+            } catch (DataIntegrityViolationException e) {
+                log.debug("클럽 채팅방 동시 생성 감지, 재조회: clubId={}", clubEntry.getKey());
+                chatRoomRepository.findByClubId(clubEntry.getKey())
+                    .ifPresent(room -> roomByClubId.put(clubEntry.getKey(), room));
+            }
         }
 
         return memberships.stream()
             .map(membership -> roomByClubId.get(membership.getClub().getId()))
+            .filter(Objects::nonNull)
             .toList();
     }
 
@@ -165,7 +175,15 @@ public class ChatRoomMembershipService {
                 if (lastReadAt == null || lastReadAt.isBefore(baseline)) {
                     member.updateLastReadAt(baseline);
                 }
-            }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, baseline)));
+            }, () -> saveRoomMemberIgnoringDuplicate(room, user, baseline));
+    }
+
+    private void saveRoomMemberIgnoringDuplicate(ChatRoom room, User user, LocalDateTime baseline) {
+        try {
+            chatRoomMemberRepository.save(ChatRoomMember.of(room, user, baseline));
+        } catch (DataIntegrityViolationException e) {
+            log.debug("채팅방 멤버 동시 생성 감지, 무시: roomId={}, userId={}", room.getId(), user.getId());
+        }
     }
 
     private void ensureDirectRoomMemberExists(ChatRoom room, User user) {
@@ -175,7 +193,7 @@ public class ChatRoomMembershipService {
         }
 
         if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room.getId())) {
-            chatRoomMemberRepository.save(ChatRoomMember.of(room, user, LocalDateTime.now()));
+            saveRoomMemberIgnoringDuplicate(room, user, LocalDateTime.now());
             return;
         }
 
