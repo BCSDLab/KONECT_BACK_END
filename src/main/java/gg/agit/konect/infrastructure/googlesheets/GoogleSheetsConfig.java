@@ -88,6 +88,10 @@ public class GoogleSheetsConfig {
 
     private InputStream openCredentialsStream() throws IOException {
         String credentialsPath = googleSheetsProperties.credentialsPath();
+        if (credentialsPath == null || credentialsPath.isBlank()) {
+            throw new IOException("Google Sheets credentials path is not configured.");
+        }
+
         if (credentialsPath.startsWith("classpath:")) {
             Resource resource = resourceLoader.getResource(credentialsPath);
             if (!resource.exists()) {

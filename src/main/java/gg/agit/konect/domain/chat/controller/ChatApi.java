@@ -19,16 +19,21 @@ import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
+import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
 import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 @Tag(name = "(Normal) Chat: 채팅", description = "채팅 API")
 @RequestMapping("/chats")
 public interface ChatApi {
+
+    int MAX_SEARCH_LIMIT = 100;
 
     @Operation(summary = "채팅방을 생성하거나 기존 채팅방을 반환한다.", description = """
         ## 설명
@@ -76,6 +81,30 @@ public interface ChatApi {
         """)
     @GetMapping("/rooms")
     ResponseEntity<ChatRoomsSummaryResponse> getChatRooms(
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "채팅방 이름과 메시지 내용으로 채팅방을 검색한다.", description = """
+        ## 설명
+        - 현재 사용자가 접근 가능한 채팅방만 검색합니다.
+        - 채팅방 이름 매칭 결과와 메시지 내용 매칭 결과를 분리해서 반환합니다.
+
+        ## 로직
+        - 1:1 채팅은 상대방 이름과 사용자가 지정한 채팅방 이름으로 검색합니다.
+        - 그룹 채팅은 동아리 이름과 사용자가 지정한 채팅방 이름으로 검색합니다.
+        - 메시지 검색 결과는 채팅방별 최신 매칭 메시지 1개만 반환합니다.
+        - page, limit는 채팅방 이름 검색 결과와 메시지 검색 결과에 각각 동일하게 적용됩니다.
+        - limit는 최대 100까지 허용됩니다.
+        """)
+    @GetMapping("/rooms/search")
+    ResponseEntity<ChatSearchResponse> searchChats(
+        @NotBlank(message = "검색어는 필수입니다.")
+        @RequestParam(name = "keyword") String keyword,
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
+        @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
+        @Max(value = MAX_SEARCH_LIMIT, message = "페이지 당 항목 수는 100 이하여야 합니다.")
+        @RequestParam(name = "limit", defaultValue = "20") Integer limit,
         @UserId Integer userId
     );
 
