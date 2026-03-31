@@ -159,11 +159,10 @@ public class ChatService {
             chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null"
         );
 
-        chatRoomMemberRepository.save(ChatRoomMember.ofOwner(chatRoom, creator, joinedAt));
-
-        invitees.forEach(user ->
-            chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt))
-        );
+        List<ChatRoomMember> members = new ArrayList<>();
+        members.add(ChatRoomMember.ofOwner(chatRoom, creator, joinedAt));
+        invitees.forEach(user -> members.add(ChatRoomMember.of(chatRoom, user, joinedAt)));
+        chatRoomMemberRepository.saveAll(members);
 
         return ChatRoomResponse.from(chatRoom);
     }
@@ -1193,9 +1192,6 @@ public class ChatService {
             .collect(Collectors.groupingBy(ChatRoomMember::getChatRoomId));
     }
 
-    private record MemberInfo(Integer userId, LocalDateTime createdAt) {
-    }
-
     private Map<Integer, List<MemberInfo>> getRoomMemberInfoMap(List<ChatRoom> rooms) {
         if (rooms.isEmpty()) {
             return Map.of();
@@ -1301,5 +1297,8 @@ public class ChatService {
         } catch (Exception e) {
             log.warn("Redis presence record failed, continuing: roomId={}, userId={}", roomId, userId, e);
         }
+    }
+
+    private record MemberInfo(Integer userId, LocalDateTime createdAt) {
     }
 }
