@@ -9,6 +9,11 @@ spring:
     url: ${MYSQL_URL}
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      connection-timeout: 5000
+      leak-detection-threshold: 30000
 
   jpa:
     properties:

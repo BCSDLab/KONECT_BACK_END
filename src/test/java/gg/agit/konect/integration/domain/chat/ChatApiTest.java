@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +18,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
+import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
@@ -24,6 +27,7 @@ import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
@@ -33,9 +37,10 @@ import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
-import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
+
+import org.springframework.util.LinkedMultiValueMap;
 
 class ChatApiTest extends IntegrationTestSupport {
 
@@ -93,7 +98,8 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.chatRoomId").isNumber());
 
             clearPersistenceContext();
-            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId())).isPresent();
+            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId(), ChatType.DIRECT))
+                .isPresent();
             assertThat(countDirectRoomsBetween(normalUser, targetUser)).isEqualTo(beforeCount + 1);
         }
 
@@ -135,7 +141,7 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.chatRoomId").value(existingRoom.getId()));
 
             clearPersistenceContext();
-            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId()))
+            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId(), ChatType.DIRECT))
                 .isPresent()
                 .get()
                 .extracting(ChatRoom::getId)
@@ -177,6 +183,219 @@ class ChatApiTest extends IntegrationTestSupport {
     }
 
     @Nested
+    @DisplayName("GET /chats/rooms/invitables - 초대 가능 사용자 조회")
+    class GetInvitableUsers {
+
+        private User bcsdUser;
+        private User cseUser;
+        private User directOnlyUser;
+        private User multiClubUser;
+        private User withdrawnUser;
+        private User adminCandidate;
+
+        @BeforeEach
+        void setUpInvitableUsersFixture() {
+            bcsdUser = createUser("김비씨", "2021136002");
+            cseUser = createUser("이씨에스", "2021136003");
+            directOnlyUser = createUser("박다이렉트", "2021136004");
+            multiClubUser = createUser("정멀티", "2021136006");
+            withdrawnUser = createUser("탈퇴예정", "2021136005");
+            adminCandidate = persist(UserFixture.createAdmin(university));
+
+            Club bcsd = persist(ClubFixture.create(university, "BCSD"));
+            Club cse = persist(ClubFixture.create(university, "CSE&Biz"));
+
+            User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+            User managedBcsdUser = entityManager.getReference(User.class, bcsdUser.getId());
+            User managedCseUser = entityManager.getReference(User.class, cseUser.getId());
+            User managedMultiClubUser = entityManager.getReference(User.class, multiClubUser.getId());
+            Club managedBcsd = entityManager.getReference(Club.class, bcsd.getId());
+            Club managedCse = entityManager.getReference(Club.class, cse.getId());
+
+            persist(ClubMember.builder()
+                .club(managedBcsd)
+                .user(managedNormalUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedBcsd)
+                .user(managedBcsdUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedBcsd)
+                .user(managedMultiClubUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedCse)
+                .user(managedNormalUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedCse)
+                .user(managedCseUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedCse)
+                .user(managedMultiClubUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+
+            ChatRoom bcsdRoom = persist(ChatRoom.groupOf(bcsd));
+            ChatRoom cseRoom = persist(ChatRoom.groupOf(cse));
+            createDirectChatRoom(normalUser, directOnlyUser);
+            createDirectChatRoom(normalUser, adminCandidate);
+
+            addRoomMember(bcsdRoom, normalUser);
+            addRoomMember(bcsdRoom, bcsdUser);
+            addRoomMember(bcsdRoom, multiClubUser);
+            addRoomMember(cseRoom, normalUser);
+            addRoomMember(cseRoom, cseUser);
+            addRoomMember(cseRoom, multiClubUser);
+            addRoomMember(cseRoom, withdrawnUser);
+
+            entityManager.getReference(User.class, withdrawnUser.getId()).withdraw(LocalDateTime.now());
+
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("기본 정렬은 동아리 섹션과 기타 섹션으로 반환한다")
+        void getInvitableUsersGroupedByClub() throws Exception {
+            mockLoginUser(normalUser.getId());
+
+            performGet("/chats/rooms/invitables")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.currentCount").value(4))
+                .andExpect(jsonPath("$.totalPage").value(1))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.sortBy").value("CLUB"))
+                .andExpect(jsonPath("$.grouped").value(true))
+                .andExpect(jsonPath("$.users").isEmpty())
+                .andExpect(jsonPath("$.sections[0].clubName").value("BCSD"))
+                .andExpect(jsonPath("$.sections[0].users[0].name").value("김비씨"))
+                .andExpect(jsonPath("$.sections[0].users[1].name").value("정멀티"))
+                .andExpect(jsonPath("$.sections[1].clubName").value("CSE&Biz"))
+                .andExpect(jsonPath("$.sections[1].users[0].name").value("이씨에스"))
+                .andExpect(jsonPath("$.sections[1].users[1]").doesNotExist())
+                .andExpect(jsonPath("$.sections[2].clubName").value("기타"))
+                .andExpect(jsonPath("$.sections[2].users[0].name").value("박다이렉트"))
+                .andExpect(jsonPath("$.sections[2].users[1]").doesNotExist())
+                .andExpect(jsonPath("$.sections[*].users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("탈퇴예정")
+                )))
+                .andExpect(jsonPath("$.sections[*].users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("관리자")
+                )));
+        }
+
+        @Test
+        @DisplayName("이름 정렬이면 섹션 없이 단일 리스트로 반환하고 검색이 적용된다")
+        void getInvitableUsersSortedByName() throws Exception {
+            mockLoginUser(normalUser.getId());
+            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("NAME"),
+                "query", List.of("2021136004")
+            ));
+
+            performGet("/chats/rooms/invitables", params)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.currentCount").value(1))
+                .andExpect(jsonPath("$.totalPage").value(1))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.sortBy").value("NAME"))
+                .andExpect(jsonPath("$.grouped").value(false))
+                .andExpect(jsonPath("$.sections").isEmpty())
+                .andExpect(jsonPath("$.users[0].name").value("박다이렉트"))
+                .andExpect(jsonPath("$.users[1]").doesNotExist())
+                .andExpect(jsonPath("$.users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("탈퇴예정")
+                )))
+                .andExpect(jsonPath("$.users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("관리자")
+                )));
+        }
+
+        @Test
+        @DisplayName("페이지네이션을 적용하면 현재 페이지 사용자만 반환한다")
+        void getInvitableUsersWithPagination() throws Exception {
+            mockLoginUser(normalUser.getId());
+            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("NAME"),
+                "page", List.of("2"),
+                "limit", List.of("2")
+            ));
+
+            performGet("/chats/rooms/invitables", params)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.currentCount").value(2))
+                .andExpect(jsonPath("$.totalPage").value(2))
+                .andExpect(jsonPath("$.currentPage").value(2))
+                .andExpect(jsonPath("$.users[0].name").value("이씨에스"))
+                .andExpect(jsonPath("$.users[1].name").value("정멀티"))
+                .andExpect(jsonPath("$.users[2]").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("동아리 정렬은 페이지 경계가 동아리를 가로질러도 섹션 헤더를 유지한다")
+        void getInvitableUsersWithClubPaginationAcrossSections() throws Exception {
+            mockLoginUser(normalUser.getId());
+
+            createGroupedInviteCandidates("분할A", "분할A", 10);
+            createGroupedInviteCandidates("분할B", "분할B", 20);
+            createGroupedInviteCandidates("분할C", "분할C", 30);
+            clearPersistenceContext();
+
+            LinkedMultiValueMap<String, String> firstPageParams = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("CLUB"),
+                "query", List.of("분할"),
+                "page", List.of("1"),
+                "limit", List.of("20")
+            ));
+
+            performGet("/chats/rooms/invitables", firstPageParams)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(60))
+                .andExpect(jsonPath("$.currentCount").value(20))
+                .andExpect(jsonPath("$.totalPage").value(3))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.sections[0].clubName").value("분할A"))
+                .andExpect(jsonPath("$.sections[0].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[1].clubName").value("분할B"))
+                .andExpect(jsonPath("$.sections[1].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[2]").doesNotExist());
+
+            LinkedMultiValueMap<String, String> secondPageParams = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("CLUB"),
+                "query", List.of("분할"),
+                "page", List.of("2"),
+                "limit", List.of("20")
+            ));
+
+            performGet("/chats/rooms/invitables", secondPageParams)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(60))
+                .andExpect(jsonPath("$.currentCount").value(20))
+                .andExpect(jsonPath("$.totalPage").value(3))
+                .andExpect(jsonPath("$.currentPage").value(2))
+                .andExpect(jsonPath("$.sections[0].clubName").value("분할B"))
+                .andExpect(jsonPath("$.sections[0].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[0].users[0].name").value("분할B11"))
+                .andExpect(jsonPath("$.sections[0].users[9].name").value("분할B20"))
+                .andExpect(jsonPath("$.sections[1].clubName").value("분할C"))
+                .andExpect(jsonPath("$.sections[1].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[1].users[0].name").value("분할C01"))
+                .andExpect(jsonPath("$.sections[1].users[9].name").value("분할C10"))
+                .andExpect(jsonPath("$.sections[2]").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /chats/rooms/{chatRoomId}/messages - 메시지 전송")
     class SendMessage {
 
@@ -205,7 +424,9 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.isMine").value(true));
 
             clearPersistenceContext();
-            assertThat(chatMessageRepository.findByChatRoomId(chatRoom.getId(), PageRequest.of(0, 20)).getContent())
+            assertThat(
+                chatMessageRepository.findByChatRoomId(chatRoom.getId(), null, PageRequest.of(0, 20)).getContent()
+            )
                 .hasSize(1)
                 .extracting(ChatMessage::getContent)
                 .containsExactly("안녕하세요");
@@ -238,6 +459,239 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"))
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("content"));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /chats/rooms/{chatRoomId}/name - 채팅방 이름 수정")
+    class UpdateChatRoomName {
+
+        @BeforeEach
+        void setUpRoomNameFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            outsiderUser = createUser("외부유저", "2021136003");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("내가 수정한 채팅방 이름은 내 목록에만 반영된다")
+        void updateChatRoomNameOnlyForCurrentUser() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("알바 이야기방"))
+                .andExpect(status().isOk());
+
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId()))
+                .isPresent()
+                .get()
+                .extracting(ChatRoomMember::getCustomRoomName)
+                .isEqualTo("알바 이야기방");
+
+            // when & then
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomName").value("알바 이야기방"));
+
+            mockLoginUser(targetUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomName").value(normalUser.getName()));
+        }
+
+        @Test
+        @DisplayName("공백 이름으로 요청하면 기본 채팅방 이름으로 되돌린다")
+        void blankRoomNameResetsToDefault() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(normalUser.getId());
+
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("알바 이야기방"))
+                .andExpect(status().isOk());
+
+            // when
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("   "))
+                .andExpect(status().isOk());
+
+            // then
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId()))
+                .isPresent()
+                .get()
+                .extracting(ChatRoomMember::getCustomRoomName)
+                .isNull();
+
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomName").value(targetUser.getName()));
+        }
+
+        @Test
+        @DisplayName("참여하지 않은 사용자는 채팅방 이름을 수정할 수 없다")
+        void updateChatRoomNameForbidden() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(outsiderUser.getId());
+
+            // when & then
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("몰래 바꾸기"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /chats/rooms/{chatRoomId} - 채팅방 나가기")
+    class LeaveChatRoom {
+
+        @BeforeEach
+        void setUpLeaveFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("1:1 채팅방을 나가면 목록에서 숨겨지고 새 메시지부터 다시 보인다")
+        void leaveDirectChatRoomAndShowOnlyNewMessages() throws Exception {
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("첫 메시지"))
+                .andExpect(status().isOk());
+
+            performDelete("/chats/rooms/" + chatRoom.getId())
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+            ChatRoomMember leftMember = chatRoomMemberRepository
+                .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
+                .orElseThrow();
+            assertThat(leftMember.hasLeft()).isTrue();
+
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms").isEmpty());
+
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+
+            mockLoginUser(targetUser.getId());
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("다시 안녕"))
+                .andExpect(status().isOk());
+
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomId").value(chatRoom.getId()))
+                .andExpect(jsonPath("$.rooms[0].lastMessage").value("다시 안녕"))
+                .andExpect(jsonPath("$.rooms[0].unreadCount").value(1));
+
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.messages[0].content").value("다시 안녕"));
+
+            mockLoginUser(targetUser.getId());
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2))
+                .andExpect(jsonPath("$.messages[0].content").value("다시 안녕"))
+                .andExpect(jsonPath("$.messages[1].content").value("첫 메시지"));
+        }
+
+        @Test
+        @DisplayName("나간 뒤 다시 채팅방을 열면 처음 대화하는 것처럼 빈 메시지 목록을 본다")
+        void createOrGetChatRoomAfterLeaveStartsFresh() throws Exception {
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("첫 메시지"))
+                .andExpect(status().isOk());
+
+            performDelete("/chats/rooms/" + chatRoom.getId())
+                .andExpect(status().isNoContent());
+
+            performPost("/chats/rooms", new ChatRoomCreateRequest(targetUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatRoomId").value(chatRoom.getId()));
+
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomId").value(chatRoom.getId()))
+                .andExpect(jsonPath("$.rooms[0].lastMessage").doesNotExist());
+
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(0))
+                .andExpect(jsonPath("$.messages").isEmpty());
+        }
+
+        @Test
+        @DisplayName("나간 뒤 새 메시지가 오기 전에는 방 조작이 불가능하다")
+        void cannotOperateHiddenDirectRoomBeforeNewMessage() throws Exception {
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performDelete("/chats/rooms/" + chatRoom.getId())
+                .andExpect(status().isNoContent());
+
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("몰래 보내기"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("숨김방"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+
+            performPost("/chats/rooms/" + chatRoom.getId() + "/mute")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("동아리 채팅방은 나갈 수 없다")
+        void leaveGroupChatRoomFails() throws Exception {
+            Club club = persist(ClubFixture.create(university));
+            ChatRoom groupRoom = persist(ChatRoom.groupOf(club));
+            ChatRoom managedGroupRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
+            User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+            persist(ChatRoomMember.of(managedGroupRoom, managedNormalUser, groupRoom.getCreatedAt()));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+
+            performDelete("/chats/rooms/" + groupRoom.getId())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_LEAVE_GROUP_CHAT_ROOM"));
+        }
+
+        @Test
+        @DisplayName("일반 그룹 채팅방은 멤버십 삭제 방식으로 나갈 수 있다")
+        void leaveOpenGroupChatRoomDeletesMembership() throws Exception {
+            ChatRoom openGroupRoom = persist(ChatRoom.groupOf());
+            ChatRoom managedOpenGroupRoom = entityManager.getReference(ChatRoom.class, openGroupRoom.getId());
+            User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+            User managedTargetUser = entityManager.getReference(User.class, targetUser.getId());
+            persist(ChatRoomMember.of(managedOpenGroupRoom, managedNormalUser, openGroupRoom.getCreatedAt()));
+            persist(ChatRoomMember.of(managedOpenGroupRoom, managedTargetUser, openGroupRoom.getCreatedAt()));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+
+            performDelete("/chats/rooms/" + openGroupRoom.getId())
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(openGroupRoom.getId(), normalUser.getId()))
+                .isEmpty();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(openGroupRoom.getId(), targetUser.getId()))
+                .isPresent();
         }
     }
 
@@ -431,7 +885,11 @@ class ChatApiTest extends IntegrationTestSupport {
     private ClubMember createClubMember(Club club, User user) {
         Club managedClub = entityManager.getReference(Club.class, club.getId());
         User managedUser = entityManager.getReference(User.class, user.getId());
-        ClubMember clubMember = persist(ClubMemberFixture.createMember(managedClub, managedUser));
+        ClubMember clubMember = persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
         clearPersistenceContext();
         return clubMember;
     }
@@ -447,8 +905,43 @@ class ChatApiTest extends IntegrationTestSupport {
         return chatMessage;
     }
 
+    private void addRoomMember(ChatRoom chatRoom, User user) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        persist(ChatRoomMember.of(managedChatRoom, managedUser, chatRoom.getCreatedAt()));
+    }
+
+    private void createGroupedInviteCandidates(String clubName, String namePrefix, int count) {
+        Club club = persist(ClubFixture.create(university, clubName));
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+
+        persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedNormalUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+
+        ChatRoom groupRoom = persist(ChatRoom.groupOf(club));
+        addRoomMember(groupRoom, normalUser);
+
+        for (int index = 1; index <= count; index++) {
+            User candidate = createUser(
+                String.format("%s%02d", namePrefix, index),
+                String.format("202199%04d", index + count * 10)
+            );
+            User managedCandidate = entityManager.getReference(User.class, candidate.getId());
+            persist(ClubMember.builder()
+                .club(managedClub)
+                .user(managedCandidate)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            addRoomMember(groupRoom, candidate);
+        }
+    }
+
     private long countDirectRoomsBetween(User firstUser, User secondUser) {
-        return chatRoomRepository.findByUserId(firstUser.getId()).stream()
+        return chatRoomRepository.findByUserId(firstUser.getId(), ChatType.DIRECT).stream()
             .map(ChatRoom::getId)
             .filter(roomId -> isDirectRoomBetween(roomId, firstUser.getId(), secondUser.getId()))
             .count();

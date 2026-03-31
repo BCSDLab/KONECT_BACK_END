@@ -17,13 +17,13 @@ public class UserSlackListener {
 
     private final SlackNotificationService slackNotificationService;
 
-    @Async
+    @Async("slackTaskExecutor")
     @TransactionalEventListener(phase = AFTER_COMMIT)
     public void handleUserWithdrawn(UserWithdrawnEvent event) {
         slackNotificationService.notifyUserWithdraw(event.email(), event.provider());
     }
 
-    @Async
+    @Async("slackTaskExecutor")
     @TransactionalEventListener(phase = AFTER_COMMIT)
     public void handleUserRegistered(UserRegisteredEvent event) {
         slackNotificationService.notifyUserRegister(event.email(), event.provider());

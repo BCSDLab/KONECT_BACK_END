@@ -1,6 +1,7 @@
 package gg.agit.konect.infrastructure.googlesheets;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -93,6 +94,9 @@ public class GoogleSheetsConfig {
 
         if (credentialsPath.startsWith("classpath:")) {
             Resource resource = resourceLoader.getResource(credentialsPath);
+            if (!resource.exists()) {
+                throw new FileNotFoundException(credentialsPath);
+            }
             return resource.getInputStream();
         }
 

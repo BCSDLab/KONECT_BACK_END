@@ -79,13 +79,13 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
         @Param("userId") Integer userId
     );
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("""
         UPDATE ChatRoomMember crm
         SET crm.lastReadAt = :lastReadAt
         WHERE crm.id.chatRoomId = :chatRoomId
           AND crm.id.userId = :userId
-          AND crm.lastReadAt < :lastReadAt
+          AND (crm.lastReadAt IS NULL OR crm.lastReadAt < :lastReadAt)
         """)
     int updateLastReadAtIfOlder(
         @Param("chatRoomId") Integer chatRoomId,
