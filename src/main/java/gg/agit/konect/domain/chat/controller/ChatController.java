@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
+import gg.agit.konect.domain.chat.dto.ChatInvitableUsersResponse;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
+import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -51,6 +53,16 @@ public class ChatController implements ChatApi {
         @UserId Integer userId
     ) {
         ChatRoomsSummaryResponse response = chatService.getChatRooms(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ChatInvitableUsersResponse> getInvitableUsers(
+        @RequestParam(name = "query", required = false) String query,
+        @RequestParam(name = "sortBy", defaultValue = "CLUB") ChatInviteSortBy sortBy,
+        @UserId Integer userId
+    ) {
+        ChatInvitableUsersResponse response = chatService.getInvitableUsers(userId, query, sortBy);
         return ResponseEntity.ok(response);
     }
 
