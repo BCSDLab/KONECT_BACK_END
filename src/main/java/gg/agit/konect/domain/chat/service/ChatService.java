@@ -966,7 +966,13 @@ public class ChatService {
             return getAccessibleDirectRoomMember(room, user);
         }
 
-        return getRoomMember(room.getId(), userId);
+        ChatRoomMember member = getRoomMember(room.getId(), userId);
+
+        if (member.hasLeft()) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+
+        return member;
     }
 
     private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
