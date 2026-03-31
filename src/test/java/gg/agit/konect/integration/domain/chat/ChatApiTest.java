@@ -361,6 +361,19 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.roomMatches.currentPage").value(2))
                 .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("개발자"));
         }
+
+        @Test
+        @DisplayName("limit가 최대값을 초과하면 400을 반환한다")
+        void searchChatsWithTooLargeLimitFails() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발&page=1&limit=101")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"))
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("searchChats.limit"));
+        }
     }
 
     @Nested
