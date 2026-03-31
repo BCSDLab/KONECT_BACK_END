@@ -28,6 +28,16 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     List<ChatRoom> findByUserId(@Param("userId") Integer userId, @Param("roomType") ChatType roomType);
 
     @Query("""
+        SELECT DISTINCT cr
+        FROM ChatRoom cr
+        JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
+        WHERE crm.id.userId = :userId
+          AND cr.roomType = gg.agit.konect.domain.chat.enums.ChatType.GROUP
+        ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
+        """)
+    List<ChatRoom> findGroupRoomsByMemberUserId(@Param("userId") Integer userId);
+
+    @Query("""
         SELECT cr
         FROM ChatRoom cr
         LEFT JOIN FETCH cr.club

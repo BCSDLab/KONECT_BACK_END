@@ -63,9 +63,9 @@ public class ChatRoom extends BaseEntity {
             .build();
     }
 
-    public static ChatRoom groupOf(Club club) {
+    public static ChatRoom clubGroupOf(Club club) {
         return ChatRoom.builder()
-            .roomType(ChatType.GROUP)
+            .roomType(ChatType.CLUB_GROUP)
             .club(club)
             .build();
     }
@@ -87,11 +87,11 @@ public class ChatRoom extends BaseEntity {
     }
 
     public boolean isGroupRoom() {
-        return roomType == ChatType.GROUP;
+        return roomType == ChatType.GROUP || roomType == ChatType.CLUB_GROUP;
     }
 
     public boolean isClubGroupRoom() {
-        return roomType == ChatType.GROUP && club != null;
+        return roomType == ChatType.CLUB_GROUP;
     }
 
     public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {

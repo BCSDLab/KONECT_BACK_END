@@ -154,7 +154,7 @@ public class ChatRoomMembershipService {
         return chatRoomRepository.findByClubId(club.getId())
             .orElseGet(() -> {
                 try {
-                    return chatRoomRepository.save(ChatRoom.groupOf(club));
+                    return chatRoomRepository.save(ChatRoom.clubGroupOf(club));
                 } catch (DataIntegrityViolationException e) {
                     if (!isDuplicateKeyException(e)) {
                         throw e;
@@ -181,7 +181,7 @@ public class ChatRoomMembershipService {
                 continue;
             }
             try {
-                ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.groupOf(clubEntry.getValue()));
+                ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.clubGroupOf(clubEntry.getValue()));
                 roomByClubId.put(clubEntry.getKey(), createdRoom);
             } catch (DataIntegrityViolationException e) {
                 if (!isDuplicateKeyException(e)) {
