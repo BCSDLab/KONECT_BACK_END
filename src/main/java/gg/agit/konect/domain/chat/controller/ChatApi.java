@@ -10,15 +10,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatInvitableUsersResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
+import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
-import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -194,12 +194,12 @@ public interface ChatApi {
     @Operation(summary = "그룹 채팅방을 생성한다.", description = """
         ## 설명
         - 여러 유저를 초대하여 그룹 채팅방을 생성합니다.
-
+        
         ## 로직
         - 요청자(방장)를 포함하여 선택된 모든 유저가 참여하는 그룹 채팅방을 생성합니다.
         - 방장은 채팅방을 생성한 사용자입니다.
         - 동일한 멤버 구성의 채팅방이 이미 존재하면 새로 생성하지 않고 기존 채팅방을 반환할 수 있습니다.
-
+        
         ## 에러
         - CANNOT_CREATE_CHAT_ROOM_WITH_SELF (400): 자기 자신만으로는 채팅방을 만들 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
