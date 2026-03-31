@@ -60,9 +60,11 @@ public class ChatController implements ChatApi {
     public ResponseEntity<ChatInvitableUsersResponse> getInvitableUsers(
         @RequestParam(name = "query", required = false) String query,
         @RequestParam(name = "sortBy", defaultValue = "CLUB") ChatInviteSortBy sortBy,
+        @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @UserId Integer userId
     ) {
-        ChatInvitableUsersResponse response = chatService.getInvitableUsers(userId, query, sortBy);
+        ChatInvitableUsersResponse response = chatService.getInvitableUsers(userId, query, sortBy, page, limit);
         return ResponseEntity.ok(response);
     }
 

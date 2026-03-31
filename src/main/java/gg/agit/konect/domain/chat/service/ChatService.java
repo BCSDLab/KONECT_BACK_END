@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -196,21 +197,34 @@ public class ChatService {
         return new ChatRoomsSummaryResponse(rooms);
     }
 
-    public ChatInvitableUsersResponse getInvitableUsers(Integer userId, String query, ChatInviteSortBy sortBy) {
+    public ChatInvitableUsersResponse getInvitableUsers(
+        Integer userId,
+        String query,
+        ChatInviteSortBy sortBy,
+        Integer page,
+        Integer limit
+    ) {
         userRepository.getById(userId);
+        PageRequest pageRequest = PageRequest.of(page - 1, limit);
 
-        List<ChatInvitableUsersResponse.InvitableUser> filteredUsers = chatInviteQueryRepository
-            .findInvitableUsers(userId, query)
-            .stream()
+        Page<User> filteredUserEntitiesPage = chatInviteQueryRepository.findInvitableUsers(userId, query, pageRequest);
+
+        List<ChatInvitableUsersResponse.InvitableUser> filteredUsers = filteredUserEntitiesPage.getContent().stream()
             .map(ChatInvitableUsersResponse.InvitableUser::from)
             .toList();
 
+        Page<ChatInvitableUsersResponse.InvitableUser> filteredUsersPage = new PageImpl<>(
+            filteredUsers,
+            pageRequest,
+            filteredUserEntitiesPage.getTotalElements()
+        );
+
         if (sortBy == ChatInviteSortBy.NAME) {
-            return ChatInvitableUsersResponse.forNameSort(filteredUsers);
+            return ChatInvitableUsersResponse.forNameSort(filteredUsersPage);
         }
 
         if (filteredUsers.isEmpty()) {
-            return ChatInvitableUsersResponse.forClubSort(List.of());
+            return ChatInvitableUsersResponse.forClubSort(filteredUsersPage, List.of());
         }
 
         Map<Integer, ChatInvitableUsersResponse.InvitableUser> filteredUserMap = filteredUsers.stream()
@@ -279,7 +293,7 @@ public class ChatService {
             sections.add(new ChatInvitableUsersResponse.InvitableSection(null, ETC_SECTION_NAME, uncategorizedUsers));
         }
 
-        return ChatInvitableUsersResponse.forClubSort(sections);
+        return ChatInvitableUsersResponse.forClubSort(filteredUsersPage, sections);
     }
 
     @Transactional

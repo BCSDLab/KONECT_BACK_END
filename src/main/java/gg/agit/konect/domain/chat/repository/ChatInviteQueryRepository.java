@@ -4,6 +4,9 @@ import static gg.agit.konect.domain.club.model.QClub.club;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
@@ -24,12 +27,12 @@ public class ChatInviteQueryRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
-    public List<User> findInvitableUsers(Integer userId, String query) {
+    public Page<User> findInvitableUsers(Integer userId, String query, PageRequest pageRequest) {
         QChatRoomMember requesterMember = new QChatRoomMember("requesterMember");
         QChatRoomMember candidateMember = new QChatRoomMember("candidateMember");
         QUser candidateUser = new QUser("candidateUser");
 
-        return jpaQueryFactory.select(candidateUser)
+        List<User> content = jpaQueryFactory.select(candidateUser)
             .distinct()
             .from(requesterMember)
             .join(candidateMember)
@@ -49,7 +52,27 @@ public class ChatInviteQueryRepository {
                 candidateUser.studentNumber.asc(),
                 candidateUser.id.asc()
             )
+            .offset(pageRequest.getOffset())
+            .limit(pageRequest.getPageSize())
             .fetch();
+
+        Long total = jpaQueryFactory.select(candidateUser.id.countDistinct())
+            .from(requesterMember)
+            .join(candidateMember)
+            .on(candidateMember.chatRoom.id.eq(requesterMember.chatRoom.id))
+            .join(candidateMember.user, candidateUser)
+            .where(
+                requesterMember.user.id.eq(userId),
+                requesterMember.leftAt.isNull(),
+                candidateMember.user.id.ne(userId),
+                candidateMember.leftAt.isNull(),
+                candidateUser.deletedAt.isNull(),
+                candidateUser.role.ne(UserRole.ADMIN),
+                containsUserKeyword(candidateUser, query)
+            )
+            .fetchOne();
+
+        return new PageImpl<>(content, pageRequest, total == null ? 0 : total);
     }
 
     public List<ClubMember> findRequesterClubMemberships(Integer userId) {

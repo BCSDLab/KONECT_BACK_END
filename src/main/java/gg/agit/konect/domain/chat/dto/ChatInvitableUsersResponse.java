@@ -5,11 +5,25 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ChatInvitableUsersResponse(
+    @Schema(description = "조건에 해당하는 전체 초대 가능 사용자 수", example = "10", requiredMode = REQUIRED)
+    Long totalCount,
+
+    @Schema(description = "현재 페이지에서 조회된 초대 가능 사용자 수", example = "5", requiredMode = REQUIRED)
+    Integer currentCount,
+
+    @Schema(description = "최대 페이지", example = "2", requiredMode = REQUIRED)
+    Integer totalPage,
+
+    @Schema(description = "현재 페이지", example = "1", requiredMode = REQUIRED)
+    Integer currentPage,
+
     @Schema(description = "정렬 기준", example = "CLUB", requiredMode = REQUIRED)
     ChatInviteSortBy sortBy,
 
@@ -58,11 +72,29 @@ public record ChatInvitableUsersResponse(
     ) {
     }
 
-    public static ChatInvitableUsersResponse forNameSort(List<InvitableUser> users) {
-        return new ChatInvitableUsersResponse(ChatInviteSortBy.NAME, false, users, List.of());
+    public static ChatInvitableUsersResponse forNameSort(Page<InvitableUser> page) {
+        return new ChatInvitableUsersResponse(
+            page.getTotalElements(),
+            page.getNumberOfElements(),
+            page.getTotalPages(),
+            page.getNumber() + 1,
+            ChatInviteSortBy.NAME,
+            false,
+            page.getContent(),
+            List.of()
+        );
     }
 
-    public static ChatInvitableUsersResponse forClubSort(List<InvitableSection> sections) {
-        return new ChatInvitableUsersResponse(ChatInviteSortBy.CLUB, true, List.of(), sections);
+    public static ChatInvitableUsersResponse forClubSort(Page<InvitableUser> page, List<InvitableSection> sections) {
+        return new ChatInvitableUsersResponse(
+            page.getTotalElements(),
+            page.getNumberOfElements(),
+            page.getTotalPages(),
+            page.getNumber() + 1,
+            ChatInviteSortBy.CLUB,
+            true,
+            List.of(),
+            sections
+        );
     }
 }

@@ -92,6 +92,10 @@ public interface ChatApi {
     ResponseEntity<ChatInvitableUsersResponse> getInvitableUsers(
         @RequestParam(name = "query", required = false) String query,
         @RequestParam(name = "sortBy", defaultValue = "CLUB") ChatInviteSortBy sortBy,
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
+        @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
+        @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @UserId Integer userId
     );
 
