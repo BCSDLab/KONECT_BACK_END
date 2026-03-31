@@ -699,7 +699,11 @@ public class ChatService {
         List<Integer> roomIds = accessibleRooms.stream()
             .map(ChatRoomSummaryResponse::roomId)
             .toList();
-        Map<Integer, LocalDateTime> visibleMessageFromMap = getVisibleMessageFromMap(roomIds, userId);
+        List<Integer> directRoomIds = accessibleRooms.stream()
+            .filter(room -> room.chatType() == ChatType.DIRECT)
+            .map(ChatRoomSummaryResponse::roomId)
+            .toList();
+        Map<Integer, LocalDateTime> visibleMessageFromMap = getVisibleMessageFromMap(directRoomIds, userId);
 
         List<ChatMessageMatchResult> matchedMessages = chatMessageRepository
             .searchLatestMatchingMessagesByChatRoomIds(roomIds, keyword)
