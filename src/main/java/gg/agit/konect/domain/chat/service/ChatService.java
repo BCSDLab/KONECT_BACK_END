@@ -571,16 +571,14 @@ public class ChatService {
         List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
         Map<Integer, ChatMessage> lastMessageMap = getLastMessageMap(roomIds);
         Map<Integer, Integer> unreadCountMap = getRoomUnreadCountMap(roomIds, userId);
-        Map<Integer, String> customRoomNameMap = getCustomRoomNameMap(roomIds, userId);
 
         return rooms.stream()
             .map(room -> {
                 ChatMessage lastMessage = lastMessageMap.get(room.getId());
-                String roomName = resolveRoomName(room.getId(), DEFAULT_GROUP_ROOM_NAME, customRoomNameMap);
                 return new ChatRoomSummaryResponse(
                     room.getId(),
                     ChatType.GROUP,
-                    roomName,
+                    DEFAULT_GROUP_ROOM_NAME,
                     null,
                     lastMessage != null ? lastMessage.getContent() : null,
                     lastMessage != null ? lastMessage.getCreatedAt() : null,
