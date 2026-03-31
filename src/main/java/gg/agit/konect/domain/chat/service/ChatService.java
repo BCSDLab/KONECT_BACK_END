@@ -269,7 +269,6 @@ public class ChatService {
         // 현재 페이지 사용자에 대해서만 대표 동아리를 다시 구해도,
         // userId 자체는 이미 대표 동아리 기준으로 정렬돼 있으므로 페이지 경계는 유지된다.
         chatInviteQueryRepository.findSharedClubMemberships(userId, pagedUserIds.getContent()).stream()
-            .filter(clubMember -> clubMember.getUser().getDeletedAt() == null)
             .forEach(clubMember -> {
                 representativeClubNames.putIfAbsent(clubMember.getClub().getId(), clubMember.getClub().getName());
                 representativeClubByUserId.putIfAbsent(clubMember.getUser().getId(), clubMember.getClub().getId());
