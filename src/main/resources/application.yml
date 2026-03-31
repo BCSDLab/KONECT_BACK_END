@@ -1,6 +1,8 @@
 spring:
   application:
     name: konect-backend
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   config:
     import:
       - classpath:application-db.yml
@@ -44,6 +46,7 @@ cors:
   allowedOrigins: ${ALLOWED_ORIGINS}
 
 server:
+  shutdown: graceful
   forward-headers-strategy: framework
 
   tomcat:
