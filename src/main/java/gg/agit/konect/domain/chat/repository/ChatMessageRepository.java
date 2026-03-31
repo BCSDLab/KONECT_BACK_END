@@ -125,26 +125,19 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
             FROM ChatMessage cm
             JOIN FETCH cm.chatRoom cr
             WHERE cr.id IN :roomIds
-              AND LOWER(cm.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
+              AND LOCATE(LOWER(:keyword), LOWER(cm.content)) > 0
               AND cm.id = (
                   SELECT MAX(innerCm.id)
                   FROM ChatMessage innerCm
                   WHERE innerCm.chatRoom.id = cr.id
-                    AND LOWER(innerCm.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    AND LOCATE(LOWER(:keyword), LOWER(innerCm.content)) > 0
               )
             ORDER BY cm.createdAt DESC, cm.id DESC
-            """,
-        countQuery = """
-            SELECT COUNT(DISTINCT cm.chatRoom.id)
-            FROM ChatMessage cm
-            WHERE cm.chatRoom.id IN :roomIds
-              AND LOWER(cm.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """
     )
-    Page<ChatMessage> searchLatestMatchingMessagesByChatRoomIds(
+    List<ChatMessage> searchLatestMatchingMessagesByChatRoomIds(
         @Param("roomIds") List<Integer> roomIds,
-        @Param("keyword") String keyword,
-        Pageable pageable
+        @Param("keyword") String keyword
     );
 
     @Query("""
