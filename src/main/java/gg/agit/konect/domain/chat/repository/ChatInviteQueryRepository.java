@@ -83,7 +83,7 @@ public class ChatInviteQueryRepository {
         StringExpression representativeClubName = new CaseBuilder()
             .when(requesterClubMember.id.isNotNull())
             .then(sharedClub.name)
-            .otherwise((String) null);
+            .otherwise((String)null);
         NumberExpression<Integer> clubPresenceOrder = new CaseBuilder()
             .when(requesterClubMember.id.isNotNull())
             .then(0)

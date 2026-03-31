@@ -39,6 +39,7 @@ import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
+
 import org.springframework.util.LinkedMultiValueMap;
 
 class ChatApiTest extends IntegrationTestSupport {
