@@ -1,4 +1,4 @@
-﻿package gg.agit.konect.domain.chat.service;
+package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
@@ -781,15 +781,7 @@ public class ChatService {
             });
     }
 
-       private void recordPresenceSafely(Integer roomId, Integer userId) {
-        try {
-            chatPresenceService.recordPresence(roomId, userId);
-        } catch (Exception e) {
-            log.warn("Redis presence 기록 실패, 메시지 조회는 계속 진행: roomId={}, userId={}, roomId, userId, e);
- }
- }
-
- private boolean isSystemAdminRoom(ChatRoom chatRoom) {
+    private boolean isSystemAdminRoom(ChatRoom chatRoom) {
         List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
             List.of(chatRoom.getId())
         );
@@ -894,5 +886,13 @@ public class ChatService {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
         return partner;
+    }
+
+    private void recordPresenceSafely(Integer roomId, Integer userId) {
+        try {
+            chatPresenceService.recordPresence(roomId, userId);
+        } catch (Exception e) {
+            log.warn("Redis presence record failed, continuing: roomId={}, userId={}", roomId, userId, e);
+        }
     }
 }
