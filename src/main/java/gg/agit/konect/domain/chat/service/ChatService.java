@@ -1000,9 +1000,10 @@ public class ChatService {
     private void updateLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
         int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
         if (updated == 0) {
-            ChatRoom room = getClubRoom(roomId);
-            ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
-            ensureRoomMember(room, member.getUser(), member.getCreatedAt());
+            ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+            User user = userRepository.getById(userId);
+            ensureRoomMember(room, user, lastReadAt);
         }
     }
 
