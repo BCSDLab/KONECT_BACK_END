@@ -1,0 +1,8 @@
+**
+
+!Dockerfile
+!.dockerignore
+!build/
+!build/libs/
+!build/libs/KONECT_API.jar
+!opentelemetry-javaagent.jar
