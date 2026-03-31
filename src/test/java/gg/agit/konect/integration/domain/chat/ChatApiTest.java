@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +27,9 @@ import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
@@ -36,6 +39,8 @@ import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
+
+import org.springframework.util.LinkedMultiValueMap;
 
 class ChatApiTest extends IntegrationTestSupport {
 
@@ -174,6 +179,219 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.rooms[0].roomName").value(adminUser.getName()))
                 .andExpect(jsonPath("$.rooms[0].lastMessage").doesNotExist())
                 .andExpect(jsonPath("$.rooms[0].isMuted").value(false));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /chats/rooms/invitables - 초대 가능 사용자 조회")
+    class GetInvitableUsers {
+
+        private User bcsdUser;
+        private User cseUser;
+        private User directOnlyUser;
+        private User multiClubUser;
+        private User withdrawnUser;
+        private User adminCandidate;
+
+        @BeforeEach
+        void setUpInvitableUsersFixture() {
+            bcsdUser = createUser("김비씨", "2021136002");
+            cseUser = createUser("이씨에스", "2021136003");
+            directOnlyUser = createUser("박다이렉트", "2021136004");
+            multiClubUser = createUser("정멀티", "2021136006");
+            withdrawnUser = createUser("탈퇴예정", "2021136005");
+            adminCandidate = persist(UserFixture.createAdmin(university));
+
+            Club bcsd = persist(ClubFixture.create(university, "BCSD"));
+            Club cse = persist(ClubFixture.create(university, "CSE&Biz"));
+
+            User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+            User managedBcsdUser = entityManager.getReference(User.class, bcsdUser.getId());
+            User managedCseUser = entityManager.getReference(User.class, cseUser.getId());
+            User managedMultiClubUser = entityManager.getReference(User.class, multiClubUser.getId());
+            Club managedBcsd = entityManager.getReference(Club.class, bcsd.getId());
+            Club managedCse = entityManager.getReference(Club.class, cse.getId());
+
+            persist(ClubMember.builder()
+                .club(managedBcsd)
+                .user(managedNormalUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedBcsd)
+                .user(managedBcsdUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedBcsd)
+                .user(managedMultiClubUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedCse)
+                .user(managedNormalUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedCse)
+                .user(managedCseUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            persist(ClubMember.builder()
+                .club(managedCse)
+                .user(managedMultiClubUser)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+
+            ChatRoom bcsdRoom = persist(ChatRoom.groupOf(bcsd));
+            ChatRoom cseRoom = persist(ChatRoom.groupOf(cse));
+            createDirectChatRoom(normalUser, directOnlyUser);
+            createDirectChatRoom(normalUser, adminCandidate);
+
+            addRoomMember(bcsdRoom, normalUser);
+            addRoomMember(bcsdRoom, bcsdUser);
+            addRoomMember(bcsdRoom, multiClubUser);
+            addRoomMember(cseRoom, normalUser);
+            addRoomMember(cseRoom, cseUser);
+            addRoomMember(cseRoom, multiClubUser);
+            addRoomMember(cseRoom, withdrawnUser);
+
+            entityManager.getReference(User.class, withdrawnUser.getId()).withdraw(LocalDateTime.now());
+
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("기본 정렬은 동아리 섹션과 기타 섹션으로 반환한다")
+        void getInvitableUsersGroupedByClub() throws Exception {
+            mockLoginUser(normalUser.getId());
+
+            performGet("/chats/rooms/invitables")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.currentCount").value(4))
+                .andExpect(jsonPath("$.totalPage").value(1))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.sortBy").value("CLUB"))
+                .andExpect(jsonPath("$.grouped").value(true))
+                .andExpect(jsonPath("$.users").isEmpty())
+                .andExpect(jsonPath("$.sections[0].clubName").value("BCSD"))
+                .andExpect(jsonPath("$.sections[0].users[0].name").value("김비씨"))
+                .andExpect(jsonPath("$.sections[0].users[1].name").value("정멀티"))
+                .andExpect(jsonPath("$.sections[1].clubName").value("CSE&Biz"))
+                .andExpect(jsonPath("$.sections[1].users[0].name").value("이씨에스"))
+                .andExpect(jsonPath("$.sections[1].users[1]").doesNotExist())
+                .andExpect(jsonPath("$.sections[2].clubName").value("기타"))
+                .andExpect(jsonPath("$.sections[2].users[0].name").value("박다이렉트"))
+                .andExpect(jsonPath("$.sections[2].users[1]").doesNotExist())
+                .andExpect(jsonPath("$.sections[*].users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("탈퇴예정")
+                )))
+                .andExpect(jsonPath("$.sections[*].users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("관리자")
+                )));
+        }
+
+        @Test
+        @DisplayName("이름 정렬이면 섹션 없이 단일 리스트로 반환하고 검색이 적용된다")
+        void getInvitableUsersSortedByName() throws Exception {
+            mockLoginUser(normalUser.getId());
+            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("NAME"),
+                "query", List.of("2021136004")
+            ));
+
+            performGet("/chats/rooms/invitables", params)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.currentCount").value(1))
+                .andExpect(jsonPath("$.totalPage").value(1))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.sortBy").value("NAME"))
+                .andExpect(jsonPath("$.grouped").value(false))
+                .andExpect(jsonPath("$.sections").isEmpty())
+                .andExpect(jsonPath("$.users[0].name").value("박다이렉트"))
+                .andExpect(jsonPath("$.users[1]").doesNotExist())
+                .andExpect(jsonPath("$.users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("탈퇴예정")
+                )))
+                .andExpect(jsonPath("$.users[*].name").value(org.hamcrest.Matchers.not(
+                    org.hamcrest.Matchers.hasItem("관리자")
+                )));
+        }
+
+        @Test
+        @DisplayName("페이지네이션을 적용하면 현재 페이지 사용자만 반환한다")
+        void getInvitableUsersWithPagination() throws Exception {
+            mockLoginUser(normalUser.getId());
+            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("NAME"),
+                "page", List.of("2"),
+                "limit", List.of("2")
+            ));
+
+            performGet("/chats/rooms/invitables", params)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.currentCount").value(2))
+                .andExpect(jsonPath("$.totalPage").value(2))
+                .andExpect(jsonPath("$.currentPage").value(2))
+                .andExpect(jsonPath("$.users[0].name").value("이씨에스"))
+                .andExpect(jsonPath("$.users[1].name").value("정멀티"))
+                .andExpect(jsonPath("$.users[2]").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("동아리 정렬은 페이지 경계가 동아리를 가로질러도 섹션 헤더를 유지한다")
+        void getInvitableUsersWithClubPaginationAcrossSections() throws Exception {
+            mockLoginUser(normalUser.getId());
+
+            createGroupedInviteCandidates("분할A", "분할A", 10);
+            createGroupedInviteCandidates("분할B", "분할B", 20);
+            createGroupedInviteCandidates("분할C", "분할C", 30);
+            clearPersistenceContext();
+
+            LinkedMultiValueMap<String, String> firstPageParams = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("CLUB"),
+                "query", List.of("분할"),
+                "page", List.of("1"),
+                "limit", List.of("20")
+            ));
+
+            performGet("/chats/rooms/invitables", firstPageParams)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(60))
+                .andExpect(jsonPath("$.currentCount").value(20))
+                .andExpect(jsonPath("$.totalPage").value(3))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.sections[0].clubName").value("분할A"))
+                .andExpect(jsonPath("$.sections[0].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[1].clubName").value("분할B"))
+                .andExpect(jsonPath("$.sections[1].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[2]").doesNotExist());
+
+            LinkedMultiValueMap<String, String> secondPageParams = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("CLUB"),
+                "query", List.of("분할"),
+                "page", List.of("2"),
+                "limit", List.of("20")
+            ));
+
+            performGet("/chats/rooms/invitables", secondPageParams)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(60))
+                .andExpect(jsonPath("$.currentCount").value(20))
+                .andExpect(jsonPath("$.totalPage").value(3))
+                .andExpect(jsonPath("$.currentPage").value(2))
+                .andExpect(jsonPath("$.sections[0].clubName").value("분할B"))
+                .andExpect(jsonPath("$.sections[0].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[0].users[0].name").value("분할B11"))
+                .andExpect(jsonPath("$.sections[0].users[9].name").value("분할B20"))
+                .andExpect(jsonPath("$.sections[1].clubName").value("분할C"))
+                .andExpect(jsonPath("$.sections[1].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[1].users[0].name").value("분할C01"))
+                .andExpect(jsonPath("$.sections[1].users[9].name").value("분할C10"))
+                .andExpect(jsonPath("$.sections[2]").doesNotExist());
         }
     }
 
@@ -564,6 +782,41 @@ class ChatApiTest extends IntegrationTestSupport {
 
     private User createUser(String name, String studentId) {
         return persist(UserFixture.createUser(university, name, studentId));
+    }
+
+    private void addRoomMember(ChatRoom chatRoom, User user) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        persist(ChatRoomMember.of(managedChatRoom, managedUser, chatRoom.getCreatedAt()));
+    }
+
+    private void createGroupedInviteCandidates(String clubName, String namePrefix, int count) {
+        Club club = persist(ClubFixture.create(university, clubName));
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+
+        persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedNormalUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+
+        ChatRoom groupRoom = persist(ChatRoom.groupOf(club));
+        addRoomMember(groupRoom, normalUser);
+
+        for (int index = 1; index <= count; index++) {
+            User candidate = createUser(
+                String.format("%s%02d", namePrefix, index),
+                String.format("202199%04d", index + count * 10)
+            );
+            User managedCandidate = entityManager.getReference(User.class, candidate.getId());
+            persist(ClubMember.builder()
+                .club(managedClub)
+                .user(managedCandidate)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            addRoomMember(groupRoom, candidate);
+        }
     }
 
     private long countDirectRoomsBetween(User firstUser, User secondUser) {

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
+import gg.agit.konect.domain.chat.dto.ChatInvitableUsersResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
@@ -18,6 +19,7 @@ import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
+import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -74,6 +76,26 @@ public interface ChatApi {
         """)
     @GetMapping("/rooms")
     ResponseEntity<ChatRoomsSummaryResponse> getChatRooms(
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "새 채팅방에 초대할 수 있는 사용자 목록을 조회한다.", description = """
+        ## 설명
+        - 현재 사용자가 속해 있는 채팅방들의 멤버를 기반으로 초대 가능 사용자 목록을 조회합니다.
+        - 자기 자신, 탈퇴 사용자, 채팅방을 떠난 사용자는 제외됩니다.
+        - 관리자 계정은 초대 대상에서 제외됩니다.
+        - `sortBy=CLUB`이면 동아리 섹션별로 그룹핑되어 응답합니다.
+        - `sortBy=NAME`이면 동아리 섹션 없이 이름순 단일 리스트로 응답합니다.
+        - 검색어(query)는 이름과 학번에 대해 부분 일치로 동작합니다.
+        """)
+    @GetMapping("/rooms/invitables")
+    ResponseEntity<ChatInvitableUsersResponse> getInvitableUsers(
+        @RequestParam(name = "query", required = false) String query,
+        @RequestParam(name = "sortBy", defaultValue = "CLUB") ChatInviteSortBy sortBy,
+        @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
+        @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
+        @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @UserId Integer userId
     );
 
