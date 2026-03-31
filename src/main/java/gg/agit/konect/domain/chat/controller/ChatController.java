@@ -118,7 +118,6 @@ public class ChatController implements ChatApi {
     }
 
     @Override
-    @PostMapping("/rooms/group")
     public ResponseEntity<ChatRoomResponse> createGroupChatRoom(
         @Valid @RequestBody ChatRoomCreateRequest.Group request,
         @UserId Integer userId
