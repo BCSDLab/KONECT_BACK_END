@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
+import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
@@ -25,12 +26,14 @@ import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
+import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
@@ -90,7 +93,8 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.chatRoomId").isNumber());
 
             clearPersistenceContext();
-            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId())).isPresent();
+            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId(), ChatType.DIRECT))
+                .isPresent();
             assertThat(countDirectRoomsBetween(normalUser, targetUser)).isEqualTo(beforeCount + 1);
         }
 
@@ -132,7 +136,7 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.chatRoomId").value(existingRoom.getId()));
 
             clearPersistenceContext();
-            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId()))
+            assertThat(chatRoomRepository.findByTwoUsers(normalUser.getId(), targetUser.getId(), ChatType.DIRECT))
                 .isPresent()
                 .get()
                 .extracting(ChatRoom::getId)
@@ -202,7 +206,9 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.isMine").value(true));
 
             clearPersistenceContext();
-            assertThat(chatMessageRepository.findByChatRoomId(chatRoom.getId(), PageRequest.of(0, 20)).getContent())
+            assertThat(
+                chatMessageRepository.findByChatRoomId(chatRoom.getId(), null, PageRequest.of(0, 20)).getContent()
+            )
                 .hasSize(1)
                 .extracting(ChatMessage::getContent)
                 .containsExactly("안녕하세요");
@@ -321,6 +327,157 @@ class ChatApiTest extends IntegrationTestSupport {
     }
 
     @Nested
+    @DisplayName("DELETE /chats/rooms/{chatRoomId} - 채팅방 나가기")
+    class LeaveChatRoom {
+
+        @BeforeEach
+        void setUpLeaveFixture() {
+            targetUser = createUser("상대유저", "2021136002");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("1:1 채팅방을 나가면 목록에서 숨겨지고 새 메시지부터 다시 보인다")
+        void leaveDirectChatRoomAndShowOnlyNewMessages() throws Exception {
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("첫 메시지"))
+                .andExpect(status().isOk());
+
+            performDelete("/chats/rooms/" + chatRoom.getId())
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+            ChatRoomMember leftMember = chatRoomMemberRepository
+                .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
+                .orElseThrow();
+            assertThat(leftMember.hasLeft()).isTrue();
+
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms").isEmpty());
+
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+
+            mockLoginUser(targetUser.getId());
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("다시 안녕"))
+                .andExpect(status().isOk());
+
+            mockLoginUser(normalUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomId").value(chatRoom.getId()))
+                .andExpect(jsonPath("$.rooms[0].lastMessage").value("다시 안녕"))
+                .andExpect(jsonPath("$.rooms[0].unreadCount").value(1));
+
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.messages[0].content").value("다시 안녕"));
+
+            mockLoginUser(targetUser.getId());
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2))
+                .andExpect(jsonPath("$.messages[0].content").value("다시 안녕"))
+                .andExpect(jsonPath("$.messages[1].content").value("첫 메시지"));
+        }
+
+        @Test
+        @DisplayName("나간 뒤 다시 채팅방을 열면 처음 대화하는 것처럼 빈 메시지 목록을 본다")
+        void createOrGetChatRoomAfterLeaveStartsFresh() throws Exception {
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("첫 메시지"))
+                .andExpect(status().isOk());
+
+            performDelete("/chats/rooms/" + chatRoom.getId())
+                .andExpect(status().isNoContent());
+
+            performPost("/chats/rooms", new ChatRoomCreateRequest(targetUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatRoomId").value(chatRoom.getId()));
+
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[0].roomId").value(chatRoom.getId()))
+                .andExpect(jsonPath("$.rooms[0].lastMessage").doesNotExist());
+
+            performGet("/chats/rooms/" + chatRoom.getId() + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(0))
+                .andExpect(jsonPath("$.messages").isEmpty());
+        }
+
+        @Test
+        @DisplayName("나간 뒤 새 메시지가 오기 전에는 방 조작이 불가능하다")
+        void cannotOperateHiddenDirectRoomBeforeNewMessage() throws Exception {
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performDelete("/chats/rooms/" + chatRoom.getId())
+                .andExpect(status().isNoContent());
+
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("몰래 보내기"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+
+            performPatch("/chats/rooms/" + chatRoom.getId() + "/name", new ChatRoomNameUpdateRequest("숨김방"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+
+            performPost("/chats/rooms/" + chatRoom.getId() + "/mute")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("동아리 채팅방은 나갈 수 없다")
+        void leaveGroupChatRoomFails() throws Exception {
+            Club club = persist(ClubFixture.create(university));
+            ChatRoom groupRoom = persist(ChatRoom.groupOf(club));
+            ChatRoom managedGroupRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
+            User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+            persist(ChatRoomMember.of(managedGroupRoom, managedNormalUser, groupRoom.getCreatedAt()));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+
+            performDelete("/chats/rooms/" + groupRoom.getId())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_LEAVE_GROUP_CHAT_ROOM"));
+        }
+
+        @Test
+        @DisplayName("일반 그룹 채팅방은 멤버십 삭제 방식으로 나갈 수 있다")
+        void leaveOpenGroupChatRoomDeletesMembership() throws Exception {
+            ChatRoom openGroupRoom = persist(ChatRoom.groupOf());
+            ChatRoom managedOpenGroupRoom = entityManager.getReference(ChatRoom.class, openGroupRoom.getId());
+            User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+            User managedTargetUser = entityManager.getReference(User.class, targetUser.getId());
+            persist(ChatRoomMember.of(managedOpenGroupRoom, managedNormalUser, openGroupRoom.getCreatedAt()));
+            persist(ChatRoomMember.of(managedOpenGroupRoom, managedTargetUser, openGroupRoom.getCreatedAt()));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+
+            performDelete("/chats/rooms/" + openGroupRoom.getId())
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(openGroupRoom.getId(), normalUser.getId()))
+                .isEmpty();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(openGroupRoom.getId(), targetUser.getId()))
+                .isPresent();
+        }
+    }
+
+    @Nested
     @DisplayName("GET /chats/rooms/{chatRoomId} - 채팅방 메시지 조회 실패")
     class GetMessagesFail {
 
@@ -410,7 +567,7 @@ class ChatApiTest extends IntegrationTestSupport {
     }
 
     private long countDirectRoomsBetween(User firstUser, User secondUser) {
-        return chatRoomRepository.findByUserId(firstUser.getId()).stream()
+        return chatRoomRepository.findByUserId(firstUser.getId(), ChatType.DIRECT).stream()
             .map(ChatRoom::getId)
             .filter(roomId -> isDirectRoomBetween(roomId, firstUser.getId(), secondUser.getId()))
             .count();

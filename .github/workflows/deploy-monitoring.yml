@@ -27,7 +27,7 @@ jobs:
           rm: false
 
       - name: Deploy monitoring stack
-        uses: appleboy/ssh-action@b60142998894e495c513803efc6d5d72a72c968a # v0.1.8
+        uses: appleboy/ssh-action@v1.2.0
         env:
           WORK_DIR: ${{ secrets.PROD_WORK_DIR }}
           MONITORING_ENV: ${{ secrets.MONITORING_ENV }}
