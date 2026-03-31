@@ -5,6 +5,8 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,7 +45,7 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
                 eq(CLUB_ID),
                 eq(REQUESTER_ID),
                 eq(SPREADSHEET_URL)
-            )).willReturn(SheetImportResponse.of(2, 1, java.util.List.of("전화번호 형식 경고")));
+            )).willReturn(SheetImportResponse.of(2, 1, List.of("전화번호 형식 경고")));
 
             SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
 

@@ -2,7 +2,6 @@ package gg.agit.konect.domain.club.service;
 
 import org.springframework.stereotype.Service;
 
-import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -10,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ClubSheetIntegratedService {
 
+    private final ClubPermissionValidator clubPermissionValidator;
+    private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubMemberSheetService clubMemberSheetService;
     private final SheetImportService sheetImportService;
 
@@ -18,11 +19,23 @@ public class ClubSheetIntegratedService {
         Integer requesterId,
         String spreadsheetUrl
     ) {
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
+        SheetHeaderMapper.SheetAnalysisResult analysis =
+            sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
+
         clubMemberSheetService.updateSheetId(
             clubId,
             requesterId,
-            new ClubSheetIdUpdateRequest(spreadsheetUrl)
+            spreadsheetId,
+            analysis
         );
-        return sheetImportService.importPreMembersFromSheet(clubId, requesterId, spreadsheetUrl);
+        return sheetImportService.importPreMembersFromSheet(
+            clubId,
+            requesterId,
+            spreadsheetId,
+            analysis.memberListMapping()
+        );
     }
 }

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -11,9 +13,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
+import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.support.ServiceTestSupport;
 
 class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
+
+    @Mock
+    private ClubPermissionValidator clubPermissionValidator;
+
+    @Mock
+    private SheetHeaderMapper sheetHeaderMapper;
 
     @Mock
     private ClubMemberSheetService clubMemberSheetService;
@@ -32,9 +41,18 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
         Integer requesterId = 2;
         String spreadsheetUrl =
             "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms/edit";
-        SheetImportResponse expected = SheetImportResponse.of(3, 1, java.util.List.of("warn"));
+        String spreadsheetId = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms";
+        SheetHeaderMapper.SheetAnalysisResult analysis =
+            new SheetHeaderMapper.SheetAnalysisResult(SheetColumnMapping.defaultMapping(), null, null);
+        SheetImportResponse expected = SheetImportResponse.of(3, 1, List.of("warn"));
 
-        given(sheetImportService.importPreMembersFromSheet(clubId, requesterId, spreadsheetUrl))
+        given(sheetHeaderMapper.analyzeAllSheets(spreadsheetId)).willReturn(analysis);
+        given(sheetImportService.importPreMembersFromSheet(
+            clubId,
+            requesterId,
+            spreadsheetId,
+            analysis.memberListMapping()
+        ))
             .willReturn(expected);
 
         // when
@@ -45,16 +63,25 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
         );
 
         // then
-        InOrder inOrder = inOrder(clubMemberSheetService, sheetImportService);
+        InOrder inOrder = inOrder(
+            clubPermissionValidator,
+            sheetHeaderMapper,
+            clubMemberSheetService,
+            sheetImportService
+        );
+        inOrder.verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
+        inOrder.verify(sheetHeaderMapper).analyzeAllSheets(spreadsheetId);
         inOrder.verify(clubMemberSheetService).updateSheetId(
             clubId,
             requesterId,
-            new gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest(spreadsheetUrl)
+            spreadsheetId,
+            analysis
         );
         inOrder.verify(sheetImportService).importPreMembersFromSheet(
             clubId,
             requesterId,
-            spreadsheetUrl
+            spreadsheetId,
+            analysis.memberListMapping()
         );
         assertThat(actual).isEqualTo(expected);
     }

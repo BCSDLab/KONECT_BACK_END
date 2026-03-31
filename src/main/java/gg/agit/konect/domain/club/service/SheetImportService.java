@@ -54,15 +54,37 @@ public class SheetImportService {
         String spreadsheetUrl
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-        Club club = clubRepository.getById(clubId);
-        Integer universityId = club.getUniversity().getId();
-
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
 
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
-        SheetColumnMapping mapping = analysis.memberListMapping();
+        return importPreMembersFromSheet(
+            clubId,
+            requesterId,
+            spreadsheetId,
+            analysis.memberListMapping()
+        );
+    }
 
+    @Transactional
+    SheetImportResponse importPreMembersFromSheet(
+        Integer clubId,
+        Integer requesterId,
+        String spreadsheetId,
+        SheetColumnMapping mapping
+    ) {
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+        Club club = clubRepository.getById(clubId);
+        return importPreMembersFromSheet(clubId, club, spreadsheetId, mapping);
+    }
+
+    private SheetImportResponse importPreMembersFromSheet(
+        Integer clubId,
+        Club club,
+        String spreadsheetId,
+        SheetColumnMapping mapping
+    ) {
+        Integer universityId = club.getUniversity().getId();
         List<List<Object>> rows = readDataRows(spreadsheetId, mapping);
 
         // N+1 방지: 루프 전 기존 부원 학번 Set / 사전 회원 key Set / 부원 userId Set 일괄 조회
