@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.club.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
@@ -14,7 +13,6 @@ public class ClubSheetIntegratedService {
     private final ClubMemberSheetService clubMemberSheetService;
     private final SheetImportService sheetImportService;
 
-    @Transactional
     public SheetImportResponse analyzeAndImportPreMembers(
         Integer clubId,
         Integer requesterId,
