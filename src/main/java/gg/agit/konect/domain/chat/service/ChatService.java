@@ -209,6 +209,7 @@ public class ChatService {
             room.roomImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
+            room.createdAt(),
             room.unreadCount(),
             muteMap.getOrDefault(room.roomId(), false)
         )));
@@ -220,6 +221,7 @@ public class ChatService {
             room.roomImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
+            room.createdAt(),
             room.unreadCount(),
             muteMap.getOrDefault(room.roomId(), false)
         )));
@@ -231,13 +233,17 @@ public class ChatService {
             room.roomImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
+            room.createdAt(),
             room.unreadCount(),
             muteMap.getOrDefault(room.roomId(), false)
         )));
 
         rooms.sort(
-            Comparator.comparing(ChatRoomSummaryResponse::lastSentAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(ChatRoomSummaryResponse::roomId)
+            Comparator.comparing(
+                (ChatRoomSummaryResponse room) ->
+                    room.lastSentAt() != null ? room.lastSentAt() : room.createdAt(),
+                Comparator.reverseOrder()
+            )
         );
 
         return new ChatRoomsSummaryResponse(rooms);
@@ -466,6 +472,7 @@ public class ChatService {
                 chatPartner.getImageUrl(),
                 getVisibleLastMessageContent(chatRoom, currentMember),
                 getVisibleLastMessageSentAt(chatRoom, currentMember),
+                chatRoom.getCreatedAt(),
                 personalUnreadCountMap.getOrDefault(chatRoom.getId(), 0),
                 false
             ));
@@ -473,10 +480,10 @@ public class ChatService {
 
         roomSummaries.sort(Comparator
             .comparing(
-                ChatRoomSummaryResponse::lastSentAt,
-                Comparator.nullsLast(Comparator.reverseOrder())
-            )
-            .thenComparing(ChatRoomSummaryResponse::roomId));
+                (ChatRoomSummaryResponse room) ->
+                    room.lastSentAt() != null ? room.lastSentAt() : room.createdAt(),
+                Comparator.reverseOrder()
+            ));
 
         return roomSummaries;
     }
@@ -494,6 +501,7 @@ public class ChatService {
                 projection.nonAdminImageUrl(),
                 projection.lastMessage(),
                 projection.lastSentAt(),
+                projection.createdAt(),
                 projection.unreadCount().intValue(),
                 false
             ))
@@ -529,6 +537,7 @@ public class ChatService {
                     room.getClub().getImageUrl(),
                     lastMessage != null ? lastMessage.getContent() : null,
                     lastMessage != null ? lastMessage.getCreatedAt() : null,
+                    room.getCreatedAt(),
                     unreadCountMap.getOrDefault(room.getId(), 0),
                     false
                 );
@@ -558,6 +567,7 @@ public class ChatService {
                     null,
                     lastMessage != null ? lastMessage.getContent() : null,
                     lastMessage != null ? lastMessage.getCreatedAt() : null,
+                    room.getCreatedAt(),
                     unreadCountMap.getOrDefault(room.getId(), 0),
                     false
                 );

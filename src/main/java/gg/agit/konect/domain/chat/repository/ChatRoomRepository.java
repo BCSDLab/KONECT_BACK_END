@@ -33,7 +33,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
         WHERE crm.id.userId = :userId
           AND cr.roomType = gg.agit.konect.domain.chat.enums.ChatType.GROUP
-        ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
+        ORDER BY COALESCE(cr.lastMessageSentAt, cr.createdAt) DESC
         """)
     List<ChatRoom> findGroupRoomsByMemberUserId(@Param("userId") Integer userId);
 
@@ -152,6 +152,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
             cr.id,
             cr.lastMessageContent,
             cr.lastMessageSentAt,
+            cr.createdAt,
             u.id,
             u.name,
             u.imageUrl,
@@ -173,8 +174,8 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
               WHERE userReply.chatRoom.id = cr.id
                 AND userSender.role != :adminRole
           )
-        GROUP BY cr.id, cr.lastMessageContent, cr.lastMessageSentAt, u.id, u.name, u.imageUrl
-        ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
+        GROUP BY cr.id, cr.lastMessageContent, cr.lastMessageSentAt, cr.createdAt, u.id, u.name, u.imageUrl
+        ORDER BY COALESCE(cr.lastMessageSentAt, cr.createdAt) DESC
         """)
     List<AdminChatRoomProjection> findAdminChatRoomsOptimized(
         @Param("systemAdminId") Integer systemAdminId,
