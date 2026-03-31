@@ -151,7 +151,6 @@ public class ChatService {
         chatRoomMemberRepository.deleteByChatRoomIdAndUserId(roomId, userId);
     }
 
-    @Transactional
     public ChatRoomsSummaryResponse getChatRooms(Integer userId) {
         chatRoomMembershipService.ensureClubRoomMemberships(userId);
 
@@ -383,8 +382,6 @@ public class ChatService {
         User user = userRepository.getById(userId);
         ChatRoomMember member = getOrCreateDirectRoomMember(chatRoom, user);
         LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(member, chatRoom);
-
-        recordPresenceSafely(roomId, userId);
 
         boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom);
 
@@ -1008,7 +1005,7 @@ public class ChatService {
 
     private void recordPresenceSafely(Integer roomId, Integer userId) {
         try {
-            recordPresenceSafely(roomId, userId);
+            chatPresenceService.recordPresence(roomId, userId);
         } catch (Exception e) {
             log.warn("Redis presence record failed, continuing: roomId={}, userId={}", roomId, userId, e);
         }
