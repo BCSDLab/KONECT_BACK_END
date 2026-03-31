@@ -67,6 +67,7 @@ public class ChatService {
 
     private static final int SYSTEM_ADMIN_ID = 1;
     private static final String ETC_SECTION_NAME = "기타";
+    private static final String DEFAULT_GROUP_ROOM_NAME = "그룹 채팅";
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -558,7 +559,7 @@ public class ChatService {
         return rooms.stream()
             .map(room -> {
                 ChatMessage lastMessage = lastMessageMap.get(room.getId());
-                String roomName = resolveRoomName(room.getId(), "그룹 채팅", customRoomNameMap);
+                String roomName = resolveRoomName(room.getId(), DEFAULT_GROUP_ROOM_NAME, customRoomNameMap);
                 return new ChatRoomSummaryResponse(
                     room.getId(),
                     ChatType.GROUP,
@@ -811,7 +812,7 @@ public class ChatService {
         notificationService.sendGroupChatNotification(
             roomId,
             sender.getId(),
-            "그룹 채팅",
+            DEFAULT_GROUP_ROOM_NAME,
             sender.getName(),
             message.getContent(),
             recipientUserIds
