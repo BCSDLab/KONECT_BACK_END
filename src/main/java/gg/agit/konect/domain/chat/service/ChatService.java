@@ -752,8 +752,7 @@ public class ChatService {
         Integer page,
         Integer limit
     ) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+        chatRoomRepository.getById(roomId);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         long totalCount = chatMessageRepository.countByChatRoomId(roomId, null);
