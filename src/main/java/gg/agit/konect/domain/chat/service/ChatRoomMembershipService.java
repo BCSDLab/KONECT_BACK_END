@@ -5,12 +5,14 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,7 +74,9 @@ public class ChatRoomMembershipService {
         Map<Integer, ClubMember> membershipByClubId = memberships.stream()
             .collect(Collectors.toMap(cm -> cm.getClub().getId(), cm -> cm, (a, b) -> a));
 
-        List<ChatRoom> rooms = resolveOrCreateClubRooms(memberships);
+        List<ChatRoom> rooms = resolveOrCreateClubRooms(memberships).stream()
+            .sorted(Comparator.comparing(ChatRoom::getId))
+            .toList();
         List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
         if (roomIds.isEmpty()) {
             return;
@@ -238,6 +242,9 @@ public class ChatRoomMembershipService {
     }
 
     private boolean isDuplicateKeyException(DataIntegrityViolationException e) {
+        if (e instanceof DuplicateKeyException) {
+            return true;
+        }
         Throwable rootCause = e.getRootCause();
         if (rootCause == null) {
             return false;
