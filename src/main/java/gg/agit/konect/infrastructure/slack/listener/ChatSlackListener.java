@@ -16,7 +16,7 @@ public class ChatSlackListener {
 
     private final SlackNotificationService slackNotificationService;
 
-    @Async
+    @Async("slackTaskExecutor")
     @TransactionalEventListener(phase = AFTER_COMMIT)
     public void handleAdminChatReceived(AdminChatReceivedEvent event) {
         slackNotificationService.notifyAdminChatReceived(event.senderName(), event.content());
