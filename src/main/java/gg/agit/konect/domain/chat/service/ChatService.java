@@ -734,7 +734,7 @@ public class ChatService {
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
         room.updateLastMessage(message.getContent(), message.getCreatedAt());
-        updateLastReadAt(roomId, userId, message.getCreatedAt());
+        updateClubMessageLastReadAt(roomId, userId, message.getCreatedAt());
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
         List<Integer> recipientUserIds = members.stream().map(ChatRoomMember::getUserId).toList();
@@ -1013,6 +1013,10 @@ public class ChatService {
     }
 
     private void updateLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
+        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
+    }
+
+    private void updateClubMessageLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
         int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
         if (updated == 0) {
             ChatRoom room = chatRoomRepository.findById(roomId)
