@@ -23,7 +23,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
@@ -43,6 +42,7 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.repository.RoomUnreadCountProjection;
@@ -73,6 +73,7 @@ public class ChatService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
     private final ClubMemberRepository clubMemberRepository;
+    private final ChatInviteQueryRepository chatInviteQueryRepository;
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final NotificationService notificationService;
@@ -198,30 +199,10 @@ public class ChatService {
     public ChatInvitableUsersResponse getInvitableUsers(Integer userId, String query, ChatInviteSortBy sortBy) {
         userRepository.getById(userId);
 
-        List<Integer> accessibleRoomIds = chatRoomMemberRepository.findByUserId(userId).stream()
-            .filter(member -> !member.hasLeft())
-            .map(ChatRoomMember::getChatRoomId)
-            .distinct()
-            .toList();
-
-        if (accessibleRoomIds.isEmpty()) {
-            return sortBy == ChatInviteSortBy.NAME
-                ? ChatInvitableUsersResponse.forNameSort(List.of())
-                : ChatInvitableUsersResponse.forClubSort(List.of());
-        }
-
-        Map<Integer, User> candidateUsers = chatRoomMemberRepository.findByChatRoomIds(accessibleRoomIds).stream()
-            .filter(member -> !member.getUserId().equals(userId))
-            .filter(member -> !member.hasLeft())
-            .map(ChatRoomMember::getUser)
-            .filter(user -> user.getDeletedAt() == null)
-            .filter(user -> !user.isAdmin())
-            .collect(Collectors.toMap(User::getId, user -> user, (first, second) -> first, LinkedHashMap::new));
-
-        List<ChatInvitableUsersResponse.InvitableUser> filteredUsers = candidateUsers.values().stream()
-            .filter(user -> matchesInviteQuery(user, query))
+        List<ChatInvitableUsersResponse.InvitableUser> filteredUsers = chatInviteQueryRepository
+            .findInvitableUsers(userId, query)
+            .stream()
             .map(ChatInvitableUsersResponse.InvitableUser::from)
-            .sorted(invitableUserComparator())
             .toList();
 
         if (sortBy == ChatInviteSortBy.NAME) {
@@ -240,7 +221,8 @@ public class ChatService {
                 LinkedHashMap::new
             ));
 
-        Map<Integer, String> requesterClubNames = clubMemberRepository.findAllByUserId(userId).stream()
+        Map<Integer, String> requesterClubNames = chatInviteQueryRepository.findRequesterClubMemberships(userId)
+            .stream()
             .filter(clubMember -> clubMember.getUser().getDeletedAt() == null)
             .collect(Collectors.toMap(
                 clubMember -> clubMember.getClub().getId(),
@@ -251,16 +233,16 @@ public class ChatService {
 
         Map<Integer, Integer> representativeClubByUserId = new HashMap<>();
         if (!requesterClubNames.isEmpty()) {
-            clubMemberRepository.findByUserIdIn(new ArrayList<>(filteredUserMap.keySet())).stream()
+            chatInviteQueryRepository.findSharedClubMemberships(
+                    userId,
+                    new ArrayList<>(filteredUserMap.keySet())
+                )
+                .stream()
                 .filter(clubMember -> clubMember.getUser().getDeletedAt() == null)
                 .filter(clubMember -> requesterClubNames.containsKey(clubMember.getClub().getId()))
-                .forEach(clubMember -> representativeClubByUserId.compute(
+                .forEach(clubMember -> representativeClubByUserId.putIfAbsent(
                     clubMember.getUser().getId(),
-                    (ignored, currentClubId) -> selectRepresentativeClubId(
-                        currentClubId,
-                        clubMember.getClub().getId(),
-                        requesterClubNames
-                    )
+                    clubMember.getClub().getId()
                 ));
         }
 
@@ -279,9 +261,7 @@ public class ChatService {
             .map(entry -> new ChatInvitableUsersResponse.InvitableSection(
                 entry.getKey(),
                 entry.getValue(),
-                usersByClubId.getOrDefault(entry.getKey(), List.of()).stream()
-                    .sorted(invitableUserComparator())
-                    .toList()
+                usersByClubId.getOrDefault(entry.getKey(), List.of())
             ))
             .filter(section -> !section.users().isEmpty())
             .collect(Collectors.toCollection(ArrayList::new));
@@ -312,43 +292,6 @@ public class ChatService {
         }
 
         return getClubMessagesByRoomId(roomId, userId, page, limit);
-    }
-
-    private boolean matchesInviteQuery(User user, String query) {
-        if (!StringUtils.hasText(query)) {
-            return true;
-        }
-
-        String normalizedQuery = query.trim().toLowerCase();
-        return user.getName().toLowerCase().contains(normalizedQuery)
-            || user.getStudentNumber().contains(normalizedQuery);
-    }
-
-    private Comparator<ChatInvitableUsersResponse.InvitableUser> invitableUserComparator() {
-        return Comparator.comparing(ChatInvitableUsersResponse.InvitableUser::name)
-            .thenComparing(ChatInvitableUsersResponse.InvitableUser::studentNumber)
-            .thenComparing(ChatInvitableUsersResponse.InvitableUser::userId);
-    }
-
-    private Integer selectRepresentativeClubId(
-        Integer currentClubId,
-        Integer candidateClubId,
-        Map<Integer, String> requesterClubNames
-    ) {
-        if (currentClubId == null) {
-            return candidateClubId;
-        }
-
-        String currentClubName = requesterClubNames.get(currentClubId);
-        String candidateClubName = requesterClubNames.get(candidateClubId);
-        if (currentClubName == null) {
-            return candidateClubId;
-        }
-        if (candidateClubName == null) {
-            return currentClubId;
-        }
-
-        return candidateClubName.compareTo(currentClubName) < 0 ? candidateClubId : currentClubId;
     }
 
     @Transactional
