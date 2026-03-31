@@ -95,7 +95,11 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(SLACK_MAX_POOL_SIZE);
         executor.setQueueCapacity(SLACK_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("slack-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setRejectedExecutionHandler((runnable, pool) -> {
+            log.warn("Slack 스레드풀 포화로 작업이 거절되었습니다. poolSize={}, activeCount={}, queueSize={}",
+                pool.getPoolSize(), pool.getActiveCount(), pool.getQueue().size());
+            throw new RejectedExecutionException("slackTaskExecutor saturated");
+        });
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(SLACK_AWAIT_TERMINATION_SECONDS);
         executor.initialize();
