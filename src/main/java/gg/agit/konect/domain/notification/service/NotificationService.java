@@ -73,7 +73,7 @@ public class NotificationService {
             .ifPresent(notificationDeviceTokenRepository::delete);
     }
 
-    @Async
+    @Async("notificationTaskExecutor")
     @Transactional
     public void sendChatNotification(Integer receiverId, Integer roomId, String senderName, String messageContent) {
         try {
@@ -123,7 +123,7 @@ public class NotificationService {
         }
     }
 
-    @Async
+    @Async("notificationTaskExecutor")
     @Transactional
     public void sendGroupChatNotification(
         Integer roomId,
@@ -210,7 +210,7 @@ public class NotificationService {
         }
     }
 
-    @Async
+    @Async("notificationTaskExecutor")
     @Transactional
     public void sendClubApplicationSubmittedNotification(
         Integer receiverId,
@@ -227,7 +227,7 @@ public class NotificationService {
         sendNotification(receiverId, clubName, body, path);
     }
 
-    @Async
+    @Async("notificationTaskExecutor")
     @Transactional
     public void sendClubApplicationApprovedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 승인되었어요.";
@@ -238,7 +238,7 @@ public class NotificationService {
         sendNotification(receiverId, clubName, body, path);
     }
 
-    @Async
+    @Async("notificationTaskExecutor")
     @Transactional
     public void sendClubApplicationRejectedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 거절되었어요.";
