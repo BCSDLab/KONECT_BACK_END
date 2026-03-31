@@ -38,6 +38,12 @@ public class ChatInviteQueryRepository {
         QUser candidateUser = new QUser("candidateUser");
 
         List<User> content = createInvitableUsersQuery(userId, query, requesterMember, candidateMember, candidateUser)
+            .groupBy(
+                candidateUser.id,
+                candidateUser.name,
+                candidateUser.imageUrl,
+                candidateUser.studentNumber
+            )
             .orderBy(
                 candidateUser.name.asc(),
                 candidateUser.studentNumber.asc(),
@@ -60,6 +66,12 @@ public class ChatInviteQueryRepository {
         QUser candidateUser = new QUser("candidateUser");
 
         return createInvitableUsersQuery(userId, query, requesterMember, candidateMember, candidateUser)
+            .groupBy(
+                candidateUser.id,
+                candidateUser.name,
+                candidateUser.imageUrl,
+                candidateUser.studentNumber
+            )
             .orderBy(
                 candidateUser.name.asc(),
                 candidateUser.studentNumber.asc(),
