@@ -97,6 +97,7 @@ jobs:
           port: ${{ secrets.STAGE_SERVER_PORT }}
           script: |
             set -euo pipefail
+            START_TIME=$(date +%s)
 
             WORK_DIR="${{ secrets.STAGE_WORK_DIR }}"
             MYSQL_CONTAINER="mysql-stage"
@@ -115,6 +116,9 @@ jobs:
 
             find "$BACKUP_DIR" -type f -name '*.sql' -mtime +5 -delete
 
+            END_TIME=$(date +%s)
+            echo "Stage MySQL backup completed in $((END_TIME - START_TIME))s"
+
       - name: Deploy to stage server
         uses: appleboy/ssh-action@b60142998894e495c513803efc6d5d72a72c968a # v0.1.8
         with:
@@ -123,5 +127,11 @@ jobs:
           key: ${{ secrets.STAGE_SERVER_SSH_KEY }}
           port: ${{ secrets.STAGE_SERVER_PORT }}
           script: |
+            set -euo pipefail
+            START_TIME=$(date +%s)
+
             cd ${{ secrets.STAGE_WORK_DIR }}
             ./deploy.sh
+
+            END_TIME=$(date +%s)
+            echo "Stage deploy.sh completed in $((END_TIME - START_TIME))s"

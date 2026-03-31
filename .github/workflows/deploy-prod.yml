@@ -97,6 +97,7 @@ jobs:
           port: ${{ secrets.PROD_SERVER_PORT }}
           script: |
             set -euo pipefail
+            START_TIME=$(date +%s)
 
             WORK_DIR="${{ secrets.PROD_WORK_DIR }}"
             MYSQL_CONTAINER="mysql-prod"
@@ -115,6 +116,9 @@ jobs:
 
             find "$BACKUP_DIR" -type f -name '*.sql' -mtime +30 -delete
 
+            END_TIME=$(date +%s)
+            echo "Prod MySQL backup completed in $((END_TIME - START_TIME))s"
+
       - name: Deploy to prod server
         uses: appleboy/ssh-action@b60142998894e495c513803efc6d5d72a72c968a # v0.1.8
         with:
@@ -123,5 +127,11 @@ jobs:
           key: ${{ secrets.PROD_SERVER_SSH_KEY }}
           port: ${{ secrets.PROD_SERVER_PORT }}
           script: |
+            set -euo pipefail
+            START_TIME=$(date +%s)
+
             cd ${{ secrets.PROD_WORK_DIR }}
             ./deploy.sh
+
+            END_TIME=$(date +%s)
+            echo "Prod deploy.sh completed in $((END_TIME - START_TIME))s"
