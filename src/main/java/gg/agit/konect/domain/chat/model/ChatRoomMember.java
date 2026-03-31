@@ -110,10 +110,10 @@ public class ChatRoomMember extends BaseEntity {
     }
 
     /**
-     * 탈퇴 이후 새 메시지가 생겨 다시 볼 수 있을 때 사용한다.
+     * 나간 이후 새 메시지가 생겨 다시 볼 수 있을 때 사용한다.
      * <p>
      * 나간 상태만 해제하고, 기존 {@code visibleMessageFrom}은 유지한다.
-     * 그래서 탈퇴 이후 도착한 메시지부터 계속 보인다.
+     * 그래서 나간 이후 도착한 메시지부터 계속 보인다.
      */
     public void restoreDirectRoom() {
         this.leftAt = null;
