@@ -339,6 +339,59 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.users[1].name").value("정멀티"))
                 .andExpect(jsonPath("$.users[2]").doesNotExist());
         }
+
+        @Test
+        @DisplayName("동아리 정렬은 페이지 경계가 동아리를 가로질러도 섹션 헤더를 유지한다")
+        void getInvitableUsersWithClubPaginationAcrossSections() throws Exception {
+            mockLoginUser(normalUser.getId());
+
+            createGroupedInviteCandidates("분할A", "분할A", 10);
+            createGroupedInviteCandidates("분할B", "분할B", 20);
+            createGroupedInviteCandidates("분할C", "분할C", 30);
+            clearPersistenceContext();
+
+            LinkedMultiValueMap<String, String> firstPageParams = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("CLUB"),
+                "query", List.of("분할"),
+                "page", List.of("1"),
+                "limit", List.of("20")
+            ));
+
+            performGet("/chats/rooms/invitables", firstPageParams)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(60))
+                .andExpect(jsonPath("$.currentCount").value(20))
+                .andExpect(jsonPath("$.totalPage").value(3))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.sections[0].clubName").value("분할A"))
+                .andExpect(jsonPath("$.sections[0].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[1].clubName").value("분할B"))
+                .andExpect(jsonPath("$.sections[1].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[2]").doesNotExist());
+
+            LinkedMultiValueMap<String, String> secondPageParams = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("CLUB"),
+                "query", List.of("분할"),
+                "page", List.of("2"),
+                "limit", List.of("20")
+            ));
+
+            performGet("/chats/rooms/invitables", secondPageParams)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(60))
+                .andExpect(jsonPath("$.currentCount").value(20))
+                .andExpect(jsonPath("$.totalPage").value(3))
+                .andExpect(jsonPath("$.currentPage").value(2))
+                .andExpect(jsonPath("$.sections[0].clubName").value("분할B"))
+                .andExpect(jsonPath("$.sections[0].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[0].users[0].name").value("분할B11"))
+                .andExpect(jsonPath("$.sections[0].users[9].name").value("분할B20"))
+                .andExpect(jsonPath("$.sections[1].clubName").value("분할C"))
+                .andExpect(jsonPath("$.sections[1].users.length()").value(10))
+                .andExpect(jsonPath("$.sections[1].users[0].name").value("분할C01"))
+                .andExpect(jsonPath("$.sections[1].users[9].name").value("분할C10"))
+                .andExpect(jsonPath("$.sections[2]").doesNotExist());
+        }
     }
 
     @Nested
@@ -734,6 +787,35 @@ class ChatApiTest extends IntegrationTestSupport {
         ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
         User managedUser = entityManager.getReference(User.class, user.getId());
         persist(ChatRoomMember.of(managedChatRoom, managedUser, chatRoom.getCreatedAt()));
+    }
+
+    private void createGroupedInviteCandidates(String clubName, String namePrefix, int count) {
+        Club club = persist(ClubFixture.create(university, clubName));
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+
+        persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedNormalUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+
+        ChatRoom groupRoom = persist(ChatRoom.groupOf(club));
+        addRoomMember(groupRoom, normalUser);
+
+        for (int index = 1; index <= count; index++) {
+            User candidate = createUser(
+                String.format("%s%02d", namePrefix, index),
+                String.format("202199%04d", index + count * 10)
+            );
+            User managedCandidate = entityManager.getReference(User.class, candidate.getId());
+            persist(ClubMember.builder()
+                .club(managedClub)
+                .user(managedCandidate)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            addRoomMember(groupRoom, candidate);
+        }
     }
 
     private long countDirectRoomsBetween(User firstUser, User secondUser) {
