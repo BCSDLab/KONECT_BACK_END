@@ -1,6 +1,7 @@
 package gg.agit.konect.infrastructure.googlesheets;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -9,6 +10,8 @@ import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
@@ -27,10 +30,11 @@ import lombok.RequiredArgsConstructor;
 public class GoogleSheetsConfig {
 
     private final GoogleSheetsProperties googleSheetsProperties;
+    private final ResourceLoader resourceLoader;
 
     @Bean
     public GoogleCredentials googleCredentials() throws IOException {
-        try (InputStream in = new FileInputStream(googleSheetsProperties.credentialsPath())) {
+        try (InputStream in = openCredentialsStream()) {
             return GoogleCredentials.fromStream(in)
                 .createScoped(Arrays.asList(
                     SheetsScopes.SPREADSHEETS,
@@ -80,5 +84,18 @@ public class GoogleSheetsConfig {
             new HttpCredentialsAdapter(scoped))
             .setApplicationName(googleSheetsProperties.applicationName())
             .build();
+    }
+
+    private InputStream openCredentialsStream() throws IOException {
+        String credentialsPath = googleSheetsProperties.credentialsPath();
+        if (credentialsPath.startsWith("classpath:")) {
+            Resource resource = resourceLoader.getResource(credentialsPath);
+            if (!resource.exists()) {
+                throw new FileNotFoundException(credentialsPath);
+            }
+            return resource.getInputStream();
+        }
+
+        return new FileInputStream(credentialsPath);
     }
 }
