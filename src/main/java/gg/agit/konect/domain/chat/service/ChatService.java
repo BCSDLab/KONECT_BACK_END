@@ -163,7 +163,6 @@ public class ChatService {
         return new ChatRoomsSummaryResponse(getAccessibleChatRooms(userId).rooms());
     }
 
-    @Transactional
     public ChatSearchResponse searchChats(Integer userId, String keyword, Integer page, Integer limit) {
         String normalizedKeyword = normalizeKeyword(keyword);
         AccessibleChatRooms accessibleChatRooms = getAccessibleChatRooms(userId);
