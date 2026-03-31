@@ -43,6 +43,26 @@ public class ClubMemberSheetService {
 
         SheetHeaderMapper.SheetAnalysisResult result =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
+        applySheetRegistration(club, spreadsheetId, result);
+    }
+
+    @Transactional
+    void updateSheetId(
+        Integer clubId,
+        Integer requesterId,
+        String spreadsheetId,
+        SheetHeaderMapper.SheetAnalysisResult result
+    ) {
+        Club club = clubRepository.getById(clubId);
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+        applySheetRegistration(club, spreadsheetId, result);
+    }
+
+    private void applySheetRegistration(
+        Club club,
+        String spreadsheetId,
+        SheetHeaderMapper.SheetAnalysisResult result
+    ) {
         String mappingJson = null;
         try {
             mappingJson = objectMapper.writeValueAsString(result.memberListMapping().toMap());
