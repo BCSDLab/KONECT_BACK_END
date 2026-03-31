@@ -24,12 +24,16 @@ import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
+import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
 import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.fixture.ClubFixture;
+import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
@@ -275,6 +279,91 @@ class ChatApiTest extends IntegrationTestSupport {
     }
 
     @Nested
+    @DisplayName("GET /chats/rooms/search - 채팅 검색")
+    class SearchChats {
+
+        private User secondTargetUser;
+        private Club developmentClub;
+
+        @BeforeEach
+        void setUpSearchFixture() {
+            targetUser = createUser("개발팀", "2021136002");
+            secondTargetUser = createUser("개발자", "2021136003");
+            outsiderUser = createUser("외부유저", "2021136004");
+            developmentClub = persist(ClubFixture.create(university, "개발동아리"));
+            createClubMember(developmentClub, normalUser);
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("채팅방 이름과 상대방 이름으로 검색 결과를 분리해서 반환한다")
+        void searchChatsReturnsRoomMatchesForDirectAndGroupRooms() throws Exception {
+            // given
+            ChatRoom directRoom = createDirectChatRoom(normalUser, targetUser);
+            persistChatMessage(directRoom, normalUser, "안녕하세요");
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발&page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(2))
+                .andExpect(jsonPath("$.roomMatches.currentCount").value(2))
+                .andExpect(jsonPath("$.roomMatches.totalPage").value(1))
+                .andExpect(jsonPath("$.roomMatches.currentPage").value(1))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("개발팀"))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].chatType").value("DIRECT"))
+                .andExpect(jsonPath("$.roomMatches.rooms[1].roomName").value("개발동아리"))
+                .andExpect(jsonPath("$.roomMatches.rooms[1].chatType").value("GROUP"))
+                .andExpect(jsonPath("$.messageMatches.totalCount").value(0))
+                .andExpect(jsonPath("$.messageMatches.currentCount").value(0));
+        }
+
+        @Test
+        @DisplayName("메시지 검색은 접근 가능한 방에서 방별 최신 매칭 메시지 1개만 반환한다")
+        void searchChatsReturnsLatestMatchingMessagePerAccessibleRoom() throws Exception {
+            // given
+            ChatRoom firstRoom = createDirectChatRoom(normalUser, targetUser);
+            ChatRoom secondRoom = createDirectChatRoom(normalUser, secondTargetUser);
+            ChatRoom outsiderRoom = createDirectChatRoom(outsiderUser, targetUser);
+
+            persistChatMessage(firstRoom, normalUser, "첫 번째 키워드");
+            persistChatMessage(secondRoom, secondTargetUser, "두 번째 키워드");
+            persistChatMessage(outsiderRoom, outsiderUser, "외부 키워드");
+            persistChatMessage(firstRoom, targetUser, "최신 키워드");
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=키워드&page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(0))
+                .andExpect(jsonPath("$.messageMatches.totalCount").value(2))
+                .andExpect(jsonPath("$.messageMatches.currentCount").value(2))
+                .andExpect(jsonPath("$.messageMatches.messages[0].roomName").value("개발팀"))
+                .andExpect(jsonPath("$.messageMatches.messages[0].matchedMessage").value("최신 키워드"))
+                .andExpect(jsonPath("$.messageMatches.messages[1].roomName").value("개발자"))
+                .andExpect(jsonPath("$.messageMatches.messages[1].matchedMessage").value("두 번째 키워드"));
+        }
+
+        @Test
+        @DisplayName("채팅방 검색 결과에 페이지네이션을 적용한다")
+        void searchChatsAppliesPaginationToRoomMatches() throws Exception {
+            // given
+            createDirectChatRoom(normalUser, targetUser);
+            createDirectChatRoom(normalUser, secondTargetUser);
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발&page=2&limit=1")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(3))
+                .andExpect(jsonPath("$.roomMatches.currentCount").value(1))
+                .andExpect(jsonPath("$.roomMatches.totalPage").value(3))
+                .andExpect(jsonPath("$.roomMatches.currentPage").value(2))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("개발자"));
+        }
+    }
+
+    @Nested
     @DisplayName("POST /chats/rooms/{chatRoomId}/mute - 채팅방 뮤트 토글")
     class ToggleMute {
 
@@ -324,6 +413,25 @@ class ChatApiTest extends IntegrationTestSupport {
 
     private User createUser(String name, String studentId) {
         return persist(UserFixture.createUser(university, name, studentId));
+    }
+
+    private ClubMember createClubMember(Club club, User user) {
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        ClubMember clubMember = persist(ClubMemberFixture.createMember(managedClub, managedUser));
+        clearPersistenceContext();
+        return clubMember;
+    }
+
+    private ChatMessage persistChatMessage(ChatRoom chatRoom, User sender, String content) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedSender = entityManager.getReference(User.class, sender.getId());
+
+        ChatMessage chatMessage = persist(ChatMessage.of(managedChatRoom, managedSender, content));
+        managedChatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        entityManager.flush();
+        clearPersistenceContext();
+        return chatMessage;
     }
 
     private long countDirectRoomsBetween(User firstUser, User secondUser) {

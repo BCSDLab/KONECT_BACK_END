@@ -15,6 +15,7 @@ import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
+import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -50,6 +51,17 @@ public class ChatController implements ChatApi {
         @UserId Integer userId
     ) {
         ChatRoomsSummaryResponse response = chatService.getChatRooms(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ChatSearchResponse> searchChats(
+        @RequestParam(name = "keyword") String keyword,
+        @RequestParam(name = "page", defaultValue = "1") Integer page,
+        @RequestParam(name = "limit", defaultValue = "20") Integer limit,
+        @UserId Integer userId
+    ) {
+        ChatSearchResponse response = chatService.searchChats(userId, keyword, page, limit);
         return ResponseEntity.ok(response);
     }
 

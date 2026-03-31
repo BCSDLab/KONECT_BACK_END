@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -17,18 +18,23 @@ import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
+import gg.agit.konect.domain.chat.dto.ChatMessageMatchResult;
+import gg.agit.konect.domain.chat.dto.ChatMessageMatchesResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMatchesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
+import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
 import gg.agit.konect.domain.chat.dto.AdminChatRoomProjection;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.enums.ChatType;
@@ -125,44 +131,23 @@ public class ChatService {
 
     @Transactional
     public ChatRoomsSummaryResponse getChatRooms(Integer userId) {
-        List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
-        List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
+        return new ChatRoomsSummaryResponse(getAccessibleChatRooms(userId));
+    }
 
-        List<Integer> roomIds = new ArrayList<>();
-        roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
-        roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
+    @Transactional
+    public ChatSearchResponse searchChats(Integer userId, String keyword, Integer page, Integer limit) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        List<ChatRoomSummaryResponse> accessibleRooms = getAccessibleChatRooms(userId);
 
-        Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
-        List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
-
-        directRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
-            room.roomId(),
-            room.chatType(),
-            room.roomName(),
-            room.roomImageUrl(),
-            room.lastMessage(),
-            room.lastSentAt(),
-            room.unreadCount(),
-            muteMap.getOrDefault(room.roomId(), false)
-        )));
-
-        clubRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
-            room.roomId(),
-            room.chatType(),
-            room.roomName(),
-            room.roomImageUrl(),
-            room.lastMessage(),
-            room.lastSentAt(),
-            room.unreadCount(),
-            muteMap.getOrDefault(room.roomId(), false)
-        )));
-
-        rooms.sort(
-            Comparator.comparing(ChatRoomSummaryResponse::lastSentAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(ChatRoomSummaryResponse::roomId)
+        ChatRoomMatchesResponse roomMatches = searchRoomsByName(accessibleRooms, normalizedKeyword, page, limit);
+        ChatMessageMatchesResponse messageMatches = searchByMessageContent(
+            accessibleRooms,
+            normalizedKeyword,
+            page,
+            limit
         );
 
-        return new ChatRoomsSummaryResponse(rooms);
+        return new ChatSearchResponse(roomMatches, messageMatches);
     }
 
     @Transactional
@@ -514,6 +499,104 @@ public class ChatService {
             countUnreadSince(message.getCreatedAt(), sortedReadBaselines),
             true
         );
+    }
+
+    private List<ChatRoomSummaryResponse> getAccessibleChatRooms(Integer userId) {
+        List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
+        List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
+
+        List<Integer> roomIds = new ArrayList<>();
+        roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
+        roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
+
+        Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
+        List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
+        directRooms.forEach(room -> rooms.add(applyMute(room, muteMap)));
+        clubRooms.forEach(room -> rooms.add(applyMute(room, muteMap)));
+
+        rooms.sort(
+            Comparator.comparing(ChatRoomSummaryResponse::lastSentAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ChatRoomSummaryResponse::roomId)
+        );
+        return rooms;
+    }
+
+    private ChatRoomSummaryResponse applyMute(
+        ChatRoomSummaryResponse room,
+        Map<Integer, Boolean> muteMap
+    ) {
+        return new ChatRoomSummaryResponse(
+            room.roomId(),
+            room.chatType(),
+            room.roomName(),
+            room.roomImageUrl(),
+            room.lastMessage(),
+            room.lastSentAt(),
+            room.unreadCount(),
+            muteMap.getOrDefault(room.roomId(), false)
+        );
+    }
+
+    private ChatRoomMatchesResponse searchRoomsByName(
+        List<ChatRoomSummaryResponse> accessibleRooms,
+        String keyword,
+        Integer page,
+        Integer limit
+    ) {
+        List<ChatRoomSummaryResponse> matchedRooms = accessibleRooms.stream()
+            .filter(room -> containsKeyword(room.roomName(), keyword))
+            .toList();
+
+        return ChatRoomMatchesResponse.from(toPage(matchedRooms, page, limit));
+    }
+
+    private ChatMessageMatchesResponse searchByMessageContent(
+        List<ChatRoomSummaryResponse> accessibleRooms,
+        String keyword,
+        Integer page,
+        Integer limit
+    ) {
+        if (accessibleRooms.isEmpty()) {
+            return ChatMessageMatchesResponse.from(emptyPage(page, limit));
+        }
+
+        Map<Integer, ChatRoomSummaryResponse> roomMap = accessibleRooms.stream()
+            .collect(Collectors.toMap(ChatRoomSummaryResponse::roomId, room -> room));
+        List<Integer> roomIds = accessibleRooms.stream()
+            .map(ChatRoomSummaryResponse::roomId)
+            .toList();
+
+        Page<ChatMessageMatchResult> matchedMessages = chatMessageRepository
+            .searchLatestMatchingMessagesByChatRoomIds(roomIds, keyword, PageRequest.of(page - 1, limit))
+            .map(message -> ChatMessageMatchResult.from(roomMap.get(message.getChatRoom().getId()), message));
+
+        return ChatMessageMatchesResponse.from(matchedMessages);
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return "";
+        }
+        return keyword.trim();
+    }
+
+    private boolean containsKeyword(String text, String keyword) {
+        if (text == null || keyword.isBlank()) {
+            return false;
+        }
+
+        return text.toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT));
+    }
+
+    private <T> Page<T> toPage(List<T> items, Integer page, Integer limit) {
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        int fromIndex = Math.min((page - 1) * limit, items.size());
+        int toIndex = Math.min(fromIndex + limit, items.size());
+        return new PageImpl<>(items.subList(fromIndex, toIndex), pageable, items.size());
+    }
+
+    private <T> Page<T> emptyPage(Integer page, Integer limit) {
+        return new PageImpl<>(List.of(), PageRequest.of(page - 1, limit), 0);
     }
 
     private Map<Integer, Boolean> getMuteMap(List<Integer> roomIds, Integer userId) {
