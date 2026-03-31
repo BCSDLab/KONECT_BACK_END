@@ -67,6 +67,7 @@ public class ChatService {
 
     private static final int SYSTEM_ADMIN_ID = 1;
     private static final String ETC_SECTION_NAME = "기타";
+    private static final String DEFAULT_GROUP_ROOM_NAME = "그룹 채팅";
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -159,11 +160,10 @@ public class ChatService {
             chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null"
         );
 
-        chatRoomMemberRepository.save(ChatRoomMember.ofOwner(chatRoom, creator, joinedAt));
-
-        invitees.forEach(user ->
-            chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt))
-        );
+        List<ChatRoomMember> members = new ArrayList<>();
+        members.add(ChatRoomMember.ofOwner(chatRoom, creator, joinedAt));
+        invitees.forEach(user -> members.add(ChatRoomMember.of(chatRoom, user, joinedAt)));
+        chatRoomMemberRepository.saveAll(members);
 
         return ChatRoomResponse.from(chatRoom);
     }
@@ -576,7 +576,7 @@ public class ChatService {
         return rooms.stream()
             .map(room -> {
                 ChatMessage lastMessage = lastMessageMap.get(room.getId());
-                String roomName = resolveRoomName(room.getId(), "그룹 채팅", customRoomNameMap);
+                String roomName = resolveRoomName(room.getId(), DEFAULT_GROUP_ROOM_NAME, customRoomNameMap);
                 return new ChatRoomSummaryResponse(
                     room.getId(),
                     ChatType.GROUP,
@@ -769,8 +769,7 @@ public class ChatService {
         Integer page,
         Integer limit
     ) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+        chatRoomRepository.getById(roomId);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         long totalCount = chatMessageRepository.countByChatRoomId(roomId, null);
@@ -830,7 +829,7 @@ public class ChatService {
         notificationService.sendGroupChatNotification(
             roomId,
             sender.getId(),
-            "그룹 채팅",
+            DEFAULT_GROUP_ROOM_NAME,
             sender.getName(),
             message.getContent(),
             recipientUserIds
@@ -1018,9 +1017,10 @@ public class ChatService {
     private void updateLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
         int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
         if (updated == 0) {
-            ChatRoom room = getClubRoom(roomId);
-            ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
-            ensureRoomMember(room, member.getUser(), member.getCreatedAt());
+            ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+            User user = userRepository.getById(userId);
+            ensureRoomMember(room, user, lastReadAt);
         }
     }
 
@@ -1211,9 +1211,6 @@ public class ChatService {
             .collect(Collectors.groupingBy(ChatRoomMember::getChatRoomId));
     }
 
-    private record MemberInfo(Integer userId, LocalDateTime createdAt) {
-    }
-
     private Map<Integer, List<MemberInfo>> getRoomMemberInfoMap(List<ChatRoom> rooms) {
         if (rooms.isEmpty()) {
             return Map.of();
@@ -1343,5 +1340,8 @@ public class ChatService {
         } catch (Exception e) {
             log.warn("Redis presence record failed, continuing: roomId={}, userId={}", roomId, userId, e);
         }
+    }
+
+    private record MemberInfo(Integer userId, LocalDateTime createdAt) {
     }
 }

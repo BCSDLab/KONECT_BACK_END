@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.chat.repository;
 
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -11,6 +13,7 @@ import gg.agit.konect.domain.chat.dto.AdminChatRoomProjection;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.user.enums.UserRole;
+import gg.agit.konect.global.exception.CustomException;
 
 public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
 
@@ -44,6 +47,11 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         WHERE cr.id = :chatRoomId
         """)
     Optional<ChatRoom> findById(@Param("chatRoomId") Integer chatRoomId);
+
+    default ChatRoom getById(Integer chatRoomId) {
+        return findById(chatRoomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+    }
 
     @Query("""
         SELECT cr
