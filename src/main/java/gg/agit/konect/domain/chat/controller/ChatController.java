@@ -92,4 +92,13 @@ public class ChatController implements ChatApi {
         chatService.updateChatRoomName(userId, chatRoomId, request);
         return ResponseEntity.ok().build();
     }
+
+    @Override
+    public ResponseEntity<Void> leaveChatRoom(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @UserId Integer userId
+    ) {
+        chatService.leaveChatRoom(userId, chatRoomId);
+        return ResponseEntity.noContent().build();
+    }
 }

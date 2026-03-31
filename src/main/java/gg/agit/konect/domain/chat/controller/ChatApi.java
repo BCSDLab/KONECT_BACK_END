@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.chat.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -143,6 +144,28 @@ public interface ChatApi {
     ResponseEntity<Void> updateChatRoomName(
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @Valid @RequestBody ChatRoomNameUpdateRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "채팅방에서 나간다.", description = """
+        ## 설명
+        - 동아리 채팅방은 나갈 수 없습니다.
+        - 1:1 채팅방은 소프트 딜리트 방식으로 나갑니다.
+        - 향후 일반 그룹 채팅방은 멤버십 제거 방식으로 나갈 수 있도록 설계합니다.
+        
+        ## 로직
+        - 1:1 채팅방에서 나간 사용자는 기존 메시지를 숨기고 채팅방 목록에서도 제거됩니다.
+        - 상대방이 이후 새 메시지를 보내면 나간 사용자는 새 대화처럼 그 메시지부터 다시 보게 됩니다.
+        - 사용자가 다시 1:1 채팅을 열면 이전 대화가 아니라 새로 시작한 것처럼 보입니다.
+        
+        ## 에러
+        - CANNOT_LEAVE_GROUP_CHAT_ROOM (400): 동아리 채팅방은 나갈 수 없습니다.
+        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
+        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
+        """)
+    @DeleteMapping("/rooms/{chatRoomId}")
+    ResponseEntity<Void> leaveChatRoom(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
         @UserId Integer userId
     );
 }

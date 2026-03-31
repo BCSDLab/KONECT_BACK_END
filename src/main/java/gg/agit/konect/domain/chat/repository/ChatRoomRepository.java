@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import gg.agit.konect.domain.chat.dto.AdminChatRoomProjection;
 import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.user.enums.UserRole;
 
 public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
@@ -21,10 +22,10 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
         LEFT JOIN FETCH cr.club
         WHERE crm.id.userId = :userId
-          AND cr.club IS NULL
+          AND cr.roomType = :roomType
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
-    List<ChatRoom> findByUserId(@Param("userId") Integer userId);
+    List<ChatRoom> findByUserId(@Param("userId") Integer userId, @Param("roomType") ChatType roomType);
 
     @Query("""
         SELECT cr
@@ -39,13 +40,17 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         FROM ChatRoom cr
         JOIN ChatRoomMember crm
             ON crm.id.chatRoomId = cr.id
-        WHERE cr.club IS NULL
+        WHERE cr.roomType = :roomType
         GROUP BY cr
         HAVING COUNT(crm) = 2
            AND SUM(CASE WHEN crm.id.userId = :userId1 THEN 1 ELSE 0 END) = 1
            AND SUM(CASE WHEN crm.id.userId = :userId2 THEN 1 ELSE 0 END) = 1
         """)
-    Optional<ChatRoom> findByTwoUsers(@Param("userId1") Integer userId1, @Param("userId2") Integer userId2);
+    Optional<ChatRoom> findByTwoUsers(
+        @Param("userId1") Integer userId1,
+        @Param("userId2") Integer userId2,
+        @Param("roomType") ChatType roomType
+    );
 
     @Query("""
         SELECT cr
@@ -69,15 +74,16 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
         LEFT JOIN FETCH cr.club
         WHERE crm.id.userId = :userId
+          AND cr.roomType = :roomType
           AND cr.club IS NOT NULL
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
-    List<ChatRoom> findGroupRoomsByUserId(@Param("userId") Integer userId);
+    List<ChatRoom> findGroupRoomsByUserId(@Param("userId") Integer userId, @Param("roomType") ChatType roomType);
 
     @Query("""
         SELECT DISTINCT cr
         FROM ChatRoom cr
-        WHERE cr.club IS NULL
+        WHERE cr.roomType = :roomType
           AND EXISTS (
               SELECT 1 FROM ChatRoomMember adminMember
               JOIN adminMember.user adminUser
@@ -92,12 +98,15 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
           )
         ORDER BY cr.lastMessageSentAt DESC NULLS LAST, cr.id
         """)
-    List<ChatRoom> findAllAdminUserDirectRooms(@Param("adminRole") UserRole adminRole);
+    List<ChatRoom> findAllAdminUserDirectRooms(
+        @Param("adminRole") UserRole adminRole,
+        @Param("roomType") ChatType roomType
+    );
 
     @Query("""
         SELECT DISTINCT cr
         FROM ChatRoom cr
-        WHERE cr.club IS NULL
+        WHERE cr.roomType = :roomType
           AND EXISTS (
               SELECT 1 FROM ChatRoomMember systemAdminMember
               WHERE systemAdminMember.id.chatRoomId = cr.id
@@ -113,7 +122,8 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         """)
     List<ChatRoom> findAllSystemAdminDirectRooms(
         @Param("systemAdminId") Integer systemAdminId,
-        @Param("adminRole") UserRole adminRole
+        @Param("adminRole") UserRole adminRole,
+        @Param("roomType") ChatType roomType
     );
 
     /**
@@ -145,7 +155,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         LEFT JOIN ChatMessage cm ON cm.chatRoom.id = cr.id
             AND cm.sender.id <> :systemAdminId
             AND cm.createdAt > adminCrm.lastReadAt
-        WHERE cr.club IS NULL
+        WHERE cr.roomType = :roomType
           AND u.role != :adminRole
           AND EXISTS (
               SELECT 1 FROM ChatMessage userReply
@@ -158,6 +168,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         """)
     List<AdminChatRoomProjection> findAdminChatRoomsOptimized(
         @Param("systemAdminId") Integer systemAdminId,
-        @Param("adminRole") UserRole adminRole
+        @Param("adminRole") UserRole adminRole,
+        @Param("roomType") ChatType roomType
     );
 }

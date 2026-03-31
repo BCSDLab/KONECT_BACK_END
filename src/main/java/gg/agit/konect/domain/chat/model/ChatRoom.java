@@ -7,12 +7,15 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.time.LocalDateTime;
 
+import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -39,23 +42,37 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "last_message_sent_at")
     private LocalDateTime lastMessageSentAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "room_type", nullable = false, length = 20)
+    private ChatType roomType;
+
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "club_id")
     private Club club;
 
     @Builder
-    private ChatRoom(Integer id, Club club) {
+    private ChatRoom(Integer id, ChatType roomType, Club club) {
         this.id = id;
+        this.roomType = roomType;
         this.club = club;
     }
 
     public static ChatRoom directOf() {
-        return ChatRoom.builder().build();
+        return ChatRoom.builder()
+            .roomType(ChatType.DIRECT)
+            .build();
     }
 
     public static ChatRoom groupOf(Club club) {
         return ChatRoom.builder()
+            .roomType(ChatType.GROUP)
             .club(club)
+            .build();
+    }
+
+    public static ChatRoom groupOf() {
+        return ChatRoom.builder()
+            .roomType(ChatType.GROUP)
             .build();
     }
 
@@ -66,11 +83,15 @@ public class ChatRoom extends BaseEntity {
     }
 
     public boolean isDirectRoom() {
-        return club == null;
+        return roomType == ChatType.DIRECT;
     }
 
     public boolean isGroupRoom() {
-        return club != null;
+        return roomType == ChatType.GROUP;
+    }
+
+    public boolean isClubGroupRoom() {
+        return roomType == ChatType.GROUP && club != null;
     }
 
     public void updateLastMessage(String lastMessageContent, LocalDateTime lastMessageSentAt) {

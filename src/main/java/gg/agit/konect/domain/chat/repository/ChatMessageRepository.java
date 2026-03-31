@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.chat.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -39,9 +40,25 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         FROM ChatMessage cm
         JOIN FETCH cm.sender
         WHERE cm.chatRoom.id = :chatRoomId
+          AND (:visibleMessageFrom IS NULL OR cm.createdAt > :visibleMessageFrom)
         ORDER BY cm.createdAt DESC
         """)
-    Page<ChatMessage> findByChatRoomId(@Param("chatRoomId") Integer chatRoomId, Pageable pageable);
+    Page<ChatMessage> findByChatRoomId(
+        @Param("chatRoomId") Integer chatRoomId,
+        @Param("visibleMessageFrom") LocalDateTime visibleMessageFrom,
+        Pageable pageable
+    );
+
+    @Query("""
+        SELECT COUNT(m)
+        FROM ChatMessage m
+        WHERE m.chatRoom.id = :chatRoomId
+          AND (:visibleMessageFrom IS NULL OR m.createdAt > :visibleMessageFrom)
+        """)
+    long countByChatRoomId(
+        @Param("chatRoomId") Integer chatRoomId,
+        @Param("visibleMessageFrom") LocalDateTime visibleMessageFrom
+    );
 
     @Query("""
         SELECT new gg.agit.konect.domain.chat.dto.UnreadMessageCount(
@@ -102,10 +119,4 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         """)
     List<ChatMessage> findLatestMessagesByRoomIds(@Param("roomIds") List<Integer> roomIds);
 
-    @Query("""
-        SELECT COUNT(m)
-        FROM ChatMessage m
-        WHERE m.chatRoom.id = :chatRoomId
-        """)
-    long countByChatRoomId(@Param("chatRoomId") Integer chatRoomId);
 }
