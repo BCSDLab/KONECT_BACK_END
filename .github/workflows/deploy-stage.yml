@@ -89,7 +89,7 @@ jobs:
             OTEL_JAVA_AGENT_VERSION=${{ vars.OTEL_JAVA_AGENT_VERSION }}
 
       - name: Backup stage MySQL before deploy
-        uses: appleboy/ssh-action@b60142998894e495c513803efc6d5d72a72c968a # v0.1.8
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.STAGE_SERVER_IP }}
           username: ${{ secrets.STAGE_SERVER_USER }}
@@ -120,7 +120,7 @@ jobs:
             echo "Stage MySQL backup completed in $((END_TIME - START_TIME))s"
 
       - name: Deploy to stage server
-        uses: appleboy/ssh-action@b60142998894e495c513803efc6d5d72a72c968a # v0.1.8
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.STAGE_SERVER_IP }}
           username: ${{ secrets.STAGE_SERVER_USER }}
