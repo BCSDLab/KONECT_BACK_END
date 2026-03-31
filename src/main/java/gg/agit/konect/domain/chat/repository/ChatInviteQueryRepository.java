@@ -59,27 +59,6 @@ public class ChatInviteQueryRepository {
         return new PageImpl<>(content, pageRequest, total == null ? 0 : total);
     }
 
-    public List<User> findInvitableUsers(Integer userId, String query) {
-        // 같은 chat_room_member 테이블을 두 번 조인하는 self join 이라 별도 alias가 필요하다.
-        QChatRoomMember requesterMember = new QChatRoomMember("requesterMember");
-        QChatRoomMember candidateMember = new QChatRoomMember("candidateMember");
-        QUser candidateUser = new QUser("candidateUser");
-
-        return createInvitableUsersQuery(userId, query, requesterMember, candidateMember, candidateUser)
-            .groupBy(
-                candidateUser.id,
-                candidateUser.name,
-                candidateUser.imageUrl,
-                candidateUser.studentNumber
-            )
-            .orderBy(
-                candidateUser.name.asc(),
-                candidateUser.studentNumber.asc(),
-                candidateUser.id.asc()
-            )
-            .fetch();
-    }
-
     public Page<Integer> findInvitableUserIdsGroupedByClub(
         Integer userId,
         String query,
