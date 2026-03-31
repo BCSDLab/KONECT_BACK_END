@@ -267,6 +267,10 @@ class ChatApiTest extends IntegrationTestSupport {
 
             performGet("/chats/rooms/invitables")
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.currentCount").value(4))
+                .andExpect(jsonPath("$.totalPage").value(1))
+                .andExpect(jsonPath("$.currentPage").value(1))
                 .andExpect(jsonPath("$.sortBy").value("CLUB"))
                 .andExpect(jsonPath("$.grouped").value(true))
                 .andExpect(jsonPath("$.users").isEmpty())
@@ -298,6 +302,10 @@ class ChatApiTest extends IntegrationTestSupport {
 
             performGet("/chats/rooms/invitables", params)
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.currentCount").value(1))
+                .andExpect(jsonPath("$.totalPage").value(1))
+                .andExpect(jsonPath("$.currentPage").value(1))
                 .andExpect(jsonPath("$.sortBy").value("NAME"))
                 .andExpect(jsonPath("$.grouped").value(false))
                 .andExpect(jsonPath("$.sections").isEmpty())
@@ -309,6 +317,27 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.users[*].name").value(org.hamcrest.Matchers.not(
                     org.hamcrest.Matchers.hasItem("관리자")
                 )));
+        }
+
+        @Test
+        @DisplayName("페이지네이션을 적용하면 현재 페이지 사용자만 반환한다")
+        void getInvitableUsersWithPagination() throws Exception {
+            mockLoginUser(normalUser.getId());
+            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>(Map.of(
+                "sortBy", List.of("NAME"),
+                "page", List.of("2"),
+                "limit", List.of("2")
+            ));
+
+            performGet("/chats/rooms/invitables", params)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.currentCount").value(2))
+                .andExpect(jsonPath("$.totalPage").value(2))
+                .andExpect(jsonPath("$.currentPage").value(2))
+                .andExpect(jsonPath("$.users[0].name").value("이씨에스"))
+                .andExpect(jsonPath("$.users[1].name").value("정멀티"))
+                .andExpect(jsonPath("$.users[2]").doesNotExist());
         }
     }
 
