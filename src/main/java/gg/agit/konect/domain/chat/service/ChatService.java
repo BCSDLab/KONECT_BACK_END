@@ -137,6 +137,38 @@ public class ChatService {
     }
 
     @Transactional
+    public ChatRoomResponse createGroupChatRoom(Integer currentUserId, ChatRoomCreateRequest.Group request) {
+        User creator = userRepository.getById(currentUserId);
+
+        List<Integer> distinctUserIds = request.userIds().stream()
+            .distinct()
+            .filter(id -> !id.equals(currentUserId))
+            .toList();
+
+        if (distinctUserIds.isEmpty()) {
+            throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
+        }
+
+        List<User> invitees = userRepository.findAllByIdIn(distinctUserIds);
+        if (invitees.size() != distinctUserIds.size()) {
+            throw CustomException.of(NOT_FOUND_USER);
+        }
+
+        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.groupOf());
+        LocalDateTime joinedAt = Objects.requireNonNull(
+            chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null"
+        );
+
+        chatRoomMemberRepository.save(ChatRoomMember.ofOwner(chatRoom, creator, joinedAt));
+
+        invitees.forEach(user ->
+            chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt))
+        );
+
+        return ChatRoomResponse.from(chatRoom);
+    }
+
+    @Transactional
     public void leaveChatRoom(Integer userId, Integer roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));

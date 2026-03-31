@@ -22,6 +22,8 @@ import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequiredArgsConstructor
@@ -114,5 +116,15 @@ public class ChatController implements ChatApi {
     ) {
         chatService.leaveChatRoom(userId, chatRoomId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PostMapping("/rooms/group")
+    public ResponseEntity<ChatRoomResponse> createGroupChatRoom(
+        @Valid @RequestBody ChatRoomCreateRequest.Group request,
+        @UserId Integer userId
+    ) {
+        ChatRoomResponse response = chatService.createGroupChatRoom(userId, request);
+        return ResponseEntity.ok(response);
     }
 }

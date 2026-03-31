@@ -49,6 +49,9 @@ public class ChatRoomMember extends BaseEntity {
     @Column(name = "custom_room_name", length = 30)
     private String customRoomName;
 
+    @Column(name = "is_owner", nullable = false)
+    private Boolean isOwner;
+
     @Builder
     private ChatRoomMember(
         ChatRoomMemberId id,
@@ -57,7 +60,8 @@ public class ChatRoomMember extends BaseEntity {
         LocalDateTime lastReadAt,
         LocalDateTime visibleMessageFrom,
         LocalDateTime leftAt,
-        String customRoomName
+        String customRoomName,
+        Boolean isOwner
     ) {
         this.id = id;
         this.chatRoom = chatRoom;
@@ -66,6 +70,7 @@ public class ChatRoomMember extends BaseEntity {
         this.visibleMessageFrom = visibleMessageFrom;
         this.leftAt = leftAt;
         this.customRoomName = customRoomName;
+        this.isOwner = isOwner != null ? isOwner : false;
     }
 
     public static ChatRoomMember of(ChatRoom chatRoom, User user, LocalDateTime lastReadAt) {
@@ -74,6 +79,17 @@ public class ChatRoomMember extends BaseEntity {
             .chatRoom(chatRoom)
             .user(user)
             .lastReadAt(lastReadAt)
+            .isOwner(false)
+            .build();
+    }
+
+    public static ChatRoomMember ofOwner(ChatRoom chatRoom, User user, LocalDateTime lastReadAt) {
+        return ChatRoomMember.builder()
+            .id(new ChatRoomMemberId(chatRoom.getId(), user.getId()))
+            .chatRoom(chatRoom)
+            .user(user)
+            .lastReadAt(lastReadAt)
+            .isOwner(true)
             .build();
     }
 
@@ -101,6 +117,10 @@ public class ChatRoomMember extends BaseEntity {
 
     public boolean hasLeft() {
         return leftAt != null;
+    }
+
+    public boolean isOwner() {
+        return isOwner != null && isOwner;
     }
 
     public void leaveDirectRoom(LocalDateTime leftAt) {
