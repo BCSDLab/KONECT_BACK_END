@@ -134,6 +134,7 @@ public class ChatService {
         return new ChatRoomsSummaryResponse(getAccessibleChatRooms(userId));
     }
 
+    @Transactional
     public ChatSearchResponse searchChats(Integer userId, String keyword, Integer page, Integer limit) {
         String normalizedKeyword = normalizeKeyword(keyword);
         List<ChatRoomSummaryResponse> accessibleRooms = getAccessibleChatRooms(userId);
