@@ -36,6 +36,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
         WHERE crm.id.userId = :userId
           AND cr.roomType = gg.agit.konect.domain.chat.enums.ChatType.GROUP
+          AND crm.leftAt IS NULL
         ORDER BY COALESCE(cr.lastMessageSentAt, cr.createdAt) DESC
         """)
     List<ChatRoom> findGroupRoomsByMemberUserId(@Param("userId") Integer userId);
