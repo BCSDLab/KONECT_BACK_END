@@ -384,8 +384,7 @@ public class ChatService {
         ChatRoomMember member = getOrCreateDirectRoomMember(chatRoom, user);
         LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(member, chatRoom);
 
-        LocalDateTime readAt = LocalDateTime.now();
-        chatPresenceService.recordPresence(roomId, userId);
+        recordPresenceSafely(roomId, userId);
 
         boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom);
 
@@ -437,7 +436,7 @@ public class ChatService {
         ChatRoomMember senderMember = getAccessibleDirectRoomMember(chatRoom, sender);
         boolean senderHadLeft = senderMember.hasLeft();
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        User receiver = resolveMessageReceiver(sender, members);
+        User receiver = resolveDirectChatPartner(members, userId);
 
         ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, request.content())
@@ -1009,7 +1008,7 @@ public class ChatService {
 
     private void recordPresenceSafely(Integer roomId, Integer userId) {
         try {
-            chatPresenceService.recordPresence(roomId, userId);
+            recordPresenceSafely(roomId, userId);
         } catch (Exception e) {
             log.warn("Redis presence record failed, continuing: roomId={}, userId={}", roomId, userId, e);
         }
