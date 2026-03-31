@@ -892,8 +892,23 @@ public class ChatService {
 
     private ChatRoomMember getAccessibleDirectRoomMember(ChatRoom chatRoom, User user) {
         ChatRoomMember member = getOrCreateDirectRoomMember(chatRoom, user);
+        restoreDirectRoomIfVisible(member, chatRoom);
+        return member;
+    }
+
+    private LocalDateTime prepareDirectRoomAccess(ChatRoomMember member, ChatRoom chatRoom) {
+        LocalDateTime visibleMessageFrom = member.getVisibleMessageFrom();
+        restoreDirectRoomIfVisible(member, chatRoom);
+        return visibleMessageFrom;
+    }
+
+    /**
+     * direct 채팅방에서 나간 사용자가 다시 볼 수 있는 상태인지 확인하고,
+     * 새 메시지가 이미 존재하면 나간 상태를 해제한다.
+     */
+    private void restoreDirectRoomIfVisible(ChatRoomMember member, ChatRoom chatRoom) {
         if (!member.hasLeft()) {
-            return member;
+            return;
         }
 
         if (!member.hasVisibleMessages(chatRoom)) {
@@ -901,21 +916,6 @@ public class ChatService {
         }
 
         member.restoreDirectRoom();
-        return member;
-    }
-
-    private LocalDateTime prepareDirectRoomAccess(ChatRoomMember member, ChatRoom chatRoom) {
-        LocalDateTime visibleMessageFrom = member.getVisibleMessageFrom();
-        if (!member.hasLeft()) {
-            return visibleMessageFrom;
-        }
-
-        if (member.hasVisibleMessages(chatRoom)) {
-            member.restoreDirectRoom();
-            return visibleMessageFrom;
-        }
-
-        throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
     }
 
     private boolean isSystemAdminRoom(ChatRoom chatRoom) {
