@@ -140,7 +140,6 @@ public class ChatInviteQueryRepository {
         QUser candidateUser
     ) {
         return jpaQueryFactory.select(candidateUser)
-            .distinct()
             .from(requesterMember)
             .join(candidateMember)
             .on(candidateMember.chatRoom.id.eq(requesterMember.chatRoom.id))
