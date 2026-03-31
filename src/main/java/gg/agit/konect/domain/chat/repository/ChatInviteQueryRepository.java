@@ -10,10 +10,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.chat.model.QChatRoomMember;
+import gg.agit.konect.domain.club.model.QClub;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.model.QClubMember;
 import gg.agit.konect.domain.user.enums.UserRole;
@@ -28,32 +33,11 @@ public class ChatInviteQueryRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
     public Page<User> findInvitableUsers(Integer userId, String query, PageRequest pageRequest) {
-        // 같은 chat_room_member 테이블을 두 번 조인하는 self join 이라 별도 alias가 필요하다.
         QChatRoomMember requesterMember = new QChatRoomMember("requesterMember");
         QChatRoomMember candidateMember = new QChatRoomMember("candidateMember");
         QUser candidateUser = new QUser("candidateUser");
 
-        // content 쿼리는 현재 페이지에 실제로 보여줄 초대 후보만 가져온다.
-        List<User> content = jpaQueryFactory.select(candidateUser)
-            .distinct()
-            .from(requesterMember)
-            .join(candidateMember)
-            .on(candidateMember.chatRoom.id.eq(requesterMember.chatRoom.id))
-            .join(candidateMember.user, candidateUser)
-            .where(
-                // 내가 아직 나가지 않은 채팅방만 초대 후보 탐색의 시작점이 된다.
-                requesterMember.user.id.eq(userId),
-                requesterMember.leftAt.isNull(),
-                // 자기 자신은 초대 대상이 될 수 없고, 상대도 현재 방에 남아 있어야 한다.
-                candidateMember.user.id.ne(userId),
-                candidateMember.leftAt.isNull(),
-                // 탈퇴 유저와 관리자 계정은 신규 채팅방 초대 대상에서 제외한다.
-                candidateUser.deletedAt.isNull(),
-                candidateUser.role.ne(UserRole.ADMIN),
-                // 검색어는 이름/학번 부분 일치로만 적용한다.
-                containsUserKeyword(candidateUser, query)
-            )
-            // 페이지가 달라도 사용자 노출 순서는 항상 같아야 하므로 DB 정렬을 고정한다.
+        List<User> content = createInvitableUsersQuery(userId, query, requesterMember, candidateMember, candidateUser)
             .orderBy(
                 candidateUser.name.asc(),
                 candidateUser.studentNumber.asc(),
@@ -63,8 +47,100 @@ public class ChatInviteQueryRepository {
             .limit(pageRequest.getPageSize())
             .fetch();
 
-        // offset/limit가 적용된 본문 쿼리만으로는 전체 개수를 알 수 없어 count 쿼리를 분리한다.
-        Long total = jpaQueryFactory.select(candidateUser.id.countDistinct())
+        Long total = createInvitableUsersCountQuery(userId, query, requesterMember, candidateMember, candidateUser)
+            .fetchOne();
+
+        return new PageImpl<>(content, pageRequest, total == null ? 0 : total);
+    }
+
+    public List<User> findInvitableUsers(Integer userId, String query) {
+        // 같은 chat_room_member 테이블을 두 번 조인하는 self join 이라 별도 alias가 필요하다.
+        QChatRoomMember requesterMember = new QChatRoomMember("requesterMember");
+        QChatRoomMember candidateMember = new QChatRoomMember("candidateMember");
+        QUser candidateUser = new QUser("candidateUser");
+
+        return createInvitableUsersQuery(userId, query, requesterMember, candidateMember, candidateUser)
+            .orderBy(
+                candidateUser.name.asc(),
+                candidateUser.studentNumber.asc(),
+                candidateUser.id.asc()
+            )
+            .fetch();
+    }
+
+    public Page<Integer> findInvitableUserIdsGroupedByClub(
+        Integer userId,
+        String query,
+        PageRequest pageRequest
+    ) {
+        QChatRoomMember requesterMember = new QChatRoomMember("requesterMember");
+        QChatRoomMember candidateMember = new QChatRoomMember("candidateMember");
+        QUser candidateUser = new QUser("candidateUser");
+        QClubMember requesterClubMember = new QClubMember("requesterClubMember");
+        QClubMember candidateClubMember = new QClubMember("candidateClubMember");
+        QClub sharedClub = new QClub("sharedClub");
+
+        StringExpression representativeClubName = new CaseBuilder()
+            .when(requesterClubMember.id.isNotNull())
+            .then(sharedClub.name)
+            .otherwise((String) null);
+        NumberExpression<Integer> clubPresenceOrder = new CaseBuilder()
+            .when(requesterClubMember.id.isNotNull())
+            .then(0)
+            .otherwise(1);
+
+        List<Integer> content = createInvitableUsersQuery(
+            userId,
+            query,
+            requesterMember,
+            candidateMember,
+            candidateUser
+        )
+            // 사용자가 여러 동아리에 속해도 대표 정렬 키는
+            // 요청자와 실제로 공유하는 동아리만 기준으로 계산해야 한다.
+            .leftJoin(candidateClubMember)
+            .on(candidateClubMember.user.id.eq(candidateUser.id))
+            .leftJoin(candidateClubMember.club, sharedClub)
+            .leftJoin(requesterClubMember)
+            .on(
+                requesterClubMember.club.id.eq(sharedClub.id)
+                    .and(requesterClubMember.user.id.eq(userId))
+            )
+            .groupBy(
+                candidateUser.id,
+                candidateUser.name,
+                candidateUser.imageUrl,
+                candidateUser.studentNumber
+            )
+            .orderBy(
+                // 공유 동아리가 있는 사용자를 먼저 두고,
+                // 그 안에서는 대표 동아리 이름 → 사용자 이름 순으로 페이지 경계를 고정한다.
+                clubPresenceOrder.min().asc(),
+                representativeClubName.min().asc(),
+                candidateUser.name.asc(),
+                candidateUser.studentNumber.asc(),
+                candidateUser.id.asc()
+            )
+            .select(candidateUser.id)
+            .offset(pageRequest.getOffset())
+            .limit(pageRequest.getPageSize())
+            .fetch();
+
+        Long total = createInvitableUsersCountQuery(userId, query, requesterMember, candidateMember, candidateUser)
+            .fetchOne();
+
+        return new PageImpl<>(content, pageRequest, total == null ? 0 : total);
+    }
+
+    private JPAQuery<User> createInvitableUsersQuery(
+        Integer userId,
+        String query,
+        QChatRoomMember requesterMember,
+        QChatRoomMember candidateMember,
+        QUser candidateUser
+    ) {
+        return jpaQueryFactory.select(candidateUser)
+            .distinct()
             .from(requesterMember)
             .join(candidateMember)
             .on(candidateMember.chatRoom.id.eq(requesterMember.chatRoom.id))
@@ -77,10 +153,31 @@ public class ChatInviteQueryRepository {
                 candidateUser.deletedAt.isNull(),
                 candidateUser.role.ne(UserRole.ADMIN),
                 containsUserKeyword(candidateUser, query)
-            )
-            .fetchOne();
+            );
+    }
 
-        return new PageImpl<>(content, pageRequest, total == null ? 0 : total);
+    private JPAQuery<Long> createInvitableUsersCountQuery(
+        Integer userId,
+        String query,
+        QChatRoomMember requesterMember,
+        QChatRoomMember candidateMember,
+        QUser candidateUser
+    ) {
+        // offset/limit가 적용된 본문 쿼리만으로는 전체 개수를 알 수 없어 count 쿼리를 분리한다.
+        return jpaQueryFactory.select(candidateUser.id.countDistinct())
+            .from(requesterMember)
+            .join(candidateMember)
+            .on(candidateMember.chatRoom.id.eq(requesterMember.chatRoom.id))
+            .join(candidateMember.user, candidateUser)
+            .where(
+                requesterMember.user.id.eq(userId),
+                requesterMember.leftAt.isNull(),
+                candidateMember.user.id.ne(userId),
+                candidateMember.leftAt.isNull(),
+                candidateUser.deletedAt.isNull(),
+                candidateUser.role.ne(UserRole.ADMIN),
+                containsUserKeyword(candidateUser, query)
+            );
     }
 
     public List<ClubMember> findRequesterClubMemberships(Integer userId) {

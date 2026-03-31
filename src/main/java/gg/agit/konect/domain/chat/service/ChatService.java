@@ -1,16 +1,12 @@
 package gg.agit.konect.domain.chat.service;
 
-import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CREATE_CHAT_ROOM_WITH_SELF;
-import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_LEAVE_GROUP_CHAT_ROOM;
-import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
-import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
-import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
+import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,17 +20,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import gg.agit.konect.domain.chat.dto.AdminChatRoomProjection;
+import gg.agit.konect.domain.chat.dto.ChatInvitableUsersResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
-import gg.agit.konect.domain.chat.dto.ChatInvitableUsersResponse;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
-import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
-import gg.agit.konect.domain.chat.dto.AdminChatRoomProjection;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.domain.chat.enums.ChatType;
@@ -42,8 +39,8 @@ import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
-import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
+import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.repository.RoomUnreadCountProjection;
@@ -207,6 +204,10 @@ public class ChatService {
         userRepository.getById(userId);
         PageRequest pageRequest = PageRequest.of(page - 1, limit);
 
+        if (sortBy == ChatInviteSortBy.CLUB) {
+            return getInvitableUsersGroupedByClub(userId, query, pageRequest);
+        }
+
         Page<User> filteredUserEntitiesPage = chatInviteQueryRepository.findInvitableUsers(userId, query, pageRequest);
 
         // 응답 DTO는 채팅 초대 화면에서 바로 쓰는 최소 필드만 유지한다.
@@ -221,96 +222,81 @@ public class ChatService {
             filteredUserEntitiesPage.getTotalElements()
         );
 
-        // 이름순은 섹션 개념이 없으므로 현재 페이지 사용자 목록을 그대로 내려준다.
-        if (sortBy == ChatInviteSortBy.NAME) {
-            return ChatInvitableUsersResponse.forNameSort(filteredUsersPage);
+        return ChatInvitableUsersResponse.forNameSort(filteredUsersPage);
+    }
+
+    private ChatInvitableUsersResponse getInvitableUsersGroupedByClub(
+        Integer userId,
+        String query,
+        PageRequest pageRequest
+    ) {
+        // CLUB 정렬은 DB가 현재 페이지에 들어갈 userId까지 잘라 오고,
+        // 서비스는 그 결과를 섹션 응답으로만 복원한다.
+        Page<Integer> pagedUserIds = chatInviteQueryRepository.findInvitableUserIdsGroupedByClub(
+            userId,
+            query,
+            pageRequest
+        );
+
+        if (pagedUserIds.isEmpty()) {
+            return ChatInvitableUsersResponse.forClubSort(
+                new PageImpl<>(List.of(), pageRequest, pagedUserIds.getTotalElements()),
+                List.of()
+            );
         }
 
-        // 동아리순이라도 현재 페이지 후보가 비어 있으면 섹션 없이 메타데이터만 반환한다.
-        if (filteredUsers.isEmpty()) {
-            return ChatInvitableUsersResponse.forClubSort(filteredUsersPage, List.of());
+        // IN 조회는 정렬 순서를 보장하지 않으므로, DB가 정한 userId 페이지 순서대로 다시 조립한다.
+        Map<Integer, User> pagedUserMap = userRepository.findAllByIdIn(pagedUserIds.getContent()).stream()
+            .collect(Collectors.toMap(User::getId, user -> user));
+
+        List<ChatInvitableUsersResponse.InvitableUser> pagedUsers = pagedUserIds.getContent().stream()
+            .map(pagedUserMap::get)
+            .filter(Objects::nonNull)
+            .map(ChatInvitableUsersResponse.InvitableUser::from)
+            .toList();
+
+        Page<ChatInvitableUsersResponse.InvitableUser> pagedInvitableUsers = new PageImpl<>(
+            pagedUsers,
+            pageRequest,
+            pagedUserIds.getTotalElements()
+        );
+
+        record SectionKey(Integer clubId, String clubName) {
         }
-
-        // 이후 동아리 매핑에서 빠르게 찾을 수 있도록 현재 페이지 후보를 userId 기준 맵으로 바꾼다.
-        Map<Integer, ChatInvitableUsersResponse.InvitableUser> filteredUserMap = filteredUsers.stream()
-            .collect(Collectors.toMap(
-                ChatInvitableUsersResponse.InvitableUser::userId,
-                user -> user,
-                (first, second) -> first,
-                LinkedHashMap::new
-            ));
-
-        // 섹션 제목과 기본 순서는 요청자가 실제로 속한 동아리 목록을 기준으로 잡는다.
-        Map<Integer, String> requesterClubNames = chatInviteQueryRepository.findRequesterClubMemberships(userId)
-            .stream()
-            // soft delete 된 사용자의 동아리 정보는 섹션 기준에서 제외한다.
-            .filter(clubMember -> clubMember.getUser().getDeletedAt() == null)
-            .collect(Collectors.toMap(
-                clubMember -> clubMember.getClub().getId(),
-                clubMember -> clubMember.getClub().getName(),
-                (first, second) -> first,
-                LinkedHashMap::new
-            ));
 
         Map<Integer, Integer> representativeClubByUserId = new HashMap<>();
-        if (!requesterClubNames.isEmpty()) {
-            // 한 사용자가 여러 공유 동아리에 속해도 섹션에는 한 번만 보여야 하므로,
-            // 쿼리 정렬상 가장 먼저 나온 동아리를 대표 섹션으로 고정한다.
-            chatInviteQueryRepository.findSharedClubMemberships(
-                    userId,
-                    new ArrayList<>(filteredUserMap.keySet())
-                )
-                .stream()
-                // soft delete 된 사용자의 공유 동아리 정보는 대표 섹션 계산에서 제외한다.
-                .filter(clubMember -> clubMember.getUser().getDeletedAt() == null)
-                // 요청자가 속하지 않은 동아리는 섹션 후보가 될 수 없으므로 한 번 더 방어한다.
-                .filter(clubMember -> requesterClubNames.containsKey(clubMember.getClub().getId()))
-                .forEach(clubMember -> representativeClubByUserId.putIfAbsent(
-                    clubMember.getUser().getId(),
-                    clubMember.getClub().getId()
-                ));
-        }
+        Map<Integer, String> representativeClubNames = new HashMap<>();
+        // 현재 페이지 사용자에 대해서만 대표 동아리를 다시 구해도,
+        // userId 자체는 이미 대표 동아리 기준으로 정렬돼 있으므로 페이지 경계는 유지된다.
+        chatInviteQueryRepository.findSharedClubMemberships(userId, pagedUserIds.getContent()).stream()
+            .filter(clubMember -> clubMember.getUser().getDeletedAt() == null)
+            .forEach(clubMember -> {
+                representativeClubNames.putIfAbsent(clubMember.getClub().getId(), clubMember.getClub().getName());
+                representativeClubByUserId.putIfAbsent(clubMember.getUser().getId(), clubMember.getClub().getId());
+            });
 
-        // 대표 동아리가 정해진 사용자만 해당 동아리 섹션으로 배치한다.
-        Map<Integer, List<ChatInvitableUsersResponse.InvitableUser>> usersByClubId = new HashMap<>();
-        filteredUsers.forEach(user -> {
-            Integer clubId = representativeClubByUserId.get(user.userId());
-            if (clubId == null) {
-                // 대표 동아리가 없는 사용자는 마지막 기타 섹션 후보로 남겨둔다.
-                return;
-            }
-            usersByClubId.computeIfAbsent(clubId, ignored -> new ArrayList<>())
+        // 대표 동아리가 없는 사용자는 기타 섹션으로 떨어지고,
+        // 같은 대표 동아리를 가진 사용자끼리만 현재 페이지 sections[]로 묶는다.
+        Map<SectionKey, List<ChatInvitableUsersResponse.InvitableUser>> sectionMap = new LinkedHashMap<>();
+        pagedUsers.forEach(user -> {
+            Integer representativeClubId = representativeClubByUserId.get(user.userId());
+            String clubName = representativeClubId == null
+                ? ETC_SECTION_NAME
+                : representativeClubNames.get(representativeClubId);
+            SectionKey key = new SectionKey(representativeClubId, clubName);
+            sectionMap.computeIfAbsent(key, ignored -> new ArrayList<>())
                 .add(user);
         });
 
-        // 사용자가 한 명도 없는 동아리 섹션은 숨기고, 실제 선택 가능한 섹션만 응답한다.
-        List<ChatInvitableUsersResponse.InvitableSection> sections = requesterClubNames.entrySet().stream()
-            .sorted(Map.Entry.comparingByValue())
+        List<ChatInvitableUsersResponse.InvitableSection> sections = sectionMap.entrySet().stream()
             .map(entry -> new ChatInvitableUsersResponse.InvitableSection(
-                entry.getKey(),
-                entry.getValue(),
-                usersByClubId.getOrDefault(entry.getKey(), List.of())
+                entry.getKey().clubId(),
+                entry.getKey().clubName(),
+                entry.getValue()
             ))
-            .filter(section -> !section.users().isEmpty())
-            .collect(Collectors.toCollection(ArrayList::new));
-
-        // 이미 동아리 섹션에 배치된 사용자를 기록해 기타 섹션과 중복 노출되지 않게 한다.
-        Set<Integer> sectionedUserIds = sections.stream()
-            .flatMap(section -> section.users().stream())
-            .map(ChatInvitableUsersResponse.InvitableUser::userId)
-            .collect(Collectors.toSet());
-
-        // 같은 채팅방에는 있지만 공유 동아리가 없는 사용자는 기타 섹션으로 분리한다.
-        List<ChatInvitableUsersResponse.InvitableUser> uncategorizedUsers = filteredUsers.stream()
-            .filter(user -> !sectionedUserIds.contains(user.userId()))
             .toList();
 
-        if (!uncategorizedUsers.isEmpty()) {
-            // 같은 채팅방 멤버이지만 공유 동아리가 없는 후보도 초대 대상에서는 빠지면 안 된다.
-            sections.add(new ChatInvitableUsersResponse.InvitableSection(null, ETC_SECTION_NAME, uncategorizedUsers));
-        }
-
-        return ChatInvitableUsersResponse.forClubSort(filteredUsersPage, sections);
+        return ChatInvitableUsersResponse.forClubSort(pagedInvitableUsers, sections);
     }
 
     @Transactional
