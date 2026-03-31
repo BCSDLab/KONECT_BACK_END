@@ -109,10 +109,22 @@ public class ChatRoomMember extends BaseEntity {
         updateLastReadAt(leftAt);
     }
 
+    /**
+     * 탈퇴 이후 새 메시지가 생겨 다시 볼 수 있을 때 사용한다.
+     * <p>
+     * 나간 상태만 해제하고, 기존 {@code visibleMessageFrom}은 유지한다.
+     * 그래서 탈퇴 이후 도착한 메시지부터 계속 보인다.
+     */
     public void restoreDirectRoom() {
         this.leftAt = null;
     }
 
+    /**
+     * 사용자가 채팅방을 다시 열어 새 대화를 시작할 때 사용한다.
+     * <p>
+     * 나간 상태를 해제하고 {@code visibleMessageFrom}도 새로 갱신한다.
+     * 그래서 전달한 시점 이후 메시지부터 새 대화처럼 보인다.
+     */
     public void reopenDirectRoom(LocalDateTime visibleMessageFrom) {
         this.leftAt = null;
         this.visibleMessageFrom = visibleMessageFrom;
