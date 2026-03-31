@@ -118,6 +118,16 @@ public class ChatController implements ChatApi {
     }
 
     @Override
+    public ResponseEntity<Void> kickMember(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @PathVariable(value = "targetUserId") Integer targetUserId,
+        @UserId Integer userId
+    ) {
+        chatService.kickMember(userId, chatRoomId, targetUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
     @PostMapping("/rooms/group")
     public ResponseEntity<ChatRoomResponse> createGroupChatRoom(
         @Valid @RequestBody ChatRoomCreateRequest.Group request,

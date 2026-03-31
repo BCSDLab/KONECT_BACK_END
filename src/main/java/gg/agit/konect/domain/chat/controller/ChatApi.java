@@ -191,6 +191,31 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "채팅방 멤버를 강퇴한다.", description = """
+        ## 설명
+        - 그룹 채팅방에서 방장이 특정 멤버를 강퇴합니다.
+        
+        ## 로직
+        - 방장(owner)만 멤버를 강퇴할 수 있습니다.
+        - 1:1 채팅방과 동아리 채팅방에서는 강퇴할 수 없습니다.
+        - 자기 자신(방장)은 강퇴할 수 없습니다.
+        - 이미 채팅방에 없는 멤버는 강퇴할 수 없습니다.
+        
+        ## 에러
+        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
+        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
+        - FORBIDDEN_CHAT_ROOM_KICK (403): 채팅방 방장만 멤버를 강퇴할 수 있습니다.
+        - CANNOT_KICK_SELF (400): 자기 자신을 강퇴할 수 없습니다.
+        - CANNOT_KICK_ROOM_OWNER (400): 방장은 강퇴할 수 없습니다.
+        - CANNOT_KICK_IN_NON_GROUP_ROOM (400): 그룹 채팅방에서만 강퇴할 수 있습니다.
+        """)
+    @DeleteMapping("/rooms/{chatRoomId}/members/{targetUserId}")
+    ResponseEntity<Void> kickMember(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @PathVariable(value = "targetUserId") Integer targetUserId,
+        @UserId Integer userId
+    );
+
     @Operation(summary = "그룹 채팅방을 생성한다.", description = """
         ## 설명
         - 여러 유저를 초대하여 그룹 채팅방을 생성합니다.
