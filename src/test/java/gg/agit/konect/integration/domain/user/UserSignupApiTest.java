@@ -11,7 +11,6 @@ import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.dto.SignupRequest;
-import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
@@ -321,8 +320,8 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
             // when & then
             mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/users/signup")
-                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                .content(jsonRequest))
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .content(jsonRequest))
                 .andExpect(status().isBadRequest());
         }
 
