@@ -1,19 +1,23 @@
 package gg.agit.konect.domain.club.event;
 
+import java.util.List;
+
 public record ClubApplicationSubmittedEvent(
-    Integer receiverId,
+    List<Integer> receiverIds,
     Integer applicationId,
     Integer clubId,
     String clubName,
     String applicantName
 ) {
     public static ClubApplicationSubmittedEvent of(
-        Integer receiverId,
+        List<Integer> receiverIds,
         Integer applicationId,
         Integer clubId,
         String clubName,
         String applicantName
     ) {
-        return new ClubApplicationSubmittedEvent(receiverId, applicationId, clubId, clubName, applicantName);
+        return new ClubApplicationSubmittedEvent(
+            List.copyOf(receiverIds), applicationId, clubId, clubName, applicantName
+        );
     }
 }

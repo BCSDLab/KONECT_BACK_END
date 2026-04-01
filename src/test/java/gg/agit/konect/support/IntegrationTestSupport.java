@@ -24,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.sheets.v4.Sheets;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import jakarta.persistence.EntityManager;
 
@@ -70,6 +74,18 @@ public abstract class IntegrationTestSupport {
 
     @MockitoBean
     protected LoggingProperties loggingProperties;
+
+    @MockitoBean
+    protected GoogleCredentials googleCredentials;
+
+    @MockitoBean
+    protected ServiceAccountCredentials serviceAccountCredentials;
+
+    @MockitoBean
+    protected Sheets googleSheetsService;
+
+    @MockitoBean
+    protected Drive googleDriveService;
 
     @BeforeEach
     void setUpCommonMocks() throws Exception {

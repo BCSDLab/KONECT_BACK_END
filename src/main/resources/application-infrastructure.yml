@@ -20,3 +20,12 @@ claude:
 
 mcp:
   url: ${MCP_BRIDGE_URL:http://localhost:3100}
+
+google:
+  sheets:
+    credentials-path: ${GOOGLE_SHEETS_CREDENTIALS_PATH}
+    application-name: ${GOOGLE_SHEETS_APP_NAME:KONECT}
+    template-spreadsheet-id: ${GOOGLE_SHEETS_TEMPLATE_ID:}
+    oauth-client-id: ${OAUTH_GOOGLE_CLIENT_ID}
+    oauth-client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET}
+    oauth-callback-base-url: ${APP_BACKEND_BASE_URL}

@@ -18,7 +18,13 @@ public enum ApiResponseCode {
     MISSING_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "필수 요청 파라미터가 누락되었습니다."),
     FAILED_EXTRACT_EMAIL(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 이메일 정보를 가져올 수 없습니다."),
     FAILED_EXTRACT_PROVIDER_ID(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 제공자 식별자를 가져올 수 없습니다."),
+    INVALID_GOOGLE_DRIVE_AUTH(HttpStatus.BAD_REQUEST,
+        "Google Drive 인증이 만료되었거나 올바르지 않습니다. Drive 권한을 다시 연결해 주세요."),
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
+    CANNOT_LEAVE_GROUP_CHAT_ROOM(HttpStatus.BAD_REQUEST, "동아리 채팅방은 나갈 수 없습니다."),
+    CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "자기 자신을 강퇴할 수 없습니다."),
+    CANNOT_KICK_ROOM_OWNER(HttpStatus.BAD_REQUEST, "방장은 강퇴할 수 없습니다."),
+    CANNOT_KICK_IN_NON_GROUP_ROOM(HttpStatus.BAD_REQUEST, "그룹 채팅방에서만 강퇴할 수 있습니다."),
     INVALID_CHAT_ROOM_CREATE_REQUEST(HttpStatus.BAD_REQUEST, "clubId 또는 targetUserId 중 하나만 전달해야 합니다."),
     CANNOT_CHANGE_OWN_POSITION(HttpStatus.BAD_REQUEST, "자기 자신의 직책은 변경할 수 없습니다."),
     CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
@@ -67,7 +73,10 @@ public enum ApiResponseCode {
     FORBIDDEN_MEMBER_POSITION_CHANGE(HttpStatus.FORBIDDEN, "회원 직책 변경 권한이 없습니다."),
     FORBIDDEN_POSITION_NAME_CHANGE(HttpStatus.FORBIDDEN, "해당 직책의 이름은 변경할 수 없습니다."),
     FORBIDDEN_ROLE_ACCESS(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    FORBIDDEN_GOOGLE_SHEET_ACCESS(HttpStatus.FORBIDDEN,
+        "구글 스프레드시트 접근 권한이 없습니다. 서비스 계정을 공유하거나 Google Drive 권한을 연결한 뒤 다시 시도해 주세요."),
     FORBIDDEN_ORIGIN_ACCESS(HttpStatus.FORBIDDEN, "허용되지 않은 Origin 입니다."),
+    FORBIDDEN_CHAT_ROOM_KICK(HttpStatus.FORBIDDEN, "채팅방 방장만 멤버를 강퇴할 수 있습니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),
@@ -91,6 +100,10 @@ public enum ApiResponseCode {
     NOT_FOUND_BANK(HttpStatus.NOT_FOUND, "해당하는 은행을 찾을 수 없습니다."),
     NOT_FOUND_VERSION(HttpStatus.NOT_FOUND, "버전을 찾을 수 없습니다."),
     NOT_FOUND_NOTIFICATION_TOKEN(HttpStatus.NOT_FOUND, "알림 토큰을 찾을 수 없습니다."),
+    NOT_FOUND_NOTIFICATION_INBOX(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+    NOT_FOUND_ADVERTISEMENT(HttpStatus.NOT_FOUND, "광고를 찾을 수 없습니다."),
+    NOT_FOUND_CLUB_SHEET_ID(HttpStatus.NOT_FOUND, "등록된 스프레드시트 ID가 없습니다. 먼저 스프레드시트 ID를 등록해 주세요."),
+    NOT_FOUND_GOOGLE_DRIVE_AUTH(HttpStatus.NOT_FOUND, "Google Drive 권한이 연결되지 않았습니다. 먼저 Drive 권한을 연결해 주세요."),
 
     // 405 Method Not Allowed (지원하지 않는 HTTP 메소드)
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 HTTP 메소드 입니다."),
@@ -112,9 +125,15 @@ public enum ApiResponseCode {
     OAUTH_ACCOUNT_ALREADY_LINKED(HttpStatus.CONFLICT, "해당 OAuth 계정은 이미 다른 사용자에게 연동되어 있습니다."),
     OAUTH_PROVIDER_ALREADY_LINKED(HttpStatus.CONFLICT, "이 계정에는 해당 OAuth 제공자가 이미 연동되어 있습니다."),
 
+    // 413 Payload Too Large (요청 본문 크기 초과)
+    PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기가 제한을 초과했습니다."),
+
     // 500 Internal Server Error (서버 오류)
     CLIENT_ABORTED(HttpStatus.INTERNAL_SERVER_ERROR, "클라이언트에 의해 연결이 중단되었습니다."),
     FAILED_UPLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+    FAILED_SYNC_GOOGLE_SHEET(HttpStatus.INTERNAL_SERVER_ERROR, "구글 스프레드시트 동기화에 실패했습니다."),
+    FAILED_INIT_GOOGLE_DRIVE(HttpStatus.INTERNAL_SERVER_ERROR, "Google Drive 서비스 초기화에 실패했습니다."),
+    FAILED_GOOGLE_DRIVE_AUTH(HttpStatus.INTERNAL_SERVER_ERROR, "Google Drive 인증 코드 교환에 실패했습니다."),
     FAILED_SEND_NOTIFICATION(HttpStatus.INTERNAL_SERVER_ERROR, "알림 전송에 실패했습니다."),
     UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 예기치 못한 에러가 발생했습니다.");
 

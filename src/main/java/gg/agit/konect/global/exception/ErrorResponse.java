@@ -17,13 +17,30 @@ public record ErrorResponse(
     @Schema(description = "에러 추적용 UUID")
     String errorTraceId,
 
+    @Schema(description = "에러 상세 사유")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    String detail,
+
     @Schema(description = "필드별 검증 오류 목록")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     List<FieldError> fieldErrors
 ) {
 
     public ErrorResponse(String code, String message, String errorTraceId) {
-        this(code, message, errorTraceId, List.of());
+        this(code, message, errorTraceId, null, List.of());
+    }
+
+    public ErrorResponse(
+        String code,
+        String message,
+        String errorTraceId,
+        List<FieldError> fieldErrors
+    ) {
+        this(code, message, errorTraceId, null, fieldErrors);
+    }
+
+    public ErrorResponse(String code, String message, String errorTraceId, String detail) {
+        this(code, message, errorTraceId, detail, List.of());
     }
 
     @Schema(description = "필드별 검증 오류 목록 아이템")
@@ -44,4 +61,3 @@ public record ErrorResponse(
         }
     }
 }
-

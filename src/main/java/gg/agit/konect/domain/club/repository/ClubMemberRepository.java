@@ -70,6 +70,19 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
         SELECT cm
         FROM ClubMember cm
         JOIN FETCH cm.user
+        WHERE cm.club.id = :clubId
+        AND cm.clubPosition IN :positions
+        AND cm.user.deletedAt IS NULL
+        """)
+    List<ClubMember> findAllByClubIdAndPositionIn(
+        @Param("clubId") Integer clubId,
+        @Param("positions") Set<ClubPosition> positions
+    );
+
+    @Query("""
+        SELECT cm
+        FROM ClubMember cm
+        JOIN FETCH cm.user
         WHERE cm.user.id = :userId
         AND cm.clubPosition = :clubPosition
         """)
@@ -189,8 +202,18 @@ public interface ClubMemberRepository extends Repository<ClubMember, ClubMemberI
 
     ClubMember save(ClubMember clubMember);
 
+    List<ClubMember> saveAll(Iterable<ClubMember> clubMembers);
+
     void deleteByUserId(Integer userId);
 
     @Query("SELECT COUNT(cm) FROM ClubMember cm")
     long countAll();
+
+    @Query("""
+        SELECT cm.user.studentNumber
+        FROM ClubMember cm
+        WHERE cm.club.id = :clubId
+        AND cm.user.deletedAt IS NULL
+        """)
+    Set<String> findStudentNumbersByClubId(@Param("clubId") Integer clubId);
 }

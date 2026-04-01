@@ -27,7 +27,7 @@ public class CustomException extends RuntimeException {
     }
 
     public String getFullMessage() {
-        if (StringUtils.hasText(detail)) {
+        if (!StringUtils.hasText(detail)) {
             return super.getMessage();
         }
         return String.format("%s: %s", getMessage(), detail);

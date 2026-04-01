@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -46,7 +47,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpServletRequest request,
         CustomException e
     ) {
-        return buildErrorResponse(request, e.getErrorCode(), e.getFullMessage());
+        return buildErrorResponse(
+            request,
+            e.getErrorCode(),
+            e.getFullMessage(),
+            e.getDetail()
+        );
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -73,6 +79,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ClientAbortException.class)
     public ResponseEntity<Object> handleClientAbortException() {
         return buildErrorResponse(ApiResponseCode.CLIENT_ABORTED);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+        MaxUploadSizeExceededException ex,
+        HttpHeaders headers,
+        HttpStatusCode status,
+        WebRequest request
+    ) {
+        return buildErrorResponse(ApiResponseCode.PAYLOAD_TOO_LARGE);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -208,13 +224,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ApiResponseCode errorCode,
         String errorMessage
     ) {
+        return buildErrorResponse(request, errorCode, errorMessage, null);
+    }
+
+    private ResponseEntity<Object> buildErrorResponse(
+        HttpServletRequest request,
+        ApiResponseCode errorCode,
+        String errorMessage,
+        String detail
+    ) {
         String errorTraceId = UUID.randomUUID().toString();
         requestLogging(request, errorCode.getHttpStatus().value(), errorMessage, errorTraceId);
 
         ErrorResponse response = new ErrorResponse(
             errorCode.getCode(),
             errorCode.getMessage(),
-            errorTraceId
+            errorTraceId,
+            detail
         );
 
         return ResponseEntity.status(errorCode.getHttpStatus().value()).body(response);

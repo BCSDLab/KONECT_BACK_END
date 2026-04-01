@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
@@ -116,7 +117,11 @@ public class UserService {
                 return;
             }
             ChatRoom.validateIsNotSameParticipant(operator, newUser);
-            ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(operator.getId(), newUser.getId())
+            ChatRoom chatRoom = chatRoomRepository.findByTwoUsers(
+                    operator.getId(),
+                    newUser.getId(),
+                    ChatType.DIRECT
+                )
                 .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
             LocalDateTime joinedAt = Objects.requireNonNull(
                 chatRoom.getCreatedAt(),

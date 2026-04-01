@@ -118,7 +118,7 @@ public class ClubService {
 
         Club savedClub = clubRepository.save(club);
 
-        chatRoomRepository.save(ChatRoom.groupOf(savedClub));
+        chatRoomRepository.save(ChatRoom.clubGroupOf(savedClub));
 
         ClubMember president = ClubMember.builder()
             .club(savedClub)

@@ -64,6 +64,9 @@ public class UserOAuthAccount extends BaseEntity {
     @Column(name = "apple_refresh_token", length = 1024)
     private String appleRefreshToken;
 
+    @Column(name = "google_drive_refresh_token", length = 1024)
+    private String googleDriveRefreshToken;
+
     @Builder
     private UserOAuthAccount(User user, Provider provider, String providerId, String oauthEmail,
         String appleRefreshToken) {
@@ -95,5 +98,9 @@ public class UserOAuthAccount extends BaseEntity {
 
     public void updateAppleRefreshToken(String appleRefreshToken) {
         this.appleRefreshToken = appleRefreshToken;
+    }
+
+    public void updateGoogleDriveRefreshToken(String googleDriveRefreshToken) {
+        this.googleDriveRefreshToken = googleDriveRefreshToken;
     }
 }

@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.upload.service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -10,7 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import gg.agit.konect.domain.upload.dto.ImageUploadResponse;
 import gg.agit.konect.domain.upload.enums.UploadTarget;
-import gg.agit.konect.domain.upload.service.ImageConversionService.ConversionResult;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.infrastructure.storage.cdn.StorageCdnProperties;
@@ -38,30 +38,23 @@ public class UploadService {
     private final S3Client s3Client;
     private final S3StorageProperties s3StorageProperties;
     private final StorageCdnProperties storageCdnProperties;
-    private final ImageConversionService imageConversionService;
 
     public ImageUploadResponse uploadImage(MultipartFile file, UploadTarget target) {
         validateS3Configuration();
         validateFile(file);
 
-        ConversionResult conversionResult;
-        try {
-            conversionResult = imageConversionService.convertToWebP(file);
-        } catch (IOException e) {
-            log.error("이미지 WEBP 변환 실패. fileName: {}", file.getOriginalFilename(), e);
-            throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
-        }
-
-        String key = buildKey(conversionResult.extension(), target);
+        String contentType = file.getContentType();
+        String extension = getExtension(contentType);
+        String key = buildKey(extension, target);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
             .bucket(s3StorageProperties.bucket())
             .key(key)
-            .contentType(conversionResult.contentType())
+            .contentType(contentType)
             .build();
 
-        try {
-            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(conversionResult.bytes()));
+        try (InputStream inputStream = file.getInputStream()) {
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, file.getSize()));
         } catch (S3Exception e) {
             String awsErrorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null;
             String awsErrorMessage = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
@@ -77,7 +70,7 @@ public class UploadService {
                 e
             );
             throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
-        } catch (SdkClientException e) {
+        } catch (SdkClientException | IOException e) {
             log.error(
                 "S3 업로드 클라이언트 오류(네트워크/자격증명/설정). bucket: {}, key: {}, message: {}",
                 s3StorageProperties.bucket(),
@@ -102,10 +95,6 @@ public class UploadService {
             throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         }
 
-        Long maxUploadBytes = s3StorageProperties.maxUploadBytes();
-        if (maxUploadBytes != null && file.getSize() > maxUploadBytes) {
-            throw CustomException.of(ApiResponseCode.INVALID_FILE_SIZE);
-        }
     }
 
     private String buildKey(String extension, UploadTarget target) {
@@ -140,6 +129,15 @@ public class UploadService {
             normalized = normalized.substring(1);
         }
         return normalized;
+    }
+
+    private String getExtension(String contentType) {
+        return switch (contentType.toLowerCase()) {
+            case "image/png" -> "png";
+            case "image/jpg", "image/jpeg" -> "jpg";
+            case "image/webp" -> "webp";
+            default -> "bin";
+        };
     }
 
     private String trimTrailingSlash(String baseUrl) {

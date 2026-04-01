@@ -27,12 +27,14 @@ public class ClubApplicationNotificationListener {
 
     @TransactionalEventListener(phase = AFTER_COMMIT)
     public void handleClubApplicationSubmitted(ClubApplicationSubmittedEvent event) {
-        notificationService.sendClubApplicationSubmittedNotification(
-            event.receiverId(),
-            event.applicationId(),
-            event.clubId(),
-            event.clubName(),
-            event.applicantName()
+        event.receiverIds().forEach(receiverId ->
+            notificationService.sendClubApplicationSubmittedNotification(
+                receiverId,
+                event.applicationId(),
+                event.clubId(),
+                event.clubName(),
+                event.applicantName()
+            )
         );
     }
 }
