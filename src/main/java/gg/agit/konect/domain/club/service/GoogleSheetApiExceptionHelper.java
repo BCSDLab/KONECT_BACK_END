@@ -26,6 +26,8 @@ public final class GoogleSheetApiExceptionHelper {
         "invalidCredentials",
         "unauthorized"
     );
+    private static final String INVALID_GRANT_ERROR = "invalid_grant";
+    private static final int HTTP_STATUS_BAD_REQUEST = 400;
     private static final int HTTP_STATUS_FORBIDDEN = 403;
     private static final int HTTP_STATUS_UNAUTHORIZED = 401;
     private static final int HTTP_STATUS_NOT_FOUND = 404;
@@ -57,8 +59,48 @@ public final class GoogleSheetApiExceptionHelper {
         return getStatusCode(exception) == HTTP_STATUS_NOT_FOUND;
     }
 
+    public static boolean isInvalidGrant(IOException exception) {
+        if (getStatusCode(exception) != HTTP_STATUS_BAD_REQUEST) {
+            return false;
+        }
+
+        String content = getResponseContent(exception);
+        if (content == null) {
+            return false;
+        }
+
+        return content.toLowerCase().contains(INVALID_GRANT_ERROR);
+    }
+
     public static CustomException accessDenied() {
         return CustomException.of(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS);
+    }
+
+    public static CustomException invalidGoogleDriveAuth(IOException exception) {
+        return CustomException.of(
+            ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH,
+            extractDetail(exception)
+        );
+    }
+
+    public static String extractDetail(IOException exception) {
+        HttpResponseException responseException = findResponseException(exception);
+        if (responseException != null) {
+            String message = responseException.getMessage();
+            if (message != null && !message.isBlank()) {
+                return message;
+            }
+
+            String content = responseException.getContent();
+            if (content != null && !content.isBlank()) {
+                return "%d %s%n%s".formatted(
+                    responseException.getStatusCode(),
+                    defaultStatusText(responseException.getStatusCode()),
+                    content
+                );
+            }
+        }
+        return exception.getMessage();
     }
 
     private static boolean hasReason(
@@ -84,12 +126,48 @@ public final class GoogleSheetApiExceptionHelper {
     }
 
     private static int getStatusCode(IOException exception) {
-        if (exception instanceof GoogleJsonResponseException responseException) {
-            return responseException.getStatusCode();
-        }
-        if (exception instanceof HttpResponseException responseException) {
+        HttpResponseException responseException = findResponseException(exception);
+        if (responseException != null) {
             return responseException.getStatusCode();
         }
         return -1;
+    }
+
+    private static String getResponseContent(IOException exception) {
+        HttpResponseException responseException = findResponseException(exception);
+        if (responseException == null) {
+            return null;
+        }
+
+        String content = responseException.getContent();
+        if (content != null && !content.isBlank()) {
+            return content;
+        }
+
+        return responseException.getMessage();
+    }
+
+    private static HttpResponseException findResponseException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof GoogleJsonResponseException responseException) {
+                return responseException;
+            }
+            if (current instanceof HttpResponseException responseException) {
+                return responseException;
+            }
+            current = current.getCause();
+        }
+        return null;
+    }
+
+    private static String defaultStatusText(int statusCode) {
+        return switch (statusCode) {
+            case HTTP_STATUS_BAD_REQUEST -> "Bad Request";
+            case HTTP_STATUS_UNAUTHORIZED -> "Unauthorized";
+            case HTTP_STATUS_FORBIDDEN -> "Forbidden";
+            case HTTP_STATUS_NOT_FOUND -> "Not Found";
+            default -> "HTTP Error";
+        };
     }
 }

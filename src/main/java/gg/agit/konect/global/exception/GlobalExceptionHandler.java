@@ -47,7 +47,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpServletRequest request,
         CustomException e
     ) {
-        return buildErrorResponse(request, e.getErrorCode(), e.getFullMessage());
+        return buildErrorResponse(
+            request,
+            e.getErrorCode(),
+            e.getFullMessage(),
+            e.getDetail()
+        );
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -219,13 +224,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ApiResponseCode errorCode,
         String errorMessage
     ) {
+        return buildErrorResponse(request, errorCode, errorMessage, null);
+    }
+
+    private ResponseEntity<Object> buildErrorResponse(
+        HttpServletRequest request,
+        ApiResponseCode errorCode,
+        String errorMessage,
+        String detail
+    ) {
         String errorTraceId = UUID.randomUUID().toString();
         requestLogging(request, errorCode.getHttpStatus().value(), errorMessage, errorTraceId);
 
         ErrorResponse response = new ErrorResponse(
             errorCode.getCode(),
             errorCode.getMessage(),
-            errorTraceId
+            errorTraceId,
+            detail
         );
 
         return ResponseEntity.status(errorCode.getHttpStatus().value()).body(response);

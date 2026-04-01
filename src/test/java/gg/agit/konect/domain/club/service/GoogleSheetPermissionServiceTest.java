@@ -1,7 +1,9 @@
 package gg.agit.konect.domain.club.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.googleException;
+import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.httpResponseException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -26,6 +28,8 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.infrastructure.googlesheets.GoogleSheetsConfig;
 import gg.agit.konect.support.ServiceTestSupport;
 
@@ -193,6 +197,32 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(granted).isFalse();
+    }
+
+    @Test
+    @DisplayName("throws a bad request custom exception when Google returns invalid_grant")
+    void tryGrantServiceAccountWriterAccessThrowsWhenInvalidGrantOccurs()
+        throws IOException, GeneralSecurityException {
+        // given
+        mockConnectedDriveAccount();
+        given(permissions.list(FILE_ID)).willReturn(listRequest);
+        given(listRequest.setFields("permissions(id,emailAddress,role)")).willReturn(listRequest);
+        given(listRequest.execute()).willThrow(new IOException(
+            "token refresh failed",
+            httpResponseException(
+                400,
+                "{\"error\":\"invalid_grant\",\"error_description\":\"Bad Request\"}"
+            )
+        ));
+
+        // when & then
+        assertThatThrownBy(() -> googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
+            REQUESTER_ID,
+            FILE_ID
+        ))
+            .isInstanceOf(CustomException.class)
+            .extracting("errorCode")
+            .isEqualTo(ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH);
     }
 
     private void mockConnectedDriveAccount() throws IOException, GeneralSecurityException {

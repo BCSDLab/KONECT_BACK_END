@@ -215,6 +215,16 @@ public class SheetMigrationService {
         try {
             return ensureServiceAccountPermission(userDriveService, fileId, role);
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
+                log.warn(
+                    "Google Drive OAuth token is invalid while granting service account permission. "
+                        + "fileId={}, role={}, cause={}",
+                    fileId,
+                    role,
+                    GoogleSheetApiExceptionHelper.extractDetail(e)
+                );
+                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
+            }
             if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
                 log.warn(
                     "Google Drive auth failed while granting service account permission. "
@@ -413,6 +423,16 @@ public class SheetMigrationService {
         } catch (IOException e) {
             if (newFileId != null) {
                 deleteFile(driveService, newFileId);
+            }
+            if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
+                log.warn(
+                    "Google Drive OAuth token is invalid while copying template. templateId={}, "
+                        + "targetFolderId={}, cause={}",
+                    templateId,
+                    targetFolderId,
+                    GoogleSheetApiExceptionHelper.extractDetail(e)
+                );
+                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
             }
             if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
                 log.warn(

@@ -57,6 +57,17 @@ public class GoogleSheetPermissionService {
             ensureServiceAccountPermission(userDriveService, spreadsheetId, "writer");
             return true;
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
+                log.warn(
+                    "Google Drive OAuth token is invalid while auto-sharing spreadsheet. requesterId={}, "
+                        + "spreadsheetId={}, cause={}",
+                    requesterId,
+                    spreadsheetId,
+                    GoogleSheetApiExceptionHelper.extractDetail(e)
+                );
+                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
+            }
+
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)
                 || GoogleSheetApiExceptionHelper.isAuthFailure(e)
                 || GoogleSheetApiExceptionHelper.isNotFound(e)) {
