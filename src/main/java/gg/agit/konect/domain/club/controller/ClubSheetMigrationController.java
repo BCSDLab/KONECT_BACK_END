@@ -10,6 +10,7 @@ import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import gg.agit.konect.domain.club.dto.SheetMigrateRequest;
+import gg.agit.konect.domain.club.service.ClubSheetIntegratedService;
 import gg.agit.konect.domain.club.service.SheetImportService;
 import gg.agit.konect.domain.club.service.SheetMigrationService;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -23,6 +24,7 @@ public class ClubSheetMigrationController implements ClubSheetMigrationApi {
 
     private final SheetMigrationService sheetMigrationService;
     private final SheetImportService sheetImportService;
+    private final ClubSheetIntegratedService clubSheetIntegratedService;
 
     @Override
     public ResponseEntity<ClubMemberSheetSyncResponse> migrateSheet(
@@ -43,6 +45,18 @@ public class ClubSheetMigrationController implements ClubSheetMigrationApi {
         @UserId Integer requesterId
     ) {
         SheetImportResponse response = sheetImportService.importPreMembersFromSheet(
+            clubId, requesterId, request.spreadsheetUrl()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<SheetImportResponse> analyzeAndImportPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody SheetImportRequest request,
+        @UserId Integer requesterId
+    ) {
+        SheetImportResponse response = clubSheetIntegratedService.analyzeAndImportPreMembers(
             clubId, requesterId, request.spreadsheetUrl()
         );
         return ResponseEntity.ok(response);

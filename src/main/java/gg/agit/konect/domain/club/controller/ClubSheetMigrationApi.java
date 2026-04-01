@@ -45,4 +45,17 @@ public interface ClubSheetMigrationApi {
         @Valid @RequestBody SheetImportRequest request,
         @UserId Integer requesterId
     );
+
+    @Operation(
+        summary = "스프레드시트 분석 후 사전 회원 가져오기",
+        description = "구글 스프레드시트 URL을 받아 먼저 시트를 분석 및 등록한 뒤, "
+            + "같은 스프레드시트에서 사전 회원을 읽어 DB에 등록합니다. "
+            + "기존 PUT /clubs/{clubId}/sheet 와 POST /clubs/{clubId}/sheet/import 를 순서대로 실행한 결과와 동일합니다."
+    )
+    @PostMapping("/{clubId}/sheet/import/integrated")
+    ResponseEntity<SheetImportResponse> analyzeAndImportPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody SheetImportRequest request,
+        @UserId Integer requesterId
+    );
 }

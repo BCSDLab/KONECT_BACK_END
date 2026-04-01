@@ -733,6 +733,195 @@ class ChatApiTest extends IntegrationTestSupport {
     }
 
     @Nested
+    @DisplayName("GET /chats/rooms/search - 채팅 검색")
+    class SearchChats {
+
+        private User secondTargetUser;
+        private Club developmentClub;
+
+        @BeforeEach
+        void setUpSearchFixture() {
+            targetUser = createUser("개발팀", "2021136002");
+            secondTargetUser = createUser("개발자", "2021136003");
+            outsiderUser = createUser("외부유저", "2021136004");
+            developmentClub = persist(ClubFixture.create(university, "개발동아리"));
+            createClubMember(developmentClub, normalUser);
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("채팅방 이름과 상대방 이름으로 검색 결과를 분리해서 반환한다")
+        void searchChatsReturnsRoomMatchesForDirectAndGroupRooms() throws Exception {
+            // given
+            ChatRoom directRoom = createDirectChatRoom(normalUser, targetUser);
+            ChatRoom groupRoom = persist(ChatRoom.groupOf(developmentClub));
+            addRoomMember(groupRoom, normalUser);
+            persistChatMessage(directRoom, normalUser, "안녕하세요");
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발&page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(2))
+                .andExpect(jsonPath("$.roomMatches.currentCount").value(2))
+                .andExpect(jsonPath("$.roomMatches.totalPage").value(1))
+                .andExpect(jsonPath("$.roomMatches.currentPage").value(1))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("개발팀"))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].chatType").value("DIRECT"))
+                .andExpect(jsonPath("$.roomMatches.rooms[1].roomName").value("개발동아리"))
+                .andExpect(jsonPath("$.roomMatches.rooms[1].chatType").value("GROUP"))
+                .andExpect(jsonPath("$.messageMatches.totalCount").value(0))
+                .andExpect(jsonPath("$.messageMatches.currentCount").value(0));
+        }
+
+        @Test
+        @DisplayName("메시지 검색은 접근 가능한 방에서 방별 최신 매칭 메시지 1개만 반환한다")
+        void searchChatsReturnsLatestMatchingMessagePerAccessibleRoom() throws Exception {
+            // given
+            ChatRoom firstRoom = createDirectChatRoom(normalUser, targetUser);
+            ChatRoom secondRoom = createDirectChatRoom(normalUser, secondTargetUser);
+            ChatRoom outsiderRoom = createDirectChatRoom(outsiderUser, targetUser);
+
+            persistChatMessage(firstRoom, normalUser, "첫 번째 키워드");
+            persistChatMessage(secondRoom, secondTargetUser, "두 번째 키워드");
+            persistChatMessage(outsiderRoom, outsiderUser, "외부 키워드");
+            persistChatMessage(firstRoom, targetUser, "최신 키워드");
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=키워드&page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(0))
+                .andExpect(jsonPath("$.messageMatches.totalCount").value(2))
+                .andExpect(jsonPath("$.messageMatches.currentCount").value(2))
+                .andExpect(jsonPath("$.messageMatches.messages[0].roomName").value("개발팀"))
+                .andExpect(jsonPath("$.messageMatches.messages[0].matchedMessage").value("최신 키워드"))
+                .andExpect(jsonPath("$.messageMatches.messages[1].roomName").value("개발자"))
+                .andExpect(jsonPath("$.messageMatches.messages[1].matchedMessage").value("두 번째 키워드"));
+        }
+
+        @Test
+        @DisplayName("나간 1:1 채팅방의 숨김 메시지는 검색 결과에 노출되지 않는다")
+        void searchChatsExcludesHiddenMessagesFromLeftDirectRoom() throws Exception {
+            // given
+            ChatRoom directRoom = createDirectChatRoom(normalUser, targetUser);
+
+            mockLoginUser(normalUser.getId());
+            performPost("/chats/rooms/" + directRoom.getId() + "/messages", new ChatMessageSendRequest("비밀 키워드"))
+                .andExpect(status().isOk());
+            performDelete("/chats/rooms/" + directRoom.getId())
+                .andExpect(status().isNoContent());
+
+            mockLoginUser(targetUser.getId());
+            performPost("/chats/rooms/" + directRoom.getId() + "/messages", new ChatMessageSendRequest("다시 안녕"))
+                .andExpect(status().isOk());
+
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=비밀&page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(0))
+                .andExpect(jsonPath("$.messageMatches.totalCount").value(0))
+                .andExpect(jsonPath("$.messageMatches.currentCount").value(0));
+        }
+
+        @Test
+        @DisplayName("메시지 검색은 LIKE 특수문자를 리터럴로 처리한다")
+        void searchChatsTreatsLikeSpecialCharactersAsLiteral() throws Exception {
+            // given
+            ChatRoom firstRoom = createDirectChatRoom(normalUser, targetUser);
+            ChatRoom secondRoom = createDirectChatRoom(normalUser, secondTargetUser);
+
+            persistChatMessage(firstRoom, normalUser, "100% 완료");
+            persistChatMessage(secondRoom, secondTargetUser, "1000 완료");
+            mockLoginUser(normalUser.getId());
+            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>(Map.of(
+                "keyword", List.of("100%"),
+                "page", List.of("1"),
+                "limit", List.of("10")
+            ));
+
+            // when & then
+            performGet("/chats/rooms/search", params)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(0))
+                .andExpect(jsonPath("$.messageMatches.totalCount").value(1))
+                .andExpect(jsonPath("$.messageMatches.currentCount").value(1))
+                .andExpect(jsonPath("$.messageMatches.messages[0].roomName").value("개발팀"))
+                .andExpect(jsonPath("$.messageMatches.messages[0].matchedMessage").value("100% 완료"));
+        }
+
+        @Test
+        @DisplayName("커스텀 채팅방 이름이 있어도 기본 상대방 이름으로 검색할 수 있다")
+        void searchChatsMatchesDefaultNameEvenWithCustomRoomName() throws Exception {
+            // given
+            ChatRoom directRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(normalUser.getId());
+            performPatch("/chats/rooms/" + directRoom.getId() + "/name", new ChatRoomNameUpdateRequest("내 메모"))
+                .andExpect(status().isOk());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발팀&page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(1))
+                .andExpect(jsonPath("$.roomMatches.currentCount").value(1))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomId").value(directRoom.getId()))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("내 메모"));
+        }
+
+        @Test
+        @DisplayName("채팅방 검색 결과에 페이지네이션을 적용한다")
+        void searchChatsAppliesPaginationToRoomMatches() throws Exception {
+            // given
+            createDirectChatRoom(normalUser, targetUser);
+            createDirectChatRoom(normalUser, secondTargetUser);
+            ChatRoom groupRoom = persist(ChatRoom.groupOf(developmentClub));
+            addRoomMember(groupRoom, normalUser);
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발&page=2&limit=1")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(3))
+                .andExpect(jsonPath("$.roomMatches.currentCount").value(1))
+                .andExpect(jsonPath("$.roomMatches.totalPage").value(3))
+                .andExpect(jsonPath("$.roomMatches.currentPage").value(2))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("개발자"));
+        }
+
+        @Test
+        @DisplayName("매우 큰 page 값이어도 빈 검색 결과를 안전하게 반환한다")
+        void searchChatsWithVeryLargePageReturnsEmptyResult() throws Exception {
+            // given
+            createDirectChatRoom(normalUser, targetUser);
+            ChatRoom groupRoom = persist(ChatRoom.groupOf(developmentClub));
+            addRoomMember(groupRoom, normalUser);
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발&page=2147483647&limit=100")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(2))
+                .andExpect(jsonPath("$.roomMatches.currentCount").value(0))
+                .andExpect(jsonPath("$.roomMatches.currentPage").value(2147483647));
+        }
+
+        @Test
+        @DisplayName("limit가 최대값을 초과하면 400을 반환한다")
+        void searchChatsWithTooLargeLimitFails() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=개발&page=1&limit=101")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"))
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("searchChats.limit"));
+        }
+    }
+
+    @Nested
     @DisplayName("POST /chats/rooms/{chatRoomId}/mute - 채팅방 뮤트 토글")
     class ToggleMute {
 
@@ -782,6 +971,29 @@ class ChatApiTest extends IntegrationTestSupport {
 
     private User createUser(String name, String studentId) {
         return persist(UserFixture.createUser(university, name, studentId));
+    }
+
+    private ClubMember createClubMember(Club club, User user) {
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        ClubMember clubMember = persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+        clearPersistenceContext();
+        return clubMember;
+    }
+
+    private ChatMessage persistChatMessage(ChatRoom chatRoom, User sender, String content) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedSender = entityManager.getReference(User.class, sender.getId());
+
+        ChatMessage chatMessage = persist(ChatMessage.of(managedChatRoom, managedSender, content));
+        managedChatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        entityManager.flush();
+        clearPersistenceContext();
+        return chatMessage;
     }
 
     private void addRoomMember(ChatRoom chatRoom, User user) {
