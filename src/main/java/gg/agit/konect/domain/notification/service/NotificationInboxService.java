@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.notification.service;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -26,11 +28,9 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationInboxService {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
-    private static final Set<NotificationInboxType> CHAT_NOTIFICATION_TYPES = Set.of(
-        NotificationInboxType.CHAT_MESSAGE,
-        NotificationInboxType.GROUP_CHAT_MESSAGE,
-        NotificationInboxType.UNREAD_CHAT_COUNT
-    );
+    private static final Set<NotificationInboxType> CHAT_NOTIFICATION_TYPES = Arrays.stream(NotificationInboxType.values())
+        .filter(NotificationInboxType::isChatRelated)
+        .collect(() -> EnumSet.noneOf(NotificationInboxType.class), Set::add, Set::addAll);
 
     private final NotificationInboxRepository notificationInboxRepository;
     private final UserRepository userRepository;
