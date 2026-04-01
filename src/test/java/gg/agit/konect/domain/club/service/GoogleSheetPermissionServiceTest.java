@@ -398,35 +398,43 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("Drive OAuth 계정이 없으면 요청자 접근 검증을 건너뛴다")
-    void validateRequesterAccessAndTryGrantServiceAccountWriterAccessSkipsWhenOAuthAccountIsMissing()
+    @DisplayName("Drive OAuth 계정이 없으면 요청자 접근 검증을 거부한다")
+    void validateRequesterAccessAndTryGrantServiceAccountWriterAccessThrowsWhenOAuthAccountIsMissing()
         throws IOException, GeneralSecurityException {
         given(userOAuthAccountRepository.findByUserIdAndProvider(REQUESTER_ID, Provider.GOOGLE))
             .willReturn(Optional.empty());
 
-        googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
-            REQUESTER_ID,
-            FILE_ID
-        );
-
+        assertThatThrownBy(() ->
+            googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
+                REQUESTER_ID,
+                FILE_ID
+            )
+        )
+            .isInstanceOf(CustomException.class)
+            .extracting("errorCode")
+            .isEqualTo(ApiResponseCode.NOT_FOUND_GOOGLE_DRIVE_AUTH);
         verify(userDriveService, never()).files();
         verify(userDriveService, never()).permissions();
         verify(googleSheetsConfig, never()).buildUserDriveService(any());
     }
 
     @Test
-    @DisplayName("Drive OAuth refresh token이 비어 있으면 요청자 접근 검증을 건너뛴다")
-    void validateRequesterAccessAndTryGrantServiceAccountWriterAccessSkipsWhenRefreshTokenIsBlank()
+    @DisplayName("Drive OAuth refresh token이 비어 있으면 요청자 접근 검증을 거부한다")
+    void validateRequesterAccessAndTryGrantServiceAccountWriterAccessThrowsWhenRefreshTokenIsBlank()
         throws IOException, GeneralSecurityException {
         given(userOAuthAccountRepository.findByUserIdAndProvider(REQUESTER_ID, Provider.GOOGLE))
             .willReturn(Optional.of(userOAuthAccount));
         given(userOAuthAccount.getGoogleDriveRefreshToken()).willReturn("   ");
 
-        googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
-            REQUESTER_ID,
-            FILE_ID
-        );
-
+        assertThatThrownBy(() ->
+            googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
+                REQUESTER_ID,
+                FILE_ID
+            )
+        )
+            .isInstanceOf(CustomException.class)
+            .extracting("errorCode")
+            .isEqualTo(ApiResponseCode.NOT_FOUND_GOOGLE_DRIVE_AUTH);
         verify(userDriveService, never()).files();
         verify(userDriveService, never()).permissions();
         verify(googleSheetsConfig, never()).buildUserDriveService(any());

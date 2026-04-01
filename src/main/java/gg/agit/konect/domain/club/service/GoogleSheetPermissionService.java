@@ -32,21 +32,7 @@ public class GoogleSheetPermissionService {
         Integer requesterId,
         String spreadsheetId
     ) {
-        String refreshToken = userOAuthAccountRepository
-            .findByUserIdAndProvider(requesterId, Provider.GOOGLE)
-            .map(account -> account.getGoogleDriveRefreshToken())
-            .filter(StringUtils::hasText)
-            .orElse(null);
-
-        if (refreshToken == null) {
-            log.warn(
-                "Skipping requester Drive access validation because Google Drive OAuth is not connected. "
-                    + "requesterId={}",
-                requesterId
-            );
-            return;
-        }
-
+        String refreshToken = requireRefreshToken(requesterId);
         Drive userDriveService = buildUserDriveService(refreshToken, requesterId);
         validateRequesterSpreadsheetAccess(userDriveService, requesterId, spreadsheetId);
         boolean granted = tryGrantServiceAccountWriterAccess(userDriveService, requesterId, spreadsheetId);
@@ -56,11 +42,7 @@ public class GoogleSheetPermissionService {
     }
 
     public boolean tryGrantServiceAccountWriterAccess(Integer requesterId, String spreadsheetId) {
-        String refreshToken = userOAuthAccountRepository
-            .findByUserIdAndProvider(requesterId, Provider.GOOGLE)
-            .map(account -> account.getGoogleDriveRefreshToken())
-            .filter(StringUtils::hasText)
-            .orElse(null);
+        String refreshToken = resolveRefreshToken(requesterId);
 
         if (refreshToken == null) {
             log.warn(
@@ -72,6 +54,26 @@ public class GoogleSheetPermissionService {
 
         Drive userDriveService = buildUserDriveService(refreshToken, requesterId);
         return tryGrantServiceAccountWriterAccess(userDriveService, requesterId, spreadsheetId);
+    }
+
+    private String requireRefreshToken(Integer requesterId) {
+        return userOAuthAccountRepository.findByUserIdAndProvider(requesterId, Provider.GOOGLE)
+            .map(account -> account.getGoogleDriveRefreshToken())
+            .filter(StringUtils::hasText)
+            .orElseThrow(() -> {
+                log.warn(
+                    "Rejecting spreadsheet registration because Google Drive OAuth is not connected. requesterId={}",
+                    requesterId
+                );
+                return CustomException.of(ApiResponseCode.NOT_FOUND_GOOGLE_DRIVE_AUTH);
+            });
+    }
+
+    private String resolveRefreshToken(Integer requesterId) {
+        return userOAuthAccountRepository.findByUserIdAndProvider(requesterId, Provider.GOOGLE)
+            .map(account -> account.getGoogleDriveRefreshToken())
+            .filter(StringUtils::hasText)
+            .orElse(null);
     }
 
     private boolean tryGrantServiceAccountWriterAccess(
