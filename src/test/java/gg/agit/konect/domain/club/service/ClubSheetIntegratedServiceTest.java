@@ -200,4 +200,28 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
             .isSameAs(expected);
         verifyNoInteractions(sheetHeaderMapper, clubMemberSheetService, sheetImportService);
     }
+
+    @Test
+    @DisplayName("Drive OAuth가 연결되지 않으면 후속 시트 작업을 진행하지 않는다")
+    void analyzeAndImportPreMembersStopsWhenGoogleDriveOAuthIsNotConnected() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 2;
+        String spreadsheetUrl =
+            "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms/edit";
+        String spreadsheetId = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms";
+        CustomException expected = CustomException.of(ApiResponseCode.NOT_FOUND_GOOGLE_DRIVE_AUTH);
+
+        willThrow(expected).given(googleSheetPermissionService)
+            .validateRequesterAccessAndTryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
+
+        // when & then
+        assertThatThrownBy(() -> clubSheetIntegratedService.analyzeAndImportPreMembers(
+            clubId,
+            requesterId,
+            spreadsheetUrl
+        ))
+            .isSameAs(expected);
+        verifyNoInteractions(sheetHeaderMapper, clubMemberSheetService, sheetImportService);
+    }
 }
