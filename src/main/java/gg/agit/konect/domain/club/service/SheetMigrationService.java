@@ -340,6 +340,9 @@ public class SheetMigrationService {
             return newFileId;
 
         } catch (IOException e) {
+            if (newFileId != null) {
+                deleteFile(driveService, newFileId);
+            }
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
                     "Google Sheets access denied while copying template. cause={}",
@@ -348,9 +351,6 @@ public class SheetMigrationService {
                 throw GoogleSheetApiExceptionHelper.accessDenied(
                     "templateId=" + templateId + ", targetFolderId=" + targetFolderId
                 );
-            }
-            if (newFileId != null) {
-                deleteFile(driveService, newFileId);
             }
             log.error("Failed to copy template. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
