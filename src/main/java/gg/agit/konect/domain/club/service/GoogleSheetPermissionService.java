@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class GoogleSheetPermissionService {
 
     private final ServiceAccountCredentials serviceAccountCredentials;
+    private final Drive googleDriveService;
     private final GoogleSheetsConfig googleSheetsConfig;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
 
@@ -48,7 +49,10 @@ public class GoogleSheetPermissionService {
 
         Drive userDriveService = buildUserDriveService(refreshToken, requesterId);
         validateRequesterSpreadsheetAccess(userDriveService, requesterId, spreadsheetId);
-        tryGrantServiceAccountWriterAccess(userDriveService, requesterId, spreadsheetId);
+        boolean granted = tryGrantServiceAccountWriterAccess(userDriveService, requesterId, spreadsheetId);
+        if (!granted) {
+            requireServiceAccountSpreadsheetAccess(spreadsheetId, requesterId);
+        }
     }
 
     public boolean tryGrantServiceAccountWriterAccess(Integer requesterId, String spreadsheetId) {
@@ -175,6 +179,39 @@ public class GoogleSheetPermissionService {
 
             log.error(
                 "Unexpected error while validating requester spreadsheet access. requesterId={}, spreadsheetId={}",
+                requesterId,
+                spreadsheetId,
+                e
+            );
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
+        }
+    }
+
+    private void requireServiceAccountSpreadsheetAccess(String spreadsheetId, Integer requesterId) {
+        try {
+            File file = googleDriveService.files().get(spreadsheetId)
+                .setFields("id")
+                .setSupportsAllDrives(true)
+                .execute();
+            if (file == null || !StringUtils.hasText(file.getId())) {
+                throw GoogleSheetApiExceptionHelper.accessDenied();
+            }
+        } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)
+                || GoogleSheetApiExceptionHelper.isNotFound(e)) {
+                log.warn(
+                    "Service account has no spreadsheet access after auto-share failed. requesterId={}, "
+                        + "spreadsheetId={}, cause={}",
+                    requesterId,
+                    spreadsheetId,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
+            }
+
+            log.error(
+                "Unexpected error while re-checking service account spreadsheet access. requesterId={}, "
+                    + "spreadsheetId={}",
                 requesterId,
                 spreadsheetId,
                 e
