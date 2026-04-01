@@ -120,5 +120,6 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
         @Param("userId") Integer userId
     );
 
-    void saveAll(List<ChatRoomMember> members);
+    List<ChatRoomMember> saveAll(Iterable<ChatRoomMember> chatRoomMembers);
+
 }
