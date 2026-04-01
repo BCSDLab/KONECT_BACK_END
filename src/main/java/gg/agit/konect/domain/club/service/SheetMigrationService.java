@@ -42,7 +42,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SheetMigrationService {
 
-    private static final int PERMISSION_APPLY_MAX_ATTEMPTS = 2;
     private static final Pattern FOLDER_ID_PATTERN =
         Pattern.compile("(?:folders/|id=)([a-zA-Z0-9_-]{20,})");
     private static final String MIME_TYPE_SPREADSHEET =
@@ -167,24 +166,27 @@ public class SheetMigrationService {
     private void removeServiceAccountPermission(Drive driveService, String fileId) {
         String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
         try {
-            GoogleDrivePermissionHelper.listAllPermissions(driveService, fileId).stream()
-                .filter(permission -> "user".equals(permission.getType()))
-                .filter(p -> serviceAccountEmail.equals(p.getEmailAddress()))
-                .findFirst()
-                .ifPresent(p -> {
-                    try {
-                        driveService.permissions().delete(fileId, p.getId()).execute();
-                        log.info(
-                            "Service account permission removed from source file. fileId={}",
-                            fileId
-                        );
-                    } catch (IOException ex) {
-                        log.warn(
-                            "Failed to remove service account permission. fileId={}, cause={}",
-                            fileId, ex.getMessage()
-                        );
-                    }
-                });
+            Permission permission = GoogleDrivePermissionHelper.findServiceAccountPermission(
+                driveService,
+                fileId,
+                serviceAccountEmail
+            );
+            if (permission == null) {
+                return;
+            }
+
+            try {
+                driveService.permissions().delete(fileId, permission.getId()).execute();
+                log.info(
+                    "Service account permission removed from source file. fileId={}",
+                    fileId
+                );
+            } catch (IOException ex) {
+                log.warn(
+                    "Failed to remove service account permission. fileId={}, cause={}",
+                    fileId, ex.getMessage()
+                );
+            }
         } catch (IOException e) {
             log.warn(
                 "Failed to list permissions for source file cleanup. fileId={}, cause={}",
@@ -206,7 +208,12 @@ public class SheetMigrationService {
         String role
     ) {
         try {
-            return ensureServiceAccountPermission(userDriveService, fileId, role);
+            return GoogleDrivePermissionHelper.ensureServiceAccountPermission(
+                userDriveService,
+                fileId,
+                role,
+                serviceAccountCredentials.getClientEmail()
+            );
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
                 log.warn(
@@ -244,135 +251,6 @@ public class SheetMigrationService {
             );
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
-    }
-
-    private GoogleDrivePermissionHelper.PermissionApplyStatus ensureServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String targetRole
-    ) throws IOException {
-        String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
-        for (int attempt = 1; attempt <= PERMISSION_APPLY_MAX_ATTEMPTS; attempt++) {
-            try {
-                return applyServiceAccountPermission(
-                    userDriveService,
-                    fileId,
-                    targetRole,
-                    serviceAccountEmail
-                );
-            } catch (IOException e) {
-                if (hasRequiredPermission(
-                    userDriveService,
-                    fileId,
-                    serviceAccountEmail,
-                    targetRole
-                )) {
-                    log.info(
-                        "Service account permission reached target role after retry. fileId={}, role={}, email={}",
-                        fileId,
-                        targetRole,
-                        serviceAccountEmail
-                    );
-                    return GoogleDrivePermissionHelper.PermissionApplyStatus.UNCHANGED;
-                }
-
-                if (attempt == PERMISSION_APPLY_MAX_ATTEMPTS) {
-                    throw e;
-                }
-            }
-        }
-
-        throw new IllegalStateException("Permission apply loop finished unexpectedly.");
-    }
-
-    private GoogleDrivePermissionHelper.PermissionApplyStatus applyServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String targetRole,
-        String serviceAccountEmail
-    ) throws IOException {
-        Permission existingPermission = findServiceAccountPermission(
-            userDriveService,
-            fileId,
-            serviceAccountEmail
-        );
-
-        if (existingPermission == null) {
-            Permission permission = new Permission()
-                .setType("user")
-                .setRole(targetRole)
-                .setEmailAddress(serviceAccountEmail);
-            userDriveService.permissions().create(fileId, permission)
-                .setSendNotificationEmail(false)
-                .execute();
-            log.info(
-                "Service account {} access granted. fileId={}, email={}",
-                targetRole,
-                fileId,
-                serviceAccountEmail
-            );
-            return GoogleDrivePermissionHelper.PermissionApplyStatus.CREATED;
-        }
-
-        String currentRole = existingPermission.getRole();
-        if (GoogleDrivePermissionHelper.hasRequiredRole(currentRole, targetRole)) {
-            log.info(
-                "Service account permission already satisfies requested role. fileId={}, role={}, email={}",
-                fileId,
-                currentRole,
-                serviceAccountEmail
-            );
-            return GoogleDrivePermissionHelper.PermissionApplyStatus.UNCHANGED;
-        }
-
-        Permission updatedPermission = new Permission().setRole(targetRole);
-        userDriveService.permissions().update(fileId, existingPermission.getId(), updatedPermission)
-            .execute();
-        log.info(
-            "Service account permission upgraded. fileId={}, fromRole={}, toRole={}, email={}",
-            fileId,
-            currentRole,
-            targetRole,
-            serviceAccountEmail
-        );
-        return GoogleDrivePermissionHelper.PermissionApplyStatus.UPGRADED;
-    }
-
-    private boolean hasRequiredPermission(
-        Drive userDriveService,
-        String fileId,
-        String serviceAccountEmail,
-        String targetRole
-    ) {
-        try {
-            Permission currentPermission = findServiceAccountPermission(
-                userDriveService,
-                fileId,
-                serviceAccountEmail
-            );
-            return currentPermission != null
-                && GoogleDrivePermissionHelper.hasRequiredRole(currentPermission.getRole(), targetRole);
-        } catch (IOException e) {
-            log.debug(
-                "Failed to re-check service account permission. fileId={}, email={}, cause={}",
-                fileId,
-                serviceAccountEmail,
-                e.getMessage()
-            );
-            return false;
-        }
-    }
-
-    private Permission findServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String serviceAccountEmail
-    ) throws IOException {
-        return GoogleDrivePermissionHelper.listAllPermissions(userDriveService, fileId).stream()
-            .filter(permission -> "user".equals(permission.getType()))
-            .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
-            .findFirst()
-            .orElse(null);
     }
 
     private void registerDriveRollback(Drive driveService, String fileId) {

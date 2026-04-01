@@ -1,8 +1,9 @@
 package gg.agit.konect.infrastructure.slack.listener;
 
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
+import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
+
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import gg.agit.konect.domain.club.event.SheetSyncFailedEvent;
 import gg.agit.konect.infrastructure.slack.service.SlackNotificationService;
@@ -16,8 +17,7 @@ public class SheetSyncSlackListener {
 
     private final SlackNotificationService slackNotificationService;
 
-    @Async("slackTaskExecutor")
-    @EventListener
+    @TransactionalEventListener(phase = AFTER_COMMIT)
     public void handleSheetSyncFailed(SheetSyncFailedEvent event) {
         try {
             log.warn(

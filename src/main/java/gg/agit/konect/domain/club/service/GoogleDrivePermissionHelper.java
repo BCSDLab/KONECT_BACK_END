@@ -8,9 +8,12 @@ import java.util.Set;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.Permission;
 import com.google.api.services.drive.model.PermissionList;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 final class GoogleDrivePermissionHelper {
 
+    private static final int PERMISSION_APPLY_MAX_ATTEMPTS = 2;
     private static final int ROLE_RANK_NONE = 0;
     private static final int ROLE_RANK_READER = 1;
     private static final int ROLE_RANK_COMMENTER = 2;
@@ -35,6 +38,44 @@ final class GoogleDrivePermissionHelper {
         return roleRank(currentRole) >= validateTargetRole(targetRole);
     }
 
+    static PermissionApplyStatus ensureServiceAccountPermission(
+        Drive userDriveService,
+        String fileId,
+        String targetRole,
+        String serviceAccountEmail
+    ) throws IOException {
+        int attempt = 1;
+        while (true) {
+            try {
+                return applyServiceAccountPermission(
+                    userDriveService,
+                    fileId,
+                    targetRole,
+                    serviceAccountEmail
+                );
+            } catch (IOException e) {
+                if (hasRequiredPermission(
+                    userDriveService,
+                    fileId,
+                    serviceAccountEmail,
+                    targetRole
+                )) {
+                    log.info(
+                        "Service account permission reached target role after retry. fileId={}, role={}, email={}",
+                        fileId,
+                        targetRole,
+                        serviceAccountEmail
+                    );
+                    return PermissionApplyStatus.UNCHANGED;
+                }
+
+                if (attempt++ >= PERMISSION_APPLY_MAX_ATTEMPTS) {
+                    throw e;
+                }
+            }
+        }
+    }
+
     static List<Permission> listAllPermissions(Drive driveService, String fileId) throws IOException {
         List<Permission> permissions = new ArrayList<>();
         String nextPageToken = null;
@@ -54,6 +95,97 @@ final class GoogleDrivePermissionHelper {
         } while (nextPageToken != null && !nextPageToken.isBlank());
 
         return permissions;
+    }
+
+    static Permission findServiceAccountPermission(
+        Drive userDriveService,
+        String fileId,
+        String serviceAccountEmail
+    ) throws IOException {
+        return listAllPermissions(userDriveService, fileId).stream()
+            .filter(permission -> "user".equals(permission.getType()))
+            .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private static PermissionApplyStatus applyServiceAccountPermission(
+        Drive userDriveService,
+        String fileId,
+        String targetRole,
+        String serviceAccountEmail
+    ) throws IOException {
+        Permission existingPermission = findServiceAccountPermission(
+            userDriveService,
+            fileId,
+            serviceAccountEmail
+        );
+
+        if (existingPermission == null) {
+            Permission permission = new Permission()
+                .setType("user")
+                .setRole(targetRole)
+                .setEmailAddress(serviceAccountEmail);
+
+            userDriveService.permissions().create(fileId, permission)
+                .setSendNotificationEmail(false)
+                .execute();
+            log.info(
+                "Service account {} access granted. fileId={}, email={}",
+                targetRole,
+                fileId,
+                serviceAccountEmail
+            );
+            return PermissionApplyStatus.CREATED;
+        }
+
+        String currentRole = existingPermission.getRole();
+        if (hasRequiredRole(currentRole, targetRole)) {
+            log.info(
+                "Service account permission already satisfies requested role. fileId={}, role={}, email={}",
+                fileId,
+                currentRole,
+                serviceAccountEmail
+            );
+            return PermissionApplyStatus.UNCHANGED;
+        }
+
+        Permission updatedPermission = new Permission().setRole(targetRole);
+        userDriveService.permissions().update(fileId, existingPermission.getId(), updatedPermission)
+            .execute();
+        log.info(
+            "Service account permission upgraded. fileId={}, fromRole={}, toRole={}, email={}",
+            fileId,
+            currentRole,
+            targetRole,
+            serviceAccountEmail
+        );
+        return PermissionApplyStatus.UPGRADED;
+    }
+
+    private static boolean hasRequiredPermission(
+        Drive userDriveService,
+        String fileId,
+        String serviceAccountEmail,
+        String targetRole
+    ) {
+        try {
+            Permission currentPermission = findServiceAccountPermission(
+                userDriveService,
+                fileId,
+                serviceAccountEmail
+            );
+            return currentPermission != null
+                && hasRequiredRole(currentPermission.getRole(), targetRole);
+        } catch (IOException e) {
+            log.debug(
+                "Failed to re-check service account permission. fileId={}, email={}, cause={}",
+                fileId,
+                serviceAccountEmail,
+                e.getMessage()
+            );
+            return false;
+        }
     }
 
     private static int roleRank(String role) {

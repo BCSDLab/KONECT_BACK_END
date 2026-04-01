@@ -119,13 +119,12 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         throws IOException, GeneralSecurityException {
         // given
         mockConnectedDriveAccount();
-        given(permissions.list(FILE_ID)).willReturn(listRequest);
+        given(permissions.list(FILE_ID)).willReturn(listRequest, nextPageListRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
         given(listRequest.execute()).willReturn(
             new PermissionList().setPermissions(List.of()).setNextPageToken("next-page")
         );
-        given(permissions.list(FILE_ID)).willReturn(listRequest, nextPageListRequest);
         given(nextPageListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(nextPageListRequest);
         given(nextPageListRequest.setPageToken("next-page")).willReturn(nextPageListRequest);

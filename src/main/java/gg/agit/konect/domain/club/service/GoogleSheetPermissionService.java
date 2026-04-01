@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.model.Permission;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import gg.agit.konect.domain.user.enums.Provider;
@@ -23,8 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GoogleSheetPermissionService {
 
-    private static final int PERMISSION_APPLY_MAX_ATTEMPTS = 2;
-
     private final ServiceAccountCredentials serviceAccountCredentials;
     private final GoogleSheetsConfig googleSheetsConfig;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
@@ -36,7 +33,7 @@ public class GoogleSheetPermissionService {
             .filter(StringUtils::hasText)
             .orElse(null);
 
-        if (!StringUtils.hasText(refreshToken)) {
+        if (refreshToken == null) {
             log.warn(
                 "Skipping service account auto-share because Google Drive OAuth is not connected. requesterId={}",
                 requesterId
@@ -53,7 +50,12 @@ public class GoogleSheetPermissionService {
         }
 
         try {
-            ensureServiceAccountPermission(userDriveService, spreadsheetId, "writer");
+            GoogleDrivePermissionHelper.ensureServiceAccountPermission(
+                userDriveService,
+                spreadsheetId,
+                "writer",
+                getServiceAccountEmail()
+            );
             return true;
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
@@ -87,135 +89,6 @@ public class GoogleSheetPermissionService {
             );
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
-    }
-
-    private void ensureServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String targetRole
-    ) throws IOException {
-        String serviceAccountEmail = getServiceAccountEmail();
-
-        for (int attempt = 1; attempt <= PERMISSION_APPLY_MAX_ATTEMPTS; attempt++) {
-            try {
-                applyServiceAccountPermission(
-                    userDriveService,
-                    fileId,
-                    targetRole,
-                    serviceAccountEmail
-                );
-                return;
-            } catch (IOException e) {
-                if (hasRequiredPermission(
-                    userDriveService,
-                    fileId,
-                    serviceAccountEmail,
-                    targetRole
-                )) {
-                    log.info(
-                        "Service account permission reached target role after retry. fileId={}, role={}, email={}",
-                        fileId,
-                        targetRole,
-                        serviceAccountEmail
-                    );
-                    return;
-                }
-
-                if (attempt == PERMISSION_APPLY_MAX_ATTEMPTS) {
-                    throw e;
-                }
-            }
-        }
-    }
-
-    private void applyServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String targetRole,
-        String serviceAccountEmail
-    ) throws IOException {
-        Permission existingPermission = findServiceAccountPermission(
-            userDriveService,
-            fileId,
-            serviceAccountEmail
-        );
-
-        if (existingPermission == null) {
-            Permission permission = new Permission()
-                .setType("user")
-                .setRole(targetRole)
-                .setEmailAddress(serviceAccountEmail);
-
-            userDriveService.permissions().create(fileId, permission)
-                .setSendNotificationEmail(false)
-                .execute();
-            log.info(
-                "Service account access granted. fileId={}, role={}, email={}",
-                fileId,
-                targetRole,
-                serviceAccountEmail
-            );
-            return;
-        }
-
-        String currentRole = existingPermission.getRole();
-        if (GoogleDrivePermissionHelper.hasRequiredRole(currentRole, targetRole)) {
-            log.info(
-                "Service account permission already satisfies requested role. fileId={}, role={}, email={}",
-                fileId,
-                currentRole,
-                serviceAccountEmail
-            );
-            return;
-        }
-
-        Permission updatedPermission = new Permission().setRole(targetRole);
-        userDriveService.permissions().update(fileId, existingPermission.getId(), updatedPermission)
-            .execute();
-        log.info(
-            "Service account permission upgraded. fileId={}, fromRole={}, toRole={}, email={}",
-            fileId,
-            currentRole,
-            targetRole,
-            serviceAccountEmail
-        );
-    }
-
-    private boolean hasRequiredPermission(
-        Drive userDriveService,
-        String fileId,
-        String serviceAccountEmail,
-        String targetRole
-    ) {
-        try {
-            Permission currentPermission = findServiceAccountPermission(
-                userDriveService,
-                fileId,
-                serviceAccountEmail
-            );
-            return currentPermission != null
-                && GoogleDrivePermissionHelper.hasRequiredRole(currentPermission.getRole(), targetRole);
-        } catch (IOException e) {
-            log.debug(
-                "Failed to re-check service account permission. fileId={}, email={}, cause={}",
-                fileId,
-                serviceAccountEmail,
-                e.getMessage()
-            );
-            return false;
-        }
-    }
-
-    private Permission findServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String serviceAccountEmail
-    ) throws IOException {
-        return GoogleDrivePermissionHelper.listAllPermissions(userDriveService, fileId).stream()
-            .filter(permission -> "user".equals(permission.getType()))
-            .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
-            .findFirst()
-            .orElse(null);
     }
 
     private String getServiceAccountEmail() {
