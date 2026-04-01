@@ -93,6 +93,8 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         );
 
         assertThat(granted).isFalse();
+        verify(userDriveService, never()).files();
+        verify(userDriveService, never()).permissions();
     }
 
     @Test
@@ -103,6 +105,7 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(permissions.list(FILE_ID)).willReturn(listRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
+        given(listRequest.setSupportsAllDrives(true)).willReturn(listRequest);
         given(listRequest.execute()).willReturn(permissionList(permission("perm-1", "writer")));
 
         boolean granted = googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
@@ -123,11 +126,13 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(permissions.list(FILE_ID)).willReturn(listRequest, nextPageListRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
+        given(listRequest.setSupportsAllDrives(true)).willReturn(listRequest);
         given(listRequest.execute()).willReturn(
             new PermissionList().setPermissions(List.of()).setNextPageToken("next-page")
         );
         given(nextPageListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(nextPageListRequest);
+        given(nextPageListRequest.setSupportsAllDrives(true)).willReturn(nextPageListRequest);
         given(nextPageListRequest.setPageToken("next-page")).willReturn(nextPageListRequest);
         given(nextPageListRequest.execute()).willReturn(permissionList(permission("perm-1", "writer")));
 
@@ -152,15 +157,19 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(permissions.list(FILE_ID)).willReturn(initialListRequest, applyListRequest, recheckListRequest);
         given(initialListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(initialListRequest);
+        given(initialListRequest.setSupportsAllDrives(true)).willReturn(initialListRequest);
         given(applyListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(applyListRequest);
+        given(applyListRequest.setSupportsAllDrives(true)).willReturn(applyListRequest);
         given(recheckListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(recheckListRequest);
+        given(recheckListRequest.setSupportsAllDrives(true)).willReturn(recheckListRequest);
         given(initialListRequest.execute()).willReturn(permissionList());
         given(applyListRequest.execute()).willReturn(permissionList());
         given(recheckListRequest.execute()).willReturn(permissionList(permission("perm-1", "writer")));
         given(permissions.create(eq(FILE_ID), any(Permission.class))).willReturn(createRequest);
         given(createRequest.setSendNotificationEmail(false)).willReturn(createRequest);
+        given(createRequest.setSupportsAllDrives(true)).willReturn(createRequest);
         given(createRequest.execute()).willThrow(new IOException("already granted"));
 
         boolean granted = googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
@@ -180,8 +189,10 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(permissions.list(FILE_ID)).willReturn(listRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
+        given(listRequest.setSupportsAllDrives(true)).willReturn(listRequest);
         given(listRequest.execute()).willReturn(permissionList(permission("perm-x", "reader")));
         given(permissions.update(eq(FILE_ID), eq("perm-x"), any(Permission.class))).willReturn(updateRequest);
+        given(updateRequest.setSupportsAllDrives(true)).willReturn(updateRequest);
         given(updateRequest.execute()).willReturn(permission("perm-x", "writer"));
 
         boolean granted = googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
@@ -201,6 +212,7 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(permissions.list(FILE_ID)).willReturn(listRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
+        given(listRequest.setSupportsAllDrives(true)).willReturn(listRequest);
         given(listRequest.execute()).willThrow(googleException(401, "authError"));
 
         boolean granted = googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
@@ -219,6 +231,7 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(permissions.list(FILE_ID)).willReturn(listRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
+        given(listRequest.setSupportsAllDrives(true)).willReturn(listRequest);
         given(listRequest.execute()).willThrow(googleException(403, "forbidden"));
 
         boolean granted = googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
@@ -237,6 +250,7 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(permissions.list(FILE_ID)).willReturn(listRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
+        given(listRequest.setSupportsAllDrives(true)).willReturn(listRequest);
         given(listRequest.execute()).willThrow(new IOException(
             "token refresh failed",
             httpResponseException(
@@ -265,6 +279,7 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(userDriveService.files()).willReturn(files);
         given(files.get(FILE_ID)).willReturn(getFileRequest);
         given(getFileRequest.setFields("id")).willReturn(getFileRequest);
+        given(getFileRequest.setSupportsAllDrives(true)).willReturn(getFileRequest);
         given(getFileRequest.execute()).willThrow(googleException(403, "forbidden"));
 
         assertThatThrownBy(() ->
@@ -286,10 +301,12 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         given(userDriveService.files()).willReturn(files);
         given(files.get(FILE_ID)).willReturn(getFileRequest);
         given(getFileRequest.setFields("id")).willReturn(getFileRequest);
+        given(getFileRequest.setSupportsAllDrives(true)).willReturn(getFileRequest);
         given(getFileRequest.execute()).willReturn(new File().setId(FILE_ID));
         given(permissions.list(FILE_ID)).willReturn(listRequest);
         given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
             .willReturn(listRequest);
+        given(listRequest.setSupportsAllDrives(true)).willReturn(listRequest);
         given(listRequest.execute()).willReturn(permissionList(permission("perm-1", "writer")));
 
         googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
@@ -299,6 +316,66 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
 
         verify(files).get(FILE_ID);
         verify(permissions, never()).create(eq(FILE_ID), any(Permission.class));
+    }
+
+    @Test
+    @DisplayName("Drive OAuth 계정이 없으면 요청자 접근 검증을 건너뛴다")
+    void validateRequesterAccessAndTryGrantServiceAccountWriterAccessSkipsWhenOAuthAccountIsMissing()
+        throws IOException, GeneralSecurityException {
+        given(userOAuthAccountRepository.findByUserIdAndProvider(REQUESTER_ID, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
+            REQUESTER_ID,
+            FILE_ID
+        );
+
+        verify(userDriveService, never()).files();
+        verify(userDriveService, never()).permissions();
+        verify(googleSheetsConfig, never()).buildUserDriveService(any());
+    }
+
+    @Test
+    @DisplayName("Drive OAuth refresh token이 비어 있으면 요청자 접근 검증을 건너뛴다")
+    void validateRequesterAccessAndTryGrantServiceAccountWriterAccessSkipsWhenRefreshTokenIsBlank()
+        throws IOException, GeneralSecurityException {
+        given(userOAuthAccountRepository.findByUserIdAndProvider(REQUESTER_ID, Provider.GOOGLE))
+            .willReturn(Optional.of(userOAuthAccount));
+        given(userOAuthAccount.getGoogleDriveRefreshToken()).willReturn("   ");
+
+        googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
+            REQUESTER_ID,
+            FILE_ID
+        );
+
+        verify(userDriveService, never()).files();
+        verify(userDriveService, never()).permissions();
+        verify(googleSheetsConfig, never()).buildUserDriveService(any());
+    }
+
+    @Test
+    @DisplayName("요청자 Drive 인증이 만료되면 invalid Google Drive auth 예외를 던진다")
+    void validateRequesterAccessAndTryGrantServiceAccountWriterAccessThrowsWhenAuthFailureOccurs()
+        throws IOException, GeneralSecurityException {
+        given(userOAuthAccountRepository.findByUserIdAndProvider(REQUESTER_ID, Provider.GOOGLE))
+            .willReturn(Optional.of(userOAuthAccount));
+        given(userOAuthAccount.getGoogleDriveRefreshToken()).willReturn(REFRESH_TOKEN);
+        given(googleSheetsConfig.buildUserDriveService(REFRESH_TOKEN)).willReturn(userDriveService);
+        given(userDriveService.files()).willReturn(files);
+        given(files.get(FILE_ID)).willReturn(getFileRequest);
+        given(getFileRequest.setFields("id")).willReturn(getFileRequest);
+        given(getFileRequest.setSupportsAllDrives(true)).willReturn(getFileRequest);
+        given(getFileRequest.execute()).willThrow(googleException(401, "authError"));
+
+        assertThatThrownBy(() ->
+            googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
+                REQUESTER_ID,
+                FILE_ID
+            )
+        )
+            .isInstanceOf(CustomException.class)
+            .extracting("errorCode")
+            .isEqualTo(ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH);
     }
 
     private void mockConnectedDriveAccount() throws IOException, GeneralSecurityException {

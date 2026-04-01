@@ -134,6 +134,7 @@ public class GoogleSheetPermissionService {
         try {
             File file = userDriveService.files().get(spreadsheetId)
                 .setFields("id")
+                .setSupportsAllDrives(true)
                 .execute();
             if (file == null || !StringUtils.hasText(file.getId())) {
                 throw GoogleSheetApiExceptionHelper.accessDenied();
@@ -150,8 +151,18 @@ public class GoogleSheetPermissionService {
                 throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
             }
 
+            if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
+                log.warn(
+                    "Google Drive OAuth auth failure while validating spreadsheet access. requesterId={}, "
+                        + "spreadsheetId={}, cause={}",
+                    requesterId,
+                    spreadsheetId,
+                    GoogleSheetApiExceptionHelper.extractDetail(e)
+                );
+                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
+            }
+
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)
-                || GoogleSheetApiExceptionHelper.isAuthFailure(e)
                 || GoogleSheetApiExceptionHelper.isNotFound(e)) {
                 log.warn(
                     "Requester has no spreadsheet access. requesterId={}, spreadsheetId={}, cause={}",

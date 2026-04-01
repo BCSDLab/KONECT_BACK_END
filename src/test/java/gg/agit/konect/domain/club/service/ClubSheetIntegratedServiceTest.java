@@ -98,8 +98,8 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("Drive OAuth가 미연결된 경우 검증을 건너뛰고 기존 흐름으로 가져오기를 계속 시도한다")
-    void analyzeAndImportPreMembersContinuesWhenDriveOAuthIsNotConnected() {
+    @DisplayName("구글 시트 권한 검증 후에도 기존 흐름대로 사전 회원 가져오기를 수행한다")
+    void analyzeAndImportPreMembersContinuesAfterPermissionValidation() {
         // given
         Integer clubId = 1;
         Integer requesterId = 2;
