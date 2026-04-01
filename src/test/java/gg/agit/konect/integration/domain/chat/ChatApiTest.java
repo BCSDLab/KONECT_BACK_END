@@ -976,18 +976,20 @@ class ChatApiTest extends IntegrationTestSupport {
             // given
             mockLoginUser(normalUser.getId());
 
-            // when & then
-            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
-                List.of(memberA.getId(), memberB.getId())
-            ))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatRoomId").isNumber());
+            // when
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // then - 채팅방 타입이 GROUP인지 확인
+            clearPersistenceContext();
+            ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow();
+            assertThat(chatRoom.getRoomType()).isEqualTo(ChatType.GROUP);
 
             // then - 방장(owner) 확인
-            clearPersistenceContext();
-            Integer roomId = chatRoomRepository.findGroupRoomsByMemberUserId(normalUser.getId())
-                .stream().findFirst().orElseThrow().getId();
-
             ChatRoomMember ownerMember = chatRoomMemberRepository
                 .findByChatRoomIdAndUserId(roomId, normalUser.getId()).orElseThrow();
             assertThat(ownerMember.isOwner()).isTrue();
@@ -1051,16 +1053,15 @@ class ChatApiTest extends IntegrationTestSupport {
             mockLoginUser(normalUser.getId());
 
             // when
-            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
-                List.of(memberA.getId(), memberA.getId(), memberB.getId())
-            ))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatRoomId").isNumber());
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
 
             // then - 멤버 수가 중복 제거된 3명(방장 + A + B)이어야 한다
             clearPersistenceContext();
-            Integer roomId = chatRoomRepository.findGroupRoomsByMemberUserId(normalUser.getId())
-                .stream().findFirst().orElseThrow().getId();
             assertThat(chatRoomMemberRepository.findByChatRoomId(roomId)).hasSize(3);
         }
 
@@ -1071,16 +1072,15 @@ class ChatApiTest extends IntegrationTestSupport {
             mockLoginUser(normalUser.getId());
 
             // when
-            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
-                List.of(normalUser.getId(), memberA.getId())
-            ))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatRoomId").isNumber());
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(normalUser.getId(), memberA.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
 
             // then - 멤버 수가 2명(방장 + A)이어야 한다
             clearPersistenceContext();
-            Integer roomId = chatRoomRepository.findGroupRoomsByMemberUserId(normalUser.getId())
-                .stream().findFirst().orElseThrow().getId();
             assertThat(chatRoomMemberRepository.findByChatRoomId(roomId)).hasSize(2);
         }
 
@@ -1089,7 +1089,7 @@ class ChatApiTest extends IntegrationTestSupport {
         void invitedMemberCanSendMessageToGroupChatRoom() throws Exception {
             // given
             mockLoginUser(normalUser.getId());
-            Integer roomId = objectMapper.readTree(
+            int roomId = objectMapper.readTree(
                 performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
                     List.of(memberA.getId(), memberB.getId())
                 ))
@@ -1115,18 +1115,16 @@ class ChatApiTest extends IntegrationTestSupport {
             // given
             mockLoginUser(normalUser.getId());
 
-            // when - 같은 유저들로 두 번째 그룹방 생성
-            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
-                List.of(memberA.getId(), memberB.getId())
-            ))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatRoomId").isNumber());
-
-            Integer firstRoomId = chatRoomRepository.findGroupRoomsByMemberUserId(normalUser.getId())
-                .stream().findFirst().orElseThrow().getId();
+            // when - 같은 유저들로 첫 번째 그룹방 생성
+            int firstRoomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
 
             // when - 같은 유저들로 두 번째 그룹방 생성
-            Integer secondRoomId = objectMapper.readTree(
+            int secondRoomId = objectMapper.readTree(
                 performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
                     List.of(memberA.getId(), memberB.getId())
                 ))
@@ -1144,7 +1142,7 @@ class ChatApiTest extends IntegrationTestSupport {
         void canSendMessageToCreatedGroupChatRoom() throws Exception {
             // given
             mockLoginUser(normalUser.getId());
-            Integer roomId = objectMapper.readTree(
+            int roomId = objectMapper.readTree(
                 performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
                     List.of(memberA.getId(), memberB.getId())
                 ))
