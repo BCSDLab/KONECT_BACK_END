@@ -166,32 +166,27 @@ public class SheetMigrationService {
     private void removeServiceAccountPermission(Drive driveService, String fileId) {
         String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
         try {
-            // permissionId 조회 후 삭제 (getPermissions()는 빈 경우 null 반환 가능)
-            List<Permission> permissions =
-                driveService.permissions().list(fileId)
-                    .setFields("permissions(id,emailAddress)")
-                    .execute()
-                    .getPermissions();
-            if (permissions == null) {
+            Permission permission = GoogleDrivePermissionHelper.findServiceAccountPermission(
+                driveService,
+                fileId,
+                serviceAccountEmail
+            );
+            if (permission == null) {
                 return;
             }
-            permissions.stream()
-                .filter(p -> serviceAccountEmail.equals(p.getEmailAddress()))
-                .findFirst()
-                .ifPresent(p -> {
-                    try {
-                        driveService.permissions().delete(fileId, p.getId()).execute();
-                        log.info(
-                            "Service account permission removed from source file. fileId={}",
-                            fileId
-                        );
-                    } catch (IOException ex) {
-                        log.warn(
-                            "Failed to remove service account permission. fileId={}, cause={}",
-                            fileId, ex.getMessage()
-                        );
-                    }
-                });
+
+            try {
+                driveService.permissions().delete(fileId, permission.getId()).execute();
+                log.info(
+                    "Service account permission removed from source file. fileId={}",
+                    fileId
+                );
+            } catch (IOException ex) {
+                log.warn(
+                    "Failed to remove service account permission. fileId={}, cause={}",
+                    fileId, ex.getMessage()
+                );
+            }
         } catch (IOException e) {
             log.warn(
                 "Failed to list permissions for source file cleanup. fileId={}, cause={}",
@@ -213,8 +208,23 @@ public class SheetMigrationService {
         String role
     ) {
         try {
-            return ensureServiceAccountPermission(userDriveService, fileId, role);
+            return GoogleDrivePermissionHelper.ensureServiceAccountPermission(
+                userDriveService,
+                fileId,
+                role,
+                serviceAccountCredentials.getClientEmail()
+            );
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
+                log.warn(
+                    "Google Drive OAuth token is invalid while granting service account permission. "
+                        + "fileId={}, role={}, cause={}",
+                    fileId,
+                    role,
+                    GoogleSheetApiExceptionHelper.extractDetail(e)
+                );
+                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
+            }
             if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
                 log.warn(
                     "Google Drive auth failed while granting service account permission. "
@@ -241,80 +251,6 @@ public class SheetMigrationService {
             );
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
-    }
-
-    private GoogleDrivePermissionHelper.PermissionApplyStatus ensureServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String targetRole
-    ) throws IOException {
-        String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
-        Permission existingPermission = findServiceAccountPermission(
-            userDriveService,
-            fileId,
-            serviceAccountEmail
-        );
-
-        if (existingPermission == null) {
-            Permission permission = new Permission()
-                .setType("user")
-                .setRole(targetRole)
-                .setEmailAddress(serviceAccountEmail);
-            userDriveService.permissions().create(fileId, permission)
-                .setSendNotificationEmail(false)
-                .execute();
-            log.info(
-                "Service account {} access granted. fileId={}, email={}",
-                targetRole,
-                fileId,
-                serviceAccountEmail
-            );
-            return GoogleDrivePermissionHelper.PermissionApplyStatus.CREATED;
-        }
-
-        String currentRole = existingPermission.getRole();
-        if (GoogleDrivePermissionHelper.hasRequiredRole(currentRole, targetRole)) {
-            log.info(
-                "Service account permission already satisfies requested role. fileId={}, role={}, email={}",
-                fileId,
-                currentRole,
-                serviceAccountEmail
-            );
-            return GoogleDrivePermissionHelper.PermissionApplyStatus.UNCHANGED;
-        }
-
-        Permission updatedPermission = new Permission().setRole(targetRole);
-        userDriveService.permissions().update(fileId, existingPermission.getId(), updatedPermission)
-            .execute();
-        log.info(
-            "Service account permission upgraded. fileId={}, fromRole={}, toRole={}, email={}",
-            fileId,
-            currentRole,
-            targetRole,
-            serviceAccountEmail
-        );
-        return GoogleDrivePermissionHelper.PermissionApplyStatus.UPGRADED;
-    }
-
-    private Permission findServiceAccountPermission(
-        Drive userDriveService,
-        String fileId,
-        String serviceAccountEmail
-    ) throws IOException {
-        List<Permission> permissions = userDriveService.permissions().list(fileId)
-            .setFields("permissions(id,type,emailAddress,role)")
-            .execute()
-            .getPermissions();
-
-        if (permissions == null) {
-            return null;
-        }
-
-        return permissions.stream()
-            .filter(permission -> "user".equals(permission.getType()))
-            .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
-            .findFirst()
-            .orElse(null);
     }
 
     private void registerDriveRollback(Drive driveService, String fileId) {
@@ -414,6 +350,16 @@ public class SheetMigrationService {
             if (newFileId != null) {
                 deleteFile(driveService, newFileId);
             }
+            if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
+                log.warn(
+                    "Google Drive OAuth token is invalid while copying template. templateId={}, "
+                        + "targetFolderId={}, cause={}",
+                    templateId,
+                    targetFolderId,
+                    GoogleSheetApiExceptionHelper.extractDetail(e)
+                );
+                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
+            }
             if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
                 log.warn(
                     "Google Drive auth failed while copying template. templateId={}, targetFolderId={}, cause={}",
@@ -442,6 +388,7 @@ public class SheetMigrationService {
         SheetColumnMapping mapping
     ) {
         try {
+            // 이 호출은 서비스 계정 Sheets API를 사용하므로 user OAuth refresh token 기반 invalid_grant는 발생하지 않는다.
             int dataStartRow = mapping.getDataStartRow();
             String range = "A" + dataStartRow + ":Z";
             ValueRange response = googleSheetsService.spreadsheets().values()

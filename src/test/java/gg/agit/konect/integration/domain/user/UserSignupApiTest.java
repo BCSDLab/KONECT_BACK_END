@@ -93,10 +93,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
             // 회원이 생성되었는지 확인
             clearPersistenceContext();
-            User savedUser = userRepository.findAll().stream()
-                .filter(u -> u.getStudentNumber().equals(studentNumber))
-                .findFirst()
-                .orElse(null);
+            User savedUser = findSavedUser(studentNumber);
             assertThat(savedUser).isNotNull();
             assertThat(savedUser.getName()).isEqualTo("홍길동");
             assertThat(savedUser.getEmail()).isEqualTo(email);
@@ -131,10 +128,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
             // then
             clearPersistenceContext();
-            User savedUser = userRepository.findAll().stream()
-                .filter(u -> u.getStudentNumber().equals(studentNumber))
-                .findFirst()
-                .orElse(null);
+            User savedUser = findSavedUser(studentNumber);
             assertThat(savedUser).isNotNull();
 
             // 동아리 멤버로 등록되었는지 확인
@@ -181,10 +175,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
             // then
             clearPersistenceContext();
-            User savedUser = userRepository.findAll().stream()
-                .filter(u -> u.getStudentNumber().equals(studentNumber))
-                .findFirst()
-                .orElse(null);
+            User savedUser = findSavedUser(studentNumber);
             assertThat(savedUser).isNotNull();
 
             // 새로운 사용자가 회장으로 등록되었는지 확인
@@ -235,10 +226,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
             // then
             clearPersistenceContext();
-            User savedUser = userRepository.findAll().stream()
-                .filter(u -> u.getStudentNumber().equals(studentNumber))
-                .findFirst()
-                .orElse(null);
+            User savedUser = findSavedUser(studentNumber);
             assertThat(savedUser).isNotNull();
 
             // 두 동아리 모두 가입되었는지 확인
@@ -354,15 +342,21 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
             // then
             clearPersistenceContext();
-            User savedUser = userRepository.findAll().stream()
-                .filter(u -> u.getStudentNumber().equals(studentNumber))
-                .findFirst()
-                .orElse(null);
+            User savedUser = findSavedUser(studentNumber);
             assertThat(savedUser).isNotNull();
 
             // 동아리에 가입되지 않았는지 확인
             boolean isMember = clubMemberRepository.existsByClubIdAndUserId(club.getId(), savedUser.getId());
             assertThat(isMember).isFalse();
         }
+    }
+
+    private User findSavedUser(String studentNumber) {
+        return userRepository.findAllByUniversityIdAndStudentNumber(
+                university.getId(),
+                studentNumber
+            ).stream()
+            .findFirst()
+            .orElse(null);
     }
 }

@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.googleException;
 
 import java.util.List;
 
@@ -15,10 +16,6 @@ import org.mockito.Mock;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.googleapis.json.GoogleJsonError;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpResponseException;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ClearValuesRequest;
 
@@ -87,22 +84,5 @@ class SheetSyncExecutorTest extends ServiceTestSupport {
                 && sheetSyncFailedEvent.spreadsheetId().equals(spreadsheetId)
                 && sheetSyncFailedEvent.accessDenied()
         ));
-    }
-
-    private GoogleJsonResponseException googleException(int statusCode, String reason) {
-        GoogleJsonError.ErrorInfo errorInfo = new GoogleJsonError.ErrorInfo();
-        errorInfo.setReason(reason);
-
-        GoogleJsonError error = new GoogleJsonError();
-        error.setCode(statusCode);
-        error.setErrors(List.of(errorInfo));
-
-        HttpResponseException.Builder builder = new HttpResponseException.Builder(
-            statusCode,
-            null,
-            new HttpHeaders()
-        );
-
-        return new GoogleJsonResponseException(builder, error);
     }
 }

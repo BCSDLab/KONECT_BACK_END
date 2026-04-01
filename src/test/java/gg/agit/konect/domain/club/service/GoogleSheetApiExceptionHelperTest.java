@@ -1,9 +1,10 @@
 package gg.agit.konect.domain.club.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.googleException;
 import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.httpResponseException;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -68,6 +69,24 @@ class GoogleSheetApiExceptionHelperTest {
             googleException(404, "notFound");
 
         assertThat(GoogleSheetApiExceptionHelper.isNotFound(notFound)).isTrue();
+    }
+
+    @Test
+    @DisplayName("classifies nested 400 invalid_grant responses as invalid Google Drive auth")
+    void isInvalidGrantReturnsTrueForNestedHttpResponseException() {
+        IOException wrapped = new IOException(
+            "token refresh failed",
+            httpResponseException(400, "{\"error\":\"invalid_grant\",\"error_description\":\"Bad Request\"}")
+        );
+
+        assertThat(GoogleSheetApiExceptionHelper.isInvalidGrant(wrapped)).isTrue();
+        assertThat(GoogleSheetApiExceptionHelper.extractDetail(wrapped))
+            .contains("400 Bad Request")
+            .contains("invalid_grant");
+        assertThat(GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(wrapped).getDetail())
+            .contains("400 Bad Request")
+            .contains("error=invalid_grant")
+            .contains("error_description=Bad Request");
     }
 
     @Test

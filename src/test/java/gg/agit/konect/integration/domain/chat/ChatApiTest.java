@@ -243,8 +243,8 @@ class ChatApiTest extends IntegrationTestSupport {
                 .clubPosition(ClubPosition.MEMBER)
                 .build());
 
-            ChatRoom bcsdRoom = persist(ChatRoom.groupOf(bcsd));
-            ChatRoom cseRoom = persist(ChatRoom.groupOf(cse));
+            ChatRoom bcsdRoom = persist(ChatRoom.clubGroupOf(bcsd));
+            ChatRoom cseRoom = persist(ChatRoom.clubGroupOf(cse));
             createDirectChatRoom(normalUser, directOnlyUser);
             createDirectChatRoom(normalUser, adminCandidate);
 
@@ -658,7 +658,7 @@ class ChatApiTest extends IntegrationTestSupport {
         @DisplayName("동아리 채팅방은 나갈 수 없다")
         void leaveGroupChatRoomFails() throws Exception {
             Club club = persist(ClubFixture.create(university));
-            ChatRoom groupRoom = persist(ChatRoom.groupOf(club));
+            ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(club));
             ChatRoom managedGroupRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
             User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
             persist(ChatRoomMember.of(managedGroupRoom, managedNormalUser, groupRoom.getCreatedAt()));
@@ -754,7 +754,7 @@ class ChatApiTest extends IntegrationTestSupport {
         void searchChatsReturnsRoomMatchesForDirectAndGroupRooms() throws Exception {
             // given
             ChatRoom directRoom = createDirectChatRoom(normalUser, targetUser);
-            ChatRoom groupRoom = persist(ChatRoom.groupOf(developmentClub));
+            ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(developmentClub));
             addRoomMember(groupRoom, normalUser);
             persistChatMessage(directRoom, normalUser, "안녕하세요");
             mockLoginUser(normalUser.getId());
@@ -876,7 +876,7 @@ class ChatApiTest extends IntegrationTestSupport {
             // given
             createDirectChatRoom(normalUser, targetUser);
             createDirectChatRoom(normalUser, secondTargetUser);
-            ChatRoom groupRoom = persist(ChatRoom.groupOf(developmentClub));
+            ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(developmentClub));
             addRoomMember(groupRoom, normalUser);
             mockLoginUser(normalUser.getId());
 
@@ -895,7 +895,7 @@ class ChatApiTest extends IntegrationTestSupport {
         void searchChatsWithVeryLargePageReturnsEmptyResult() throws Exception {
             // given
             createDirectChatRoom(normalUser, targetUser);
-            ChatRoom groupRoom = persist(ChatRoom.groupOf(developmentClub));
+            ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(developmentClub));
             addRoomMember(groupRoom, normalUser);
             mockLoginUser(normalUser.getId());
 
@@ -1013,7 +1013,7 @@ class ChatApiTest extends IntegrationTestSupport {
             .clubPosition(ClubPosition.MEMBER)
             .build());
 
-        ChatRoom groupRoom = persist(ChatRoom.groupOf(club));
+        ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(club));
         addRoomMember(groupRoom, normalUser);
 
         for (int index = 1; index <= count; index++) {

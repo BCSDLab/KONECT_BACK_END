@@ -28,6 +28,16 @@ public enum SlackMessageTemplate {
         > %s
         """
     ),
+    SHEET_SYNC_FAILED(
+        """
+        *:warning: 시트 동기화 실패*
+        동아리 ID: %s
+        스프레드시트 ID: `%s`
+        유형: %s
+        발생 시각: %s
+        > %s
+        """
+    ),
     ;
 
     private final String template;

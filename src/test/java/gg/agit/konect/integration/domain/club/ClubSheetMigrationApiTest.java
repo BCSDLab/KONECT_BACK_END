@@ -42,7 +42,6 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("시트 분석 등록 후 사전 회원 가져오기 결과를 반환한다")
         void analyzeAndImportPreMembersSuccess() throws Exception {
-            // given
             given(clubSheetIntegratedService.analyzeAndImportPreMembers(
                 eq(CLUB_ID),
                 eq(REQUESTER_ID),
@@ -51,7 +50,6 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
 
             SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
 
-            // when & then
             performPost("/clubs/" + CLUB_ID + "/sheet/import/integrated", request)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.importedCount").value(2))
@@ -62,7 +60,6 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("구글 스프레드시트 403 오류를 response body로 반환한다")
         void analyzeAndImportPreMembersForbiddenGoogleSheetAccess() throws Exception {
-            // given
             given(clubSheetIntegratedService.analyzeAndImportPreMembers(
                 eq(CLUB_ID),
                 eq(REQUESTER_ID),
@@ -71,13 +68,34 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
 
             SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
 
-            // when & then
             performPost("/clubs/" + CLUB_ID + "/sheet/import/integrated", request)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code")
                     .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.name()))
                 .andExpect(jsonPath("$.message")
                     .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.getMessage()));
+        }
+
+        @Test
+        @DisplayName("Google Drive invalid_grant 400 오류를 response body detail로 반환한다")
+        void analyzeAndImportPreMembersInvalidGoogleDriveAuth() throws Exception {
+            String detail =
+                "400 Bad Request\nPOST https://oauth2.googleapis.com/token\n{\"error\":\"invalid_grant\"}";
+            given(clubSheetIntegratedService.analyzeAndImportPreMembers(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(SPREADSHEET_URL)
+            )).willThrow(CustomException.of(ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH, detail));
+
+            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/integrated", request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                    .value(ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH.name()))
+                .andExpect(jsonPath("$.message")
+                    .value(ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH.getMessage()))
+                .andExpect(jsonPath("$.detail").value(detail));
         }
     }
 }

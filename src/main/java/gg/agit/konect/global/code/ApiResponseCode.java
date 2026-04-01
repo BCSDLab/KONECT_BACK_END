@@ -18,6 +18,8 @@ public enum ApiResponseCode {
     MISSING_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "필수 요청 파라미터가 누락되었습니다."),
     FAILED_EXTRACT_EMAIL(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 이메일 정보를 가져올 수 없습니다."),
     FAILED_EXTRACT_PROVIDER_ID(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 제공자 식별자를 가져올 수 없습니다."),
+    INVALID_GOOGLE_DRIVE_AUTH(HttpStatus.BAD_REQUEST,
+        "Google Drive 인증이 만료되었거나 올바르지 않습니다. Drive 권한을 다시 연결해 주세요."),
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
     CANNOT_LEAVE_GROUP_CHAT_ROOM(HttpStatus.BAD_REQUEST, "동아리 채팅방은 나갈 수 없습니다."),
     CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "자기 자신을 강퇴할 수 없습니다."),

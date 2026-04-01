@@ -29,10 +29,14 @@ final class GoogleApiTestUtils {
     }
 
     static HttpResponseException httpResponseException(int statusCode) {
+        return httpResponseException(statusCode, null);
+    }
+
+    static HttpResponseException httpResponseException(int statusCode, String content) {
         return new HttpResponseException.Builder(
             statusCode,
             null,
             new HttpHeaders()
-        ).build();
+        ).setContent(content).build();
     }
 }
