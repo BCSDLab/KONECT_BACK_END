@@ -157,8 +157,24 @@ class SheetSyncExecutorTest extends ServiceTestSupport {
     }
 
     private void setCreatedAt(Object target, LocalDateTime createdAt) throws Exception {
-        Field createdAtField = target.getClass().getSuperclass().getDeclaredField("createdAt");
+        Field createdAtField = findField(target.getClass(), "createdAt");
         createdAtField.setAccessible(true);
         createdAtField.set(target, createdAt);
+    }
+
+    private Field findField(Class<?> type, String fieldName) throws NoSuchFieldException {
+        Class<?> current = type;
+
+        while (current != null) {
+            try {
+                return current.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                current = current.getSuperclass();
+            }
+        }
+
+        throw new NoSuchFieldException(
+            "Field '%s' not found in class hierarchy of %s".formatted(fieldName, type.getName())
+        );
     }
 }
