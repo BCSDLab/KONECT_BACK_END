@@ -33,8 +33,10 @@ import gg.agit.konect.domain.club.event.SheetSyncFailedEvent;
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.global.util.PhoneNumberNormalizer;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +59,7 @@ public class SheetSyncExecutor {
     private final Sheets googleSheetsService;
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
+    private final ClubPreMemberRepository clubPreMemberRepository;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -71,7 +74,8 @@ public class SheetSyncExecutor {
 
         SheetColumnMapping mapping = resolveMapping(club);
         List<ClubMember> members = clubMemberRepository.findAllByClubId(clubId);
-        List<ClubMember> sorted = sort(members, sortKey, ascending);
+        List<ClubPreMember> preMembers = clubPreMemberRepository.findAllByClubId(clubId);
+        List<SheetSyncRow> sorted = sort(toSheetSyncRows(members, preMembers), sortKey, ascending);
 
         try {
             if (club.getSheetColumnMapping() != null) {
@@ -80,7 +84,7 @@ public class SheetSyncExecutor {
                 clearAndWriteAll(spreadsheetId, sorted);
                 applyFormat(spreadsheetId);
             }
-            log.info("Sheet sync done. clubId={}, members={}", clubId, members.size());
+            log.info("Sheet sync done. clubId={}, members={}, preMembers={}", clubId, members.size(), preMembers.size());
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
@@ -134,7 +138,7 @@ public class SheetSyncExecutor {
 
     private void updateMappedColumns(
         String spreadsheetId,
-        List<ClubMember> members,
+        List<SheetSyncRow> members,
         SheetColumnMapping mapping
     ) throws IOException {
         int dataStartRow = mapping.getDataStartRow();
@@ -185,24 +189,24 @@ public class SheetSyncExecutor {
     }
 
     private Map<Integer, List<Object>> buildColumnData(
-        List<ClubMember> members,
+        List<SheetSyncRow> members,
         SheetColumnMapping mapping
     ) {
         Map<Integer, List<Object>> columns = new HashMap<>();
 
-        for (ClubMember member : members) {
+        for (SheetSyncRow member : members) {
             putValue(columns, mapping, SheetColumnMapping.NAME,
-                member.getUser().getName());
+                member.name());
             putValue(columns, mapping, SheetColumnMapping.STUDENT_ID,
-                member.getUser().getStudentNumber());
+                member.studentNumber());
             putValue(columns, mapping, SheetColumnMapping.EMAIL,
-                member.getUser().getEmail());
+                member.email());
             putValue(columns, mapping, SheetColumnMapping.PHONE,
-                PhoneNumberNormalizer.format(member.getUser().getPhoneNumber()));
+                member.phone());
             putValue(columns, mapping, SheetColumnMapping.POSITION,
-                member.getClubPosition().getDescription());
+                member.positionDescription());
             putValue(columns, mapping, SheetColumnMapping.JOINED_AT,
-                member.getCreatedAt().format(DATE_FORMATTER));
+                member.joinedAt());
         }
 
         return columns;
@@ -222,7 +226,7 @@ public class SheetSyncExecutor {
 
     private void clearAndWriteAll(
         String spreadsheetId,
-        List<ClubMember> members
+        List<SheetSyncRow> members
     ) throws IOException {
         String clearRange = "A:F";
         googleSheetsService.spreadsheets().values()
@@ -232,15 +236,14 @@ public class SheetSyncExecutor {
         List<List<Object>> rows = new ArrayList<>();
         rows.add(HEADER_ROW);
 
-        for (ClubMember member : members) {
-            String phone = PhoneNumberNormalizer.format(member.getUser().getPhoneNumber());
+        for (SheetSyncRow member : members) {
             rows.add(List.of(
-                member.getUser().getName(),
-                member.getUser().getStudentNumber(),
-                member.getUser().getEmail(),
-                phone != null ? phone : "",
-                member.getClubPosition().getDescription(),
-                member.getCreatedAt().format(DATE_FORMATTER)
+                member.name(),
+                member.studentNumber(),
+                member.email(),
+                member.phone(),
+                member.positionDescription(),
+                member.joinedAt()
             ));
         }
 
@@ -272,16 +275,16 @@ public class SheetSyncExecutor {
             .execute();
     }
 
-    private List<ClubMember> sort(
-        List<ClubMember> members,
+    private List<SheetSyncRow> sort(
+        List<SheetSyncRow> members,
         ClubSheetSortKey sortKey,
         boolean ascending
     ) {
-        Comparator<ClubMember> comparator = switch (sortKey) {
-            case NAME -> Comparator.comparing(m -> m.getUser().getName());
-            case STUDENT_ID -> Comparator.comparing(m -> m.getUser().getStudentNumber());
-            case POSITION -> Comparator.comparingInt(m -> m.getClubPosition().getPriority());
-            case JOINED_AT -> Comparator.comparing(ClubMember::getCreatedAt);
+        Comparator<SheetSyncRow> comparator = switch (sortKey) {
+            case NAME -> Comparator.comparing(SheetSyncRow::name);
+            case STUDENT_ID -> Comparator.comparing(SheetSyncRow::studentNumber);
+            case POSITION -> Comparator.comparingInt(SheetSyncRow::positionPriority);
+            case JOINED_AT -> Comparator.comparing(SheetSyncRow::joinedAtRaw);
 
         };
 
@@ -290,6 +293,20 @@ public class SheetSyncExecutor {
         }
 
         return members.stream().sorted(comparator).toList();
+    }
+
+    private List<SheetSyncRow> toSheetSyncRows(
+        List<ClubMember> members,
+        List<ClubPreMember> preMembers
+    ) {
+        List<SheetSyncRow> rows = new ArrayList<>(members.size() + preMembers.size());
+        for (ClubMember member : members) {
+            rows.add(SheetSyncRow.from(member));
+        }
+        for (ClubPreMember preMember : preMembers) {
+            rows.add(SheetSyncRow.from(preMember));
+        }
+        return rows;
     }
 
     private String columnLetter(int index) {
@@ -301,5 +318,43 @@ public class SheetSyncExecutor {
             index /= ALPHABET_SIZE;
         }
         return sb.toString();
+    }
+
+    private record SheetSyncRow(
+        String name,
+        String studentNumber,
+        String email,
+        String phone,
+        String positionDescription,
+        int positionPriority,
+        String joinedAt,
+        java.time.LocalDateTime joinedAtRaw
+    ) {
+        private static SheetSyncRow from(ClubMember member) {
+            String phone = PhoneNumberNormalizer.format(member.getUser().getPhoneNumber());
+            return new SheetSyncRow(
+                member.getUser().getName(),
+                member.getUser().getStudentNumber(),
+                member.getUser().getEmail(),
+                phone != null ? phone : "",
+                member.getClubPosition().getDescription(),
+                member.getClubPosition().getPriority(),
+                member.getCreatedAt().format(DATE_FORMATTER),
+                member.getCreatedAt()
+            );
+        }
+
+        private static SheetSyncRow from(ClubPreMember preMember) {
+            return new SheetSyncRow(
+                preMember.getName(),
+                preMember.getStudentNumber(),
+                "",
+                "",
+                preMember.getClubPosition().getDescription(),
+                preMember.getClubPosition().getPriority(),
+                preMember.getCreatedAt().format(DATE_FORMATTER),
+                preMember.getCreatedAt()
+            );
+        }
     }
 }

@@ -95,4 +95,6 @@ public interface ClubPreMemberRepository extends Repository<ClubPreMember, Integ
     ClubPreMember save(ClubPreMember preMember);
 
     List<ClubPreMember> saveAll(Iterable<ClubPreMember> preMembers);
+
+    long countByClubId(Integer clubId);
 }

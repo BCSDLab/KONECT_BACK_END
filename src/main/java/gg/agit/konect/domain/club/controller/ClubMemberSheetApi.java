@@ -36,7 +36,7 @@ public interface ClubMemberSheetApi {
 
     @Operation(
         summary = "동아리 인명부 스프레드시트 동기화",
-        description = "등록된 구글 스프레드시트에 동아리 회원 인명부를 동기화합니다. "
+        description = "등록된 구글 스프레드시트에 동아리 회원과 사전 회원 인명부를 동기화합니다. "
             + "sortKey로 정렬 기준(NAME, STUDENT_ID, POSITION, JOINED_AT)을 지정할 수 있으며, "
             + "ascending으로 오름차순/내림차순을 설정합니다. "
             + "가입 승인·탈퇴 시에도 자동으로 동기화됩니다."

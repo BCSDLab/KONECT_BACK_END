@@ -13,6 +13,7 @@ import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class ClubMemberSheetService {
 
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
+    private final ClubPreMemberRepository clubPreMemberRepository;
     private final ClubPermissionValidator clubPermissionValidator;
     private final SheetSyncExecutor sheetSyncExecutor;
     private final SheetHeaderMapper sheetHeaderMapper;
@@ -92,8 +94,9 @@ public class ClubMemberSheetService {
         }
 
         long memberCount = clubMemberRepository.countByClubId(clubId);
+        long preMemberCount = clubPreMemberRepository.countByClubId(clubId);
         sheetSyncExecutor.executeWithSort(clubId, sortKey, ascending);
 
-        return ClubMemberSheetSyncResponse.of((int)memberCount, spreadsheetId);
+        return ClubMemberSheetSyncResponse.of((int)(memberCount + preMemberCount), spreadsheetId);
     }
 }
