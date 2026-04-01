@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.notification.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
+import gg.agit.konect.domain.notification.enums.NotificationInboxType;
 import gg.agit.konect.domain.notification.model.NotificationInbox;
 import gg.agit.konect.global.exception.CustomException;
 
@@ -21,15 +23,30 @@ public interface NotificationInboxRepository extends Repository<NotificationInbo
 
     List<NotificationInbox> saveAll(Iterable<NotificationInbox> notificationInboxes);
 
-    Page<NotificationInbox> findAllByUserIdOrderByCreatedAtDescIdDesc(Integer userId, Pageable pageable);
+    Page<NotificationInbox> findAllByUserIdAndTypeNotInOrderByCreatedAtDescIdDesc(
+        Integer userId,
+        Collection<NotificationInboxType> excludedTypes,
+        Pageable pageable
+    );
 
     long countByUserIdAndIsReadFalse(Integer userId);
+
+    long countByUserIdAndIsReadFalseAndTypeNotIn(Integer userId, Collection<NotificationInboxType> excludedTypes);
 
     Optional<NotificationInbox> findByIdAndUserId(Integer id, Integer userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE NotificationInbox n SET n.isRead = true WHERE n.user.id = :userId AND n.isRead = false")
-    void markAllAsReadByUserId(@Param("userId") Integer userId);
+    @Query("""
+        UPDATE NotificationInbox n
+        SET n.isRead = true
+        WHERE n.user.id = :userId
+          AND n.isRead = false
+          AND n.type NOT IN :excludedTypes
+        """)
+    void markAllAsReadByUserIdAndTypeNotIn(
+        @Param("userId") Integer userId,
+        @Param("excludedTypes") Collection<NotificationInboxType> excludedTypes
+    );
 
     default NotificationInbox getByIdAndUserId(Integer id, Integer userId) {
         return findByIdAndUserId(id, userId)

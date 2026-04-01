@@ -1,6 +1,9 @@
 package gg.agit.konect.domain.notification.service;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationInboxService {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final Set<NotificationInboxType> CHAT_NOTIFICATION_TYPES =
+        Arrays.stream(NotificationInboxType.values())
+            .filter(NotificationInboxType::isChatRelated)
+            .collect(() -> EnumSet.noneOf(NotificationInboxType.class), Set::add, Set::addAll);
 
     private final NotificationInboxRepository notificationInboxRepository;
     private final UserRepository userRepository;
@@ -73,12 +80,15 @@ public class NotificationInboxService {
     public NotificationInboxesResponse getMyInboxes(Integer userId, int page) {
         PageRequest pageable = PageRequest.of(page - 1, DEFAULT_PAGE_SIZE);
         Page<NotificationInbox> result = notificationInboxRepository
-            .findAllByUserIdOrderByCreatedAtDescIdDesc(userId, pageable);
+            .findAllByUserIdAndTypeNotInOrderByCreatedAtDescIdDesc(userId, CHAT_NOTIFICATION_TYPES, pageable);
         return NotificationInboxesResponse.from(result);
     }
 
     public NotificationInboxUnreadCountResponse getUnreadCount(Integer userId) {
-        long count = notificationInboxRepository.countByUserIdAndIsReadFalse(userId);
+        long count = notificationInboxRepository.countByUserIdAndIsReadFalseAndTypeNotIn(
+            userId,
+            CHAT_NOTIFICATION_TYPES
+        );
         return NotificationInboxUnreadCountResponse.of(count);
     }
 
@@ -90,6 +100,6 @@ public class NotificationInboxService {
 
     @Transactional
     public void markAllAsRead(Integer userId) {
-        notificationInboxRepository.markAllAsReadByUserId(userId);
+        notificationInboxRepository.markAllAsReadByUserIdAndTypeNotIn(userId, CHAT_NOTIFICATION_TYPES);
     }
 }

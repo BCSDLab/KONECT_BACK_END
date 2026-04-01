@@ -98,16 +98,6 @@ public class NotificationService {
             String truncatedBody = buildPreview(messageContent);
             String path = "chats/" + roomId;
 
-            NotificationInbox saved = notificationInboxService.save(
-                receiverId,
-                NotificationInboxType.CHAT_MESSAGE,
-                senderName,
-                truncatedBody,
-                path
-            );
-
-            notificationInboxService.sendSse(receiverId, NotificationInboxResponse.from(saved));
-
             List<String> tokens = notificationDeviceTokenRepository.findTokensByUserId(receiverId);
             if (tokens.isEmpty()) {
                 log.debug("No device tokens found for user: receiverId={}", receiverId);
@@ -171,16 +161,6 @@ public class NotificationService {
             String truncatedBody = buildPreview(messageContent);
             String previewBody = senderName + ": " + truncatedBody;
             String path = "chats/" + roomId;
-
-            List<NotificationInbox> savedInboxes = notificationInboxService.saveAll(
-                targetRecipients,
-                NotificationInboxType.GROUP_CHAT_MESSAGE,
-                clubName,
-                previewBody,
-                path
-            );
-
-            notificationInboxService.sendSseBatch(savedInboxes);
 
             List<String> tokens = notificationDeviceTokenRepository.findTokensByUserIds(targetRecipients);
 
