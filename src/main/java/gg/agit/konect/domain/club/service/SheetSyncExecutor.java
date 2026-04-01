@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,7 @@ import com.google.api.services.sheets.v4.model.SheetProperties;
 import com.google.api.services.sheets.v4.model.UpdateSheetPropertiesRequest;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
+import gg.agit.konect.domain.club.event.SheetSyncFailedEvent;
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -56,6 +58,7 @@ public class SheetSyncExecutor {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Async("sheetSyncTaskExecutor")
     @Transactional(readOnly = true)
@@ -79,9 +82,24 @@ public class SheetSyncExecutor {
             }
             log.info("Sheet sync done. clubId={}, members={}", clubId, members.size());
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied during sheet sync. clubId={}, spreadsheetId={}, cause={}",
+                    clubId,
+                    spreadsheetId,
+                    e.getMessage()
+                );
+                applicationEventPublisher.publishEvent(
+                    SheetSyncFailedEvent.accessDenied(clubId, spreadsheetId, e.getMessage())
+                );
+                return;
+            }
             log.error(
                 "Sheet sync failed. clubId={}, spreadsheetId={}, cause={}",
                 clubId, spreadsheetId, e.getMessage(), e
+            );
+            applicationEventPublisher.publishEvent(
+                SheetSyncFailedEvent.unexpected(clubId, spreadsheetId, e.getMessage())
             );
         }
     }

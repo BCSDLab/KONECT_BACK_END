@@ -243,6 +243,14 @@ public class SheetImportService {
             return values != null ? values : List.of();
 
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied while reading sheet data. spreadsheetId={}, cause={}",
+                    spreadsheetId,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
+            }
             log.error("Failed to read sheet data. spreadsheetId={}", spreadsheetId, e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
