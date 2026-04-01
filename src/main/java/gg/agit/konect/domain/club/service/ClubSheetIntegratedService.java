@@ -23,7 +23,7 @@ public class ClubSheetIntegratedService {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
-        // Best-effort: OAuth 미연결/권한 부여 실패여도 이미 수동 공유된 시트는 그대로 읽을 수 있다.
+        // OAuth 미연결이면 건너뛰고 계속 진행한다. Drive 초기화/인증 오류는 예외로 전파한다.
         googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
 
         SheetHeaderMapper.SheetAnalysisResult analysis =

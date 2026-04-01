@@ -62,6 +62,9 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
     private Drive.Permissions.List listRequest;
 
     @Mock
+    private Drive.Permissions.List nextPageListRequest;
+
+    @Mock
     private Drive.Permissions.Create createRequest;
 
     @Mock
@@ -94,7 +97,8 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         // given
         mockConnectedDriveAccount();
         given(permissions.list(FILE_ID)).willReturn(listRequest);
-        given(listRequest.setFields("permissions(id,emailAddress,role)")).willReturn(listRequest);
+        given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(listRequest);
         given(listRequest.execute()).willReturn(permissionList(permission("perm-1", "writer")));
 
         // when
@@ -110,13 +114,43 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("finds existing permission across paged Drive permission results")
+    void tryGrantServiceAccountWriterAccessFindsPermissionAcrossPages()
+        throws IOException, GeneralSecurityException {
+        // given
+        mockConnectedDriveAccount();
+        given(permissions.list(FILE_ID)).willReturn(listRequest);
+        given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(listRequest);
+        given(listRequest.execute()).willReturn(
+            new PermissionList().setPermissions(List.of()).setNextPageToken("next-page")
+        );
+        given(permissions.list(FILE_ID)).willReturn(listRequest, nextPageListRequest);
+        given(nextPageListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(nextPageListRequest);
+        given(nextPageListRequest.setPageToken("next-page")).willReturn(nextPageListRequest);
+        given(nextPageListRequest.execute()).willReturn(permissionList(permission("perm-1", "writer")));
+
+        // when
+        boolean granted = googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
+            REQUESTER_ID,
+            FILE_ID
+        );
+
+        // then
+        assertThat(granted).isTrue();
+        verify(permissions, never()).create(eq(FILE_ID), any(Permission.class));
+    }
+
+    @Test
     @DisplayName("returns true when create fails but the permission is visible on re-check")
     void tryGrantServiceAccountWriterAccessReturnsTrueAfterConcurrentGrant()
         throws IOException, GeneralSecurityException {
         // given
         mockConnectedDriveAccount();
         given(permissions.list(FILE_ID)).willReturn(listRequest);
-        given(listRequest.setFields("permissions(id,emailAddress,role)")).willReturn(listRequest);
+        given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(listRequest);
         given(listRequest.execute()).willReturn(
             permissionList(),
             permissionList(permission("perm-1", "writer"))
@@ -143,7 +177,8 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         // given
         mockConnectedDriveAccount();
         given(permissions.list(FILE_ID)).willReturn(listRequest);
-        given(listRequest.setFields("permissions(id,emailAddress,role)")).willReturn(listRequest);
+        given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(listRequest);
         given(listRequest.execute()).willReturn(permissionList(permission("perm-x", "reader")));
         given(permissions.update(eq(FILE_ID), eq("perm-x"), any(Permission.class))).willReturn(updateRequest);
         given(updateRequest.execute()).willReturn(permission("perm-x", "writer"));
@@ -166,7 +201,8 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         // given
         mockConnectedDriveAccount();
         given(permissions.list(FILE_ID)).willReturn(listRequest);
-        given(listRequest.setFields("permissions(id,emailAddress,role)")).willReturn(listRequest);
+        given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(listRequest);
         given(listRequest.execute()).willThrow(googleException(401, "authError"));
 
         // when
@@ -186,7 +222,8 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         // given
         mockConnectedDriveAccount();
         given(permissions.list(FILE_ID)).willReturn(listRequest);
-        given(listRequest.setFields("permissions(id,emailAddress,role)")).willReturn(listRequest);
+        given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(listRequest);
         given(listRequest.execute()).willThrow(googleException(403, "forbidden"));
 
         // when
@@ -206,7 +243,8 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
         // given
         mockConnectedDriveAccount();
         given(permissions.list(FILE_ID)).willReturn(listRequest);
-        given(listRequest.setFields("permissions(id,emailAddress,role)")).willReturn(listRequest);
+        given(listRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(listRequest);
         given(listRequest.execute()).willThrow(new IOException(
             "token refresh failed",
             httpResponseException(

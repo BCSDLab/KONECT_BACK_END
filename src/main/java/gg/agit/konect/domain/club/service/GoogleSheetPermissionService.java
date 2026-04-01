@@ -2,7 +2,6 @@ package gg.agit.konect.domain.club.service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -212,16 +211,8 @@ public class GoogleSheetPermissionService {
         String fileId,
         String serviceAccountEmail
     ) throws IOException {
-        List<Permission> permissions = userDriveService.permissions().list(fileId)
-            .setFields("permissions(id,emailAddress,role)")
-            .execute()
-            .getPermissions();
-
-        if (permissions == null) {
-            return null;
-        }
-
-        return permissions.stream()
+        return GoogleDrivePermissionHelper.listAllPermissions(userDriveService, fileId).stream()
+            .filter(permission -> "user".equals(permission.getType()))
             .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
             .findFirst()
             .orElse(null);

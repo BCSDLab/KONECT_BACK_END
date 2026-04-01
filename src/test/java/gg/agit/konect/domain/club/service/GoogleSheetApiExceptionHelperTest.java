@@ -83,6 +83,10 @@ class GoogleSheetApiExceptionHelperTest {
         assertThat(GoogleSheetApiExceptionHelper.extractDetail(wrapped))
             .contains("400 Bad Request")
             .contains("invalid_grant");
+        assertThat(GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(wrapped).getDetail())
+            .contains("400 Bad Request")
+            .contains("error=invalid_grant")
+            .contains("error_description=Bad Request");
     }
 
     @Test

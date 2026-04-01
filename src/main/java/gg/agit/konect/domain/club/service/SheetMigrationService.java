@@ -42,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SheetMigrationService {
 
+    private static final int PERMISSION_APPLY_MAX_ATTEMPTS = 2;
     private static final Pattern FOLDER_ID_PATTERN =
         Pattern.compile("(?:folders/|id=)([a-zA-Z0-9_-]{20,})");
     private static final String MIME_TYPE_SPREADSHEET =
@@ -166,16 +167,8 @@ public class SheetMigrationService {
     private void removeServiceAccountPermission(Drive driveService, String fileId) {
         String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
         try {
-            // permissionId 조회 후 삭제 (getPermissions()는 빈 경우 null 반환 가능)
-            List<Permission> permissions =
-                driveService.permissions().list(fileId)
-                    .setFields("permissions(id,emailAddress)")
-                    .execute()
-                    .getPermissions();
-            if (permissions == null) {
-                return;
-            }
-            permissions.stream()
+            GoogleDrivePermissionHelper.listAllPermissions(driveService, fileId).stream()
+                .filter(permission -> "user".equals(permission.getType()))
                 .filter(p -> serviceAccountEmail.equals(p.getEmailAddress()))
                 .findFirst()
                 .ifPresent(p -> {
@@ -259,6 +252,45 @@ public class SheetMigrationService {
         String targetRole
     ) throws IOException {
         String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
+        for (int attempt = 1; attempt <= PERMISSION_APPLY_MAX_ATTEMPTS; attempt++) {
+            try {
+                return applyServiceAccountPermission(
+                    userDriveService,
+                    fileId,
+                    targetRole,
+                    serviceAccountEmail
+                );
+            } catch (IOException e) {
+                if (hasRequiredPermission(
+                    userDriveService,
+                    fileId,
+                    serviceAccountEmail,
+                    targetRole
+                )) {
+                    log.info(
+                        "Service account permission reached target role after retry. fileId={}, role={}, email={}",
+                        fileId,
+                        targetRole,
+                        serviceAccountEmail
+                    );
+                    return GoogleDrivePermissionHelper.PermissionApplyStatus.UNCHANGED;
+                }
+
+                if (attempt == PERMISSION_APPLY_MAX_ATTEMPTS) {
+                    throw e;
+                }
+            }
+        }
+
+        throw new IllegalStateException("Permission apply loop finished unexpectedly.");
+    }
+
+    private GoogleDrivePermissionHelper.PermissionApplyStatus applyServiceAccountPermission(
+        Drive userDriveService,
+        String fileId,
+        String targetRole,
+        String serviceAccountEmail
+    ) throws IOException {
         Permission existingPermission = findServiceAccountPermission(
             userDriveService,
             fileId,
@@ -306,21 +338,37 @@ public class SheetMigrationService {
         return GoogleDrivePermissionHelper.PermissionApplyStatus.UPGRADED;
     }
 
+    private boolean hasRequiredPermission(
+        Drive userDriveService,
+        String fileId,
+        String serviceAccountEmail,
+        String targetRole
+    ) {
+        try {
+            Permission currentPermission = findServiceAccountPermission(
+                userDriveService,
+                fileId,
+                serviceAccountEmail
+            );
+            return currentPermission != null
+                && GoogleDrivePermissionHelper.hasRequiredRole(currentPermission.getRole(), targetRole);
+        } catch (IOException e) {
+            log.debug(
+                "Failed to re-check service account permission. fileId={}, email={}, cause={}",
+                fileId,
+                serviceAccountEmail,
+                e.getMessage()
+            );
+            return false;
+        }
+    }
+
     private Permission findServiceAccountPermission(
         Drive userDriveService,
         String fileId,
         String serviceAccountEmail
     ) throws IOException {
-        List<Permission> permissions = userDriveService.permissions().list(fileId)
-            .setFields("permissions(id,type,emailAddress,role)")
-            .execute()
-            .getPermissions();
-
-        if (permissions == null) {
-            return null;
-        }
-
-        return permissions.stream()
+        return GoogleDrivePermissionHelper.listAllPermissions(userDriveService, fileId).stream()
             .filter(permission -> "user".equals(permission.getType()))
             .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
             .findFirst()

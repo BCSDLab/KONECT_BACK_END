@@ -3,6 +3,8 @@ package gg.agit.konect.domain.club.service;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -27,6 +29,10 @@ public final class GoogleSheetApiExceptionHelper {
         "unauthorized"
     );
     private static final String INVALID_GRANT_ERROR = "invalid_grant";
+    private static final Pattern ERROR_FIELD_PATTERN =
+        Pattern.compile("\"error\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern ERROR_DESCRIPTION_PATTERN =
+        Pattern.compile("\"error_description\"\\s*:\\s*\"([^\"]+)\"");
     private static final int HTTP_STATUS_BAD_REQUEST = 400;
     private static final int HTTP_STATUS_FORBIDDEN = 403;
     private static final int HTTP_STATUS_UNAUTHORIZED = 401;
@@ -79,18 +85,13 @@ public final class GoogleSheetApiExceptionHelper {
     public static CustomException invalidGoogleDriveAuth(IOException exception) {
         return CustomException.of(
             ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH,
-            extractDetail(exception)
+            extractClientDetail(exception)
         );
     }
 
     public static String extractDetail(IOException exception) {
         HttpResponseException responseException = findResponseException(exception);
         if (responseException != null) {
-            String message = responseException.getMessage();
-            if (message != null && !message.isBlank()) {
-                return message;
-            }
-
             String content = responseException.getContent();
             if (content != null && !content.isBlank()) {
                 return "%d %s%n%s".formatted(
@@ -99,8 +100,20 @@ public final class GoogleSheetApiExceptionHelper {
                     content
                 );
             }
+
+            String message = responseException.getMessage();
+            if (message != null && !message.isBlank()) {
+                return message;
+            }
         }
         return exception.getMessage();
+    }
+
+    private static String extractClientDetail(IOException exception) {
+        if (isInvalidGrant(exception)) {
+            return sanitizeInvalidGrantDetail(exception);
+        }
+        return extractDetail(exception);
     }
 
     private static boolean hasReason(
@@ -159,6 +172,46 @@ public final class GoogleSheetApiExceptionHelper {
             current = current.getCause();
         }
         return null;
+    }
+
+    private static String sanitizeInvalidGrantDetail(IOException exception) {
+        String content = getResponseContent(exception);
+        if (content == null) {
+            return "%d %s%nerror=%s".formatted(
+                HTTP_STATUS_BAD_REQUEST,
+                defaultStatusText(HTTP_STATUS_BAD_REQUEST),
+                INVALID_GRANT_ERROR
+            );
+        }
+
+        String error = extractJsonField(content, ERROR_FIELD_PATTERN);
+        String errorDescription = extractJsonField(content, ERROR_DESCRIPTION_PATTERN);
+
+        StringBuilder detail = new StringBuilder()
+            .append(HTTP_STATUS_BAD_REQUEST)
+            .append(' ')
+            .append(defaultStatusText(HTTP_STATUS_BAD_REQUEST));
+        if (error != null) {
+            detail.append(System.lineSeparator()).append("error=").append(error);
+        }
+        if (errorDescription != null) {
+            detail.append(System.lineSeparator())
+                .append("error_description=")
+                .append(errorDescription);
+        }
+
+        if (error == null && errorDescription == null) {
+            detail.append(System.lineSeparator()).append("error=").append(INVALID_GRANT_ERROR);
+        }
+        return detail.toString();
+    }
+
+    private static String extractJsonField(String content, Pattern pattern) {
+        Matcher matcher = pattern.matcher(content);
+        if (!matcher.find()) {
+            return null;
+        }
+        return matcher.group(1).trim();
     }
 
     private static String defaultStatusText(int statusCode) {
