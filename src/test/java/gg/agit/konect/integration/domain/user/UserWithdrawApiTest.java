@@ -3,9 +3,7 @@ package gg.agit.konect.integration.domain.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
-import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
