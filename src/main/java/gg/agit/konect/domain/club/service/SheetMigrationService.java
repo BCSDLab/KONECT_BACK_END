@@ -22,7 +22,6 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.Permission;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import gg.agit.konect.domain.club.model.Club;
@@ -53,7 +52,7 @@ public class SheetMigrationService {
     private String defaultTemplateSpreadsheetId;
 
     private final Sheets googleSheetsService;
-    private final GoogleCredentials googleCredentials;
+    private final ServiceAccountCredentials serviceAccountCredentials;
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubRepository clubRepository;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
@@ -159,10 +158,7 @@ public class SheetMigrationService {
     }
 
     private void removeServiceAccountPermission(Drive driveService, String fileId) {
-        if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
-            return;
-        }
-        String serviceAccountEmail = sac.getClientEmail();
+        String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
         try {
             // permissionId 조회 후 삭제 (getPermissions()는 빈 경우 null 반환 가능)
             List<Permission> permissions =
@@ -206,13 +202,7 @@ public class SheetMigrationService {
      * 서비스 계정에 지정된 role로 Drive 접근 권한을 부여하는 공통 메서드입니다.
      */
     private void grantServiceAccountPermission(Drive userDriveService, String fileId, String role) {
-        if (!(googleCredentials instanceof ServiceAccountCredentials sac)) {
-            throw new IllegalStateException(
-                "Google credentials is not a ServiceAccountCredentials. actual type="
-                    + googleCredentials.getClass().getName()
-            );
-        }
-        String serviceAccountEmail = sac.getClientEmail();
+        String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
         try {
             Permission permission = new Permission()
                 .setType("user")
@@ -234,9 +224,7 @@ public class SheetMigrationService {
                     role,
                     e.getMessage()
                 );
-                throw GoogleSheetApiExceptionHelper.accessDenied(
-                    "fileId=" + fileId + ", role=" + role
-                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
             }
             log.error(
                 "Failed to grant service account {} access. fileId={}, cause={}",
@@ -345,12 +333,12 @@ public class SheetMigrationService {
             }
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
-                    "Google Sheets access denied while copying template. cause={}",
+                    "Google Sheets access denied while copying template. templateId={}, targetFolderId={}, cause={}",
+                    templateId,
+                    targetFolderId,
                     e.getMessage()
                 );
-                throw GoogleSheetApiExceptionHelper.accessDenied(
-                    "templateId=" + templateId + ", targetFolderId=" + targetFolderId
-                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
             }
             log.error("Failed to copy template. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
@@ -379,9 +367,7 @@ public class SheetMigrationService {
                     spreadsheetId,
                     e.getMessage()
                 );
-                throw GoogleSheetApiExceptionHelper.accessDenied(
-                    "spreadsheetId=" + spreadsheetId
-                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
             }
             log.error("Failed to read source data. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
@@ -432,9 +418,7 @@ public class SheetMigrationService {
                     newSpreadsheetId,
                     e.getMessage()
                 );
-                throw GoogleSheetApiExceptionHelper.accessDenied(
-                    "spreadsheetId=" + newSpreadsheetId
-                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
             }
             log.error("Failed to write data to template. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);

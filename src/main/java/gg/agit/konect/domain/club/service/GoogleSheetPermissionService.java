@@ -9,7 +9,6 @@ import org.springframework.util.StringUtils;
 
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.Permission;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import gg.agit.konect.domain.user.enums.Provider;
@@ -30,7 +29,7 @@ public class GoogleSheetPermissionService {
     private static final int ROLE_RANK_COMMENTER = 2;
     private static final int ROLE_RANK_WRITER = 3;
 
-    private final GoogleCredentials googleCredentials;
+    private final ServiceAccountCredentials serviceAccountCredentials;
     private final GoogleSheetsConfig googleSheetsConfig;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
 
@@ -62,6 +61,7 @@ public class GoogleSheetPermissionService {
             return true;
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)
+                || GoogleSheetApiExceptionHelper.isAuthFailure(e)
                 || GoogleSheetApiExceptionHelper.isNotFound(e)) {
                 log.warn(
                     "Failed to auto-share spreadsheet with service account. requesterId={}, spreadsheetId={}, cause={}",
@@ -156,12 +156,6 @@ public class GoogleSheetPermissionService {
     }
 
     private String getServiceAccountEmail() {
-        if (!(googleCredentials instanceof ServiceAccountCredentials serviceAccountCredentials)) {
-            throw new IllegalStateException(
-                "Google credentials is not a ServiceAccountCredentials. actual type="
-                    + googleCredentials.getClass().getName()
-            );
-        }
         return serviceAccountCredentials.getClientEmail();
     }
 

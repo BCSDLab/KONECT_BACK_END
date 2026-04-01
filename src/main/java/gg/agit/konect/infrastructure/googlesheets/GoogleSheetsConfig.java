@@ -10,6 +10,7 @@ import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
@@ -21,6 +22,7 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.auth.oauth2.UserCredentials;
 
 import lombok.RequiredArgsConstructor;
@@ -33,14 +35,28 @@ public class GoogleSheetsConfig {
     private final ResourceLoader resourceLoader;
 
     @Bean
-    public GoogleCredentials googleCredentials() throws IOException {
+    public ServiceAccountCredentials serviceAccountCredentials() throws IOException {
         try (InputStream in = openCredentialsStream()) {
-            return GoogleCredentials.fromStream(in)
-                .createScoped(Arrays.asList(
-                    SheetsScopes.SPREADSHEETS,
-                    DriveScopes.DRIVE
-                ));
+            GoogleCredentials credentials = GoogleCredentials.fromStream(in);
+            if (!(credentials instanceof ServiceAccountCredentials serviceAccountCredentials)) {
+                throw new IllegalStateException(
+                    "Google credentials must be ServiceAccountCredentials. actual type="
+                        + credentials.getClass().getName()
+                );
+            }
+            return serviceAccountCredentials;
         }
+    }
+
+    @Bean
+    @Primary
+    public GoogleCredentials googleCredentials(
+        ServiceAccountCredentials serviceAccountCredentials
+    ) {
+        return serviceAccountCredentials.createScoped(Arrays.asList(
+            SheetsScopes.SPREADSHEETS,
+            DriveScopes.DRIVE
+        ));
     }
 
     @Bean

@@ -99,9 +99,7 @@ public class SheetHeaderMapper {
                     spreadsheetId,
                     e.getMessage()
                 );
-                throw GoogleSheetApiExceptionHelper.accessDenied(
-                    "spreadsheetId=" + spreadsheetId
-                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
             }
             log.error("Failed to read spreadsheet info. spreadsheetId={}", spreadsheetId, e);
             return List.of();
@@ -138,9 +136,7 @@ public class SheetHeaderMapper {
                     sheetTitle,
                     e.getMessage()
                 );
-                throw GoogleSheetApiExceptionHelper.accessDenied(
-                    "spreadsheetId=" + spreadsheetId + ", sheetTitle=" + sheetTitle
-                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
             }
             log.warn("Failed to read rows from sheet '{}'. cause={}", sheetTitle, e.getMessage());
             return List.of();
