@@ -261,7 +261,6 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
             ClubApplyQuestion oldQuestion = ClubApplyQuestion.of(club, "구버전 질문", true, 1);
             persist(oldQuestion);
 
-            LocalDateTime appliedAt = LocalDateTime.now();
             ClubApply approvedApply = ClubApply.of(club, approvedUser, null);
             approvedApply.approve();
             persist(approvedApply);
