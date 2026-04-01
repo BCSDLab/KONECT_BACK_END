@@ -10,6 +10,7 @@ public record AdminChatRoomProjection(
     Integer roomId,
     String lastMessage,
     LocalDateTime lastSentAt,
+    LocalDateTime createdAt,
     Integer nonAdminUserId,
     String nonAdminUserName,
     String nonAdminImageUrl,
