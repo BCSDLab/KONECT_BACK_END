@@ -84,7 +84,12 @@ public class SheetSyncExecutor {
                 clearAndWriteAll(spreadsheetId, sorted);
                 applyFormat(spreadsheetId);
             }
-            log.info("Sheet sync done. clubId={}, members={}, preMembers={}", clubId, members.size(), preMembers.size());
+            log.info(
+                "Sheet sync done. clubId={}, members={}, preMembers={}",
+                clubId,
+                members.size(),
+                preMembers.size()
+            );
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
