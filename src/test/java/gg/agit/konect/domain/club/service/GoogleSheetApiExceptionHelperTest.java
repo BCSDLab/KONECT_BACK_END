@@ -1,6 +1,8 @@
 package gg.agit.konect.domain.club.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.googleException;
+import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.httpResponseException;
 
 import java.util.List;
 
@@ -68,20 +70,15 @@ class GoogleSheetApiExceptionHelperTest {
         assertThat(GoogleSheetApiExceptionHelper.isNotFound(notFound)).isTrue();
     }
 
-    private GoogleJsonResponseException googleException(int statusCode, String reason) {
-        GoogleJsonError.ErrorInfo errorInfo = new GoogleJsonError.ErrorInfo();
-        errorInfo.setReason(reason);
+    @Test
+    @DisplayName("classifies non-json http response exceptions with their status code")
+    void classifiesNonJsonHttpResponseExceptionByStatusCode() {
+        HttpResponseException forbidden = httpResponseException(403);
+        HttpResponseException unauthorized = httpResponseException(401);
+        HttpResponseException notFound = httpResponseException(404);
 
-        GoogleJsonError error = new GoogleJsonError();
-        error.setCode(statusCode);
-        error.setErrors(List.of(errorInfo));
-
-        HttpResponseException.Builder builder = new HttpResponseException.Builder(
-            statusCode,
-            null,
-            new HttpHeaders()
-        );
-
-        return new GoogleJsonResponseException(builder, error);
+        assertThat(GoogleSheetApiExceptionHelper.isAccessDenied(forbidden)).isTrue();
+        assertThat(GoogleSheetApiExceptionHelper.isAuthFailure(unauthorized)).isTrue();
+        assertThat(GoogleSheetApiExceptionHelper.isNotFound(notFound)).isTrue();
     }
 }

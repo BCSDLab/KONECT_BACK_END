@@ -25,10 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 public class GoogleSheetPermissionService {
 
     private static final int PERMISSION_APPLY_MAX_ATTEMPTS = 2;
-    private static final int ROLE_RANK_NONE = 0;
-    private static final int ROLE_RANK_READER = 1;
-    private static final int ROLE_RANK_COMMENTER = 2;
-    private static final int ROLE_RANK_WRITER = 3;
 
     private final ServiceAccountCredentials serviceAccountCredentials;
     private final GoogleSheetsConfig googleSheetsConfig;
@@ -89,7 +85,6 @@ public class GoogleSheetPermissionService {
         String targetRole
     ) throws IOException {
         String serviceAccountEmail = getServiceAccountEmail();
-        IOException lastException = null;
 
         for (int attempt = 1; attempt <= PERMISSION_APPLY_MAX_ATTEMPTS; attempt++) {
             try {
@@ -101,7 +96,6 @@ public class GoogleSheetPermissionService {
                 );
                 return;
             } catch (IOException e) {
-                lastException = e;
                 if (hasRequiredPermission(
                     userDriveService,
                     fileId,
@@ -121,10 +115,6 @@ public class GoogleSheetPermissionService {
                     throw e;
                 }
             }
-        }
-
-        if (lastException != null) {
-            throw lastException;
         }
     }
 
@@ -159,7 +149,7 @@ public class GoogleSheetPermissionService {
         }
 
         String currentRole = existingPermission.getRole();
-        if (roleRank(currentRole) >= roleRank(targetRole)) {
+        if (GoogleDrivePermissionHelper.hasRequiredRole(currentRole, targetRole)) {
             log.info(
                 "Service account permission already satisfies requested role. fileId={}, role={}, email={}",
                 fileId,
@@ -194,7 +184,7 @@ public class GoogleSheetPermissionService {
                 serviceAccountEmail
             );
             return currentPermission != null
-                && roleRank(currentPermission.getRole()) >= roleRank(targetRole);
+                && GoogleDrivePermissionHelper.hasRequiredRole(currentPermission.getRole(), targetRole);
         } catch (IOException e) {
             log.debug(
                 "Failed to re-check service account permission. fileId={}, email={}, cause={}",
@@ -228,18 +218,5 @@ public class GoogleSheetPermissionService {
 
     private String getServiceAccountEmail() {
         return serviceAccountCredentials.getClientEmail();
-    }
-
-    private int roleRank(String role) {
-        if (role == null) {
-            return ROLE_RANK_NONE;
-        }
-
-        return switch (role) {
-            case "reader" -> ROLE_RANK_READER;
-            case "commenter" -> ROLE_RANK_COMMENTER;
-            case "writer", "fileOrganizer", "organizer", "owner" -> ROLE_RANK_WRITER;
-            default -> ROLE_RANK_NONE;
-        };
     }
 }

@@ -46,10 +46,6 @@ public class SheetMigrationService {
         Pattern.compile("(?:folders/|id=)([a-zA-Z0-9_-]{20,})");
     private static final String MIME_TYPE_SPREADSHEET =
         "application/vnd.google-apps.spreadsheet";
-    private static final int ROLE_RANK_NONE = 0;
-    private static final int ROLE_RANK_READER = 1;
-    private static final int ROLE_RANK_COMMENTER = 2;
-    private static final int ROLE_RANK_WRITER = 3;
     private static final String NEW_SHEET_TITLE_PREFIX = "KONECT_인명부_";
 
     @Value("${google.sheets.template-spreadsheet-id:}")
@@ -101,7 +97,11 @@ public class SheetMigrationService {
         // 소스 파일에 서비스 계정 reader 권한을 먼저 부여해야 readAllData()가 성공함
         grantServiceAccountReadAccess(userDriveService, sourceSpreadsheetId);
         // 트랜잭션 실패 / 완료 후 소스 파일 서비스 계정 권한 제거 (보상 처리)
-        registerSourceFilePermissionCleanup(userDriveService, sourceSpreadsheetId);
+        GoogleDrivePermissionHelper.PermissionApplyStatus sourcePermissionStatus =
+            grantServiceAccountReadAccess(userDriveService, sourceSpreadsheetId);
+        if (sourcePermissionStatus == GoogleDrivePermissionHelper.PermissionApplyStatus.CREATED) {
+            registerSourceFilePermissionCleanup(userDriveService, sourceSpreadsheetId);
+        }
 
         String newSpreadsheetId = copyTemplate(userDriveService, templateId, club.getName(), folderId);
         registerDriveRollback(userDriveService, newSpreadsheetId);
@@ -144,8 +144,11 @@ public class SheetMigrationService {
      * 소스 파일에 서비스 계정 reader 권한을 부여합니다.
      * migrate 시 서비스 계정 Sheets API로 소스 데이터를 읽어야 하므로 필요합니다.
      */
-    private void grantServiceAccountReadAccess(Drive userDriveService, String fileId) {
-        grantServiceAccountPermission(userDriveService, fileId, "reader");
+    private GoogleDrivePermissionHelper.PermissionApplyStatus grantServiceAccountReadAccess(
+        Drive userDriveService,
+        String fileId
+    ) {
+        return grantServiceAccountPermission(userDriveService, fileId, "reader");
     }
 
     /**
@@ -205,9 +208,13 @@ public class SheetMigrationService {
     /**
      * 서비스 계정에 지정된 role로 Drive 접근 권한을 부여하는 공통 메서드입니다.
      */
-    private void grantServiceAccountPermission(Drive userDriveService, String fileId, String role) {
+    private GoogleDrivePermissionHelper.PermissionApplyStatus grantServiceAccountPermission(
+        Drive userDriveService,
+        String fileId,
+        String role
+    ) {
         try {
-            ensureServiceAccountPermission(userDriveService, fileId, role);
+            return ensureServiceAccountPermission(userDriveService, fileId, role);
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
                 log.warn(
@@ -237,7 +244,7 @@ public class SheetMigrationService {
         }
     }
 
-    private void ensureServiceAccountPermission(
+    private GoogleDrivePermissionHelper.PermissionApplyStatus ensureServiceAccountPermission(
         Drive userDriveService,
         String fileId,
         String targetRole
@@ -263,18 +270,18 @@ public class SheetMigrationService {
                 fileId,
                 serviceAccountEmail
             );
-            return;
+            return GoogleDrivePermissionHelper.PermissionApplyStatus.CREATED;
         }
 
         String currentRole = existingPermission.getRole();
-        if (roleRank(currentRole) >= roleRank(targetRole)) {
+        if (GoogleDrivePermissionHelper.hasRequiredRole(currentRole, targetRole)) {
             log.info(
                 "Service account permission already satisfies requested role. fileId={}, role={}, email={}",
                 fileId,
                 currentRole,
                 serviceAccountEmail
             );
-            return;
+            return GoogleDrivePermissionHelper.PermissionApplyStatus.UNCHANGED;
         }
 
         Permission updatedPermission = new Permission().setRole(targetRole);
@@ -287,6 +294,7 @@ public class SheetMigrationService {
             targetRole,
             serviceAccountEmail
         );
+        return GoogleDrivePermissionHelper.PermissionApplyStatus.UPGRADED;
     }
 
     private Permission findServiceAccountPermission(
@@ -308,19 +316,6 @@ public class SheetMigrationService {
             .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
             .findFirst()
             .orElse(null);
-    }
-
-    private int roleRank(String role) {
-        if (role == null) {
-            return ROLE_RANK_NONE;
-        }
-
-        return switch (role) {
-            case "reader" -> ROLE_RANK_READER;
-            case "commenter" -> ROLE_RANK_COMMENTER;
-            case "writer", "fileOrganizer", "organizer", "owner" -> ROLE_RANK_WRITER;
-            default -> ROLE_RANK_NONE;
-        };
     }
 
     private void registerDriveRollback(Drive driveService, String fileId) {

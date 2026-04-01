@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpResponseException;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
@@ -84,6 +85,9 @@ public final class GoogleSheetApiExceptionHelper {
 
     private static int getStatusCode(IOException exception) {
         if (exception instanceof GoogleJsonResponseException responseException) {
+            return responseException.getStatusCode();
+        }
+        if (exception instanceof HttpResponseException responseException) {
             return responseException.getStatusCode();
         }
         return -1;
