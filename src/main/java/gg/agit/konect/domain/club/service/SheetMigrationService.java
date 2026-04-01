@@ -95,10 +95,9 @@ public class SheetMigrationService {
         String folderId = resolveFolderId(userDriveService, sourceSpreadsheetUrl, sourceSpreadsheetId);
 
         // 소스 파일에 서비스 계정 reader 권한을 먼저 부여해야 readAllData()가 성공함
-        grantServiceAccountReadAccess(userDriveService, sourceSpreadsheetId);
-        // 트랜잭션 실패 / 완료 후 소스 파일 서비스 계정 권한 제거 (보상 처리)
         GoogleDrivePermissionHelper.PermissionApplyStatus sourcePermissionStatus =
             grantServiceAccountReadAccess(userDriveService, sourceSpreadsheetId);
+        // 트랜잭션 실패 / 완료 후 이번 요청에서 추가한 소스 파일 권한만 정리한다.
         if (sourcePermissionStatus == GoogleDrivePermissionHelper.PermissionApplyStatus.CREATED) {
             registerSourceFilePermissionCleanup(userDriveService, sourceSpreadsheetId);
         }
