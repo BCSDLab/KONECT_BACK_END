@@ -15,24 +15,57 @@ import com.google.api.client.http.HttpResponseException;
 class GoogleSheetApiExceptionHelperTest {
 
     @Test
-    @DisplayName("권한 관련 403 reason만 access denied로 분류한다")
+    @DisplayName("classifies only permission-related 403 reasons as access denied")
     void isAccessDeniedReturnsTrueOnlyForPermissionReasons() {
         GoogleJsonResponseException permissionDenied =
             googleException(403, "insufficientPermissions");
+        GoogleJsonResponseException accessDenied =
+            googleException(403, "accessDenied");
+        GoogleJsonResponseException forbidden =
+            googleException(403, "forbidden");
         GoogleJsonResponseException quotaExceeded =
             googleException(403, "quotaExceeded");
 
         assertThat(GoogleSheetApiExceptionHelper.isAccessDenied(permissionDenied)).isTrue();
+        assertThat(GoogleSheetApiExceptionHelper.isAccessDenied(accessDenied)).isTrue();
+        assertThat(GoogleSheetApiExceptionHelper.isAccessDenied(forbidden)).isTrue();
         assertThat(GoogleSheetApiExceptionHelper.isAccessDenied(quotaExceeded)).isFalse();
     }
 
     @Test
-    @DisplayName("401 auth error는 auth failure로 분류한다")
+    @DisplayName("returns false for 403 responses without a reason")
+    void isAccessDeniedReturnsFalseWhenReasonIsMissing() {
+        GoogleJsonError error = new GoogleJsonError();
+        error.setCode(403);
+        error.setErrors(List.of());
+
+        HttpResponseException.Builder builder = new HttpResponseException.Builder(
+            403,
+            null,
+            new HttpHeaders()
+        );
+
+        GoogleJsonResponseException exception = new GoogleJsonResponseException(builder, error);
+
+        assertThat(GoogleSheetApiExceptionHelper.isAccessDenied(exception)).isFalse();
+    }
+
+    @Test
+    @DisplayName("classifies auth-related 401 as auth failure")
     void isAuthFailureReturnsTrueForAuthReasons() {
         GoogleJsonResponseException authFailure =
             googleException(401, "authError");
 
         assertThat(GoogleSheetApiExceptionHelper.isAuthFailure(authFailure)).isTrue();
+    }
+
+    @Test
+    @DisplayName("classifies 404 as not found")
+    void isNotFoundReturnsTrueFor404() {
+        GoogleJsonResponseException notFound =
+            googleException(404, "notFound");
+
+        assertThat(GoogleSheetApiExceptionHelper.isNotFound(notFound)).isTrue();
     }
 
     private GoogleJsonResponseException googleException(int statusCode, String reason) {

@@ -46,6 +46,10 @@ public class SheetMigrationService {
         Pattern.compile("(?:folders/|id=)([a-zA-Z0-9_-]{20,})");
     private static final String MIME_TYPE_SPREADSHEET =
         "application/vnd.google-apps.spreadsheet";
+    private static final int ROLE_RANK_NONE = 0;
+    private static final int ROLE_RANK_READER = 1;
+    private static final int ROLE_RANK_COMMENTER = 2;
+    private static final int ROLE_RANK_WRITER = 3;
     private static final String NEW_SHEET_TITLE_PREFIX = "KONECT_인명부_";
 
     @Value("${google.sheets.template-spreadsheet-id:}")
@@ -202,20 +206,19 @@ public class SheetMigrationService {
      * 서비스 계정에 지정된 role로 Drive 접근 권한을 부여하는 공통 메서드입니다.
      */
     private void grantServiceAccountPermission(Drive userDriveService, String fileId, String role) {
-        String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
         try {
-            Permission permission = new Permission()
-                .setType("user")
-                .setRole(role)
-                .setEmailAddress(serviceAccountEmail);
-            userDriveService.permissions().create(fileId, permission)
-                .setSendNotificationEmail(false)
-                .execute();
-            log.info(
-                "Service account {} access granted. fileId={}, email={}",
-                role, fileId, serviceAccountEmail
-            );
+            ensureServiceAccountPermission(userDriveService, fileId, role);
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
+                log.warn(
+                    "Google Drive auth failed while granting service account permission. "
+                        + "fileId={}, role={}, cause={}",
+                    fileId,
+                    role,
+                    e.getMessage()
+                );
+                throw CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
+            }
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
                     "Google Sheets access denied while granting service account permission. "
@@ -232,6 +235,92 @@ public class SheetMigrationService {
             );
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
+    }
+
+    private void ensureServiceAccountPermission(
+        Drive userDriveService,
+        String fileId,
+        String targetRole
+    ) throws IOException {
+        String serviceAccountEmail = serviceAccountCredentials.getClientEmail();
+        Permission existingPermission = findServiceAccountPermission(
+            userDriveService,
+            fileId,
+            serviceAccountEmail
+        );
+
+        if (existingPermission == null) {
+            Permission permission = new Permission()
+                .setType("user")
+                .setRole(targetRole)
+                .setEmailAddress(serviceAccountEmail);
+            userDriveService.permissions().create(fileId, permission)
+                .setSendNotificationEmail(false)
+                .execute();
+            log.info(
+                "Service account {} access granted. fileId={}, email={}",
+                targetRole,
+                fileId,
+                serviceAccountEmail
+            );
+            return;
+        }
+
+        String currentRole = existingPermission.getRole();
+        if (roleRank(currentRole) >= roleRank(targetRole)) {
+            log.info(
+                "Service account permission already satisfies requested role. fileId={}, role={}, email={}",
+                fileId,
+                currentRole,
+                serviceAccountEmail
+            );
+            return;
+        }
+
+        Permission updatedPermission = new Permission().setRole(targetRole);
+        userDriveService.permissions().update(fileId, existingPermission.getId(), updatedPermission)
+            .execute();
+        log.info(
+            "Service account permission upgraded. fileId={}, fromRole={}, toRole={}, email={}",
+            fileId,
+            currentRole,
+            targetRole,
+            serviceAccountEmail
+        );
+    }
+
+    private Permission findServiceAccountPermission(
+        Drive userDriveService,
+        String fileId,
+        String serviceAccountEmail
+    ) throws IOException {
+        List<Permission> permissions = userDriveService.permissions().list(fileId)
+            .setFields("permissions(id,type,emailAddress,role)")
+            .execute()
+            .getPermissions();
+
+        if (permissions == null) {
+            return null;
+        }
+
+        return permissions.stream()
+            .filter(permission -> "user".equals(permission.getType()))
+            .filter(permission -> serviceAccountEmail.equals(permission.getEmailAddress()))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private int roleRank(String role) {
+        if (role == null) {
+            return ROLE_RANK_NONE;
+        }
+
+        return switch (role) {
+            case "reader" -> ROLE_RANK_READER;
+            case "commenter" -> ROLE_RANK_COMMENTER;
+            case "writer", "fileOrganizer", "organizer", "owner" -> ROLE_RANK_WRITER;
+            default -> ROLE_RANK_NONE;
+        };
     }
 
     private void registerDriveRollback(Drive driveService, String fileId) {
@@ -330,6 +419,15 @@ public class SheetMigrationService {
         } catch (IOException e) {
             if (newFileId != null) {
                 deleteFile(driveService, newFileId);
+            }
+            if (GoogleSheetApiExceptionHelper.isAuthFailure(e)) {
+                log.warn(
+                    "Google Drive auth failed while copying template. templateId={}, targetFolderId={}, cause={}",
+                    templateId,
+                    targetFolderId,
+                    e.getMessage()
+                );
+                throw CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
             }
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
