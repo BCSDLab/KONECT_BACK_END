@@ -3,7 +3,7 @@ package gg.agit.konect.domain.club.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ClubMemberSheetSyncResponse(
-    @Schema(description = "동기화된 회원 수", example = "42")
+    @Schema(description = "동기화 요청된 회원 및 사전 회원 수", example = "42")
     int syncedMemberCount,
 
     @Schema(
