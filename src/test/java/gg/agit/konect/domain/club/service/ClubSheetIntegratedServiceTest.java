@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -53,8 +54,6 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
             new SheetHeaderMapper.SheetAnalysisResult(SheetColumnMapping.defaultMapping(), null, null);
         SheetImportResponse expected = SheetImportResponse.of(3, 1, List.of("warn"));
 
-        given(googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId))
-            .willReturn(true);
         given(sheetHeaderMapper.analyzeAllSheets(spreadsheetId)).willReturn(analysis);
         given(sheetImportService.importPreMembersFromSheet(
             clubId,
@@ -81,7 +80,7 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
         );
         inOrder.verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
         inOrder.verify(googleSheetPermissionService)
-            .tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
+            .validateRequesterAccessAndTryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
         inOrder.verify(sheetHeaderMapper).analyzeAllSheets(spreadsheetId);
         inOrder.verify(clubMemberSheetService).updateSheetId(
             clubId,
@@ -99,8 +98,8 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("자동 권한 부여가 실패해도 기존 공유 권한으로 가져오기를 계속 시도한다")
-    void analyzeAndImportPreMembersContinuesWhenAutoGrantFails() {
+    @DisplayName("Drive OAuth가 미연결된 경우 검증을 건너뛰고 기존 흐름으로 가져오기를 계속 시도한다")
+    void analyzeAndImportPreMembersContinuesWhenDriveOAuthIsNotConnected() {
         // given
         Integer clubId = 1;
         Integer requesterId = 2;
@@ -111,8 +110,6 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
             new SheetHeaderMapper.SheetAnalysisResult(SheetColumnMapping.defaultMapping(), null, null);
         SheetImportResponse expected = SheetImportResponse.of(1, 0, List.of());
 
-        given(googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId))
-            .willReturn(false);
         given(sheetHeaderMapper.analyzeAllSheets(spreadsheetId)).willReturn(analysis);
         given(sheetImportService.importPreMembersFromSheet(
             clubId,
@@ -139,7 +136,7 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
         );
         inOrder.verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
         inOrder.verify(googleSheetPermissionService)
-            .tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
+            .validateRequesterAccessAndTryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
         inOrder.verify(sheetHeaderMapper).analyzeAllSheets(spreadsheetId);
         inOrder.verify(clubMemberSheetService).updateSheetId(
             clubId,
@@ -167,8 +164,32 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
         String spreadsheetId = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms";
         CustomException expected = CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
 
-        given(googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId))
-            .willThrow(expected);
+        willThrow(expected).given(googleSheetPermissionService)
+            .validateRequesterAccessAndTryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
+
+        // when & then
+        assertThatThrownBy(() -> clubSheetIntegratedService.analyzeAndImportPreMembers(
+            clubId,
+            requesterId,
+            spreadsheetUrl
+        ))
+            .isSameAs(expected);
+        verifyNoInteractions(sheetHeaderMapper, clubMemberSheetService, sheetImportService);
+    }
+
+    @Test
+    @DisplayName("요청자 계정이 시트 접근 권한이 없으면 후속 시트 작업을 진행하지 않는다")
+    void analyzeAndImportPreMembersStopsWhenRequesterHasNoSpreadsheetAccess() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 2;
+        String spreadsheetUrl =
+            "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms/edit";
+        String spreadsheetId = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms";
+        CustomException expected = CustomException.of(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS);
+
+        willThrow(expected).given(googleSheetPermissionService)
+            .validateRequesterAccessAndTryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
 
         // when & then
         assertThatThrownBy(() -> clubSheetIntegratedService.analyzeAndImportPreMembers(

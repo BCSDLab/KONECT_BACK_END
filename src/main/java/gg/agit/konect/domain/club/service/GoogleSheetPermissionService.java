@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.File;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import gg.agit.konect.domain.user.enums.Provider;
@@ -26,6 +27,30 @@ public class GoogleSheetPermissionService {
     private final GoogleSheetsConfig googleSheetsConfig;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
 
+    public void validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
+        Integer requesterId,
+        String spreadsheetId
+    ) {
+        String refreshToken = userOAuthAccountRepository
+            .findByUserIdAndProvider(requesterId, Provider.GOOGLE)
+            .map(account -> account.getGoogleDriveRefreshToken())
+            .filter(StringUtils::hasText)
+            .orElse(null);
+
+        if (refreshToken == null) {
+            log.warn(
+                "Skipping requester Drive access validation because Google Drive OAuth is not connected. "
+                    + "requesterId={}",
+                requesterId
+            );
+            return;
+        }
+
+        Drive userDriveService = buildUserDriveService(refreshToken, requesterId);
+        validateRequesterSpreadsheetAccess(userDriveService, requesterId, spreadsheetId);
+        tryGrantServiceAccountWriterAccess(userDriveService, requesterId, spreadsheetId);
+    }
+
     public boolean tryGrantServiceAccountWriterAccess(Integer requesterId, String spreadsheetId) {
         String refreshToken = userOAuthAccountRepository
             .findByUserIdAndProvider(requesterId, Provider.GOOGLE)
@@ -41,14 +66,15 @@ public class GoogleSheetPermissionService {
             return false;
         }
 
-        Drive userDriveService;
-        try {
-            userDriveService = googleSheetsConfig.buildUserDriveService(refreshToken);
-        } catch (IOException | GeneralSecurityException e) {
-            log.error("Failed to build user Drive service. requesterId={}", requesterId, e);
-            throw CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
-        }
+        Drive userDriveService = buildUserDriveService(refreshToken, requesterId);
+        return tryGrantServiceAccountWriterAccess(userDriveService, requesterId, spreadsheetId);
+    }
 
+    private boolean tryGrantServiceAccountWriterAccess(
+        Drive userDriveService,
+        Integer requesterId,
+        String spreadsheetId
+    ) {
         try {
             GoogleDrivePermissionHelper.ensureServiceAccountPermission(
                 userDriveService,
@@ -83,6 +109,61 @@ public class GoogleSheetPermissionService {
 
             log.error(
                 "Unexpected error while auto-sharing spreadsheet. requesterId={}, spreadsheetId={}",
+                requesterId,
+                spreadsheetId,
+                e
+            );
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
+        }
+    }
+
+    private Drive buildUserDriveService(String refreshToken, Integer requesterId) {
+        try {
+            return googleSheetsConfig.buildUserDriveService(refreshToken);
+        } catch (IOException | GeneralSecurityException e) {
+            log.error("Failed to build user Drive service. requesterId={}", requesterId, e);
+            throw CustomException.of(ApiResponseCode.FAILED_INIT_GOOGLE_DRIVE);
+        }
+    }
+
+    private void validateRequesterSpreadsheetAccess(
+        Drive userDriveService,
+        Integer requesterId,
+        String spreadsheetId
+    ) {
+        try {
+            File file = userDriveService.files().get(spreadsheetId)
+                .setFields("id")
+                .execute();
+            if (file == null || !StringUtils.hasText(file.getId())) {
+                throw GoogleSheetApiExceptionHelper.accessDenied();
+            }
+        } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
+                log.warn(
+                    "Google Drive OAuth token is invalid while validating spreadsheet access. requesterId={}, "
+                        + "spreadsheetId={}, cause={}",
+                    requesterId,
+                    spreadsheetId,
+                    GoogleSheetApiExceptionHelper.extractDetail(e)
+                );
+                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
+            }
+
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)
+                || GoogleSheetApiExceptionHelper.isAuthFailure(e)
+                || GoogleSheetApiExceptionHelper.isNotFound(e)) {
+                log.warn(
+                    "Requester has no spreadsheet access. requesterId={}, spreadsheetId={}, cause={}",
+                    requesterId,
+                    spreadsheetId,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied();
+            }
+
+            log.error(
+                "Unexpected error while validating requester spreadsheet access. requesterId={}, spreadsheetId={}",
                 requesterId,
                 spreadsheetId,
                 e

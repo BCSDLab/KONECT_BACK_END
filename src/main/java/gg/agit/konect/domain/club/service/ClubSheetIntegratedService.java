@@ -23,8 +23,12 @@ public class ClubSheetIntegratedService {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
-        // OAuth 미연결이면 건너뛰고 계속 진행한다. Drive 초기화/인증 오류는 예외로 전파한다.
-        googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
+        // OAuth 미연결이면 기존 동작대로 검증을 건너뛴다.
+        // 다만 Drive OAuth가 연결된 경우에는 요청자 계정의 실제 시트 접근 권한을 먼저 검증한다.
+        googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
+            requesterId,
+            spreadsheetId
+        );
 
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
