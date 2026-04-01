@@ -21,7 +21,8 @@ public class SheetSyncSlackListener {
     public void handleSheetSyncFailed(SheetSyncFailedEvent event) {
         try {
             log.warn(
-                "Handling sheet sync failure event. occurredAt={}, clubId={}, spreadsheetId={}, accessDenied={}, reason={}",
+                "Handling sheet sync failure event. occurredAt={}, clubId={}, spreadsheetId={}, "
+                    + "accessDenied={}, reason={}",
                 event.occurredAt(),
                 event.clubId(),
                 event.spreadsheetId(),
