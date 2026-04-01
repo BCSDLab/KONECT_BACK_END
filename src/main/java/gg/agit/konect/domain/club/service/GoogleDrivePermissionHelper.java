@@ -44,6 +44,12 @@ final class GoogleDrivePermissionHelper {
         String targetRole,
         String serviceAccountEmail
     ) throws IOException {
+        validateTargetRole(targetRole);
+        Permission initialPermission = findServiceAccountPermission(
+            userDriveService,
+            fileId,
+            serviceAccountEmail
+        );
         int attempt = 1;
         while (true) {
             try {
@@ -54,20 +60,25 @@ final class GoogleDrivePermissionHelper {
                     serviceAccountEmail
                 );
             } catch (IOException e) {
-                if (hasRequiredPermission(
+                PermissionApplyStatus recoveredStatus = recoverPermissionApplyStatus(
                     userDriveService,
                     fileId,
                     serviceAccountEmail,
-                    targetRole
-                )) {
+                    targetRole,
+                    initialPermission,
+                    attempt
+                );
+                if (recoveredStatus != null) {
                     log.info(
-                        "Service account permission reached target role after attempt {}. fileId={}, role={}, email={}",
+                        "Service account permission reached target role after attempt {}. "
+                            + "fileId={}, role={}, email={}, status={}",
                         attempt,
                         fileId,
                         targetRole,
-                        serviceAccountEmail
+                        serviceAccountEmail,
+                        recoveredStatus
                     );
-                    return PermissionApplyStatus.UNCHANGED;
+                    return recoveredStatus;
                 }
 
                 if (attempt++ >= PERMISSION_APPLY_MAX_ATTEMPTS) {
@@ -116,6 +127,7 @@ final class GoogleDrivePermissionHelper {
         String targetRole,
         String serviceAccountEmail
     ) throws IOException {
+        validateTargetRole(targetRole);
         Permission existingPermission = findServiceAccountPermission(
             userDriveService,
             fileId,
@@ -164,11 +176,13 @@ final class GoogleDrivePermissionHelper {
         return PermissionApplyStatus.UPGRADED;
     }
 
-    private static boolean hasRequiredPermission(
+    private static PermissionApplyStatus recoverPermissionApplyStatus(
         Drive userDriveService,
         String fileId,
         String serviceAccountEmail,
-        String targetRole
+        String targetRole,
+        Permission initialPermission,
+        int attempt
     ) {
         try {
             Permission currentPermission = findServiceAccountPermission(
@@ -176,16 +190,27 @@ final class GoogleDrivePermissionHelper {
                 fileId,
                 serviceAccountEmail
             );
-            return currentPermission != null
-                && hasRequiredRole(currentPermission.getRole(), targetRole);
+            if (currentPermission == null
+                || !hasRequiredRole(currentPermission.getRole(), targetRole)) {
+                return null;
+            }
+
+            if (initialPermission == null) {
+                return PermissionApplyStatus.CREATED;
+            }
+
+            return hasRequiredRole(initialPermission.getRole(), targetRole)
+                ? PermissionApplyStatus.UNCHANGED
+                : PermissionApplyStatus.UPGRADED;
         } catch (IOException e) {
             log.debug(
-                "Failed to re-check service account permission. fileId={}, email={}, cause={}",
+                "Failed to re-check service account permission after attempt {}. fileId={}, email={}, cause={}",
+                attempt,
                 fileId,
                 serviceAccountEmail,
                 e.getMessage()
             );
-            return false;
+            return null;
         }
     }
 
