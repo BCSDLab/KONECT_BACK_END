@@ -25,6 +25,9 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
     private SheetHeaderMapper sheetHeaderMapper;
 
     @Mock
+    private GoogleSheetPermissionService googleSheetPermissionService;
+
+    @Mock
     private ClubMemberSheetService clubMemberSheetService;
 
     @Mock
@@ -46,6 +49,8 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
             new SheetHeaderMapper.SheetAnalysisResult(SheetColumnMapping.defaultMapping(), null, null);
         SheetImportResponse expected = SheetImportResponse.of(3, 1, List.of("warn"));
 
+        given(googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId))
+            .willReturn(true);
         given(sheetHeaderMapper.analyzeAllSheets(spreadsheetId)).willReturn(analysis);
         given(sheetImportService.importPreMembersFromSheet(
             clubId,
@@ -65,11 +70,14 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
         // then
         InOrder inOrder = inOrder(
             clubPermissionValidator,
+            googleSheetPermissionService,
             sheetHeaderMapper,
             clubMemberSheetService,
             sheetImportService
         );
         inOrder.verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
+        inOrder.verify(googleSheetPermissionService)
+            .tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
         inOrder.verify(sheetHeaderMapper).analyzeAllSheets(spreadsheetId);
         inOrder.verify(clubMemberSheetService).updateSheetId(
             clubId,

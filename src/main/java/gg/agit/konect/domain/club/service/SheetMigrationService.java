@@ -226,6 +226,17 @@ public class SheetMigrationService {
                 role, fileId, serviceAccountEmail
             );
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied while granting service account permission. fileId={}, role={}, cause={}",
+                    fileId,
+                    role,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied(
+                    "fileId=" + fileId + ", role=" + role
+                );
+            }
             log.error(
                 "Failed to grant service account {} access. fileId={}, cause={}",
                 role, fileId, e.getMessage(), e
@@ -328,6 +339,15 @@ public class SheetMigrationService {
             return newFileId;
 
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied while copying template. cause={}",
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied(
+                    "templateId=" + templateId + ", targetFolderId=" + targetFolderId
+                );
+            }
             if (newFileId != null) {
                 deleteFile(driveService, newFileId);
             }
@@ -352,6 +372,16 @@ public class SheetMigrationService {
             return values != null ? values : List.of();
 
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied while reading source data. spreadsheetId={}, cause={}",
+                    spreadsheetId,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied(
+                    "spreadsheetId=" + spreadsheetId
+                );
+            }
             log.error("Failed to read source data. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
@@ -395,6 +425,16 @@ public class SheetMigrationService {
             );
 
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied while writing template data. spreadsheetId={}, cause={}",
+                    newSpreadsheetId,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied(
+                    "spreadsheetId=" + newSpreadsheetId
+                );
+            }
             log.error("Failed to write data to template. cause={}", e.getMessage(), e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }

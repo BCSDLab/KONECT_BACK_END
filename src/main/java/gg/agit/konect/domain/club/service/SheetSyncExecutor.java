@@ -79,6 +79,15 @@ public class SheetSyncExecutor {
             }
             log.info("Sheet sync done. clubId={}, members={}", clubId, members.size());
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied during sheet sync. clubId={}, spreadsheetId={}, cause={}",
+                    clubId,
+                    spreadsheetId,
+                    e.getMessage()
+                );
+                return;
+            }
             log.error(
                 "Sheet sync failed. clubId={}, spreadsheetId={}, cause={}",
                 clubId, spreadsheetId, e.getMessage(), e

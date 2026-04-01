@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 public class ClubSheetIntegratedService {
 
     private final ClubPermissionValidator clubPermissionValidator;
+    private final GoogleSheetPermissionService googleSheetPermissionService;
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ClubMemberSheetService clubMemberSheetService;
     private final SheetImportService sheetImportService;
@@ -22,6 +23,8 @@ public class ClubSheetIntegratedService {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
+        googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
+
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
 

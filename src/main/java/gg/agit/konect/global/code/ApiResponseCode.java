@@ -68,6 +68,8 @@ public enum ApiResponseCode {
     FORBIDDEN_MEMBER_POSITION_CHANGE(HttpStatus.FORBIDDEN, "회원 직책 변경 권한이 없습니다."),
     FORBIDDEN_POSITION_NAME_CHANGE(HttpStatus.FORBIDDEN, "해당 직책의 이름은 변경할 수 없습니다."),
     FORBIDDEN_ROLE_ACCESS(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    FORBIDDEN_GOOGLE_SHEET_ACCESS(HttpStatus.FORBIDDEN,
+        "구글 스프레드시트 접근 권한이 없습니다. 서비스 계정을 공유하거나 Google Drive 권한을 연결한 뒤 다시 시도해 주세요."),
     FORBIDDEN_ORIGIN_ACCESS(HttpStatus.FORBIDDEN, "허용되지 않은 Origin 입니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)

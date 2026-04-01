@@ -19,6 +19,7 @@ import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.infrastructure.claude.config.ClaudeProperties;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +67,8 @@ public class SheetHeaderMapper {
 
         try {
             return inferAllMappings(spreadsheetId, sheets);
+        } catch (CustomException e) {
+            throw e;
         } catch (Exception e) {
             log.warn("Sheet analysis failed, using default. cause={}", e.getMessage());
             return new SheetAnalysisResult(SheetColumnMapping.defaultMapping(), null, null);
@@ -90,6 +93,16 @@ public class SheetHeaderMapper {
             return result;
 
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied while reading spreadsheet info. spreadsheetId={}, cause={}",
+                    spreadsheetId,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied(
+                    "spreadsheetId=" + spreadsheetId
+                );
+            }
             log.error("Failed to read spreadsheet info. spreadsheetId={}", spreadsheetId, e);
             return List.of();
         }
@@ -118,6 +131,17 @@ public class SheetHeaderMapper {
             return rows;
 
         } catch (IOException e) {
+            if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
+                log.warn(
+                    "Google Sheets access denied while reading sheet rows. spreadsheetId={}, sheetTitle={}, cause={}",
+                    spreadsheetId,
+                    sheetTitle,
+                    e.getMessage()
+                );
+                throw GoogleSheetApiExceptionHelper.accessDenied(
+                    "spreadsheetId=" + spreadsheetId + ", sheetTitle=" + sheetTitle
+                );
+            }
             log.warn("Failed to read rows from sheet '{}'. cause={}", sheetTitle, e.getMessage());
             return List.of();
         }

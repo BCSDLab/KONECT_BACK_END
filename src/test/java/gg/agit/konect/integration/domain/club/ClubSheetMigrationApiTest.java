@@ -16,6 +16,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import gg.agit.konect.domain.club.service.ClubSheetIntegratedService;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.IntegrationTestSupport;
 
 class ClubSheetMigrationApiTest extends IntegrationTestSupport {
@@ -55,6 +57,27 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.importedCount").value(2))
                 .andExpect(jsonPath("$.autoRegisteredCount").value(1))
                 .andExpect(jsonPath("$.warnings[0]").value("전화번호 형식 경고"));
+        }
+
+        @Test
+        @DisplayName("구글 스프레드시트 403 오류를 response body로 반환한다")
+        void analyzeAndImportPreMembersForbiddenGoogleSheetAccess() throws Exception {
+            // given
+            given(clubSheetIntegratedService.analyzeAndImportPreMembers(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(SPREADSHEET_URL)
+            )).willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS));
+
+            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
+
+            // when & then
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/integrated", request)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code")
+                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.name()))
+                .andExpect(jsonPath("$.message")
+                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.getMessage()));
         }
     }
 }
