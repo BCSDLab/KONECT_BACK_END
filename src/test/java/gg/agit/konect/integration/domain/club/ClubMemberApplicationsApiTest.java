@@ -272,7 +272,7 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
             // 새로운 질문으로 교체
             oldQuestion.softDelete(LocalDateTime.now());
             persist(oldQuestion);
-            ClubApplyQuestion newQuestion = persist(ClubApplyQuestion.of(club, "신규 질문", true, 1));
+            persist(ClubApplyQuestion.of(club, "신규 질문", true, 1));
             clearPersistenceContext();
 
             mockLoginUser(president.getId());
