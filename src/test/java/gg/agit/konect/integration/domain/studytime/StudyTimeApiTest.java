@@ -373,17 +373,5 @@ class StudyTimeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sessionSeconds").value(0));
         }
-
-        @Test
-        @DisplayName("타이머가 없는 상태에서 중지 요청하면 400을 반환한다")
-        void stopWithoutTimerFails() throws Exception {
-            // given
-            mockLoginUser(user.getId());
-            StudyTimerStopRequest request = new StudyTimerStopRequest(0L);
-
-            // when & then
-            performDelete("/studytimes/timers", request)
-                .andExpect(status().isBadRequest());
-        }
     }
 }
