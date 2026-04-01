@@ -61,7 +61,8 @@ final class GoogleDrivePermissionHelper {
                     targetRole
                 )) {
                     log.info(
-                        "Service account permission reached target role after retry. fileId={}, role={}, email={}",
+                        "Service account permission reached target role after attempt {}. fileId={}, role={}, email={}",
+                        attempt,
                         fileId,
                         targetRole,
                         serviceAccountEmail

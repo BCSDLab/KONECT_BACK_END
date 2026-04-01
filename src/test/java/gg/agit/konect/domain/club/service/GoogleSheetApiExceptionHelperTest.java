@@ -1,8 +1,8 @@
 package gg.agit.konect.domain.club.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.googleException;
 import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.httpResponseException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.List;

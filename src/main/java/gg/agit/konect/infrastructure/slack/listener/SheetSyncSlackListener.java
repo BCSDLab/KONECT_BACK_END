@@ -17,7 +17,7 @@ public class SheetSyncSlackListener {
 
     private final SlackNotificationService slackNotificationService;
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @TransactionalEventListener(phase = AFTER_COMMIT, fallbackExecution = true)
     public void handleSheetSyncFailed(SheetSyncFailedEvent event) {
         try {
             log.warn(

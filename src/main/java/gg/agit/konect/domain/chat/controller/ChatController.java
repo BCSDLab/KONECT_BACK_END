@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
+import gg.agit.konect.domain.chat.dto.ChatInvitableUsersResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
-import gg.agit.konect.domain.chat.dto.ChatInvitableUsersResponse;
+import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
@@ -126,5 +126,24 @@ public class ChatController implements ChatApi {
     ) {
         chatService.leaveChatRoom(userId, chatRoomId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> kickMember(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @PathVariable(value = "targetUserId") Integer targetUserId,
+        @UserId Integer userId
+    ) {
+        chatService.kickMember(userId, chatRoomId, targetUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<ChatRoomResponse> createGroupChatRoom(
+        @Valid @RequestBody ChatRoomCreateRequest.Group request,
+        @UserId Integer userId
+    ) {
+        ChatRoomResponse response = chatService.createGroupChatRoom(userId, request);
+        return ResponseEntity.ok(response);
     }
 }

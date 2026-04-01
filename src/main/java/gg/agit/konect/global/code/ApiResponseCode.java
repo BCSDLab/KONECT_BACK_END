@@ -22,6 +22,9 @@ public enum ApiResponseCode {
         "Google Drive 인증이 만료되었거나 올바르지 않습니다. Drive 권한을 다시 연결해 주세요."),
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
     CANNOT_LEAVE_GROUP_CHAT_ROOM(HttpStatus.BAD_REQUEST, "동아리 채팅방은 나갈 수 없습니다."),
+    CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "자기 자신을 강퇴할 수 없습니다."),
+    CANNOT_KICK_ROOM_OWNER(HttpStatus.BAD_REQUEST, "방장은 강퇴할 수 없습니다."),
+    CANNOT_KICK_IN_NON_GROUP_ROOM(HttpStatus.BAD_REQUEST, "그룹 채팅방에서만 강퇴할 수 있습니다."),
     INVALID_CHAT_ROOM_CREATE_REQUEST(HttpStatus.BAD_REQUEST, "clubId 또는 targetUserId 중 하나만 전달해야 합니다."),
     CANNOT_CHANGE_OWN_POSITION(HttpStatus.BAD_REQUEST, "자기 자신의 직책은 변경할 수 없습니다."),
     CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
@@ -73,6 +76,7 @@ public enum ApiResponseCode {
     FORBIDDEN_GOOGLE_SHEET_ACCESS(HttpStatus.FORBIDDEN,
         "구글 스프레드시트 접근 권한이 없습니다. 서비스 계정을 공유하거나 Google Drive 권한을 연결한 뒤 다시 시도해 주세요."),
     FORBIDDEN_ORIGIN_ACCESS(HttpStatus.FORBIDDEN, "허용되지 않은 Origin 입니다."),
+    FORBIDDEN_CHAT_ROOM_KICK(HttpStatus.FORBIDDEN, "채팅방 방장만 멤버를 강퇴할 수 있습니다."),
 
     // 404 Not Found (리소스를 찾을 수 없음)
     NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 API 경로입니다."),

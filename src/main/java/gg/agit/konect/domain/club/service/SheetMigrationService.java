@@ -388,6 +388,7 @@ public class SheetMigrationService {
         SheetColumnMapping mapping
     ) {
         try {
+            // 이 호출은 서비스 계정 Sheets API를 사용하므로 user OAuth refresh token 기반 invalid_grant는 발생하지 않는다.
             int dataStartRow = mapping.getDataStartRow();
             String range = "A" + dataStartRow + ":Z";
             ValueRange response = googleSheetsService.spreadsheets().values()

@@ -30,6 +30,10 @@ public record ChatRoomSummaryResponse(
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
     LocalDateTime lastSentAt,
 
+    @Schema(description = "채팅방 생성 시간", example = "2025.12.19 23:20", requiredMode = REQUIRED)
+    @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
+    LocalDateTime createdAt,
+
     @Schema(description = "읽지 않은 메시지 수", example = "12", requiredMode = REQUIRED)
     Integer unreadCount,
 

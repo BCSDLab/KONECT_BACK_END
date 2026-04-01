@@ -47,13 +47,11 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("알림 목록을 최신순으로 조회한다")
         void getMyInboxesSuccess() throws Exception {
-            // given
             NotificationInbox first = createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "동아리 승인");
             NotificationInbox second = createInbox(user, NotificationInboxType.CLUB_APPLICATION_REJECTED, "동아리 거절");
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when & then
             performGet("/notifications/inbox")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notifications").isArray())
@@ -66,13 +64,11 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("자신의 알림만 조회된다")
         void getMyInboxesOnlyMine() throws Exception {
-            // given
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "내 알림");
             createInbox(otherUser, NotificationInboxType.CLUB_APPLICATION_APPROVED, "다른 유저 알림");
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when & then
             performGet("/notifications/inbox")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notifications.length()").value(1))
@@ -80,12 +76,27 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("page=0으로 요청하면 400을 반환한다")
-        void getMyInboxesWithInvalidPageFails() throws Exception {
-            // given
+        @DisplayName("채팅 관련 인앱 알림은 목록에서 제외된다")
+        void getMyInboxesExcludesChatNotifications() throws Exception {
+            createInbox(user, NotificationInboxType.CHAT_MESSAGE, "개인 채팅 알림");
+            createInbox(user, NotificationInboxType.GROUP_CHAT_MESSAGE, "그룹 채팅 알림");
+            createInbox(user, NotificationInboxType.UNREAD_CHAT_COUNT, "안 읽은 채팅 개수 알림");
+            createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "동아리 승인 알림");
+            clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when & then
+            performGet("/notifications/inbox")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notifications.length()").value(1))
+                .andExpect(jsonPath("$.notifications[0].type").value("CLUB_APPLICATION_APPROVED"))
+                .andExpect(jsonPath("$.notifications[0].title").value("동아리 승인 알림"));
+        }
+
+        @Test
+        @DisplayName("page=0으로 요청하면 400을 반환한다")
+        void getMyInboxesWithInvalidPageFails() throws Exception {
+            mockLoginUser(user.getId());
+
             performGet("/notifications/inbox?page=0")
                 .andExpect(status().isBadRequest());
         }
@@ -93,10 +104,8 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("알림이 없으면 빈 목록을 반환한다")
         void getMyInboxesWhenEmptyReturnsEmptyList() throws Exception {
-            // given
             mockLoginUser(user.getId());
 
-            // when & then
             performGet("/notifications/inbox")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notifications").isEmpty())
@@ -111,13 +120,11 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("미읽음 알림 개수를 반환한다")
         void getUnreadCountSuccess() throws Exception {
-            // given
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "알림1");
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "알림2");
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when & then
             performGet("/notifications/inbox/unread-count")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.unreadCount").value(2));
@@ -126,13 +133,25 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("알림이 없으면 미읽음 개수가 0이다")
         void getUnreadCountWhenNoneReturnsZero() throws Exception {
-            // given
             mockLoginUser(user.getId());
 
-            // when & then
             performGet("/notifications/inbox/unread-count")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.unreadCount").value(0));
+        }
+
+        @Test
+        @DisplayName("채팅 관련 인앱 알림은 미읽음 개수에서 제외된다")
+        void getUnreadCountExcludesChatNotifications() throws Exception {
+            createInbox(user, NotificationInboxType.CHAT_MESSAGE, "개인 채팅 알림");
+            createInbox(user, NotificationInboxType.GROUP_CHAT_MESSAGE, "그룹 채팅 알림");
+            createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "동아리 승인 알림");
+            clearPersistenceContext();
+            mockLoginUser(user.getId());
+
+            performGet("/notifications/inbox/unread-count")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unreadCount").value(1));
         }
     }
 
@@ -143,12 +162,10 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("알림을 읽음 처리한다")
         void markAsReadSuccess() throws Exception {
-            // given
             NotificationInbox inbox = createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "읽을 알림");
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when & then
             mockMvc.perform(patch("/notifications/inbox/" + inbox.getId() + "/read")
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -164,13 +181,14 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         @Test
         @DisplayName("다른 유저의 알림을 읽음 처리하면 404를 반환한다")
         void markAsReadOtherUserInboxFails() throws Exception {
-            // given
             NotificationInbox otherInbox = createInbox(
-                otherUser, NotificationInboxType.CLUB_APPLICATION_APPROVED, "다른 유저 알림");
+                otherUser,
+                NotificationInboxType.CLUB_APPLICATION_APPROVED,
+                "다른 유저 알림"
+            );
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when & then
             mockMvc.perform(patch("/notifications/inbox/" + otherInbox.getId() + "/read")
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
@@ -183,15 +201,13 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
     class MarkAllAsRead {
 
         @Test
-        @DisplayName("자신의 모든 알림을 읽음 처리한다")
+        @DisplayName("자신의 모든 일반 알림을 읽음 처리한다")
         void markAllAsReadSuccess() throws Exception {
-            // given
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "알림1");
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_SUBMITTED, "알림2");
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when & then
             mockMvc.perform(patch("/notifications/inbox/read-all")
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -202,21 +218,37 @@ class NotificationInboxApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("전체 읽음 처리 후 미읽음 개수가 0이 된다")
-        void markAllAsReadUpdatesUnreadCount() throws Exception {
-            // given
+        @DisplayName("채팅 관련 인앱 알림은 전체 읽음 처리에서 제외된다")
+        void markAllAsReadExcludesChatNotifications() throws Exception {
+            createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "일반 알림");
+            createInbox(user, NotificationInboxType.CHAT_MESSAGE, "채팅 알림");
+            clearPersistenceContext();
+            mockLoginUser(user.getId());
+
+            mockMvc.perform(patch("/notifications/inbox/read-all")
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+            clearPersistenceContext();
+            assertThat(notificationInboxRepository.countByUserIdAndIsReadFalse(user.getId())).isEqualTo(1L);
+            performGet("/notifications/inbox/unread-count")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unreadCount").value(0));
+        }
+
+        @Test
+        @DisplayName("전체 읽음 처리는 다른 유저의 미읽음에 영향을 주지 않는다")
+        void markAllAsReadDoesNotAffectOtherUsersUnreadCount() throws Exception {
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_APPROVED, "알림1");
             createInbox(user, NotificationInboxType.CLUB_APPLICATION_REJECTED, "알림2");
             createInbox(otherUser, NotificationInboxType.CLUB_APPLICATION_APPROVED, "다른 유저 알림");
             clearPersistenceContext();
             mockLoginUser(user.getId());
 
-            // when
             mockMvc.perform(patch("/notifications/inbox/read-all")
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-            // then: 내 알림만 읽음 처리됨
             clearPersistenceContext();
             assertThat(notificationInboxRepository.countByUserIdAndIsReadFalse(user.getId())).isZero();
             assertThat(notificationInboxRepository.countByUserIdAndIsReadFalse(otherUser.getId())).isEqualTo(1L);
