@@ -1339,7 +1339,7 @@ class ChatApiTest extends IntegrationTestSupport {
             mockLoginUser(memberUser.getId());
             performGet("/chats/rooms")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.rooms[?(@.roomId==" + groupRoom.getId() +")]").doesNotExist());
+                .andExpect(jsonPath("$.rooms[?(@.roomId==" + groupRoom.getId() + ")]").doesNotExist());
         }
 
         @Test
