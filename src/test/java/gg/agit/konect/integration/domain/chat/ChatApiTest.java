@@ -1311,14 +1311,15 @@ class ChatApiTest extends IntegrationTestSupport {
         @DisplayName("강퇴된 멤버는 메시지를 보낼 수 없다")
         void kickedMemberCannotSendMessage() throws Exception {
             // given
+            Integer roomId = groupRoom.getId();
             mockLoginUser(ownerUser.getId());
-            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + memberUser.getId())
+            performDelete("/chats/rooms/" + roomId + "/members/" + memberUser.getId())
                 .andExpect(status().isNoContent());
 
             // when & then
             mockLoginUser(memberUser.getId());
             performPost(
-                "/chats/rooms/" + groupRoom.getId() + "/messages",
+                "/chats/rooms/" + roomId + "/messages",
                 new ChatMessageSendRequest("강퇴 후 메시지")
             )
                 .andExpect(status().isForbidden())
