@@ -266,6 +266,7 @@ public class ChatService {
                     room.lastSentAt() != null ? room.lastSentAt() : room.createdAt(),
                 Comparator.reverseOrder()
             )
+        );
 
         return new ChatRoomsSummaryResponse(getAccessibleChatRooms(userId).rooms());
     }
@@ -862,6 +863,7 @@ public class ChatService {
             countUnreadSince(message.getCreatedAt(), sortedReadBaselines),
             true
         );
+    }
 
     private AccessibleChatRooms getAccessibleChatRooms(Integer userId) {
         chatRoomMembershipService.ensureClubRoomMemberships(userId);
@@ -881,7 +883,8 @@ public class ChatService {
         clubRooms.forEach(room -> rooms.add(applyRoomSettings(room, muteMap, customRoomNameMap)));
 
         rooms.sort(
-            Comparator.comparing(ChatRoomSummaryResponse::lastSentAt, Comparator.nullsLast(Comparator.reverseOrder()))
+            Comparator.comparing(ChatRoomSummaryResponse::lastSentAt,
+                    Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(ChatRoomSummaryResponse::roomId)
         );
         return new AccessibleChatRooms(rooms, defaultRoomNameMap);
@@ -899,6 +902,7 @@ public class ChatService {
             room.roomImageUrl(),
             room.lastMessage(),
             room.lastSentAt(),
+            room.createdAt(),
             room.unreadCount(),
             muteMap.getOrDefault(room.roomId(), false)
         );
@@ -1031,7 +1035,8 @@ public class ChatService {
             .collect(Collectors.toMap(ChatRoomMember::getChatRoomId, ChatRoomMember::getCustomRoomName));
     }
 
-    private String resolveRoomName(Integer roomId, String defaultRoomName, Map<Integer, String> customRoomNameMap) {
+    private String resolveRoomName(Integer roomId, String
+        defaultRoomName, Map<Integer, String> customRoomNameMap) {
         return customRoomNameMap.getOrDefault(roomId, defaultRoomName);
     }
 
@@ -1059,12 +1064,6 @@ public class ChatService {
 
         LocalDateTime visibleMessageFrom = visibleMessageFromMap.get(room.roomId());
         return visibleMessageFrom == null || message.getCreatedAt().isAfter(visibleMessageFrom);
-    }
-
-    private record AccessibleChatRooms(
-        List<ChatRoomSummaryResponse> rooms,
-        Map<Integer, String> defaultRoomNameMap
-    ) {
     }
 
     private ChatRoom getDirectRoom(Integer roomId) {
@@ -1537,6 +1536,12 @@ public class ChatService {
         } catch (Exception e) {
             log.warn("Redis presence record failed, continuing: roomId={}, userId={}", roomId, userId, e);
         }
+    }
+
+    private record AccessibleChatRooms(
+        List<ChatRoomSummaryResponse> rooms,
+        Map<Integer, String> defaultRoomNameMap
+    ) {
     }
 
     private record MemberInfo(Integer userId, LocalDateTime createdAt) {
