@@ -28,9 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationInboxService {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
-    private static final Set<NotificationInboxType> CHAT_NOTIFICATION_TYPES = Arrays.stream(NotificationInboxType.values())
-        .filter(NotificationInboxType::isChatRelated)
-        .collect(() -> EnumSet.noneOf(NotificationInboxType.class), Set::add, Set::addAll);
+    private static final Set<NotificationInboxType> CHAT_NOTIFICATION_TYPES =
+        Arrays.stream(NotificationInboxType.values())
+            .filter(NotificationInboxType::isChatRelated)
+            .collect(() -> EnumSet.noneOf(NotificationInboxType.class), Set::add, Set::addAll);
 
     private final NotificationInboxRepository notificationInboxRepository;
     private final UserRepository userRepository;
