@@ -1085,6 +1085,61 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("초대받은 멤버도 그룹 채팅방에 메시지를 전송할 수 있다")
+        void invitedMemberCanSendMessageToGroupChatRoom() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+            Integer roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // when & then - memberA(초대받은 멤버)가 메시지 전송
+            mockLoginUser(memberA.getId());
+            performPost(
+                "/chats/rooms/" + roomId + "/messages",
+                new ChatMessageSendRequest("초대받은 멤버의 메시지")
+            )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.senderId").value(memberA.getId()))
+                .andExpect(jsonPath("$.senderName").value(memberA.getName()))
+                .andExpect(jsonPath("$.content").value("초대받은 멤버의 메시지"))
+                .andExpect(jsonPath("$.isMine").value(true));
+        }
+
+        @Test
+        @DisplayName("같은 유저들로 그룹 채팅방을 여러 개 생성할 수 있다")
+        void createMultipleGroupChatRoomsWithSameUsers() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when - 같은 유저들로 두 번째 그룹방 생성
+            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                List.of(memberA.getId(), memberB.getId())
+            ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatRoomId").isNumber());
+
+            Integer firstRoomId = chatRoomRepository.findGroupRoomsByMemberUserId(normalUser.getId())
+                .stream().findFirst().orElseThrow().getId();
+
+            // when - 같은 유저들로 두 번째 그룹방 생성
+            Integer secondRoomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // then - 서로 다른 방이 생성됨 (DIRECT와 달리 중복 허용)
+            assertThat(secondRoomId).isNotEqualTo(firstRoomId);
+            clearPersistenceContext();
+            assertThat(chatRoomRepository.findGroupRoomsByMemberUserId(normalUser.getId())).hasSize(2);
+        }
+
+        @Test
         @DisplayName("생성된 그룹 채팅방에 메시지를 전송할 수 있다")
         void canSendMessageToCreatedGroupChatRoom() throws Exception {
             // given
@@ -1350,6 +1405,22 @@ class ChatApiTest extends IntegrationTestSupport {
                 .get()
                 .extracting(ChatRoomMember::isOwner)
                 .isEqualTo(true);
+        }
+
+        @Test
+        @DisplayName("방장이 나간 그룹방에서 일반 멤버가 강퇴할 수 없다")
+        void kickFailsAfterOwnerLeaves() throws Exception {
+            // given - 3인 그룹방: owner + memberUser + anotherMember
+            // owner가 나가면 방장이 없는 상태가 됨
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then - 남은 일반 멤버가 다른 멤버를 강퇴 시도
+            mockLoginUser(memberUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + anotherMember.getId())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_KICK"));
         }
     }
 
