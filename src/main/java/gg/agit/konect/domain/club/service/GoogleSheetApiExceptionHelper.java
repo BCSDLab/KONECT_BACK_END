@@ -9,14 +9,17 @@ import gg.agit.konect.global.exception.CustomException;
 
 public final class GoogleSheetApiExceptionHelper {
 
+    private static final int HTTP_STATUS_FORBIDDEN = 403;
+    private static final int HTTP_STATUS_NOT_FOUND = 404;
+
     private GoogleSheetApiExceptionHelper() {}
 
     public static boolean isAccessDenied(IOException exception) {
-        return getStatusCode(exception) == 403;
+        return getStatusCode(exception) == HTTP_STATUS_FORBIDDEN;
     }
 
     public static boolean isNotFound(IOException exception) {
-        return getStatusCode(exception) == 404;
+        return getStatusCode(exception) == HTTP_STATUS_NOT_FOUND;
     }
 
     public static CustomException accessDenied(String detail) {

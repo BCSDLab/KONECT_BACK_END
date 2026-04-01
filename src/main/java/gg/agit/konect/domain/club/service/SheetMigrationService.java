@@ -228,7 +228,8 @@ public class SheetMigrationService {
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
-                    "Google Sheets access denied while granting service account permission. fileId={}, role={}, cause={}",
+                    "Google Sheets access denied while granting service account permission. "
+                        + "fileId={}, role={}, cause={}",
                     fileId,
                     role,
                     e.getMessage()

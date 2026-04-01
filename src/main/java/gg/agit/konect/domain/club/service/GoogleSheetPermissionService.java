@@ -25,6 +25,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GoogleSheetPermissionService {
 
+    private static final int ROLE_RANK_NONE = 0;
+    private static final int ROLE_RANK_READER = 1;
+    private static final int ROLE_RANK_COMMENTER = 2;
+    private static final int ROLE_RANK_WRITER = 3;
+
     private final GoogleCredentials googleCredentials;
     private final GoogleSheetsConfig googleSheetsConfig;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
@@ -162,14 +167,14 @@ public class GoogleSheetPermissionService {
 
     private int roleRank(String role) {
         if (role == null) {
-            return 0;
+            return ROLE_RANK_NONE;
         }
 
         return switch (role) {
-            case "reader" -> 1;
-            case "commenter" -> 2;
-            case "writer", "fileOrganizer", "organizer", "owner" -> 3;
-            default -> 0;
+            case "reader" -> ROLE_RANK_READER;
+            case "commenter" -> ROLE_RANK_COMMENTER;
+            case "writer", "fileOrganizer", "organizer", "owner" -> ROLE_RANK_WRITER;
+            default -> ROLE_RANK_NONE;
         };
     }
 }
