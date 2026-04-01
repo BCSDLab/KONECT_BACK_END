@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,6 +14,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
+import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
+import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
+import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
+import gg.agit.konect.domain.studytime.model.StudyTimeTotal;
+import gg.agit.konect.domain.studytime.model.StudyTimer;
+import gg.agit.konect.domain.studytime.repository.StudyTimeDailyRepository;
+import gg.agit.konect.domain.studytime.repository.StudyTimeMonthlyRepository;
+import gg.agit.konect.domain.studytime.repository.StudyTimeTotalRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimerRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
@@ -24,6 +35,15 @@ class StudyTimeApiTest extends IntegrationTestSupport {
 
     @Autowired
     private StudyTimerRepository studyTimerRepository;
+
+    @Autowired
+    private StudyTimeDailyRepository studyTimeDailyRepository;
+
+    @Autowired
+    private StudyTimeMonthlyRepository studyTimeMonthlyRepository;
+
+    @Autowired
+    private StudyTimeTotalRepository studyTimeTotalRepository;
 
     private University university;
     private User user;
@@ -151,6 +171,215 @@ class StudyTimeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk());
 
             StudyTimerStopRequest request = new StudyTimerStopRequest(MISMATCHED_CLIENT_SECONDS);
+
+            // when & then
+            performDelete("/studytimes/timers", request)
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("타이머 중지 후 시간이 누적된다")
+        void stopTimerAccumulatesTime() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
+
+            StudyTimer timer = studyTimerRepository.getByUserId(user.getId());
+            timer.updateStartedAt(LocalDateTime.now().minusSeconds(5));
+            persist(timer);
+            clearPersistenceContext();
+
+            StudyTimerStopRequest request = new StudyTimerStopRequest(5L);
+
+            // when
+            performDelete("/studytimes/timers", request)
+                .andExpect(status().isOk());
+
+            // then
+            clearPersistenceContext();
+            StudyTimeDaily daily = studyTimeDailyRepository
+                .findByUserIdAndStudyDate(user.getId(), LocalDate.now())
+                .orElse(null);
+            StudyTimeMonthly monthly = studyTimeMonthlyRepository
+                .findByUserIdAndStudyMonth(user.getId(), LocalDate.now().withDayOfMonth(1))
+                .orElse(null);
+            StudyTimeTotal total = studyTimeTotalRepository.findByUserId(user.getId()).orElse(null);
+
+            assertThat(daily).isNotNull();
+            assertThat(daily.getTotalSeconds()).isGreaterThanOrEqualTo(5L);
+            assertThat(monthly).isNotNull();
+            assertThat(monthly.getTotalSeconds()).isGreaterThanOrEqualTo(5L);
+            assertThat(total).isNotNull();
+            assertThat(total.getTotalSeconds()).isGreaterThanOrEqualTo(5L);
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /studytimes/timers/sync - 타이머 동기화")
+    class SyncTimer {
+
+        @Test
+        @DisplayName("타이머를 동기화하면 시간이 누적되고 시작 시간이 갱신된다")
+        void syncTimerAccumulatesTime() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
+
+            StudyTimer timer = studyTimerRepository.getByUserId(user.getId());
+            LocalDateTime originalStartedAt = timer.getStartedAt();
+            timer.updateStartedAt(LocalDateTime.now().minusSeconds(5));
+            persist(timer);
+            clearPersistenceContext();
+
+            StudyTimerSyncRequest request = new StudyTimerSyncRequest(5L);
+
+            // when
+            performPost("/studytimes/timers/sync", request)
+                .andExpect(status().isOk());
+
+            // then
+            clearPersistenceContext();
+            StudyTimer updatedTimer = studyTimerRepository.getByUserId(user.getId());
+            assertThat(updatedTimer.getStartedAt()).isAfter(originalStartedAt);
+
+            StudyTimeDaily daily = studyTimeDailyRepository
+                .findByUserIdAndStudyDate(user.getId(), LocalDate.now())
+                .orElse(null);
+            assertThat(daily).isNotNull();
+            assertThat(daily.getTotalSeconds()).isGreaterThanOrEqualTo(5L);
+        }
+
+        @Test
+        @DisplayName("실행 중인 타이머가 없으면 동기화에 실패한다")
+        void syncTimerWithoutRunningFails() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            StudyTimerSyncRequest request = new StudyTimerSyncRequest(0L);
+
+            // when & then
+            performPost("/studytimes/timers/sync", request)
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("클라이언트 시간과 서버 시간이 크게 차이나면 타이머가 삭제된다")
+        void syncTimerWithTimeMismatchDeletesTimer() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
+
+            StudyTimerSyncRequest request = new StudyTimerSyncRequest(MISMATCHED_CLIENT_SECONDS);
+
+            // when & then
+            performPost("/studytimes/timers/sync", request)
+                .andExpect(status().isBadRequest());
+
+            assertThat(studyTimerRepository.existsByUserId(user.getId())).isFalse();
+        }
+
+        @Test
+        @DisplayName("여러 번 동기화해도 시간이 정확히 누적된다")
+        void multipleSyncAccumulatesCorrectly() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
+
+            // 첫 번째 동기화
+            StudyTimer timer = studyTimerRepository.getByUserId(user.getId());
+            timer.updateStartedAt(LocalDateTime.now().minusSeconds(3));
+            persist(timer);
+            clearPersistenceContext();
+
+            performPost("/studytimes/timers/sync", new StudyTimerSyncRequest(3L))
+                .andExpect(status().isOk());
+
+            // 두 번째 동기화
+            timer = studyTimerRepository.getByUserId(user.getId());
+            timer.updateStartedAt(LocalDateTime.now().minusSeconds(5));
+            persist(timer);
+            clearPersistenceContext();
+
+            performPost("/studytimes/timers/sync", new StudyTimerSyncRequest(5L))
+                .andExpect(status().isOk());
+
+            // then
+            clearPersistenceContext();
+            StudyTimeDaily daily = studyTimeDailyRepository
+                .findByUserIdAndStudyDate(user.getId(), LocalDate.now())
+                .orElse(null);
+            assertThat(daily).isNotNull();
+            assertThat(daily.getTotalSeconds()).isGreaterThanOrEqualTo(8L);
+        }
+    }
+
+    @Nested
+    @DisplayName("타이머 엣지 케이스")
+    class TimerEdgeCases {
+
+        @Test
+        @DisplayName("타이머 시작 후 즉시 중지해도 정상 동작한다")
+        void stopImmediatelyAfterStart() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
+
+            StudyTimerStopRequest request = new StudyTimerStopRequest(0L);
+
+            // when & then
+            performDelete("/studytimes/timers", request)
+                .andExpect(status().isOk());
+
+            assertThat(studyTimerRepository.existsByUserId(user.getId())).isFalse();
+        }
+
+        @Test
+        @DisplayName("타이머 시작 후 3초 이내의 시간 차이는 허용된다")
+        void timerAllowsSmallTimeDifference() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
+
+            StudyTimer timer = studyTimerRepository.getByUserId(user.getId());
+            timer.updateStartedAt(LocalDateTime.now().minusSeconds(1));
+            persist(timer);
+            clearPersistenceContext();
+
+            // 1초 차이는 3초 임계값 이내
+            StudyTimerStopRequest request = new StudyTimerStopRequest(1L);
+
+            // when & then
+            performDelete("/studytimes/timers", request)
+                .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("0초 동안 타이머를 실행해도 정상 동작한다")
+        void timerWithZeroSeconds() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            performPost("/studytimes/timers")
+                .andExpect(status().isOk());
+
+            StudyTimerStopRequest request = new StudyTimerStopRequest(0L);
+
+            // when & then
+            performDelete("/studytimes/timers", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionSeconds").value(0));
+        }
+
+        @Test
+        @DisplayName("타이머가 없는 상태에서 중지 요청하면 400을 반환한다")
+        void stopWithoutTimerFails() throws Exception {
+            // given
+            mockLoginUser(user.getId());
+            StudyTimerStopRequest request = new StudyTimerStopRequest(0L);
 
             // when & then
             performDelete("/studytimes/timers", request)
