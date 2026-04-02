@@ -94,7 +94,8 @@ final class GoogleDrivePermissionHelper {
 
         do {
             Drive.Permissions.List request = driveService.permissions().list(fileId)
-                .setFields(PERMISSION_FIELDS);
+                .setFields(PERMISSION_FIELDS)
+                .setSupportsAllDrives(true);
             if (nextPageToken != null) {
                 request.setPageToken(nextPageToken);
             }
@@ -142,6 +143,7 @@ final class GoogleDrivePermissionHelper {
 
             userDriveService.permissions().create(fileId, permission)
                 .setSendNotificationEmail(false)
+                .setSupportsAllDrives(true)
                 .execute();
             log.info(
                 "Service account {} access granted. fileId={}, email={}",
@@ -165,6 +167,7 @@ final class GoogleDrivePermissionHelper {
 
         Permission updatedPermission = new Permission().setRole(targetRole);
         userDriveService.permissions().update(fileId, existingPermission.getId(), updatedPermission)
+            .setSupportsAllDrives(true)
             .execute();
         log.info(
             "Service account permission upgraded. fileId={}, fromRole={}, toRole={}, email={}",
