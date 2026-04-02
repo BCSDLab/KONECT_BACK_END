@@ -23,8 +23,8 @@ public class ClubSheetIntegratedService {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
-        // OAuth 미연결이면 기존 동작대로 검증을 건너뛴다.
-        // 다만 Drive OAuth가 연결된 경우에는 요청자 계정의 실제 시트 접근 권한을 먼저 검증한다.
+        // integrated 등록은 요청자 Google Drive OAuth 연결을 전제로 한다.
+        // 연결된 계정이 실제 시트 접근 권한을 가지는지 검증한 뒤 서비스 계정 권한을 맞춘다.
         googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
             requesterId,
             spreadsheetId
