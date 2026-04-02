@@ -14,7 +14,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.transaction.TestTransaction;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
@@ -719,10 +721,15 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("참여하지 않은 사용자가 조회하면 403을 반환한다")
         void getMessagesForbidden() throws Exception {
             // given
             ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
             mockLoginUser(outsiderUser.getId());
 
             // when & then
@@ -1327,16 +1334,17 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("강퇴된 멤버는 메시지를 조회할 수 없다")
         void kickedMemberCannotGetMessages() throws Exception {
             // given
             Integer roomId = groupRoom.getId();
-            System.out.println("DEBUG: roomId = " + roomId);
             mockLoginUser(ownerUser.getId());
             performDelete("/chats/rooms/" + roomId + "/members/" + memberUser.getId())
                 .andExpect(status().isNoContent());
 
-            clearPersistenceContext();
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
 
             // when & then
             mockLoginUser(memberUser.getId());
