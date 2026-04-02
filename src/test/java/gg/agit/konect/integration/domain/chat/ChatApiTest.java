@@ -14,7 +14,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.transaction.TestTransaction;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
@@ -719,10 +721,15 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("참여하지 않은 사용자가 조회하면 403을 반환한다")
         void getMessagesForbidden() throws Exception {
             // given
             ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
             mockLoginUser(outsiderUser.getId());
 
             // when & then
@@ -769,7 +776,7 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("개발팀"))
                 .andExpect(jsonPath("$.roomMatches.rooms[0].chatType").value("DIRECT"))
                 .andExpect(jsonPath("$.roomMatches.rooms[1].roomName").value("개발동아리"))
-                .andExpect(jsonPath("$.roomMatches.rooms[1].chatType").value("GROUP"))
+                .andExpect(jsonPath("$.roomMatches.rooms[1].chatType").value("CLUB_GROUP"))
                 .andExpect(jsonPath("$.messageMatches.totalCount").value(0))
                 .andExpect(jsonPath("$.messageMatches.currentCount").value(0));
         }
@@ -956,6 +963,493 @@ class ChatApiTest extends IntegrationTestSupport {
         }
     }
 
+    @Nested
+    @DisplayName("POST /chats/rooms/group - 그룹 채팅방 생성")
+    class CreateGroupChatRoom {
+
+        private User memberA;
+        private User memberB;
+
+        @BeforeEach
+        void setUpGroupChatFixture() {
+            memberA = createUser("멤버A", "2021136002");
+            memberB = createUser("멤버B", "2021136003");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("그룹 채팅방을 생성하면 방장과 멤버가 모두 참여한다")
+        void createGroupChatRoomSuccess() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // then - 채팅방 타입이 GROUP인지 확인
+            clearPersistenceContext();
+            ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow();
+            assertThat(chatRoom.getRoomType()).isEqualTo(ChatType.GROUP);
+
+            // then - 방장(owner) 확인
+            ChatRoomMember ownerMember = chatRoomMemberRepository
+                .findByChatRoomIdAndUserId(roomId, normalUser.getId()).orElseThrow();
+            assertThat(ownerMember.isOwner()).isTrue();
+
+            // then - 일반 멤버 확인
+            ChatRoomMember memberARecord = chatRoomMemberRepository
+                .findByChatRoomIdAndUserId(roomId, memberA.getId()).orElseThrow();
+            assertThat(memberARecord.isOwner()).isFalse();
+
+            ChatRoomMember memberBRecord = chatRoomMemberRepository
+                .findByChatRoomIdAndUserId(roomId, memberB.getId()).orElseThrow();
+            assertThat(memberBRecord.isOwner()).isFalse();
+
+            assertThat(chatRoomMemberRepository.findByChatRoomId(roomId)).hasSize(3);
+        }
+
+        @Test
+        @DisplayName("userIds에 자신만 포함되면 400을 반환한다")
+        void createGroupChatRoomWithSelfOnlyFails() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                List.of(normalUser.getId())
+            ))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_CREATE_CHAT_ROOM_WITH_SELF"));
+        }
+
+        @Test
+        @DisplayName("userIds가 빈 리스트이면 validation 에러를 반환한다")
+        void createGroupChatRoomWithEmptyUserIdsFails() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(List.of()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 userId가 포함되면 404를 반환한다")
+        void createGroupChatRoomWithNonExistentUserFails() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                List.of(memberA.getId(), 99999)
+            ))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND_USER"));
+        }
+
+        @Test
+        @DisplayName("중복 userId는 무시하고 정상 생성한다")
+        void createGroupChatRoomWithDuplicateUserIds() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // then - 멤버 수가 중복 제거된 3명(방장 + A + B)이어야 한다
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomId(roomId)).hasSize(3);
+        }
+
+        @Test
+        @DisplayName("userIds에 자신이 포함되어도 무시하고 정상 생성한다")
+        void createGroupChatRoomWithSelfInUserIds() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(normalUser.getId(), memberA.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // then - 멤버 수가 2명(방장 + A)이어야 한다
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomId(roomId)).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("초대받은 멤버도 그룹 채팅방에 메시지를 전송할 수 있다")
+        void invitedMemberCanSendMessageToGroupChatRoom() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // when & then - memberA(초대받은 멤버)가 메시지 전송
+            mockLoginUser(memberA.getId());
+            performPost(
+                "/chats/rooms/" + roomId + "/messages",
+                new ChatMessageSendRequest("초대받은 멤버의 메시지")
+            )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.senderId").value(memberA.getId()))
+                .andExpect(jsonPath("$.senderName").value(memberA.getName()))
+                .andExpect(jsonPath("$.content").value("초대받은 멤버의 메시지"))
+                .andExpect(jsonPath("$.isMine").value(true));
+        }
+
+        @Test
+        @DisplayName("같은 유저들로 그룹 채팅방을 여러 개 생성할 수 있다")
+        void createMultipleGroupChatRoomsWithSameUsers() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when - 같은 유저들로 첫 번째 그룹방 생성
+            int firstRoomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // when - 같은 유저들로 두 번째 그룹방 생성
+            int secondRoomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // then - 서로 다른 방이 생성됨 (DIRECT와 달리 중복 허용)
+            assertThat(secondRoomId).isNotEqualTo(firstRoomId);
+            clearPersistenceContext();
+            assertThat(chatRoomRepository.findGroupRoomsByMemberUserId(normalUser.getId())).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("생성된 그룹 채팅방에 메시지를 전송할 수 있다")
+        void canSendMessageToCreatedGroupChatRoom() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/group", new ChatRoomCreateRequest.Group(
+                    List.of(memberA.getId(), memberB.getId())
+                ))
+                    .andReturn().getResponse().getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            // when & then
+            performPost(
+                "/chats/rooms/" + roomId + "/messages",
+                new ChatMessageSendRequest("그룹방 첫 메시지")
+            )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messageId").isNumber())
+                .andExpect(jsonPath("$.senderId").value(normalUser.getId()))
+                .andExpect(jsonPath("$.senderName").value(normalUser.getName()))
+                .andExpect(jsonPath("$.content").value("그룹방 첫 메시지"))
+                .andExpect(jsonPath("$.isMine").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /chats/rooms/{chatRoomId}/members/{targetUserId} - 멤버 강퇴")
+    class KickMember {
+
+        private User ownerUser;
+        private User memberUser;
+        private User anotherMember;
+        private ChatRoom groupRoom;
+
+        @BeforeEach
+        void setUpKickFixture() {
+            ownerUser = createUser("방장", "2021136002");
+            memberUser = createUser("멤버", "2021136003");
+            anotherMember = createUser("다른멤버", "2021136004");
+            groupRoom = createGroupChatRoomWithOwner(ownerUser, memberUser, anotherMember);
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("방장이 일반 멤버를 강퇴한다")
+        void kickMemberSuccess() throws Exception {
+            // given
+            mockLoginUser(ownerUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isNoContent());
+
+            // then
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(
+                groupRoom.getId(), memberUser.getId()
+            )).isEmpty();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(
+                groupRoom.getId(), ownerUser.getId()
+            )).isPresent();
+            assertThat(chatRoomMemberRepository.findByChatRoomId(groupRoom.getId())).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("방장이 아닌 멤버가 강퇴하면 403을 반환한다")
+        void kickMemberByNonOwnerFails() throws Exception {
+            // given
+            mockLoginUser(memberUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + anotherMember.getId())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_KICK"));
+        }
+
+        @Test
+        @DisplayName("자기 자신을 강퇴하면 400을 반환한다")
+        void kickSelfFails() throws Exception {
+            // given
+            mockLoginUser(ownerUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + ownerUser.getId())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_KICK_SELF"));
+        }
+
+        @Test
+        @DisplayName("1:1 채팅방에서 강퇴하면 400을 반환한다")
+        void kickInDirectRoomFails() throws Exception {
+            // given
+            ChatRoom directRoom = createDirectChatRoom(ownerUser, memberUser);
+            mockLoginUser(ownerUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + directRoom.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_KICK_IN_NON_GROUP_ROOM"));
+        }
+
+        @Test
+        @DisplayName("동아리 채팅방에서 강퇴하면 400을 반환한다")
+        void kickInClubRoomFails() throws Exception {
+            // given
+            Club club = persist(ClubFixture.create(university));
+            ChatRoom clubRoom = persist(ChatRoom.clubGroupOf(club));
+            addRoomMember(clubRoom, ownerUser);
+            addRoomMember(clubRoom, memberUser);
+            clearPersistenceContext();
+            mockLoginUser(ownerUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + clubRoom.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_KICK_IN_NON_GROUP_ROOM"));
+        }
+
+        @Test
+        @DisplayName("다른 방장(owner) 멤버를 강퇴하면 400을 반환한다")
+        void kickAnotherOwnerFails() throws Exception {
+            // given - 방장 2명인 그룹 방을 수동 생성
+            ChatRoom room = persist(ChatRoom.groupOf());
+            ChatRoom managedRoom = entityManager.getReference(ChatRoom.class, room.getId());
+            User managedOwner = entityManager.getReference(User.class, ownerUser.getId());
+            User managedMember = entityManager.getReference(User.class, memberUser.getId());
+            persist(ChatRoomMember.ofOwner(managedRoom, managedOwner, room.getCreatedAt()));
+            persist(ChatRoomMember.ofOwner(managedRoom, managedMember, room.getCreatedAt()));
+            clearPersistenceContext();
+            mockLoginUser(ownerUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + room.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_KICK_ROOM_OWNER"));
+        }
+
+        @Test
+        @DisplayName("채팅방에 없는 멤버를 강퇴하면 403을 반환한다")
+        void kickNonMemberTargetFails() throws Exception {
+            // given
+            User outsiderUser = createUser("외부인", "2021136005");
+            clearPersistenceContext();
+            mockLoginUser(ownerUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + outsiderUser.getId())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("강퇴된 멤버는 채팅방 이름을 수정할 수 없다")
+        void kickedMemberCannotUpdateRoomName() throws Exception {
+            // given
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then
+            mockLoginUser(memberUser.getId());
+            performPatch(
+                "/chats/rooms/" + groupRoom.getId() + "/name",
+                new ChatRoomNameUpdateRequest("강퇴 후 이름")
+            )
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("강퇴된 멤버는 메시지를 보낼 수 없다")
+        void kickedMemberCannotSendMessage() throws Exception {
+            // given
+            Integer roomId = groupRoom.getId();
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + roomId + "/members/" + memberUser.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then
+            mockLoginUser(memberUser.getId());
+            performPost(
+                "/chats/rooms/" + roomId + "/messages",
+                new ChatMessageSendRequest("강퇴 후 메시지")
+            )
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("강퇴된 멤버는 메시지를 조회할 수 없다")
+        void kickedMemberCannotGetMessages() throws Exception {
+            // given
+            Integer roomId = groupRoom.getId();
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + roomId + "/members/" + memberUser.getId())
+                .andExpect(status().isNoContent());
+
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            // when & then
+            mockLoginUser(memberUser.getId());
+            performGet("/chats/rooms/" + roomId + "?page=1&limit=20")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("강퇴된 멤버의 방 목록에서 해당 방이 제거된다")
+        void kickedMemberRoomRemovedFromList() throws Exception {
+            // given
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then
+            mockLoginUser(memberUser.getId());
+            performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rooms[?(@.roomId==" + groupRoom.getId() + ")]").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 채팅방에서 강퇴하면 404를 반환한다")
+        void kickInNonExistentRoomFails() throws Exception {
+            // given
+            mockLoginUser(ownerUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/99999/members/" + memberUser.getId())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND_CHAT_ROOM"));
+        }
+
+        @Test
+        @DisplayName("채팅방 멤버가 아닌 사용자가 강퇴를 시도하면 403을 반환한다")
+        void kickByOutsiderRequesterFails() throws Exception {
+            // given
+            User outsiderUser = createUser("외부인", "2021136005");
+            clearPersistenceContext();
+            mockLoginUser(outsiderUser.getId());
+
+            // when & then
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("이미 나간 멤버를 강퇴하면 403을 반환한다")
+        void kickAlreadyLeftMemberFails() throws Exception {
+            // given - member leaves the group room
+            mockLoginUser(memberUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then - owner tries to kick the left member
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + memberUser.getId())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("마지막 멤버를 강퇴하면 방에 방장만 남는다")
+        void kickLastMemberLeavesOwnerOnly() throws Exception {
+            // given - room with only owner and one member
+            User soleMember = createUser("유일멤버", "2021136005");
+            ChatRoom twoPersonRoom = createGroupChatRoomWithOwner(ownerUser, soleMember);
+            clearPersistenceContext();
+
+            mockLoginUser(ownerUser.getId());
+
+            // when
+            performDelete("/chats/rooms/" + twoPersonRoom.getId() + "/members/" + soleMember.getId())
+                .andExpect(status().isNoContent());
+
+            // then - only owner remains
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomId(twoPersonRoom.getId())).hasSize(1);
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(twoPersonRoom.getId(), ownerUser.getId()))
+                .isPresent()
+                .get()
+                .extracting(ChatRoomMember::isOwner)
+                .isEqualTo(true);
+        }
+
+        @Test
+        @DisplayName("방장이 나간 그룹방에서 일반 멤버가 강퇴할 수 없다")
+        void kickFailsAfterOwnerLeaves() throws Exception {
+            // given - 3인 그룹방: owner + memberUser + anotherMember
+            // owner가 나가면 방장이 없는 상태가 됨
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then - 남은 일반 멤버가 다른 멤버를 강퇴 시도
+            mockLoginUser(memberUser.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + anotherMember.getId())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_KICK"));
+        }
+    }
+
     private ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
         ChatRoom chatRoom = persist(ChatRoom.directOf());
         LocalDateTime joinedAt = chatRoom.getCreatedAt();
@@ -967,6 +1461,19 @@ class ChatApiTest extends IntegrationTestSupport {
         persist(ChatRoomMember.of(managedChatRoom, managedSecondUser, joinedAt));
         clearPersistenceContext();
         return chatRoom;
+    }
+
+    private ChatRoom createGroupChatRoomWithOwner(User owner, User... members) {
+        ChatRoom groupRoom = persist(ChatRoom.groupOf());
+        ChatRoom managedRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
+        User managedOwner = entityManager.getReference(User.class, owner.getId());
+        persist(ChatRoomMember.ofOwner(managedRoom, managedOwner, groupRoom.getCreatedAt()));
+        for (User member : members) {
+            User managedMember = entityManager.getReference(User.class, member.getId());
+            persist(ChatRoomMember.of(managedRoom, managedMember, groupRoom.getCreatedAt()));
+        }
+        clearPersistenceContext();
+        return groupRoom;
     }
 
     private User createUser(String name, String studentId) {
