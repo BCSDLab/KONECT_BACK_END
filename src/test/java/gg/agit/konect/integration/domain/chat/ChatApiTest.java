@@ -1327,6 +1327,25 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("강퇴된 멤버는 메시지를 조회할 수 없다")
+        void kickedMemberCannotGetMessages() throws Exception {
+            // given
+            Integer roomId = groupRoom.getId();
+            System.out.println("DEBUG: roomId = " + roomId);
+            mockLoginUser(ownerUser.getId());
+            performDelete("/chats/rooms/" + roomId + "/members/" + memberUser.getId())
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+
+            // when & then
+            mockLoginUser(memberUser.getId());
+            performGet("/chats/rooms/" + roomId + "?page=1&limit=20")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
         @DisplayName("강퇴된 멤버의 방 목록에서 해당 방이 제거된다")
         void kickedMemberRoomRemovedFromList() throws Exception {
             // given
