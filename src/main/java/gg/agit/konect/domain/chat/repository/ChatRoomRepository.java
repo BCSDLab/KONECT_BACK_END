@@ -172,6 +172,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         JOIN User u ON u.id = crm.id.userId
         JOIN ChatRoomMember adminCrm ON adminCrm.id.chatRoomId = cr.id
             AND adminCrm.id.userId = :systemAdminId
+            AND adminCrm.leftAt IS NULL
         LEFT JOIN ChatMessage cm ON cm.chatRoom.id = cr.id
             AND cm.sender.id <> :systemAdminId
             AND cm.createdAt > adminCrm.lastReadAt
