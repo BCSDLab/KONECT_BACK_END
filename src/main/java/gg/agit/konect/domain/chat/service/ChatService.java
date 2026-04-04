@@ -268,7 +268,7 @@ public class ChatService {
             )
         );
 
-        return new ChatRoomsSummaryResponse(getAccessibleChatRooms(userId).rooms());
+        return new ChatRoomsSummaryResponse(rooms);
     }
 
     public ChatSearchResponse searchChats(Integer userId, String keyword, Integer page, Integer limit) {
