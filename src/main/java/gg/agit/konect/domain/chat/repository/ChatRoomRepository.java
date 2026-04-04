@@ -170,14 +170,16 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         FROM ChatRoom cr
         JOIN ChatRoomMember crm ON crm.id.chatRoomId = cr.id
         JOIN User u ON u.id = crm.id.userId
-        JOIN ChatRoomMember adminCrm ON adminCrm.id.chatRoomId = cr.id
-            AND adminCrm.id.userId = :systemAdminId
-            AND adminCrm.leftAt IS NULL
+        JOIN ChatRoomMember systemAdminCrm ON systemAdminCrm.id.chatRoomId = cr.id
+            AND systemAdminCrm.id.userId = :systemAdminId
+        LEFT JOIN ChatRoomMember viewerAdminCrm ON viewerAdminCrm.id.chatRoomId = cr.id
+            AND viewerAdminCrm.id.userId = :viewerAdminId
         LEFT JOIN ChatMessage cm ON cm.chatRoom.id = cr.id
             AND cm.sender.id <> :systemAdminId
-            AND cm.createdAt > adminCrm.lastReadAt
+            AND cm.createdAt > systemAdminCrm.lastReadAt
         WHERE cr.roomType = :roomType
           AND u.role != :adminRole
+          AND (viewerAdminCrm.leftAt IS NULL OR viewerAdminCrm.id.userId IS NULL)
           AND EXISTS (
               SELECT 1 FROM ChatMessage userReply
               JOIN userReply.sender userSender
@@ -189,6 +191,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
         """)
     List<AdminChatRoomProjection> findAdminChatRoomsOptimized(
         @Param("systemAdminId") Integer systemAdminId,
+        @Param("viewerAdminId") Integer viewerAdminId,
         @Param("adminRole") UserRole adminRole,
         @Param("roomType") ChatType roomType
     );

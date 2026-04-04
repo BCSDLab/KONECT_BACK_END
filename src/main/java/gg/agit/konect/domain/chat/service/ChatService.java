@@ -482,7 +482,7 @@ public class ChatService {
         User user = userRepository.getById(userId);
 
         if (user.getRole() == UserRole.ADMIN) {
-            return getAdminDirectChatRooms();
+            return getAdminDirectChatRooms(userId);
         }
 
         List<ChatRoomSummaryResponse> roomSummaries = new ArrayList<>();
@@ -525,9 +525,9 @@ public class ChatService {
         return roomSummaries;
     }
 
-    private List<ChatRoomSummaryResponse> getAdminDirectChatRooms() {
+    private List<ChatRoomSummaryResponse> getAdminDirectChatRooms(Integer adminUserId) {
         List<AdminChatRoomProjection> projections = chatRoomRepository.findAdminChatRoomsOptimized(
-            SYSTEM_ADMIN_ID, UserRole.ADMIN, ChatType.DIRECT
+            SYSTEM_ADMIN_ID, adminUserId, UserRole.ADMIN, ChatType.DIRECT
         );
 
         return projections.stream()
