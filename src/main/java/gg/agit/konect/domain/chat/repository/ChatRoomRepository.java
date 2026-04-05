@@ -179,7 +179,14 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
             AND cm.createdAt > systemAdminCrm.lastReadAt
         WHERE cr.roomType = :roomType
           AND u.role != :adminRole
-          AND (viewerAdminCrm.leftAt IS NULL OR viewerAdminCrm.id.userId IS NULL)
+          AND (
+              viewerAdminCrm.leftAt IS NULL
+              OR viewerAdminCrm.id.userId IS NULL
+              OR (
+                  viewerAdminCrm.leftAt IS NOT NULL
+                  AND cr.lastMessageSentAt > viewerAdminCrm.visibleMessageFrom
+              )
+          )
           AND EXISTS (
               SELECT 1 FROM ChatMessage userReply
               JOIN userReply.sender userSender
