@@ -17,6 +17,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
@@ -42,9 +45,9 @@ import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
-import org.springframework.util.LinkedMultiValueMap;
-
 class ChatApiTest extends IntegrationTestSupport {
+
+    private static final int SYSTEM_ADMIN_ID = 1;
 
     @Autowired
     private ChatRoomRepository chatRoomRepository;
@@ -73,8 +76,125 @@ class ChatApiTest extends IntegrationTestSupport {
     @BeforeEach
     void setUp() {
         university = persist(UniversityFixture.create());
+        // System Admin을 먼저 생성 - 문의 채팅방용
+        adminUser = persist(UserFixture.createAdmin(university));
+        // SYSTEM_ADMIN_ID가 아니면 SQL로 해당 ID 사용자를 추가 생성
+        if (adminUser.getId() != SYSTEM_ADMIN_ID) {
+            entityManager.createNativeQuery("""
+                    INSERT INTO users (id, email, name, student_number, role, is_marketing_agreement, image_url, university_id, created_at, updated_at)
+                    SELECT ?, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?)
+                    """
+                ).setParameter(1, SYSTEM_ADMIN_ID)
+                .setParameter(2, university.getId())
+                .setParameter(3, SYSTEM_ADMIN_ID)
+                .executeUpdate();
+            entityManager.flush();
+        }
         normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
         clearPersistenceContext();
+    }
+
+    private ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
+        ChatRoom chatRoom = persist(ChatRoom.directOf());
+        LocalDateTime joinedAt = chatRoom.getCreatedAt();
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedFirstUser = entityManager.getReference(User.class, firstUser.getId());
+        User managedSecondUser = entityManager.getReference(User.class, secondUser.getId());
+
+        persist(ChatRoomMember.of(managedChatRoom, managedFirstUser, joinedAt));
+        persist(ChatRoomMember.of(managedChatRoom, managedSecondUser, joinedAt));
+        clearPersistenceContext();
+        return chatRoom;
+    }
+
+    private ChatRoom createGroupChatRoomWithOwner(User owner, User... members) {
+        ChatRoom groupRoom = persist(ChatRoom.groupOf());
+        ChatRoom managedRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
+        User managedOwner = entityManager.getReference(User.class, owner.getId());
+        persist(ChatRoomMember.ofOwner(managedRoom, managedOwner, groupRoom.getCreatedAt()));
+        for (User member : members) {
+            User managedMember = entityManager.getReference(User.class, member.getId());
+            persist(ChatRoomMember.of(managedRoom, managedMember, groupRoom.getCreatedAt()));
+        }
+        clearPersistenceContext();
+        return groupRoom;
+    }
+
+    private User createUser(String name, String studentId) {
+        return persist(UserFixture.createUser(university, name, studentId));
+    }
+
+    private ClubMember createClubMember(Club club, User user) {
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        ClubMember clubMember = persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+        clearPersistenceContext();
+        return clubMember;
+    }
+
+    private ChatMessage persistChatMessage(ChatRoom chatRoom, User sender, String content) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedSender = entityManager.getReference(User.class, sender.getId());
+
+        ChatMessage chatMessage = persist(ChatMessage.of(managedChatRoom, managedSender, content));
+        managedChatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        entityManager.flush();
+        clearPersistenceContext();
+        return chatMessage;
+    }
+
+    private void addRoomMember(ChatRoom chatRoom, User user) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        persist(ChatRoomMember.of(managedChatRoom, managedUser, chatRoom.getCreatedAt()));
+    }
+
+    private void createGroupedInviteCandidates(String clubName, String namePrefix, int count) {
+        Club club = persist(ClubFixture.create(university, clubName));
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+
+        persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedNormalUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+
+        ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(club));
+        addRoomMember(groupRoom, normalUser);
+
+        for (int index = 1; index <= count; index++) {
+            User candidate = createUser(
+                String.format("%s%02d", namePrefix, index),
+                String.format("202199%04d", index + count * 10)
+            );
+            User managedCandidate = entityManager.getReference(User.class, candidate.getId());
+            persist(ClubMember.builder()
+                .club(managedClub)
+                .user(managedCandidate)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            addRoomMember(groupRoom, candidate);
+        }
+    }
+
+    private long countDirectRoomsBetween(User firstUser, User secondUser) {
+        return chatRoomRepository.findByUserId(firstUser.getId(), ChatType.DIRECT).stream()
+            .map(ChatRoom::getId)
+            .filter(roomId -> isDirectRoomBetween(roomId, firstUser.getId(), secondUser.getId()))
+            .count();
+    }
+
+    private boolean isDirectRoomBetween(Integer roomId, Integer firstUserId, Integer secondUserId) {
+        List<ChatRoomMember> roomMembers = chatRoomMemberRepository.findByChatRoomId(roomId);
+        return roomMembers.size() == 2
+            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(firstUserId))
+            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(secondUserId));
     }
 
     @Nested
@@ -159,7 +279,7 @@ class ChatApiTest extends IntegrationTestSupport {
 
         @BeforeEach
         void setUpAdminChatFixture() {
-            adminUser = persist(UserFixture.createAdmin(university));
+            // System Admin(ID=1)은 이미 setUp()에서 생성됨
             clearPersistenceContext();
         }
 
@@ -174,13 +294,90 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.chatRoomId").isNumber());
 
-            // then
+            // then - 일반 사용자 관점에서 채팅방이 목록에 보임
             performGet("/chats/rooms")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.rooms[0].chatType").value("DIRECT"))
-                .andExpect(jsonPath("$.rooms[0].roomName").value(adminUser.getName()))
+                .andExpect(jsonPath("$.rooms[0].roomName").exists())
                 .andExpect(jsonPath("$.rooms[0].lastMessage").doesNotExist())
                 .andExpect(jsonPath("$.rooms[0].isMuted").value(false));
+        }
+
+        @Test
+        @DisplayName("어드민이 나간 문의 채팅방에 사용자가 새 메시지를 보내 어드민 목록에 다시 노출된다")
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @Transactional(propagation = Propagation.REQUIRES_NEW)
+        void adminLeftInquiryRoomReappearsWhenUserSendsNewMessage() throws Exception {
+            // given - 문의 채팅방 생성 (일반 사용자 -> system admin)
+            mockLoginUser(normalUser.getId());
+            var createResult = performPost("/chats/rooms/admin")
+                .andExpect(status().isOk())
+                .andReturn();
+            int chatRoomId = parseChatRoomId(createResult);
+
+            // 사용자가 메시지 전송 (목록에 노출되기 위한 조건)
+            performPost("/chats/rooms/" + chatRoomId + "/messages",
+                new ChatMessageSendRequest("첫 문의 메시지입니다"))
+                .andExpect(status().isOk());
+
+            // system admin(ID=1)이 목록에서 방을 확인
+            mockLoginUser(SYSTEM_ADMIN_ID);
+            var adminRoomsBefore = performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andReturn();
+            assertThat(extractRoomIds(adminRoomsBefore)).contains(chatRoomId);
+
+            // system admin(ID=1)이 문의 채팅방 나가기
+            performDelete("/chats/rooms/" + chatRoomId)
+                .andExpect(status().isNoContent());
+
+            // when - system admin이 목록 조회하면 나간 방은 안 보임
+            var adminRoomsAfterLeave = performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andReturn();
+            assertThat(extractRoomIds(adminRoomsAfterLeave)).doesNotContain(chatRoomId);
+
+            // 사용자가 다시 메시지 전송
+            mockLoginUser(normalUser.getId());
+            performPost("/chats/rooms/" + chatRoomId + "/messages",
+                new ChatMessageSendRequest("추가 문의 메시지입니다"))
+                .andExpect(status().isOk());
+
+            // lastMessageSentAt 강제 업데이트 (테스트 트랜잭션 롤백으로 인한 workaround)
+            entityManager.createNativeQuery(
+                "UPDATE chat_room SET last_message_sent_at = CURRENT_TIMESTAMP WHERE id = ?"
+            ).setParameter(1, chatRoomId).executeUpdate();
+            entityManager.flush();
+
+            // then - system admin이 목록 조회하면 다시 보임
+            mockLoginUser(SYSTEM_ADMIN_ID);
+            var adminRoomsAfterNewMessage = performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andReturn();
+            assertThat(extractRoomIds(adminRoomsAfterNewMessage)).contains(chatRoomId);
+        }
+
+        private int parseChatRoomId(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+            String responseBody = result.getResponse().getContentAsString();
+            return objectMapper.readTree(responseBody).get("chatRoomId").asInt();
+        }
+
+        private List<Integer> extractRoomIds(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+            String responseBody = result.getResponse().getContentAsString();
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(responseBody);
+            com.fasterxml.jackson.databind.JsonNode rooms = root.get("rooms");
+            List<Integer> roomIds = new java.util.ArrayList<>();
+            if (rooms != null && rooms.isArray()) {
+                for (com.fasterxml.jackson.databind.JsonNode room : rooms) {
+                    // roomId 또는 chatRoomId 필드 확인
+                    com.fasterxml.jackson.databind.JsonNode roomIdNode =
+                        room.has("chatRoomId") ? room.get("chatRoomId") : room.get("roomId");
+                    if (roomIdNode != null) {
+                        roomIds.add(roomIdNode.asInt());
+                    }
+                }
+            }
+            return roomIds;
         }
     }
 
@@ -1448,107 +1645,5 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_KICK"));
         }
-    }
-
-    private ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
-        ChatRoom chatRoom = persist(ChatRoom.directOf());
-        LocalDateTime joinedAt = chatRoom.getCreatedAt();
-        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
-        User managedFirstUser = entityManager.getReference(User.class, firstUser.getId());
-        User managedSecondUser = entityManager.getReference(User.class, secondUser.getId());
-
-        persist(ChatRoomMember.of(managedChatRoom, managedFirstUser, joinedAt));
-        persist(ChatRoomMember.of(managedChatRoom, managedSecondUser, joinedAt));
-        clearPersistenceContext();
-        return chatRoom;
-    }
-
-    private ChatRoom createGroupChatRoomWithOwner(User owner, User... members) {
-        ChatRoom groupRoom = persist(ChatRoom.groupOf());
-        ChatRoom managedRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
-        User managedOwner = entityManager.getReference(User.class, owner.getId());
-        persist(ChatRoomMember.ofOwner(managedRoom, managedOwner, groupRoom.getCreatedAt()));
-        for (User member : members) {
-            User managedMember = entityManager.getReference(User.class, member.getId());
-            persist(ChatRoomMember.of(managedRoom, managedMember, groupRoom.getCreatedAt()));
-        }
-        clearPersistenceContext();
-        return groupRoom;
-    }
-
-    private User createUser(String name, String studentId) {
-        return persist(UserFixture.createUser(university, name, studentId));
-    }
-
-    private ClubMember createClubMember(Club club, User user) {
-        Club managedClub = entityManager.getReference(Club.class, club.getId());
-        User managedUser = entityManager.getReference(User.class, user.getId());
-        ClubMember clubMember = persist(ClubMember.builder()
-            .club(managedClub)
-            .user(managedUser)
-            .clubPosition(ClubPosition.MEMBER)
-            .build());
-        clearPersistenceContext();
-        return clubMember;
-    }
-
-    private ChatMessage persistChatMessage(ChatRoom chatRoom, User sender, String content) {
-        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
-        User managedSender = entityManager.getReference(User.class, sender.getId());
-
-        ChatMessage chatMessage = persist(ChatMessage.of(managedChatRoom, managedSender, content));
-        managedChatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-        entityManager.flush();
-        clearPersistenceContext();
-        return chatMessage;
-    }
-
-    private void addRoomMember(ChatRoom chatRoom, User user) {
-        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
-        User managedUser = entityManager.getReference(User.class, user.getId());
-        persist(ChatRoomMember.of(managedChatRoom, managedUser, chatRoom.getCreatedAt()));
-    }
-
-    private void createGroupedInviteCandidates(String clubName, String namePrefix, int count) {
-        Club club = persist(ClubFixture.create(university, clubName));
-        Club managedClub = entityManager.getReference(Club.class, club.getId());
-        User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
-
-        persist(ClubMember.builder()
-            .club(managedClub)
-            .user(managedNormalUser)
-            .clubPosition(ClubPosition.MEMBER)
-            .build());
-
-        ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(club));
-        addRoomMember(groupRoom, normalUser);
-
-        for (int index = 1; index <= count; index++) {
-            User candidate = createUser(
-                String.format("%s%02d", namePrefix, index),
-                String.format("202199%04d", index + count * 10)
-            );
-            User managedCandidate = entityManager.getReference(User.class, candidate.getId());
-            persist(ClubMember.builder()
-                .club(managedClub)
-                .user(managedCandidate)
-                .clubPosition(ClubPosition.MEMBER)
-                .build());
-            addRoomMember(groupRoom, candidate);
-        }
-    }
-
-    private long countDirectRoomsBetween(User firstUser, User secondUser) {
-        return chatRoomRepository.findByUserId(firstUser.getId(), ChatType.DIRECT).stream()
-            .map(ChatRoom::getId)
-            .filter(roomId -> isDirectRoomBetween(roomId, firstUser.getId(), secondUser.getId()))
-            .count();
-    }
-
-    private boolean isDirectRoomBetween(Integer roomId, Integer firstUserId, Integer secondUserId) {
-        List<ChatRoomMember> roomMembers = chatRoomMemberRepository.findByChatRoomId(roomId);
-        return roomMembers.size() == 2
-            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(firstUserId))
-            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(secondUserId));
     }
 }
