@@ -19,7 +19,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
@@ -44,8 +44,6 @@ import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
-
-import org.springframework.util.LinkedMultiValueMap;
 
 class ChatApiTest extends IntegrationTestSupport {
 
@@ -91,6 +89,108 @@ class ChatApiTest extends IntegrationTestSupport {
         }
         normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
         clearPersistenceContext();
+    }
+
+    private ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
+        ChatRoom chatRoom = persist(ChatRoom.directOf());
+        LocalDateTime joinedAt = chatRoom.getCreatedAt();
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedFirstUser = entityManager.getReference(User.class, firstUser.getId());
+        User managedSecondUser = entityManager.getReference(User.class, secondUser.getId());
+
+        persist(ChatRoomMember.of(managedChatRoom, managedFirstUser, joinedAt));
+        persist(ChatRoomMember.of(managedChatRoom, managedSecondUser, joinedAt));
+        clearPersistenceContext();
+        return chatRoom;
+    }
+
+    private ChatRoom createGroupChatRoomWithOwner(User owner, User... members) {
+        ChatRoom groupRoom = persist(ChatRoom.groupOf());
+        ChatRoom managedRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
+        User managedOwner = entityManager.getReference(User.class, owner.getId());
+        persist(ChatRoomMember.ofOwner(managedRoom, managedOwner, groupRoom.getCreatedAt()));
+        for (User member : members) {
+            User managedMember = entityManager.getReference(User.class, member.getId());
+            persist(ChatRoomMember.of(managedRoom, managedMember, groupRoom.getCreatedAt()));
+        }
+        clearPersistenceContext();
+        return groupRoom;
+    }
+
+    private User createUser(String name, String studentId) {
+        return persist(UserFixture.createUser(university, name, studentId));
+    }
+
+    private ClubMember createClubMember(Club club, User user) {
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        ClubMember clubMember = persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+        clearPersistenceContext();
+        return clubMember;
+    }
+
+    private ChatMessage persistChatMessage(ChatRoom chatRoom, User sender, String content) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedSender = entityManager.getReference(User.class, sender.getId());
+
+        ChatMessage chatMessage = persist(ChatMessage.of(managedChatRoom, managedSender, content));
+        managedChatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        entityManager.flush();
+        clearPersistenceContext();
+        return chatMessage;
+    }
+
+    private void addRoomMember(ChatRoom chatRoom, User user) {
+        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
+        User managedUser = entityManager.getReference(User.class, user.getId());
+        persist(ChatRoomMember.of(managedChatRoom, managedUser, chatRoom.getCreatedAt()));
+    }
+
+    private void createGroupedInviteCandidates(String clubName, String namePrefix, int count) {
+        Club club = persist(ClubFixture.create(university, clubName));
+        Club managedClub = entityManager.getReference(Club.class, club.getId());
+        User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
+
+        persist(ClubMember.builder()
+            .club(managedClub)
+            .user(managedNormalUser)
+            .clubPosition(ClubPosition.MEMBER)
+            .build());
+
+        ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(club));
+        addRoomMember(groupRoom, normalUser);
+
+        for (int index = 1; index <= count; index++) {
+            User candidate = createUser(
+                String.format("%s%02d", namePrefix, index),
+                String.format("202199%04d", index + count * 10)
+            );
+            User managedCandidate = entityManager.getReference(User.class, candidate.getId());
+            persist(ClubMember.builder()
+                .club(managedClub)
+                .user(managedCandidate)
+                .clubPosition(ClubPosition.MEMBER)
+                .build());
+            addRoomMember(groupRoom, candidate);
+        }
+    }
+
+    private long countDirectRoomsBetween(User firstUser, User secondUser) {
+        return chatRoomRepository.findByUserId(firstUser.getId(), ChatType.DIRECT).stream()
+            .map(ChatRoom::getId)
+            .filter(roomId -> isDirectRoomBetween(roomId, firstUser.getId(), secondUser.getId()))
+            .count();
+    }
+
+    private boolean isDirectRoomBetween(Integer roomId, Integer firstUserId, Integer secondUserId) {
+        List<ChatRoomMember> roomMembers = chatRoomMemberRepository.findByChatRoomId(roomId);
+        return roomMembers.size() == 2
+            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(firstUserId))
+            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(secondUserId));
     }
 
     @Nested
@@ -1541,107 +1641,5 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_KICK"));
         }
-    }
-
-    private ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
-        ChatRoom chatRoom = persist(ChatRoom.directOf());
-        LocalDateTime joinedAt = chatRoom.getCreatedAt();
-        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
-        User managedFirstUser = entityManager.getReference(User.class, firstUser.getId());
-        User managedSecondUser = entityManager.getReference(User.class, secondUser.getId());
-
-        persist(ChatRoomMember.of(managedChatRoom, managedFirstUser, joinedAt));
-        persist(ChatRoomMember.of(managedChatRoom, managedSecondUser, joinedAt));
-        clearPersistenceContext();
-        return chatRoom;
-    }
-
-    private ChatRoom createGroupChatRoomWithOwner(User owner, User... members) {
-        ChatRoom groupRoom = persist(ChatRoom.groupOf());
-        ChatRoom managedRoom = entityManager.getReference(ChatRoom.class, groupRoom.getId());
-        User managedOwner = entityManager.getReference(User.class, owner.getId());
-        persist(ChatRoomMember.ofOwner(managedRoom, managedOwner, groupRoom.getCreatedAt()));
-        for (User member : members) {
-            User managedMember = entityManager.getReference(User.class, member.getId());
-            persist(ChatRoomMember.of(managedRoom, managedMember, groupRoom.getCreatedAt()));
-        }
-        clearPersistenceContext();
-        return groupRoom;
-    }
-
-    private User createUser(String name, String studentId) {
-        return persist(UserFixture.createUser(university, name, studentId));
-    }
-
-    private ClubMember createClubMember(Club club, User user) {
-        Club managedClub = entityManager.getReference(Club.class, club.getId());
-        User managedUser = entityManager.getReference(User.class, user.getId());
-        ClubMember clubMember = persist(ClubMember.builder()
-            .club(managedClub)
-            .user(managedUser)
-            .clubPosition(ClubPosition.MEMBER)
-            .build());
-        clearPersistenceContext();
-        return clubMember;
-    }
-
-    private ChatMessage persistChatMessage(ChatRoom chatRoom, User sender, String content) {
-        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
-        User managedSender = entityManager.getReference(User.class, sender.getId());
-
-        ChatMessage chatMessage = persist(ChatMessage.of(managedChatRoom, managedSender, content));
-        managedChatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-        entityManager.flush();
-        clearPersistenceContext();
-        return chatMessage;
-    }
-
-    private void addRoomMember(ChatRoom chatRoom, User user) {
-        ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
-        User managedUser = entityManager.getReference(User.class, user.getId());
-        persist(ChatRoomMember.of(managedChatRoom, managedUser, chatRoom.getCreatedAt()));
-    }
-
-    private void createGroupedInviteCandidates(String clubName, String namePrefix, int count) {
-        Club club = persist(ClubFixture.create(university, clubName));
-        Club managedClub = entityManager.getReference(Club.class, club.getId());
-        User managedNormalUser = entityManager.getReference(User.class, normalUser.getId());
-
-        persist(ClubMember.builder()
-            .club(managedClub)
-            .user(managedNormalUser)
-            .clubPosition(ClubPosition.MEMBER)
-            .build());
-
-        ChatRoom groupRoom = persist(ChatRoom.clubGroupOf(club));
-        addRoomMember(groupRoom, normalUser);
-
-        for (int index = 1; index <= count; index++) {
-            User candidate = createUser(
-                String.format("%s%02d", namePrefix, index),
-                String.format("202199%04d", index + count * 10)
-            );
-            User managedCandidate = entityManager.getReference(User.class, candidate.getId());
-            persist(ClubMember.builder()
-                .club(managedClub)
-                .user(managedCandidate)
-                .clubPosition(ClubPosition.MEMBER)
-                .build());
-            addRoomMember(groupRoom, candidate);
-        }
-    }
-
-    private long countDirectRoomsBetween(User firstUser, User secondUser) {
-        return chatRoomRepository.findByUserId(firstUser.getId(), ChatType.DIRECT).stream()
-            .map(ChatRoom::getId)
-            .filter(roomId -> isDirectRoomBetween(roomId, firstUser.getId(), secondUser.getId()))
-            .count();
-    }
-
-    private boolean isDirectRoomBetween(Integer roomId, Integer firstUserId, Integer secondUserId) {
-        List<ChatRoomMember> roomMembers = chatRoomMemberRepository.findByChatRoomId(roomId);
-        return roomMembers.size() == 2
-            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(firstUserId))
-            && roomMembers.stream().anyMatch(member -> member.getUserId().equals(secondUserId));
     }
 }
