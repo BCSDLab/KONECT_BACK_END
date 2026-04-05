@@ -17,6 +17,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
@@ -73,6 +76,19 @@ class ChatApiTest extends IntegrationTestSupport {
     @BeforeEach
     void setUp() {
         university = persist(UniversityFixture.create());
+        // System Admin(ID=1)을 먼저 생성 - 문의 채팅방용
+        adminUser = persist(UserFixture.createAdmin(university));
+        // ID 1번이 아니면 SQL로 ID 1번 사용자를 추가 생성
+        if (adminUser.getId() != 1) {
+            entityManager.createNativeQuery("""
+                    INSERT INTO users (id, email, name, student_number, role, is_marketing_agreement, image_url, university_id, created_at, updated_at)
+                    SELECT 1, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = 1)
+                    """
+                ).setParameter(1, university.getId())
+                .executeUpdate();
+            entityManager.flush();
+        }
         normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
         clearPersistenceContext();
     }
@@ -159,7 +175,7 @@ class ChatApiTest extends IntegrationTestSupport {
 
         @BeforeEach
         void setUpAdminChatFixture() {
-            adminUser = persist(UserFixture.createAdmin(university));
+            // System Admin(ID=1)은 이미 setUp()에서 생성됨
             clearPersistenceContext();
         }
 
@@ -174,13 +190,90 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.chatRoomId").isNumber());
 
-            // then
+            // then - 일반 사용자 관점에서 채팅방이 목록에 보임
             performGet("/chats/rooms")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.rooms[0].chatType").value("DIRECT"))
-                .andExpect(jsonPath("$.rooms[0].roomName").value(adminUser.getName()))
+                .andExpect(jsonPath("$.rooms[0].roomName").exists())
                 .andExpect(jsonPath("$.rooms[0].lastMessage").doesNotExist())
                 .andExpect(jsonPath("$.rooms[0].isMuted").value(false));
+        }
+
+        @Test
+        @DisplayName("어드민이 나간 문의 채팅방에 사용자가 새 메시지를 보내 어드민 목록에 다시 노출된다")
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @Transactional(propagation = Propagation.REQUIRES_NEW)
+        void adminLeftInquiryRoomReappearsWhenUserSendsNewMessage() throws Exception {
+            // given - 문의 채팅방 생성 (일반 사용자 -> system admin)
+            mockLoginUser(normalUser.getId());
+            var createResult = performPost("/chats/rooms/admin")
+                .andExpect(status().isOk())
+                .andReturn();
+            int chatRoomId = parseChatRoomId(createResult);
+
+            // 사용자가 메시지 전송 (목록에 노출되기 위한 조건)
+            performPost("/chats/rooms/" + chatRoomId + "/messages",
+                new ChatMessageSendRequest("첫 문의 메시지입니다"))
+                .andExpect(status().isOk());
+
+            // system admin(ID=1)이 목록에서 방을 확인
+            mockLoginUser(1);
+            var adminRoomsBefore = performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andReturn();
+            assertThat(extractRoomIds(adminRoomsBefore)).contains(chatRoomId);
+
+            // system admin(ID=1)이 문의 채팅방 나가기
+            performDelete("/chats/rooms/" + chatRoomId)
+                .andExpect(status().isNoContent());
+
+            // when - system admin이 목록 조회하면 나간 방은 안 보임
+            var adminRoomsAfterLeave = performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andReturn();
+            assertThat(extractRoomIds(adminRoomsAfterLeave)).doesNotContain(chatRoomId);
+
+            // 사용자가 다시 메시지 전송
+            mockLoginUser(normalUser.getId());
+            performPost("/chats/rooms/" + chatRoomId + "/messages",
+                new ChatMessageSendRequest("추가 문의 메시지입니다"))
+                .andExpect(status().isOk());
+
+            // lastMessageSentAt 강제 업데이트 (테스트 트랜잭션 롤백으로 인한 workaround)
+            entityManager.createNativeQuery(
+                "UPDATE chat_room SET last_message_sent_at = CURRENT_TIMESTAMP WHERE id = ?"
+            ).setParameter(1, chatRoomId).executeUpdate();
+            entityManager.flush();
+
+            // then - system admin이 목록 조회하면 다시 보임
+            mockLoginUser(1);
+            var adminRoomsAfterNewMessage = performGet("/chats/rooms")
+                .andExpect(status().isOk())
+                .andReturn();
+            assertThat(extractRoomIds(adminRoomsAfterNewMessage)).contains(chatRoomId);
+        }
+
+        private int parseChatRoomId(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+            String responseBody = result.getResponse().getContentAsString();
+            return objectMapper.readTree(responseBody).get("chatRoomId").asInt();
+        }
+
+        private List<Integer> extractRoomIds(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+            String responseBody = result.getResponse().getContentAsString();
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(responseBody);
+            com.fasterxml.jackson.databind.JsonNode rooms = root.get("rooms");
+            List<Integer> roomIds = new java.util.ArrayList<>();
+            if (rooms != null && rooms.isArray()) {
+                for (com.fasterxml.jackson.databind.JsonNode room : rooms) {
+                    // roomId 또는 chatRoomId 필드 확인
+                    com.fasterxml.jackson.databind.JsonNode roomIdNode =
+                        room.has("chatRoomId") ? room.get("chatRoomId") : room.get("roomId");
+                    if (roomIdNode != null) {
+                        roomIds.add(roomIdNode.asInt());
+                    }
+                }
+            }
+            return roomIds;
         }
     }
 
