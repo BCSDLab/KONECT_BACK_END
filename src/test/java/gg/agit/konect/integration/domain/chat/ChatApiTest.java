@@ -47,6 +47,8 @@ import gg.agit.konect.support.fixture.UserFixture;
 
 class ChatApiTest extends IntegrationTestSupport {
 
+    private static final int SYSTEM_ADMIN_ID = 1;
+
     @Autowired
     private ChatRoomRepository chatRoomRepository;
 
@@ -74,16 +76,18 @@ class ChatApiTest extends IntegrationTestSupport {
     @BeforeEach
     void setUp() {
         university = persist(UniversityFixture.create());
-        // System Admin(ID=1)을 먼저 생성 - 문의 채팅방용
+        // System Admin을 먼저 생성 - 문의 채팅방용
         adminUser = persist(UserFixture.createAdmin(university));
-        // ID 1번이 아니면 SQL로 ID 1번 사용자를 추가 생성
-        if (adminUser.getId() != 1) {
+        // SYSTEM_ADMIN_ID가 아니면 SQL로 해당 ID 사용자를 추가 생성
+        if (adminUser.getId() != SYSTEM_ADMIN_ID) {
             entityManager.createNativeQuery("""
                     INSERT INTO users (id, email, name, student_number, role, is_marketing_agreement, image_url, university_id, created_at, updated_at)
-                    SELECT 1, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = 1)
+                    SELECT ?, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?)
                     """
-                ).setParameter(1, university.getId())
+                ).setParameter(1, SYSTEM_ADMIN_ID)
+                .setParameter(2, university.getId())
+                .setParameter(3, SYSTEM_ADMIN_ID)
                 .executeUpdate();
             entityManager.flush();
         }
@@ -317,7 +321,7 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk());
 
             // system admin(ID=1)이 목록에서 방을 확인
-            mockLoginUser(1);
+            mockLoginUser(SYSTEM_ADMIN_ID);
             var adminRoomsBefore = performGet("/chats/rooms")
                 .andExpect(status().isOk())
                 .andReturn();
@@ -346,7 +350,7 @@ class ChatApiTest extends IntegrationTestSupport {
             entityManager.flush();
 
             // then - system admin이 목록 조회하면 다시 보임
-            mockLoginUser(1);
+            mockLoginUser(SYSTEM_ADMIN_ID);
             var adminRoomsAfterNewMessage = performGet("/chats/rooms")
                 .andExpect(status().isOk())
                 .andReturn();
