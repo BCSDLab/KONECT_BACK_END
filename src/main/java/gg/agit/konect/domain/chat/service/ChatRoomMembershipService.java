@@ -4,12 +4,8 @@ import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACC
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
@@ -62,50 +58,6 @@ public class ChatRoomMembershipService {
     public void removeClubMember(Integer clubId, Integer userId) {
         chatRoomRepository.findByClubId(clubId)
             .ifPresent(room -> chatRoomMemberRepository.deleteByChatRoomIdAndUserId(room.getId(), userId));
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void ensureClubRoomMemberships(Integer userId) {
-        List<ClubMember> memberships = clubMemberRepository.findAllByUserId(userId);
-        if (memberships.isEmpty()) {
-            return;
-        }
-
-        Map<Integer, ClubMember> membershipByClubId = memberships.stream()
-            .collect(Collectors.toMap(cm -> cm.getClub().getId(), cm -> cm, (a, b) -> a));
-
-        List<ChatRoom> rooms = resolveOrCreateClubRooms(memberships).stream()
-            .sorted(Comparator.comparing(ChatRoom::getId))
-            .toList();
-        List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
-        if (roomIds.isEmpty()) {
-            return;
-        }
-
-        Map<Integer, ChatRoomMember> memberByRoomId = chatRoomMemberRepository
-            .findByChatRoomIdsAndUserId(roomIds, userId)
-            .stream()
-            .collect(Collectors.toMap(ChatRoomMember::getChatRoomId, member -> member, (a, b) -> a));
-
-        for (ChatRoom room : rooms) {
-            ClubMember member = membershipByClubId.get(room.getClub().getId());
-            if (member == null) {
-                continue;
-            }
-
-            ChatRoomMember existingMember = memberByRoomId.get(room.getId());
-            if (existingMember != null) {
-                LocalDateTime lastReadAt = existingMember.getLastReadAt();
-                if (lastReadAt == null || lastReadAt.isBefore(member.getCreatedAt())) {
-                    chatRoomMemberRepository.updateLastReadAtIfOlder(
-                        room.getId(), userId, member.getCreatedAt()
-                    );
-                }
-                continue;
-            }
-
-            saveRoomMemberIgnoringDuplicate(room, member.getUser(), member.getCreatedAt());
-        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -164,39 +116,6 @@ public class ChatRoomMembershipService {
                         .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
                 }
             });
-    }
-
-    private List<ChatRoom> resolveOrCreateClubRooms(List<ClubMember> memberships) {
-        Map<Integer, Club> clubById = memberships.stream()
-            .map(ClubMember::getClub)
-            .collect(Collectors.toMap(Club::getId, club -> club, (a, b) -> a));
-
-        Map<Integer, ChatRoom> roomByClubId = chatRoomRepository.findByClubIds(new ArrayList<>(clubById.keySet()))
-            .stream()
-            .filter(room -> room.getClub() != null)
-            .collect(Collectors.toMap(room -> room.getClub().getId(), room -> room, (a, b) -> a));
-
-        for (Map.Entry<Integer, Club> clubEntry : clubById.entrySet()) {
-            if (roomByClubId.containsKey(clubEntry.getKey())) {
-                continue;
-            }
-            try {
-                ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.clubGroupOf(clubEntry.getValue()));
-                roomByClubId.put(clubEntry.getKey(), createdRoom);
-            } catch (DataIntegrityViolationException e) {
-                if (!isDuplicateKeyException(e)) {
-                    throw e;
-                }
-                log.debug("클럽 채팅방 동시 생성 감지, 재조회: clubId={}", clubEntry.getKey());
-                chatRoomRepository.findByClubId(clubEntry.getKey())
-                    .ifPresent(room -> roomByClubId.put(clubEntry.getKey(), room));
-            }
-        }
-
-        return memberships.stream()
-            .map(membership -> roomByClubId.get(membership.getClub().getId()))
-            .filter(Objects::nonNull)
-            .toList();
     }
 
     private void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {

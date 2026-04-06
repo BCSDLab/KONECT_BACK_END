@@ -209,8 +209,6 @@ public class ChatService {
     }
 
     public ChatRoomsSummaryResponse getChatRooms(Integer userId) {
-        chatRoomMembershipService.ensureClubRoomMemberships(userId);
-
         List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
         List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
         List<ChatRoomSummaryResponse> groupRooms = getGroupChatRooms(userId);
@@ -866,8 +864,6 @@ public class ChatService {
     }
 
     private AccessibleChatRooms getAccessibleChatRooms(Integer userId) {
-        chatRoomMembershipService.ensureClubRoomMemberships(userId);
-
         List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
         List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
 
