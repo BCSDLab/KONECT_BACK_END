@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
+import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,13 @@ public class ClubPermissionValidator {
     }
 
     public void validateLeaderAccess(Integer clubId, Integer userId) {
-        if (isAdmin(userId)) {
+        validateLeaderAccess(clubId, userRepository.getById(userId));
+    }
+
+    public void validateLeaderAccess(Integer clubId, User user) {
+        Integer userId = user.getId();
+
+        if (user.isAdmin()) {
             return ;
         }
 

@@ -38,6 +38,7 @@ class ClubMemberApiTest extends IntegrationTestSupport {
     private User vicePresident;
     private User manager;
     private User member;
+    private User admin;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -47,6 +48,7 @@ class ClubMemberApiTest extends IntegrationTestSupport {
         vicePresident = persist(UserFixture.createUser(university, "부회장", "2020000002"));
         manager = persist(UserFixture.createUser(university, "매니저", "2020000003"));
         member = persist(UserFixture.createUser(university, "일반멤버", "2021136001"));
+        admin = persist(UserFixture.createAdmin(university));
 
         persist(ClubMemberFixture.createPresident(club, president));
         persist(ClubMemberFixture.createVicePresident(club, vicePresident));
@@ -64,6 +66,21 @@ class ClubMemberApiTest extends IntegrationTestSupport {
             // given
             clearPersistenceContext();
             mockLoginUser(president.getId());
+
+            MemberPositionChangeRequest request = new MemberPositionChangeRequest(ClubPosition.MANAGER);
+
+            // when & then
+            performPatch("/clubs/" + club.getId() + "/members/" + member.getId() + "/position", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.position").value("MANAGER"));
+        }
+
+        @Test
+        @DisplayName("관리자는 동아리 회원이 아니어도 멤버 직책을 변경할 수 있다")
+        void adminCanChangeMemberPositionWithoutClubMembership() throws Exception {
+            // given
+            clearPersistenceContext();
+            mockLoginUser(admin.getId());
 
             MemberPositionChangeRequest request = new MemberPositionChangeRequest(ClubPosition.MANAGER);
 
