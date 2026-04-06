@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
 
 import gg.agit.konect.domain.club.enums.ClubPosition;
+
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.event.ClubApplicationApprovedEvent;
+import gg.agit.konect.domain.club.event.ClubApplicationRejectedEvent;
 import gg.agit.konect.domain.club.event.ClubApplicationSubmittedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -47,7 +49,6 @@ import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -69,7 +70,6 @@ public class ClubApplicationService {
     private final BankRepository bankRepository;
     private final ClubPermissionValidator clubPermissionValidator;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final NotificationService notificationService;
     private final ChatRoomMembershipService chatRoomMembershipService;
 
     public ClubAppliedClubsResponse getAppliedClubs(Integer userId) {
@@ -265,11 +265,11 @@ public class ClubApplicationService {
         User applicant = clubApply.getUser();
         clubApply.reject();
 
-        notificationService.sendClubApplicationRejectedNotification(
+        applicationEventPublisher.publishEvent(ClubApplicationRejectedEvent.of(
             applicant.getId(),
             clubId,
             club.getName()
-        );
+        ));
     }
 
     @Transactional
