@@ -56,17 +56,21 @@ public class ClubMemberManagementService {
 
         clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
 
-        ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
+        boolean isAdminRequester = userRepository.getById(requesterId).isAdmin();
         ClubMember target = clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
-
-        if (!requester.canManage(target)) {
-            throw CustomException.of(CANNOT_MANAGE_HIGHER_POSITION);
-        }
 
         ClubPosition newPosition = request.position();
 
-        if (!requester.getClubPosition().canManage(newPosition)) {
-            throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
+        if (!isAdminRequester) {
+            ClubMember requester = clubMemberRepository.getByClubIdAndUserId(clubId, requesterId);
+
+            if (!requester.canManage(target)) {
+                throw CustomException.of(CANNOT_MANAGE_HIGHER_POSITION);
+            }
+
+            if (!requester.getClubPosition().canManage(newPosition)) {
+                throw CustomException.of(FORBIDDEN_MEMBER_POSITION_CHANGE);
+            }
         }
 
         validatePositionLimit(clubId, newPosition, target);
