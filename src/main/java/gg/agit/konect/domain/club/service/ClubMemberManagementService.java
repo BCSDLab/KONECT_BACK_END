@@ -54,9 +54,10 @@ public class ClubMemberManagementService {
 
         validateNotSelf(requesterId, targetUserId, CANNOT_CHANGE_OWN_POSITION);
 
-        clubPermissionValidator.validateLeaderAccess(clubId, requesterId);
+        User requesterUser = userRepository.getById(requesterId);
+        clubPermissionValidator.validateLeaderAccess(clubId, requesterUser);
 
-        boolean isAdminRequester = userRepository.getById(requesterId).isAdmin();
+        boolean isAdminRequester = requesterUser.isAdmin();
         ClubMember target = clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId);
 
         ClubPosition newPosition = request.position();
