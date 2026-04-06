@@ -32,6 +32,7 @@ import gg.agit.konect.domain.club.dto.ClubApplyRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.event.ClubApplicationApprovedEvent;
+import gg.agit.konect.domain.club.event.ClubApplicationRejectedEvent;
 import gg.agit.konect.domain.club.event.ClubApplicationSubmittedEvent;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubApply;
@@ -69,7 +70,6 @@ public class ClubApplicationService {
     private final BankRepository bankRepository;
     private final ClubPermissionValidator clubPermissionValidator;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final NotificationService notificationService;
     private final ChatRoomMembershipService chatRoomMembershipService;
 
     public ClubAppliedClubsResponse getAppliedClubs(Integer userId) {
@@ -265,11 +265,11 @@ public class ClubApplicationService {
         User applicant = clubApply.getUser();
         clubApply.reject();
 
-        notificationService.sendClubApplicationRejectedNotification(
+        applicationEventPublisher.publishEvent(ClubApplicationRejectedEvent.of(
             applicant.getId(),
             clubId,
             club.getName()
-        );
+        ));
     }
 
     @Transactional
