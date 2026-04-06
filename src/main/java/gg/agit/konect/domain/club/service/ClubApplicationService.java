@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.service;
 import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
 
 import gg.agit.konect.domain.club.enums.ClubPosition;
+
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;
@@ -48,7 +49,6 @@ import gg.agit.konect.domain.club.repository.ClubApplyRepository;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRecruitmentRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
-import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
