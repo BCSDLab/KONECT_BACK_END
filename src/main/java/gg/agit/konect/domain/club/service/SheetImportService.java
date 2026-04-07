@@ -101,7 +101,7 @@ public class SheetImportService {
         SheetImportPlan plan = buildImportPlan(clubId, club, spreadsheetId, mapping);
         applyImportPlan(clubId, spreadsheetId, plan);
         return SheetImportResponse.of(
-            plan.importedCount(),
+            plan.preRegisteredCount(),
             plan.autoRegisteredCount(),
             plan.warnings()
         );
@@ -135,7 +135,7 @@ public class SheetImportService {
             "Sheet import done. clubId={}, spreadsheetId={}, imported={}, autoRegistered={}, warnings={}",
             clubId,
             spreadsheetId,
-            plan.importedCount(),
+            plan.preRegisteredCount(),
             plan.autoRegisteredCount(),
             plan.warnings().size()
         );
@@ -339,7 +339,7 @@ public class SheetImportService {
             return clubMembersToSave.size();
         }
 
-        private int importedCount() {
+        private int preRegisteredCount() {
             return preMembersToSave.size();
         }
     }
