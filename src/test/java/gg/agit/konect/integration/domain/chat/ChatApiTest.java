@@ -1,6 +1,8 @@
 package gg.agit.konect.integration.domain.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -301,6 +303,67 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.rooms[0].roomName").exists())
                 .andExpect(jsonPath("$.rooms[0].lastMessage").doesNotExist())
                 .andExpect(jsonPath("$.rooms[0].isMuted").value(false));
+        }
+
+        @Test
+        @DisplayName("관리자가 문의방을 다시 열어도 관리자 멤버는 추가되지 않는다")
+        void adminCreateOrGetInquiryRoomDoesNotAddAdminMember() throws Exception {
+            User anotherAdmin = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+            var createResult = performPost("/chats/rooms/admin")
+                .andExpect(status().isOk())
+                .andReturn();
+
+            int chatRoomId = parseChatRoomId(createResult);
+
+            mockLoginUser(anotherAdmin.getId());
+            performPost("/chats/rooms", new ChatRoomCreateRequest(normalUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatRoomId").value(chatRoomId));
+
+            clearPersistenceContext();
+
+            assertThat(chatRoomRepository.findByTwoUsers(SYSTEM_ADMIN_ID, normalUser.getId(), ChatType.DIRECT))
+                .isPresent()
+                .get()
+                .extracting(ChatRoom::getId)
+                .isEqualTo(chatRoomId);
+            assertThat(chatRoomMemberRepository.findByChatRoomId(chatRoomId))
+                .extracting(ChatRoomMember::getUserId)
+                .containsExactlyInAnyOrder(SYSTEM_ADMIN_ID, normalUser.getId());
+        }
+
+        @Test
+        @DisplayName("관리자는 멤버가 아니어도 문의방 메시지를 조회할 수 있다")
+        void adminCanReadInquiryRoomMessagesWithoutMembership() throws Exception {
+            User anotherAdmin = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+            int chatRoomId = parseChatRoomId(
+                performPost("/chats/rooms/admin")
+                    .andExpect(status().isOk())
+                    .andReturn()
+            );
+
+            performPost("/chats/rooms/" + chatRoomId + "/messages",
+                new ChatMessageSendRequest("문의 내용입니다"))
+                .andExpect(status().isOk());
+
+            clearPersistenceContext();
+
+            mockLoginUser(anotherAdmin.getId());
+            performGet("/chats/rooms/" + chatRoomId + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.messages[0].content").value("문의 내용입니다"))
+                .andExpect(jsonPath("$.messages[0].isMine").value(false));
+
+            assertThat(chatRoomMemberRepository.findByChatRoomId(chatRoomId))
+                .extracting(ChatRoomMember::getUserId)
+                .containsExactlyInAnyOrder(SYSTEM_ADMIN_ID, normalUser.getId());
         }
 
         @Test
@@ -629,6 +692,31 @@ class ChatApiTest extends IntegrationTestSupport {
                 .hasSize(1)
                 .extracting(ChatMessage::getContent)
                 .containsExactly("안녕하세요");
+        }
+
+        @Test
+        @DisplayName("관리자가 문의방에 답변하면 실제 문의 사용자에게 알림을 보낸다")
+        void adminReplySendsNotificationToInquiryUser() throws Exception {
+            User anotherAdmin = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/admin")
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            clearInvocations(notificationService);
+
+            mockLoginUser(anotherAdmin.getId());
+            performPost("/chats/rooms/" + roomId + "/messages", new ChatMessageSendRequest("관리자 답변입니다"))
+                .andExpect(status().isOk());
+
+            verify(notificationService)
+                .sendChatNotification(normalUser.getId(), roomId, anotherAdmin.getName(), "관리자 답변입니다");
         }
 
         @Test

@@ -66,29 +66,16 @@ public class ChatRoomMembershipService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateDirectRoomLastReadAt(Integer roomId, Integer userId, LocalDateTime readAt) {
-        User user = userRepository.getById(userId);
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+    public void updateDirectRoomLastReadAt(Integer roomId, User user, LocalDateTime readAt, ChatRoom room) {
+        // 어드민이 SYSTEM_ADMIN 방의 메시지를 읽으면 SYSTEM_ADMIN의 lastReadAt을 업데이트
+        if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(roomId)) {
+            chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, SYSTEM_ADMIN_ID, readAt);
+            return;
+        }
 
         ensureDirectRoomMemberExists(room, user, readAt);
 
-        if (user.getRole() == UserRole.ADMIN) {
-            List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-            boolean isSystemAdmin = members.stream()
-                .anyMatch(member -> Objects.equals(member.getUserId(), SYSTEM_ADMIN_ID));
-
-            if (isSystemAdmin) {
-                for (ChatRoomMember member : members) {
-                    if (member.getUser().getRole() == UserRole.ADMIN) {
-                        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, member.getUserId(), readAt);
-                    }
-                }
-                return;
-            }
-        }
-
-        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, readAt);
+        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, user.getId(), readAt);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -145,8 +132,9 @@ public class ChatRoomMembershipService {
             return;
         }
 
+        // 어드민은 SYSTEM_ADMIN 방의 메시지를 조회할 수 있지만, 멤버로 추가되지는 않는다
+        // (멤버가 추가되면 findByTwoUsers에서 해당 방을 찾지 못해 채팅방이 중복 생성됨)
         if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room.getId())) {
-            saveRoomMemberIgnoringDuplicate(room, user, readAt);
             return;
         }
 
