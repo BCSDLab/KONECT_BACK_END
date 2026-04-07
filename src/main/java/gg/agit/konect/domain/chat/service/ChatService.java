@@ -622,7 +622,6 @@ public class ChatService {
 
     private ChatMessagePageResponse buildDirectChatRoomMessages(
         User user,
-        ChatRoom chatRoom,
         Integer roomId,
         Integer page,
         Integer limit,
@@ -682,7 +681,7 @@ public class ChatService {
 
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
-        return buildDirectChatRoomMessages(user, chatRoom, roomId, page, limit, readAt,
+        return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
             visibleMessageFrom, sortedReadBaselines, null);
     }
 
@@ -700,7 +699,7 @@ public class ChatService {
         List<LocalDateTime> sortedReadBaselines = toAdminChatReadBaselines(members);
         Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
 
-        return buildDirectChatRoomMessages(user, chatRoom, roomId, page, limit, readAt,
+        return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
             visibleMessageFrom, sortedReadBaselines, maskedAdminId);
     }
 
