@@ -21,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
@@ -63,6 +64,9 @@ class ChatApiTest extends IntegrationTestSupport {
     @Autowired
     private NotificationMuteSettingRepository notificationMuteSettingRepository;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
     @MockitoBean
     private ChatPresenceService chatPresenceService;
 
@@ -76,28 +80,32 @@ class ChatApiTest extends IntegrationTestSupport {
     private University university;
 
     @BeforeEach
-    void setUp() {
-        university = persist(UniversityFixture.create());
-        // System Admin을 먼저 생성 - 문의 채팅방용
-        adminUser = persist(UserFixture.createAdmin(university));
-        // SYSTEM_ADMIN_ID가 아니면 SQL로 해당 ID 사용자를 추가 생성
-        if (adminUser.getId() != SYSTEM_ADMIN_ID) {
-            entityManager.createNativeQuery("""
-                    INSERT INTO users (id, email, name, student_number, role, is_marketing_agreement, image_url, university_id, created_at, updated_at)
-                    SELECT ?, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?)
-                    """
-                ).setParameter(1, SYSTEM_ADMIN_ID)
-                .setParameter(2, university.getId())
-                .setParameter(3, SYSTEM_ADMIN_ID)
-                .executeUpdate();
-            entityManager.flush();
-        }
-        normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
-        clearPersistenceContext();
+    public void setUp() {
+        transactionTemplate.execute(status -> {
+            university = persist(UniversityFixture.create());
+            // System Admin을 먼저 생성 - 문의 채팅방용
+            adminUser = persist(UserFixture.createAdmin(university));
+            // 일부 테스트는 NOT_SUPPORTED로 실행되므로, 공통 픽스처는 명시적 트랜잭션 안에서 만든다.
+            if (adminUser.getId() != SYSTEM_ADMIN_ID) {
+                entityManager.createNativeQuery("""
+                        INSERT INTO users (id, email, name, student_number, role, is_marketing_agreement, image_url, university_id, created_at, updated_at)
+                        SELECT ?, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?)
+                        """
+                    ).setParameter(1, SYSTEM_ADMIN_ID)
+                    .setParameter(2, university.getId())
+                    .setParameter(3, SYSTEM_ADMIN_ID)
+                    .executeUpdate();
+                entityManager.flush();
+            }
+            normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
+            clearPersistenceContext();
+            return null;
+        });
     }
 
-    private ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
+    @Transactional
+    public ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
         ChatRoom chatRoom = persist(ChatRoom.directOf());
         LocalDateTime joinedAt = chatRoom.getCreatedAt();
         ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
@@ -833,18 +841,30 @@ class ChatApiTest extends IntegrationTestSupport {
 
     @Nested
     @DisplayName("DELETE /chats/rooms/{chatRoomId} - 채팅방 나가기")
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     class LeaveChatRoom {
 
         @BeforeEach
         void setUpLeaveFixture() {
-            targetUser = createUser("상대유저", "2021136002");
-            clearPersistenceContext();
+            transactionTemplate.execute(status -> {
+                targetUser = createUser("상대유저", "2021136002");
+                clearPersistenceContext();
+                return null;
+            });
         }
 
         @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
         @DisplayName("1:1 채팅방을 나가면 목록에서 숨겨지고 새 메시지부터 다시 보인다")
         void leaveDirectChatRoomAndShowOnlyNewMessages() throws Exception {
-            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            // 트랜잭션 내에서 테스트 데이터 생성 (NOT_SUPPORTED 테스트는 트랜잭션 없이 실행됨)
+            ChatRoom[] chatRoomHolder = new ChatRoom[1];
+            transactionTemplate.execute(status -> {
+                targetUser = createUser("상대유저", "2021136002");
+                chatRoomHolder[0] = createDirectChatRoom(normalUser, targetUser);
+                return null;
+            });
+            ChatRoom chatRoom = chatRoomHolder[0];
 
             mockLoginUser(normalUser.getId());
             performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("첫 메시지"))
@@ -853,11 +873,14 @@ class ChatApiTest extends IntegrationTestSupport {
             performDelete("/chats/rooms/" + chatRoom.getId())
                 .andExpect(status().isNoContent());
 
-            clearPersistenceContext();
-            ChatRoomMember leftMember = chatRoomMemberRepository
-                .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
-                .orElseThrow();
-            assertThat(leftMember.hasLeft()).isTrue();
+            transactionTemplate.execute(status -> {
+                clearPersistenceContext();
+                ChatRoomMember leftMember = chatRoomMemberRepository
+                    .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
+                    .orElseThrow();
+                assertThat(leftMember.hasLeft()).isTrue();
+                return null;
+            });
 
             mockLoginUser(normalUser.getId());
             performGet("/chats/rooms")
@@ -903,6 +926,10 @@ class ChatApiTest extends IntegrationTestSupport {
 
             performDelete("/chats/rooms/" + chatRoom.getId())
                 .andExpect(status().isNoContent());
+
+            // 트랜잭션 커밋
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
 
             performPost("/chats/rooms", new ChatRoomCreateRequest(targetUser.getId()))
                 .andExpect(status().isOk())
