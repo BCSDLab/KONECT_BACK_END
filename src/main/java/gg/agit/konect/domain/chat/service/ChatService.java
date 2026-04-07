@@ -1459,14 +1459,14 @@ public class ChatService {
     }
 
     private String getVisibleLastMessageContent(ChatRoom room, ChatRoomMember member) {
-        if (member.hasLeft() && !member.hasVisibleMessages(room)) {
+        if (!member.hasVisibleMessages(room)) {
             return null;
         }
         return room.getLastMessageContent();
     }
 
     private LocalDateTime getVisibleLastMessageSentAt(ChatRoom room, ChatRoomMember member) {
-        if (member.hasLeft() && !member.hasVisibleMessages(room)) {
+        if (!member.hasVisibleMessages(room)) {
             return null;
         }
         return room.getLastMessageSentAt();
