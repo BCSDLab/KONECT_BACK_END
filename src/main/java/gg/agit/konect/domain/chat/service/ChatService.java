@@ -1531,11 +1531,16 @@ public class ChatService {
     }
 
     private User findNonAdminUser(List<ChatRoomMember> members) {
-        return members.stream()
-            .map(ChatRoomMember::getUser)
-            .filter(memberUser -> !memberUser.isAdmin())
-            .findFirst()
-            .orElse(null);
+        Map<Integer, User> userMap = members.stream()
+            .collect(Collectors.toMap(
+                ChatRoomMember::getUserId,
+                ChatRoomMember::getUser,
+                (existing, replacement) -> existing
+            ));
+        List<MemberInfo> memberInfos = members.stream()
+            .map(m -> new MemberInfo(m.getUserId(), m.getCreatedAt()))
+            .toList();
+        return findNonAdminUserFromMemberInfo(memberInfos, userMap);
     }
 
     private User resolveDirectMessageReceiver(List<ChatRoomMember> members, User sender) {
