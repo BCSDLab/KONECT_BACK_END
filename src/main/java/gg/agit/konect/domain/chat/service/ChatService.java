@@ -388,7 +388,7 @@ public class ChatService {
         return ChatInvitableUsersResponse.forClubSort(pagedInvitableUsers, sections);
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @Transactional(readOnly = true)
     public ChatMessagePageResponse getMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
@@ -396,7 +396,7 @@ public class ChatService {
         LocalDateTime readAt = LocalDateTime.now();
 
         if (room.isDirectRoom()) {
-            chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, userId, readAt);
+            chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, userId, readAt, room);
             recordPresenceSafely(roomId, userId);
             return getDirectChatRoomMessages(userId, roomId, page, limit, readAt);
         }
@@ -440,7 +440,12 @@ public class ChatService {
             ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
             ensureRoomMember(room, member.getUser(), member.getCreatedAt());
         } else if (room.isDirectRoom()) {
-            getAccessibleDirectRoomMember(room, user);
+            // 어드민이 SYSTEM_ADMIN 방에 접근하는 경우는 멤버십 체크를 건너뜀
+            boolean isAdminAccessingSystemAdminRoom = user.getRole() == UserRole.ADMIN
+                && isSystemAdminRoom(room);
+            if (!isAdminAccessingSystemAdminRoom) {
+                getAccessibleDirectRoomMember(room, user);
+            }
         } else {
             getAccessibleRoomMember(room, userId);
         }
@@ -667,19 +672,37 @@ public class ChatService {
     ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User sender = userRepository.getById(userId);
-        ChatRoomMember senderMember = getAccessibleDirectRoomMember(chatRoom, sender);
-        boolean senderHadLeft = senderMember.hasLeft();
+
+        // 어드민이 SYSTEM_ADMIN 방에 메시지를 보내는 경우
+        boolean isAdminSendingToSystemAdminRoom = sender.getRole() == UserRole.ADMIN
+            && isSystemAdminRoom(chatRoom);
+
+        ChatRoomMember senderMember = null;
+        boolean senderHadLeft = false;
+
+        if (!isAdminSendingToSystemAdminRoom) {
+            senderMember = getAccessibleDirectRoomMember(chatRoom, sender);
+            senderHadLeft = senderMember.hasLeft();
+        }
+
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
         User receiver = resolveDirectChatPartner(members, userId);
 
         ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, request.content())
         );
-        if (senderHadLeft) {
+
+        if (senderHadLeft && senderMember != null) {
             senderMember.restoreDirectRoom();
         }
+
         chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-        updateMemberLastReadAt(roomId, userId, chatMessage.getCreatedAt());
+
+        // 어드민이 보낸 경우는 lastReadAt 업데이트하지 않음 (멤버가 아니므로)
+        if (!isAdminSendingToSystemAdminRoom) {
+            updateMemberLastReadAt(roomId, userId, chatMessage.getCreatedAt());
+        }
+
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
         notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
@@ -1303,9 +1326,9 @@ public class ChatService {
     private ChatRoomMember getOrCreateDirectRoomMember(ChatRoom chatRoom, User user) {
         return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
             .orElseGet(() -> {
+                // 어드민은 SYSTEM_ADMIN 방에 멤버로 추가되지 않음
                 if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom)) {
-                    LocalDateTime joinedAt = LocalDateTime.now();
-                    return chatRoomMemberRepository.save(ChatRoomMember.of(chatRoom, user, joinedAt));
+                    throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
                 }
                 throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
             });
