@@ -1537,18 +1537,16 @@ public class ChatService {
     }
 
     private User resolveDirectMessageReceiver(List<ChatRoomMember> members, User sender) {
-        if (sender.isAdmin()) {
-            User nonAdminUser = findNonAdminUser(members);
-            if (nonAdminUser != null) {
-                return nonAdminUser;
-            }
-        }
-
-        User partner = resolveDirectChatPartner(members, sender.getId());
-        if (partner == null) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
-        return partner;
+        Map<Integer, User> userMap = members.stream()
+            .collect(Collectors.toMap(
+                ChatRoomMember::getUserId,
+                ChatRoomMember::getUser,
+                (existing, replacement) -> existing
+            ));
+        List<MemberInfo> memberInfos = members.stream()
+            .map(m -> new MemberInfo(m.getUserId(), m.getCreatedAt()))
+            .toList();
+        return resolveMessageReceiverFromMemberInfo(sender, memberInfos, userMap);
     }
 
     private User findDirectPartnerFromMemberInfo(
