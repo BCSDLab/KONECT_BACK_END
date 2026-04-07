@@ -336,6 +336,37 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("관리자는 멤버가 아니어도 문의방 메시지를 조회할 수 있다")
+        void adminCanReadInquiryRoomMessagesWithoutMembership() throws Exception {
+            User anotherAdmin = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+            int chatRoomId = parseChatRoomId(
+                performPost("/chats/rooms/admin")
+                    .andExpect(status().isOk())
+                    .andReturn()
+            );
+
+            performPost("/chats/rooms/" + chatRoomId + "/messages",
+                new ChatMessageSendRequest("문의 내용입니다"))
+                .andExpect(status().isOk());
+
+            clearPersistenceContext();
+
+            mockLoginUser(anotherAdmin.getId());
+            performGet("/chats/rooms/" + chatRoomId + "?page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.messages[0].content").value("문의 내용입니다"))
+                .andExpect(jsonPath("$.messages[0].isMine").value(false));
+
+            assertThat(chatRoomMemberRepository.findByChatRoomId(chatRoomId))
+                .extracting(ChatRoomMember::getUserId)
+                .containsExactlyInAnyOrder(SYSTEM_ADMIN_ID, normalUser.getId());
+        }
+
+        @Test
         @DisplayName("어드민이 나간 문의 채팅방에 사용자가 새 메시지를 보내 어드민 목록에 다시 노출된다")
         @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @Transactional(propagation = Propagation.REQUIRES_NEW)

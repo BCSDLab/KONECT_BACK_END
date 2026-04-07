@@ -621,10 +621,11 @@ public class ChatService {
     ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User user = userRepository.getById(userId);
-        ChatRoomMember member = getOrCreateDirectRoomMember(chatRoom, user);
-        LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(member, chatRoom);
-
         boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom);
+        ChatRoomMember member = isAdminViewingSystemRoom
+            ? getRoomMember(roomId, SYSTEM_ADMIN_ID)
+            : getOrCreateDirectRoomMember(chatRoom, user);
+        LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(member, chatRoom);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, visibleMessageFrom, pageable);
