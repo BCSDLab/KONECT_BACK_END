@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
+import gg.agit.konect.domain.club.dto.SheetImportConfirmRequest;
 import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
@@ -45,6 +46,20 @@ public interface ClubSheetMigrationApi {
     ResponseEntity<SheetImportPreviewResponse> previewPreMembers(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody SheetImportRequest request,
+        @UserId Integer requesterId
+    );
+
+    @Operation(
+        summary = "편집된 미리보기 부원 목록을 최종 등록한다",
+        description = """
+            미리보기 화면에서 활성화된 부원 목록과 수동 추가한 부원 목록을 최종본으로 받아 등록합니다.
+            비활성화된 부원은 등록 대상에서 제외됩니다.
+            """
+    )
+    @PostMapping("/{clubId}/sheet/import/confirm")
+    ResponseEntity<SheetImportResponse> confirmImportPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody SheetImportConfirmRequest request,
         @UserId Integer requesterId
     );
 

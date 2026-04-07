@@ -16,6 +16,7 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
+import gg.agit.konect.domain.club.dto.SheetImportConfirmRequest;
 import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import gg.agit.konect.domain.club.enums.ClubPosition;
@@ -60,14 +61,38 @@ public class SheetImportService {
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
         Club club = clubRepository.getById(clubId);
+        SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
 
         SheetImportPlan plan = buildImportPlan(
             clubId,
             club,
-            spreadsheetId,
-            analysis.memberListMapping()
+            source.members(),
+            source.warnings()
         );
         return SheetImportPreviewResponse.of(plan.previewMembers(), plan.warnings());
+    }
+
+    @Transactional
+    public SheetImportResponse confirmImportPreMembers(
+        Integer clubId,
+        Integer requesterId,
+        List<SheetImportConfirmRequest.ConfirmMember> members
+    ) {
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+        Club club = clubRepository.getById(clubId);
+
+        SheetImportPlan plan = buildImportPlan(
+            clubId,
+            club,
+            toImportMembers(members),
+            List.of()
+        );
+        applyImportPlan(clubId, "preview-confirm", plan);
+        return SheetImportResponse.of(
+            plan.preRegisteredCount(),
+            plan.autoRegisteredCount(),
+            plan.warnings()
+        );
     }
 
     @Transactional
@@ -77,15 +102,24 @@ public class SheetImportService {
         String spreadsheetUrl
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-        String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
 
+        String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
-        return importPreMembersFromSheet(
+        Club club = clubRepository.getById(clubId);
+        SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
+
+        SheetImportPlan plan = buildImportPlan(
             clubId,
-            requesterId,
-            spreadsheetId,
-            analysis.memberListMapping()
+            club,
+            source.members(),
+            source.warnings()
+        );
+        applyImportPlan(clubId, spreadsheetId, plan);
+        return SheetImportResponse.of(
+            plan.preRegisteredCount(),
+            plan.autoRegisteredCount(),
+            plan.warnings()
         );
     }
 
@@ -98,7 +132,14 @@ public class SheetImportService {
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         Club club = clubRepository.getById(clubId);
-        SheetImportPlan plan = buildImportPlan(clubId, club, spreadsheetId, mapping);
+        SheetImportSource source = loadSheetImportSource(spreadsheetId, mapping);
+
+        SheetImportPlan plan = buildImportPlan(
+            clubId,
+            club,
+            source.members(),
+            source.warnings()
+        );
         applyImportPlan(clubId, spreadsheetId, plan);
         return SheetImportResponse.of(
             plan.preRegisteredCount(),
@@ -109,7 +150,7 @@ public class SheetImportService {
 
     private void applyImportPlan(
         Integer clubId,
-        String spreadsheetId,
+        String importSource,
         SheetImportPlan plan
     ) {
         if (!plan.studentNumbersToCleanFromPre().isEmpty()) {
@@ -123,8 +164,8 @@ public class SheetImportService {
             ? List.of()
             : clubMemberRepository.saveAll(plan.clubMembersToSave());
 
-        for (ClubMember saved : savedMembers) {
-            chatRoomMembershipService.addClubMember(saved);
+        for (ClubMember savedMember : savedMembers) {
+            chatRoomMembershipService.addClubMember(savedMember);
         }
 
         if (!plan.preMembersToSave().isEmpty()) {
@@ -132,9 +173,9 @@ public class SheetImportService {
         }
 
         log.info(
-            "Sheet import done. clubId={}, spreadsheetId={}, imported={}, autoRegistered={}, warnings={}",
+            "Sheet import done. clubId={}, source={}, imported={}, autoRegistered={}, warnings={}",
             clubId,
-            spreadsheetId,
+            importSource,
             plan.preRegisteredCount(),
             plan.autoRegisteredCount(),
             plan.warnings().size()
@@ -144,11 +185,10 @@ public class SheetImportService {
     private SheetImportPlan buildImportPlan(
         Integer clubId,
         Club club,
-        String spreadsheetId,
-        SheetColumnMapping mapping
+        List<ImportMember> members,
+        List<String> initialWarnings
     ) {
         Integer universityId = club.getUniversity().getId();
-        List<List<Object>> rows = readDataRows(spreadsheetId, mapping);
 
         Set<String> existingMemberStudentNumbers =
             new HashSet<>(clubMemberRepository.findStudentNumbersByClubId(clubId));
@@ -156,8 +196,8 @@ public class SheetImportService {
         Set<Integer> existingMemberUserIds =
             new HashSet<>(clubMemberRepository.findUserIdsByClubId(clubId));
 
-        Set<String> allStudentNumbers = rows.stream()
-            .map(row -> getCell(row, mapping, SheetColumnMapping.STUDENT_ID))
+        Set<String> allStudentNumbers = members.stream()
+            .map(ImportMember::studentNumber)
             .filter(studentNumber -> !studentNumber.isBlank())
             .collect(Collectors.toSet());
 
@@ -173,29 +213,19 @@ public class SheetImportService {
         List<ClubMember> clubMembersToSave = new ArrayList<>();
         Set<String> studentNumbersToCleanFromPre = new HashSet<>();
         List<ClubPreMember> preMembersToSave = new ArrayList<>();
-        List<String> warnings = new ArrayList<>();
+        List<String> warnings = new ArrayList<>(initialWarnings);
         int presidentCount = 0;
 
-        for (List<Object> row : rows) {
-            String name = getCell(row, mapping, SheetColumnMapping.NAME);
-            String studentNumber = getCell(row, mapping, SheetColumnMapping.STUDENT_ID);
+        for (ImportMember importMember : members) {
+            String name = importMember.name();
+            String studentNumber = importMember.studentNumber();
+            ClubPosition position = importMember.clubPosition() == null
+                ? ClubPosition.MEMBER
+                : importMember.clubPosition();
 
             if (name.isBlank() || studentNumber.isBlank()) {
                 continue;
             }
-
-            String phone = getCell(row, mapping, SheetColumnMapping.PHONE);
-            if (!phone.isBlank() && !PhoneNumberNormalizer.looksLikePhoneNumber(phone)) {
-                warnings.add(String.format(
-                    "전화번호 형식이 올바르지 않습니다 - 학번: %s, 이름: %s, 입력값: '%s'",
-                    studentNumber,
-                    name,
-                    phone
-                ));
-            }
-
-            String positionText = getCell(row, mapping, SheetColumnMapping.POSITION);
-            ClubPosition position = resolvePosition(positionText);
 
             if (position == ClubPosition.PRESIDENT) {
                 presidentCount++;
@@ -214,7 +244,7 @@ public class SheetImportService {
 
             List<User> candidates = usersByStudentNumber.getOrDefault(studentNumber, List.of());
             List<User> matchedUsers = candidates.stream()
-                .filter(user -> name.equalsIgnoreCase(user.getName().trim()))
+                .filter(user -> user.getName() != null && name.equalsIgnoreCase(user.getName().trim()))
                 .toList();
 
             if (matchedUsers.size() == 1) {
@@ -267,6 +297,55 @@ public class SheetImportService {
             preMembersToSave,
             warnings
         );
+    }
+
+    private SheetImportSource loadSheetImportSource(String spreadsheetId, SheetColumnMapping mapping) {
+        List<List<Object>> rows = readDataRows(spreadsheetId, mapping);
+        List<ImportMember> members = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        for (List<Object> row : rows) {
+            String name = getCell(row, mapping, SheetColumnMapping.NAME);
+            String studentNumber = getCell(row, mapping, SheetColumnMapping.STUDENT_ID);
+
+            if (name.isBlank() || studentNumber.isBlank()) {
+                continue;
+            }
+
+            String phone = getCell(row, mapping, SheetColumnMapping.PHONE);
+            if (!phone.isBlank() && !PhoneNumberNormalizer.looksLikePhoneNumber(phone)) {
+                warnings.add(String.format(
+                    "전화번호 형식이 올바르지 않습니다 - 학번: %s, 이름: %s, 입력값: '%s'",
+                    studentNumber,
+                    name,
+                    phone
+                ));
+            }
+
+            String positionText = getCell(row, mapping, SheetColumnMapping.POSITION);
+            members.add(new ImportMember(
+                studentNumber,
+                name,
+                resolvePosition(positionText)
+            ));
+        }
+
+        return new SheetImportSource(members, warnings);
+    }
+
+    private List<ImportMember> toImportMembers(List<SheetImportConfirmRequest.ConfirmMember> members) {
+        if (members == null) {
+            return List.of();
+        }
+
+        return members.stream()
+            .filter(SheetImportConfirmRequest.ConfirmMember::isEnabled)
+            .map(member -> new ImportMember(
+                member.studentNumber() == null ? "" : member.studentNumber().trim(),
+                member.name() == null ? "" : member.name().trim(),
+                member.clubPosition() == null ? ClubPosition.MEMBER : member.clubPosition()
+            ))
+            .toList();
     }
 
     private List<List<Object>> readDataRows(String spreadsheetId, SheetColumnMapping mapping) {
@@ -342,5 +421,18 @@ public class SheetImportService {
         private int preRegisteredCount() {
             return preMembersToSave.size();
         }
+    }
+
+    private record SheetImportSource(
+        List<ImportMember> members,
+        List<String> warnings
+    ) {
+    }
+
+    private record ImportMember(
+        String studentNumber,
+        String name,
+        ClubPosition clubPosition
+    ) {
     }
 }

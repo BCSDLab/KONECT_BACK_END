@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
+import gg.agit.konect.domain.club.dto.SheetImportConfirmRequest;
 import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
@@ -47,6 +48,20 @@ public class ClubSheetMigrationController implements ClubSheetMigrationApi {
     ) {
         SheetImportPreviewResponse response = sheetImportService.previewPreMembersFromSheet(
             clubId, requesterId, request.spreadsheetUrl()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<SheetImportResponse> confirmImportPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody SheetImportConfirmRequest request,
+        @UserId Integer requesterId
+    ) {
+        SheetImportResponse response = sheetImportService.confirmImportPreMembers(
+            clubId,
+            requesterId,
+            request.members()
         );
         return ResponseEntity.ok(response);
     }

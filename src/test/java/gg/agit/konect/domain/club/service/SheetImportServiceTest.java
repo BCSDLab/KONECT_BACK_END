@@ -1,9 +1,11 @@
 package gg.agit.konect.domain.club.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,7 +19,9 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
+import gg.agit.konect.domain.club.dto.SheetImportConfirmRequest;
 import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
+import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
@@ -117,5 +121,54 @@ class SheetImportServiceTest extends ServiceTestSupport {
         assertThat(response.members())
             .extracting(SheetImportPreviewResponse.PreviewMember::isDirectMember)
             .containsExactly(true, false);
+        assertThat(response.members())
+            .extracting(SheetImportPreviewResponse.PreviewMember::enabled)
+            .containsExactly(true, true);
+    }
+
+    @Test
+    void confirmImportPreMembersImportsOnlyEnabledMembers() {
+        Club club = ClubFixture.create(UniversityFixture.create());
+        User directUser = UserFixture.createUser(club.getUniversity(), "Alex Kim", "2021232948");
+
+        given(clubRepository.getById(CLUB_ID)).willReturn(club);
+        given(clubMemberRepository.findStudentNumbersByClubId(CLUB_ID)).willReturn(Set.of());
+        given(clubPreMemberRepository.findStudentNumberAndNameByClubId(CLUB_ID))
+            .willReturn(List.<ClubPreMemberRepository.PreMemberKey>of());
+        given(clubMemberRepository.findUserIdsByClubId(CLUB_ID)).willReturn(List.of());
+        given(userRepository.findAllByUniversityIdAndStudentNumberIn(
+            eq(club.getUniversity().getId()),
+            anySet()
+        )).willReturn(List.of(directUser));
+        given(clubMemberRepository.saveAll(anyList())).willAnswer(invocation -> invocation.getArgument(0));
+
+        SheetImportResponse response = sheetImportService.confirmImportPreMembers(
+            CLUB_ID,
+            REQUESTER_ID,
+            List.of(
+                new SheetImportConfirmRequest.ConfirmMember(
+                    "2021232948",
+                    "Alex Kim",
+                    ClubPosition.MANAGER,
+                    true
+                ),
+                new SheetImportConfirmRequest.ConfirmMember(
+                    "2021232949",
+                    "Dana Lee",
+                    ClubPosition.MEMBER,
+                    false
+                ),
+                new SheetImportConfirmRequest.ConfirmMember(
+                    "2021232950",
+                    "Chris Park",
+                    ClubPosition.MEMBER,
+                    true
+                )
+            )
+        );
+
+        assertThat(response.importedCount()).isEqualTo(1);
+        assertThat(response.autoRegisteredCount()).isEqualTo(1);
+        verifyNoInteractions(googleSheetsService);
     }
 }

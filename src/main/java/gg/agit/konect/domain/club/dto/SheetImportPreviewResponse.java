@@ -35,15 +35,18 @@ public record SheetImportPreviewResponse(
         @Schema(description = "등록할 동아리 직책", example = "MEMBER", requiredMode = REQUIRED)
         ClubPosition clubPosition,
 
-        @Schema(description = "ClubMember로 즉시 등록되는 경우 true",
-            example = "false", requiredMode = REQUIRED)
-        Boolean isDirectMember
+        @Schema(description = "ClubMember로 즉시 등록되는 경우 true", example = "false", requiredMode = REQUIRED)
+        Boolean isDirectMember,
+
+        @Schema(description = "최종 등록 대상이면 true", example = "true", requiredMode = REQUIRED)
+        Boolean enabled
     ) {
         public static PreviewMember from(ClubMember clubMember) {
             return new PreviewMember(
                 clubMember.getUser().getStudentNumber(),
                 clubMember.getUser().getName(),
                 clubMember.getClubPosition(),
+                true,
                 true
             );
         }
@@ -53,7 +56,8 @@ public record SheetImportPreviewResponse(
                 preMember.getStudentNumber(),
                 preMember.getName(),
                 preMember.getClubPosition(),
-                false
+                false,
+                true
             );
         }
     }
