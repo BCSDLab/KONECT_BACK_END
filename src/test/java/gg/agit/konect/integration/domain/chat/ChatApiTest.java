@@ -1,6 +1,8 @@
 package gg.agit.konect.integration.domain.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -659,6 +661,31 @@ class ChatApiTest extends IntegrationTestSupport {
                 .hasSize(1)
                 .extracting(ChatMessage::getContent)
                 .containsExactly("안녕하세요");
+        }
+
+        @Test
+        @DisplayName("관리자가 문의방에 답변하면 실제 문의 사용자에게 알림을 보낸다")
+        void adminReplySendsNotificationToInquiryUser() throws Exception {
+            User anotherAdmin = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+            int roomId = objectMapper.readTree(
+                performPost("/chats/rooms/admin")
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString()
+            ).get("chatRoomId").asInt();
+
+            clearInvocations(notificationService);
+
+            mockLoginUser(anotherAdmin.getId());
+            performPost("/chats/rooms/" + roomId + "/messages", new ChatMessageSendRequest("관리자 답변입니다"))
+                .andExpect(status().isOk());
+
+            verify(notificationService)
+                .sendChatNotification(normalUser.getId(), roomId, anotherAdmin.getName(), "관리자 답변입니다");
         }
 
         @Test

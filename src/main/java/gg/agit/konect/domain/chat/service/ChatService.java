@@ -685,7 +685,7 @@ public class ChatService {
         }
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        User receiver = resolveDirectChatPartner(members, userId);
+        User receiver = resolveDirectMessageReceiver(members, sender);
 
         ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, request.content())
@@ -1476,6 +1476,29 @@ public class ChatService {
         }
 
         return findDirectPartner(members, userId);
+    }
+
+    private User findNonAdminUser(List<ChatRoomMember> members) {
+        return members.stream()
+            .map(ChatRoomMember::getUser)
+            .filter(memberUser -> memberUser.getRole() != UserRole.ADMIN)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private User resolveDirectMessageReceiver(List<ChatRoomMember> members, User sender) {
+        if (sender.getRole() == UserRole.ADMIN) {
+            User nonAdminUser = findNonAdminUser(members);
+            if (nonAdminUser != null) {
+                return nonAdminUser;
+            }
+        }
+
+        User partner = resolveDirectChatPartner(members, sender.getId());
+        if (partner == null) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+        return partner;
     }
 
     private User findDirectPartnerFromMemberInfo(
