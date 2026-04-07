@@ -1734,4 +1734,258 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_KICK"));
         }
     }
+
+    @Nested
+    @DisplayName("GET /chats/rooms/{chatRoomId} - 메시지 조회 페이지네이션 엣지 케이스")
+    class GetMessagesPaginationEdgeCases {
+
+        private ChatRoom directRoom;
+        private User chatPartner;
+
+        @BeforeEach
+        void setUpPaginationFixture() {
+            chatPartner = createUser("채팅상대", "2021136006");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("빈 채팅방의 메시지를 조회하면 빈 목록을 반환한다")
+        void getMessagesFromEmptyRoomReturnsEmptyList() throws Exception {
+            // given - 메시지가 없는 새로 생성된 방
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/" + directRoom.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages").isArray())
+                .andExpect(jsonPath("$.messages").isEmpty())
+                .andExpect(jsonPath("$.totalCount").value(0))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.totalPage").value(0));
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("존재하지 않는 페이지를 조회하면 빈 목록을 반환한다")
+        void getMessagesFromNonExistentPageReturnsEmptyList() throws Exception {
+            // given - 메시지 5개 생성
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            for (int i = 1; i <= 5; i++) {
+                persistChatMessage(directRoom, chatPartner, "메시지 " + i);
+            }
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(normalUser.getId());
+
+            // when & then - 100페이지 조회 (존재하지 않음)
+            performGet("/chats/rooms/" + directRoom.getId() + "?page=100&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages").isArray())
+                .andExpect(jsonPath("$.messages").isEmpty())
+                .andExpect(jsonPath("$.currentPage").value(100))
+                .andExpect(jsonPath("$.totalPage").value(1));
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("마지막 페이지는 부분 결과를 반환할 수 있다")
+        void getMessagesLastPageReturnsPartialResults() throws Exception {
+            // given - 메시지 25개 생성
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            for (int i = 1; i <= 25; i++) {
+                persistChatMessage(directRoom, chatPartner, "메시지 " + i);
+            }
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(normalUser.getId());
+
+            // when & then - limit=10, page=3 (21-25번 메시지, 5개만 반환)
+            performGet("/chats/rooms/" + directRoom.getId() + "?page=3&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages").isArray())
+                .andExpect(jsonPath("$.messages").value(org.hamcrest.Matchers.hasSize(5)))
+                .andExpect(jsonPath("$.currentPage").value(3))
+                .andExpect(jsonPath("$.totalPage").value(3));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /chats/rooms/{chatRoomId}/messages - 메시지 전송 권한 및 엣지 케이스")
+    class SendMessageEdgeCases {
+
+        private ChatRoom groupRoom;
+        private User roomOwner;
+        private User roomMember;
+        private User nonMember;
+
+        @BeforeEach
+        void setUpSendMessageEdgeFixture() {
+            roomOwner = createUser("방장", "2021136007");
+            roomMember = createUser("방멤버", "2021136008");
+            nonMember = createUser("비멤버", "2021136009");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("정확히 1000자 메시지는 전송 성공한다")
+        void sendMessageExactly1000CharsSuccess() throws Exception {
+            // given
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            String exactly1000Chars = "a".repeat(1000);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(roomMember.getId());
+
+            // when & then
+            performPost("/chats/rooms/" + groupRoom.getId() + "/messages",
+                new ChatMessageSendRequest(exactly1000Chars))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value(exactly1000Chars));
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("채팅방 멤버가 아닌 사용자는 메시지를 전송할 수 없다")
+        void sendMessageByNonMemberReturnsForbidden() throws Exception {
+            // given
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(nonMember.getId());
+
+            // when & then
+            performPost("/chats/rooms/" + groupRoom.getId() + "/messages",
+                new ChatMessageSendRequest("Unauthorized message"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("강퇴된 멤버는 메시지를 전송할 수 없다")
+        void sendMessageByKickedMemberReturnsForbidden() throws Exception {
+            // given - 방장이 멤버를 강퇴
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(roomOwner.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + roomMember.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then - 강퇴된 멤버가 메시지 전송 시도
+            mockLoginUser(roomMember.getId());
+            performPost("/chats/rooms/" + groupRoom.getId() + "/messages",
+                new ChatMessageSendRequest("Kicked member message"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /chats/rooms/{chatRoomId}/mute - 채팅방 뮤트 권한 케이스")
+    class ToggleMutePermissionCases {
+
+        private ChatRoom groupRoom;
+        private User roomOwner;
+        private User roomMember;
+        private User nonMember;
+
+        @BeforeEach
+        void setUpMutePermissionFixture() {
+            roomOwner = createUser("방장", "2021136010");
+            roomMember = createUser("방멤버", "2021136011");
+            nonMember = createUser("비멤버", "2021136012");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("채팅방 멤버가 아닌 사용자는 뮤트 설정을 변경할 수 없다")
+        void toggleMuteByNonMemberReturnsForbidden() throws Exception {
+            // given
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(nonMember.getId());
+
+            // when & then
+            performPost("/chats/rooms/" + groupRoom.getId() + "/mute")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+        @DisplayName("강퇴된 멤버는 뮤트 설정을 변경할 수 없다")
+        void toggleMuteByKickedMemberReturnsForbidden() throws Exception {
+            // given - 방장이 멤버를 강퇴
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(roomOwner.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + roomMember.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then - 강퇴된 멤버가 뮤트 토글 시도
+            mockLoginUser(roomMember.getId());
+            performPost("/chats/rooms/" + groupRoom.getId() + "/mute")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /chats/rooms/search - 채팅 검색 엣지 케이스")
+    class SearchChatsEdgeCases {
+
+        private ChatRoom directRoom;
+        private User chatPartner;
+
+        @BeforeEach
+        void setUpSearchEdgeFixture() {
+            chatPartner = createUser("검색상대", "2021136013");
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            persistChatMessage(directRoom, chatPartner, "검색 가능한 메시지");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("검색 결과가 없으면 빈 목록을 반환한다")
+        void searchChatsWithNoMatchesReturnsEmpty() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then - 존재하지 않는 키워드로 검색
+            performGet("/chats/rooms/search?keyword=존재하지않는키워드12345&page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.rooms").isArray())
+                .andExpect(jsonPath("$.roomMatches.rooms").isEmpty())
+                .andExpect(jsonPath("$.messageMatches.messages").isArray())
+                .andExpect(jsonPath("$.messageMatches.messages").isEmpty());
+        }
+
+        @Test
+        @DisplayName("검색 키워드가 2자 미만이면 결과가 제한될 수 있다")
+        void searchChatsWithShortKeyword() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then - 1글자 키워드로 검색
+            performGet("/chats/rooms/search?keyword=a&page=1&limit=20")
+                .andExpect(status().isOk());
+        }
+    }
 }
