@@ -1297,11 +1297,10 @@ public class ChatService {
     }
 
     private List<LocalDateTime> toSortedReadBaselines(List<ChatRoomMember> members) {
-        List<LocalDateTime> baselines = members.stream()
+        return members.stream()
             .map(ChatRoomMember::getLastReadAt)
             .sorted()
             .toList();
-        return baselines;
     }
 
     private List<LocalDateTime> toAdminChatReadBaselines(List<ChatRoomMember> members) {
