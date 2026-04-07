@@ -142,6 +142,29 @@ class ClubSheetIntegratedServiceTest extends ServiceTestSupport {
             spreadsheetUrl
         );
 
+        InOrder inOrder = inOrder(
+            clubPermissionValidator,
+            googleSheetPermissionService,
+            sheetHeaderMapper,
+            clubMemberSheetService,
+            sheetImportService
+        );
+        inOrder.verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
+        inOrder.verify(googleSheetPermissionService)
+            .tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
+        inOrder.verify(sheetHeaderMapper).analyzeAllSheets(spreadsheetId);
+        inOrder.verify(clubMemberSheetService).updateSheetId(
+            clubId,
+            requesterId,
+            spreadsheetId,
+            analysis
+        );
+        inOrder.verify(sheetImportService).importPreMembersFromSheet(
+            clubId,
+            requesterId,
+            spreadsheetId,
+            analysis.memberListMapping()
+        );
         assertThat(actual).isEqualTo(expected);
     }
 }
