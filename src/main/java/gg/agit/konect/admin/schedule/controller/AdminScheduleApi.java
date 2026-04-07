@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import gg.agit.konect.admin.schedule.dto.AdminScheduleCreateRequest;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleUpsertRequest;
-import gg.agit.konect.domain.user.enums.UserRole;
-import gg.agit.konect.global.auth.annotation.Auth;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,7 +34,7 @@ public interface AdminScheduleApi {
 
     @Operation(summary = "일정을 일괄 생성/수정한다.", description = """
         scheduleId가 없으면 신규 생성, 있으면 해당 일정 수정입니다.
-
+        
         **scheduleType (일정 구분):**
         - `UNIVERSITY`: 대학교 일정
         - `CLUB`: 동아리 일정
