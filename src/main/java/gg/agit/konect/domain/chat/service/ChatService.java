@@ -391,11 +391,19 @@ public class ChatService {
     public ChatMessagePageResponse getMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+        User user = userRepository.getById(userId);
 
         LocalDateTime readAt = LocalDateTime.now();
 
         if (room.isDirectRoom()) {
-            chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, userId, readAt, room);
+            boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room);
+            if (isAdminViewingSystemRoom) {
+                chatRoomMembershipService.updateLastReadAt(roomId, SYSTEM_ADMIN_ID, readAt);
+                recordPresenceSafely(roomId, userId);
+                return getAdminSystemDirectChatRoomMessages(user, room, roomId, page, limit, readAt);
+            }
+
+            chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, user, readAt, room);
             recordPresenceSafely(roomId, userId);
             return getDirectChatRoomMessages(userId, roomId, page, limit, readAt);
         }
@@ -621,25 +629,62 @@ public class ChatService {
     ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User user = userRepository.getById(userId);
-        boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom);
-        ChatRoomMember member = isAdminViewingSystemRoom
-            ? getRoomMember(roomId, SYSTEM_ADMIN_ID)
-            : getOrCreateDirectRoomMember(chatRoom, user);
-        LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(member, chatRoom);
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(getOrCreateDirectRoomMember(chatRoom, user), chatRoom);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, visibleMessageFrom, pageable);
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
 
-        List<LocalDateTime> sortedReadBaselines = isAdminViewingSystemRoom
-            ? toAdminChatReadBaselines(members)
-            : toSortedReadBaselines(members);
+        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
+
+        List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
+            .map(message -> {
+                boolean isRead = message.isSentBy(userId) || !message.getCreatedAt().isAfter(readAt);
+                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
+                return new ChatMessageDetailResponse(
+                    message.getId(),
+                    message.getSender().getId(),
+                    null,
+                    message.getContent(),
+                    message.getCreatedAt(),
+                    isRead,
+                    unreadCount,
+                    message.isSentBy(userId)
+                );
+            })
+            .toList();
+
+        return new ChatMessagePageResponse(
+            messages.getTotalElements(),
+            messages.getNumberOfElements(),
+            messages.getTotalPages(),
+            messages.getNumber() + 1,
+            null,
+            responseMessages
+        );
+    }
+
+    private ChatMessagePageResponse getAdminSystemDirectChatRoomMessages(
+        User user,
+        ChatRoom chatRoom,
+        Integer roomId,
+        Integer page,
+        Integer limit,
+        LocalDateTime readAt
+    ) {
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        LocalDateTime visibleMessageFrom = resolveAdminSystemRoomVisibleMessageFrom(members);
+
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, visibleMessageFrom, pageable);
+
+        List<LocalDateTime> sortedReadBaselines = toAdminChatReadBaselines(members);
 
         Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
         List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
             .map(message -> {
                 Integer senderId = resolveDirectSenderId(message, maskedAdminId);
-                boolean isMine = shouldDisplayAsOwnMessage(user, message, isAdminViewingSystemRoom);
+                boolean isMine = shouldDisplayAsOwnMessage(user, message, true);
                 boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
                 int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
                 return new ChatMessageDetailResponse(
@@ -1354,6 +1399,11 @@ public class ChatService {
         LocalDateTime visibleMessageFrom = member.getVisibleMessageFrom();
         restoreDirectRoomIfVisible(member, chatRoom);
         return visibleMessageFrom;
+    }
+
+    private LocalDateTime resolveAdminSystemRoomVisibleMessageFrom(List<ChatRoomMember> members) {
+        ChatRoomMember systemAdminMember = findRoomMember(members, SYSTEM_ADMIN_ID);
+        return systemAdminMember != null ? systemAdminMember.getVisibleMessageFrom() : null;
     }
 
     /**

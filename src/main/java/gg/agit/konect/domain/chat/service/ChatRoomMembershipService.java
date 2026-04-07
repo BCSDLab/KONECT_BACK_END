@@ -65,19 +65,17 @@ public class ChatRoomMembershipService {
         chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, readAt);
     }
 
-    @Transactional
-    public void updateDirectRoomLastReadAt(Integer roomId, Integer userId, LocalDateTime readAt, ChatRoom room) {
-        User user = userRepository.getById(userId);
-
-        ensureDirectRoomMemberExists(room, user, readAt);
-
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateDirectRoomLastReadAt(Integer roomId, User user, LocalDateTime readAt, ChatRoom room) {
         // 어드민이 SYSTEM_ADMIN 방의 메시지를 읽으면 SYSTEM_ADMIN의 lastReadAt을 업데이트
         if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(roomId)) {
             chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, SYSTEM_ADMIN_ID, readAt);
             return;
         }
 
-        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, readAt);
+        ensureDirectRoomMemberExists(room, user, readAt);
+
+        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, user.getId(), readAt);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
