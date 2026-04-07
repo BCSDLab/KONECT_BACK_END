@@ -14,7 +14,6 @@ import jakarta.validation.Valid;
 
 @Tag(name = "(Admin) Version: 버전", description = "어드민 버전 API")
 @RequestMapping("/admin/versions")
-@Auth(roles = {UserRole.ADMIN})
 public interface AdminVersionApi {
 
     @Operation(summary = "새 버전을 등록한다.")

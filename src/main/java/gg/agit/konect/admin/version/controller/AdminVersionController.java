@@ -7,12 +7,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.admin.version.dto.AdminVersionCreateRequest;
 import gg.agit.konect.admin.version.service.AdminVersionService;
+import gg.agit.konect.domain.user.enums.UserRole;
+import gg.agit.konect.global.auth.annotation.Auth;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/versions")
+@Auth(roles = {UserRole.ADMIN})
 public class AdminVersionController implements AdminVersionApi {
 
     private final AdminVersionService adminVersionService;

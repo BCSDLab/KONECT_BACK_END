@@ -7,11 +7,14 @@ import org.springframework.web.bind.annotation.RestController;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleCreateRequest;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleUpsertRequest;
 import gg.agit.konect.admin.schedule.service.AdminScheduleService;
+import gg.agit.konect.domain.user.enums.UserRole;
+import gg.agit.konect.global.auth.annotation.Auth;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/schedules")
+@Auth(roles = {UserRole.ADMIN})
 public class AdminScheduleController implements AdminScheduleApi {
 
     private final AdminScheduleService adminScheduleService;

@@ -19,7 +19,6 @@ import jakarta.validation.Valid;
 
 @Tag(name = "(Admin) Schedule: 일정", description = "어드민 일정 API")
 @RequestMapping("/admin/schedules")
-@Auth(roles = {UserRole.ADMIN})
 public interface AdminScheduleApi {
 
     @Operation(summary = "일정을 생성한다.", description = """

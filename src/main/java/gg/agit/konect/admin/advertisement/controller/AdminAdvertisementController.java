@@ -11,10 +11,13 @@ import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementResponse;
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementUpdateRequest;
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementsResponse;
 import gg.agit.konect.admin.advertisement.service.AdminAdvertisementService;
+import gg.agit.konect.domain.user.enums.UserRole;
+import gg.agit.konect.global.auth.annotation.Auth;
 import jakarta.validation.Valid;
 
 @RestController
 @Validated
+@Auth(roles = {UserRole.ADMIN})
 public class AdminAdvertisementController implements AdminAdvertisementApi {
 
     private final AdminAdvertisementService adminAdvertisementService;
