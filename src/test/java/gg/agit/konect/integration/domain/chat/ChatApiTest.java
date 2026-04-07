@@ -876,7 +876,6 @@ class ChatApiTest extends IntegrationTestSupport {
             // 트랜잭션 내에서 테스트 데이터 생성 (NOT_SUPPORTED 테스트는 트랜잭션 없이 실행됨)
             ChatRoom[] chatRoomHolder = new ChatRoom[1];
             transactionTemplate.execute(status -> {
-                targetUser = createUser("상대유저", "2021136002");
                 chatRoomHolder[0] = createDirectChatRoom(normalUser, targetUser);
                 return null;
             });
