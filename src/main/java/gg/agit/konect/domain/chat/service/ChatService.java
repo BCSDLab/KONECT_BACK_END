@@ -1192,6 +1192,10 @@ public class ChatService {
     }
 
     private void ensureDirectRoomRequester(ChatRoom room, User user, LocalDateTime joinedAt) {
+        if (shouldSkipSystemAdminMembership(room, user)) {
+            return;
+        }
+
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
                 if (member.hasLeft()) {
@@ -1204,6 +1208,12 @@ public class ChatService {
                     member.updateLastReadAt(joinedAt);
                 }
             }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, joinedAt)));
+    }
+
+    private boolean shouldSkipSystemAdminMembership(ChatRoom room, User user) {
+        // 문의방은 SYSTEM_ADMIN + 일반 사용자 2인 구조를 전제로 재사용(findByTwoUsers)되므로,
+        // 생성/재오픈 경로에서도 일반 ADMIN을 멤버로 추가하면 안 된다.
+        return user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room);
     }
 
     private String normalizeCustomRoomName(String roomName) {

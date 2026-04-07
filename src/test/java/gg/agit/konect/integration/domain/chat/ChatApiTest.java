@@ -304,6 +304,36 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("관리자가 문의방을 다시 열어도 관리자 멤버는 추가되지 않는다")
+        void adminCreateOrGetInquiryRoomDoesNotAddAdminMember() throws Exception {
+            User anotherAdmin = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+            var createResult = performPost("/chats/rooms/admin")
+                .andExpect(status().isOk())
+                .andReturn();
+
+            int chatRoomId = parseChatRoomId(createResult);
+
+            mockLoginUser(anotherAdmin.getId());
+            performPost("/chats/rooms", new ChatRoomCreateRequest(normalUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatRoomId").value(chatRoomId));
+
+            clearPersistenceContext();
+
+            assertThat(chatRoomRepository.findByTwoUsers(SYSTEM_ADMIN_ID, normalUser.getId(), ChatType.DIRECT))
+                .isPresent()
+                .get()
+                .extracting(ChatRoom::getId)
+                .isEqualTo(chatRoomId);
+            assertThat(chatRoomMemberRepository.findByChatRoomId(chatRoomId))
+                .extracting(ChatRoomMember::getUserId)
+                .containsExactlyInAnyOrder(SYSTEM_ADMIN_ID, normalUser.getId());
+        }
+
+        @Test
         @DisplayName("어드민이 나간 문의 채팅방에 사용자가 새 메시지를 보내 어드민 목록에 다시 노출된다")
         @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @Transactional(propagation = Propagation.REQUIRES_NEW)
