@@ -24,6 +24,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = PROTECTED)
 public class ChatRoomMember extends BaseEntity {
 
+    private static final long DB_TIMESTAMP_PRECISION_NANOS = 1_000L;
+
     @EmbeddedId
     private ChatRoomMemberId id;
 
@@ -147,7 +149,7 @@ public class ChatRoomMember extends BaseEntity {
      * DB timestamp(6) 정밀도에서 보정값이 사라지지 않도록 경계를 1마이크로초 앞당겨 해당 메시지부터 보이고 안읽음으로 계산되게 한다.
      */
     public void restoreDirectRoomFromIncomingMessage(LocalDateTime messageCreatedAt) {
-        LocalDateTime visibleFrom = messageCreatedAt.minusNanos(1_000);
+        LocalDateTime visibleFrom = messageCreatedAt.minusNanos(DB_TIMESTAMP_PRECISION_NANOS);
         this.leftAt = null;
         this.visibleMessageFrom = visibleFrom;
         this.lastReadAt = visibleFrom;
