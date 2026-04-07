@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.chat.service;
 
+import static gg.agit.konect.domain.chat.service.ChatRoomMembershipService.SYSTEM_ADMIN_ID;
 import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.time.LocalDateTime;
@@ -34,6 +35,7 @@ import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomMatchesResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
+import static gg.agit.konect.domain.chat.service.ChatRoomMembershipService.SYSTEM_ADMIN_ID;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
@@ -69,7 +71,6 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class ChatService {
 
-    private static final int SYSTEM_ADMIN_ID = 1;
     private static final String ETC_SECTION_NAME = "기타";
     private static final String DEFAULT_GROUP_ROOM_NAME = "그룹 채팅";
 

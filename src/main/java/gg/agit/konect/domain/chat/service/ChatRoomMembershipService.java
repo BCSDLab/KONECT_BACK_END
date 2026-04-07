@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class ChatRoomMembershipService {
 
-    private static final int SYSTEM_ADMIN_ID = 1;
+    public static final int SYSTEM_ADMIN_ID = 1;
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
