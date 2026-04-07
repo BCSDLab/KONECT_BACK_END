@@ -20,7 +20,6 @@ import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
-import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -33,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class ChatRoomMembershipService {
 
-    private static final int SYSTEM_ADMIN_ID = 1;
+    public static final int SYSTEM_ADMIN_ID = 1;
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
@@ -68,7 +67,7 @@ public class ChatRoomMembershipService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateDirectRoomLastReadAt(Integer roomId, User user, LocalDateTime readAt, ChatRoom room) {
         // 어드민이 SYSTEM_ADMIN 방의 메시지를 읽으면 SYSTEM_ADMIN의 lastReadAt을 업데이트
-        if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(roomId)) {
+        if (user.isAdmin() && isSystemAdminRoom(roomId)) {
             chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, SYSTEM_ADMIN_ID, readAt);
             return;
         }
@@ -134,7 +133,7 @@ public class ChatRoomMembershipService {
 
         // 어드민은 SYSTEM_ADMIN 방의 메시지를 조회할 수 있지만, 멤버로 추가되지는 않는다
         // (멤버가 추가되면 findByTwoUsers에서 해당 방을 찾지 못해 채팅방이 중복 생성됨)
-        if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room.getId())) {
+        if (user.isAdmin() && isSystemAdminRoom(room.getId())) {
             return;
         }
 
