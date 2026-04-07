@@ -13,15 +13,12 @@ import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementCreateRequest;
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementResponse;
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementUpdateRequest;
 import gg.agit.konect.admin.advertisement.dto.AdminAdvertisementsResponse;
-import gg.agit.konect.domain.user.enums.UserRole;
-import gg.agit.konect.global.auth.annotation.Auth;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @Tag(name = "(Admin) Advertisement: 광고", description = "어드민 광고 API")
 @RequestMapping("/admin/advertisements")
-@Auth(roles = {UserRole.ADMIN})
 public interface AdminAdvertisementApi {
 
     @Operation(summary = "광고 목록을 조회한다.")
