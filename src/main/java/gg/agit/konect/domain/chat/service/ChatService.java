@@ -630,7 +630,8 @@ public class ChatService {
         ChatRoom chatRoom = getDirectRoom(roomId);
         User user = userRepository.getById(userId);
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(getOrCreateDirectRoomMember(chatRoom, user), chatRoom);
+        LocalDateTime visibleMessageFrom = prepareDirectRoomAccess(getOrCreateDirectRoomMember(chatRoom, user),
+            chatRoom);
 
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, visibleMessageFrom, pageable);
