@@ -16,6 +16,7 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
+import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
@@ -47,6 +48,28 @@ public class SheetImportService {
     private final ChatRoomMembershipService chatRoomMembershipService;
     private final ClubPermissionValidator clubPermissionValidator;
 
+    @Transactional(readOnly = true)
+    public SheetImportPreviewResponse previewPreMembersFromSheet(
+        Integer clubId,
+        Integer requesterId,
+        String spreadsheetUrl
+    ) {
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
+        SheetHeaderMapper.SheetAnalysisResult analysis =
+            sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
+        Club club = clubRepository.getById(clubId);
+
+        SheetImportPlan plan = buildImportPlan(
+            clubId,
+            club,
+            spreadsheetId,
+            analysis.memberListMapping()
+        );
+        return SheetImportPreviewResponse.of(plan.previewMembers(), plan.warnings());
+    }
+
     @Transactional
     public SheetImportResponse importPreMembersFromSheet(
         Integer clubId,
@@ -75,10 +98,50 @@ public class SheetImportService {
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         Club club = clubRepository.getById(clubId);
-        return importPreMembersFromSheet(clubId, club, spreadsheetId, mapping);
+        SheetImportPlan plan = buildImportPlan(clubId, club, spreadsheetId, mapping);
+        applyImportPlan(clubId, spreadsheetId, plan);
+        return SheetImportResponse.of(
+            plan.importedCount(),
+            plan.autoRegisteredCount(),
+            plan.warnings()
+        );
     }
 
-    private SheetImportResponse importPreMembersFromSheet(
+    private void applyImportPlan(
+        Integer clubId,
+        String spreadsheetId,
+        SheetImportPlan plan
+    ) {
+        if (!plan.studentNumbersToCleanFromPre().isEmpty()) {
+            clubPreMemberRepository.deleteByClubIdAndStudentNumberIn(
+                clubId,
+                plan.studentNumbersToCleanFromPre()
+            );
+        }
+
+        List<ClubMember> savedMembers = plan.clubMembersToSave().isEmpty()
+            ? List.of()
+            : clubMemberRepository.saveAll(plan.clubMembersToSave());
+
+        for (ClubMember saved : savedMembers) {
+            chatRoomMembershipService.addClubMember(saved);
+        }
+
+        if (!plan.preMembersToSave().isEmpty()) {
+            clubPreMemberRepository.saveAll(plan.preMembersToSave());
+        }
+
+        log.info(
+            "Sheet import done. clubId={}, spreadsheetId={}, imported={}, autoRegistered={}, warnings={}",
+            clubId,
+            spreadsheetId,
+            plan.importedCount(),
+            plan.autoRegisteredCount(),
+            plan.warnings().size()
+        );
+    }
+
+    private SheetImportPlan buildImportPlan(
         Integer clubId,
         Club club,
         String spreadsheetId,
@@ -87,32 +150,29 @@ public class SheetImportService {
         Integer universityId = club.getUniversity().getId();
         List<List<Object>> rows = readDataRows(spreadsheetId, mapping);
 
-        // N+1 방지: 루프 전 기존 부원 학번 Set / 사전 회원 key Set / 부원 userId Set 일괄 조회
         Set<String> existingMemberStudentNumbers =
             new HashSet<>(clubMemberRepository.findStudentNumbersByClubId(clubId));
         Set<String> existingPreMemberKeys = buildPreMemberKeySet(clubId);
         Set<Integer> existingMemberUserIds =
             new HashSet<>(clubMemberRepository.findUserIdsByClubId(clubId));
 
-        // 시트에 등장하는 모든 학번 수집 → users 일괄 조회
         Set<String> allStudentNumbers = rows.stream()
             .map(row -> getCell(row, mapping, SheetColumnMapping.STUDENT_ID))
-            .filter(s -> !s.isBlank())
+            .filter(studentNumber -> !studentNumber.isBlank())
             .collect(Collectors.toSet());
 
         Map<String, List<User>> usersByStudentNumber = new HashMap<>();
         if (!allStudentNumbers.isEmpty()) {
             userRepository.findAllByUniversityIdAndStudentNumberIn(universityId, allStudentNumbers)
-                .forEach(u -> usersByStudentNumber
-                    .computeIfAbsent(u.getStudentNumber(), k -> new ArrayList<>())
-                    .add(u));
+                .forEach(user -> usersByStudentNumber
+                    .computeIfAbsent(user.getStudentNumber(), key -> new ArrayList<>())
+                    .add(user));
         }
 
-        // 루프에서 수집할 배치 작업 대상
+        List<SheetImportPreviewResponse.PreviewMember> previewMembers = new ArrayList<>();
         List<ClubMember> clubMembersToSave = new ArrayList<>();
         Set<String> studentNumbersToCleanFromPre = new HashSet<>();
         List<ClubPreMember> preMembersToSave = new ArrayList<>();
-
         List<String> warnings = new ArrayList<>();
         int presidentCount = 0;
 
@@ -124,55 +184,51 @@ public class SheetImportService {
                 continue;
             }
 
-            // 전화번호 형식 유효성 경고
             String phone = getCell(row, mapping, SheetColumnMapping.PHONE);
             if (!phone.isBlank() && !PhoneNumberNormalizer.looksLikePhoneNumber(phone)) {
                 warnings.add(String.format(
                     "전화번호 형식이 올바르지 않습니다 - 학번: %s, 이름: %s, 입력값: '%s'",
-                    studentNumber, name, phone
+                    studentNumber,
+                    name,
+                    phone
                 ));
             }
 
-            String positionStr = getCell(row, mapping, SheetColumnMapping.POSITION);
-            ClubPosition position = resolvePosition(positionStr);
+            String positionText = getCell(row, mapping, SheetColumnMapping.POSITION);
+            ClubPosition position = resolvePosition(positionText);
 
-            // 회장 중복 감지
             if (position == ClubPosition.PRESIDENT) {
                 presidentCount++;
                 if (presidentCount > 1) {
                     warnings.add(String.format(
                         "회장이 2명 이상 등록되어 있습니다 - 중복 회장: 학번 %s, 이름 %s",
-                        studentNumber, name
+                        studentNumber,
+                        name
                     ));
                 }
             }
 
-            // 이미 club_member에 있는 학번은 스킵
             if (existingMemberStudentNumbers.contains(studentNumber)) {
                 continue;
             }
 
-            // users 테이블에서 동일 대학 + 학번으로 매칭, 이름까지 일치하는 유저 탐색
-            // trim() / equalsIgnoreCase로 공백·대소문자 차이 허용
-            // 주의: existingPreMemberKeys 체크보다 먼저 수행하여
-            // 이미 pre_member로 등록된 행도 User 생성 후 재-import 시 club_member로 승격 가능하게 함
             List<User> candidates = usersByStudentNumber.getOrDefault(studentNumber, List.of());
-            List<User> matched = candidates.stream()
-                .filter(u -> name != null && u.getName() != null
-                    && name.trim().equalsIgnoreCase(u.getName().trim()))
+            List<User> matchedUsers = candidates.stream()
+                .filter(user -> name.equalsIgnoreCase(user.getName().trim()))
                 .toList();
 
-            if (matched.size() == 1) {
-                User matchedUser = matched.get(0);
-                // userId Set으로 중복 체크 (N+1 없음)
+            if (matchedUsers.size() == 1) {
+                User matchedUser = matchedUsers.get(0);
                 if (!existingMemberUserIds.contains(matchedUser.getId())) {
-                    // 기존 pre_member 행도 함께 정리 (중복 방지)
-                    studentNumbersToCleanFromPre.add(matchedUser.getStudentNumber());
-                    clubMembersToSave.add(ClubMember.builder()
+                    ClubMember clubMember = ClubMember.builder()
                         .club(club)
                         .user(matchedUser)
                         .clubPosition(position)
-                        .build());
+                        .build();
+
+                    clubMembersToSave.add(clubMember);
+                    previewMembers.add(SheetImportPreviewResponse.PreviewMember.from(clubMember));
+                    studentNumbersToCleanFromPre.add(matchedUser.getStudentNumber());
                     existingMemberStudentNumbers.add(studentNumber);
                     existingMemberUserIds.add(matchedUser.getId());
                     existingPreMemberKeys.remove(preMemberKey(studentNumber, name));
@@ -180,54 +236,37 @@ public class SheetImportService {
                 continue;
             }
 
-            if (matched.size() > 1) {
+            if (matchedUsers.size() > 1) {
                 warnings.add(String.format(
                     "동명이인이 여러 명 존재하여 자동 매칭할 수 없습니다 - 학번: %s, 이름: %s",
-                    studentNumber, name
+                    studentNumber,
+                    name
                 ));
             }
 
-            // users 미매칭 또는 동명이인 → 이미 pre_member에 있으면 스킵, 없으면 등록
             if (existingPreMemberKeys.contains(preMemberKey(studentNumber, name))) {
                 continue;
             }
 
-            preMembersToSave.add(ClubPreMember.builder()
+            ClubPreMember preMember = ClubPreMember.builder()
                 .club(club)
                 .studentNumber(studentNumber)
                 .name(name)
                 .clubPosition(position)
-                .build());
+                .build();
+
+            preMembersToSave.add(preMember);
+            previewMembers.add(SheetImportPreviewResponse.PreviewMember.from(preMember));
             existingPreMemberKeys.add(preMemberKey(studentNumber, name));
         }
 
-        // 배치 처리: pre_member 정리 → club_member 일괄 저장 → 채팅방 등록
-        if (!studentNumbersToCleanFromPre.isEmpty()) {
-            clubPreMemberRepository.deleteByClubIdAndStudentNumberIn(
-                clubId, studentNumbersToCleanFromPre
-            );
-        }
-        List<ClubMember> savedMembers = clubMembersToSave.isEmpty()
-            ? List.of()
-            : clubMemberRepository.saveAll(clubMembersToSave);
-
-        for (ClubMember saved : savedMembers) {
-            chatRoomMembershipService.addClubMember(saved);
-        }
-
-        if (!preMembersToSave.isEmpty()) {
-            clubPreMemberRepository.saveAll(preMembersToSave);
-        }
-
-        int autoRegistered = savedMembers.size();
-        int imported = preMembersToSave.size();
-
-        log.info(
-            "Sheet import done. clubId={}, spreadsheetId={}, imported={}, autoRegistered={}, "
-                + "warnings={}",
-            clubId, spreadsheetId, imported, autoRegistered, warnings.size()
+        return new SheetImportPlan(
+            previewMembers,
+            clubMembersToSave,
+            studentNumbersToCleanFromPre,
+            preMembersToSave,
+            warnings
         );
-        return SheetImportResponse.of(imported, autoRegistered, warnings);
     }
 
     private List<List<Object>> readDataRows(String spreadsheetId, SheetColumnMapping mapping) {
@@ -241,7 +280,6 @@ public class SheetImportService {
 
             List<List<Object>> values = response.getValues();
             return values != null ? values : List.of();
-
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)) {
                 log.warn(
@@ -257,22 +295,23 @@ public class SheetImportService {
     }
 
     private String getCell(List<Object> row, SheetColumnMapping mapping, String field) {
-        int col = mapping.getColumnIndex(field);
-        if (col < 0 || col >= row.size()) {
+        int columnIndex = mapping.getColumnIndex(field);
+        if (columnIndex < 0 || columnIndex >= row.size()) {
             return "";
         }
-        String value = row.get(col).toString().trim();
+
+        String value = row.get(columnIndex).toString().trim();
         if (value.startsWith("'")) {
             return value.substring(1);
         }
         return value;
     }
 
-    private ClubPosition resolvePosition(String positionStr) {
-        for (ClubPosition pos : ClubPosition.values()) {
-            if (pos.getDescription().equals(positionStr)
-                || pos.name().equalsIgnoreCase(positionStr)) {
-                return pos;
+    private ClubPosition resolvePosition(String positionText) {
+        for (ClubPosition position : ClubPosition.values()) {
+            if (position.getDescription().equals(positionText)
+                || position.name().equalsIgnoreCase(positionText)) {
+                return position;
             }
         }
         return ClubPosition.MEMBER;
@@ -281,11 +320,27 @@ public class SheetImportService {
     private Set<String> buildPreMemberKeySet(Integer clubId) {
         Set<String> keys = new HashSet<>();
         clubPreMemberRepository.findStudentNumberAndNameByClubId(clubId)
-            .forEach(k -> keys.add(preMemberKey(k.getStudentNumber(), k.getName())));
+            .forEach(key -> keys.add(preMemberKey(key.getStudentNumber(), key.getName())));
         return keys;
     }
 
     private String preMemberKey(String studentNumber, String name) {
         return studentNumber + "\u0000" + name;
+    }
+
+    private record SheetImportPlan(
+        List<SheetImportPreviewResponse.PreviewMember> previewMembers,
+        List<ClubMember> clubMembersToSave,
+        Set<String> studentNumbersToCleanFromPre,
+        List<ClubPreMember> preMembersToSave,
+        List<String> warnings
+    ) {
+        private int autoRegisteredCount() {
+            return clubMembersToSave.size();
+        }
+
+        private int importedCount() {
+            return preMembersToSave.size();
+        }
     }
 }

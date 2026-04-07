@@ -13,14 +13,20 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.service.ClubSheetIntegratedService;
+import gg.agit.konect.domain.club.service.SheetImportService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.IntegrationTestSupport;
 
 class ClubSheetMigrationApiTest extends IntegrationTestSupport {
+
+    @MockitoBean
+    private SheetImportService sheetImportService;
 
     @MockitoBean
     private ClubSheetIntegratedService clubSheetIntegratedService;
@@ -33,6 +39,71 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
     @BeforeEach
     void setUp() throws Exception {
         mockLoginUser(REQUESTER_ID);
+    }
+
+    @Nested
+    @DisplayName("POST /clubs/{clubId}/sheet/import/preview - 시트 부원 미리보기")
+    class PreviewPreMembers {
+
+        @Test
+        @DisplayName("시트에서 읽은 등록 예정 부원 목록을 반환한다")
+        void previewPreMembersSuccess() throws Exception {
+            SheetImportPreviewResponse response = SheetImportPreviewResponse.of(
+                List.of(
+                    new SheetImportPreviewResponse.PreviewMember(
+                        "2021232948",
+                        "최승운",
+                        ClubPosition.MANAGER,
+                        true
+                    ),
+                    new SheetImportPreviewResponse.PreviewMember(
+                        "2021232949",
+                        "김하나",
+                        ClubPosition.MEMBER,
+                        false
+                    )
+                ),
+                List.of("전화번호 형식 경고")
+            );
+
+            given(sheetImportService.previewPreMembersFromSheet(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(SPREADSHEET_URL)
+            )).willReturn(response);
+
+            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.previewCount").value(2))
+                .andExpect(jsonPath("$.autoRegisteredCount").value(1))
+                .andExpect(jsonPath("$.preRegisteredCount").value(1))
+                .andExpect(jsonPath("$.members[0].studentNumber").value("2021232948"))
+                .andExpect(jsonPath("$.members[0].isDirectMember").value(true))
+                .andExpect(jsonPath("$.members[1].studentNumber").value("2021232949"))
+                .andExpect(jsonPath("$.members[1].isDirectMember").value(false))
+                .andExpect(jsonPath("$.warnings[0]").value("전화번호 형식 경고"));
+        }
+
+        @Test
+        @DisplayName("구글 스프레드시트 접근 권한이 없으면 403을 반환한다")
+        void previewPreMembersForbiddenGoogleSheetAccess() throws Exception {
+            given(sheetImportService.previewPreMembersFromSheet(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(SPREADSHEET_URL)
+            )).willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS));
+
+            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview", request)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code")
+                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.name()))
+                .andExpect(jsonPath("$.message")
+                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.getMessage()));
+        }
     }
 
     @Nested
