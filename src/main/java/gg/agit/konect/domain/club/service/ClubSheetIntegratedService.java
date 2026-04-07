@@ -23,12 +23,7 @@ public class ClubSheetIntegratedService {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
-        // integrated 등록은 요청자 Google Drive OAuth 연결을 전제로 한다.
-        // 연결된 계정이 실제 시트 접근 권한을 가지는지 검증한 뒤 서비스 계정 권한을 맞춘다.
-        googleSheetPermissionService.validateRequesterAccessAndTryGrantServiceAccountWriterAccess(
-            requesterId,
-            spreadsheetId
-        );
+        googleSheetPermissionService.tryGrantServiceAccountWriterAccess(requesterId, spreadsheetId);
 
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);

@@ -261,8 +261,8 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("throws a bad request custom exception when Google returns invalid_grant")
-    void tryGrantServiceAccountWriterAccessThrowsWhenInvalidGrantOccurs()
+    @DisplayName("returns false when Google returns invalid_grant")
+    void tryGrantServiceAccountWriterAccessReturnsFalseWhenInvalidGrantOccurs()
         throws IOException, GeneralSecurityException {
         mockConnectedDriveAccount();
         given(permissions.list(FILE_ID)).willReturn(listRequest);
@@ -277,13 +277,12 @@ class GoogleSheetPermissionServiceTest extends ServiceTestSupport {
             )
         ));
 
-        assertThatThrownBy(() -> googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
+        boolean granted = googleSheetPermissionService.tryGrantServiceAccountWriterAccess(
             REQUESTER_ID,
             FILE_ID
-        ))
-            .isInstanceOf(CustomException.class)
-            .extracting("errorCode")
-            .isEqualTo(ApiResponseCode.INVALID_GOOGLE_DRIVE_AUTH);
+        );
+
+        assertThat(granted).isFalse();
     }
 
     @Test

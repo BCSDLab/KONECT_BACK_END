@@ -45,7 +45,7 @@ public class GoogleSheetPermissionService {
         String refreshToken = resolveRefreshToken(requesterId);
 
         if (refreshToken == null) {
-            log.warn(
+            log.info(
                 "Skipping service account auto-share because Google Drive OAuth is not connected. requesterId={}",
                 requesterId
             );
@@ -91,14 +91,14 @@ public class GoogleSheetPermissionService {
             return true;
         } catch (IOException e) {
             if (GoogleSheetApiExceptionHelper.isInvalidGrant(e)) {
-                log.warn(
-                    "Google Drive OAuth token is invalid while auto-sharing spreadsheet. requesterId={}, "
+                log.info(
+                    "Skipping service account auto-share because Google Drive OAuth token is invalid. requesterId={}, "
                         + "spreadsheetId={}, cause={}",
                     requesterId,
                     spreadsheetId,
                     GoogleSheetApiExceptionHelper.extractDetail(e)
                 );
-                throw GoogleSheetApiExceptionHelper.invalidGoogleDriveAuth(e);
+                return false;
             }
 
             if (GoogleSheetApiExceptionHelper.isAccessDenied(e)
