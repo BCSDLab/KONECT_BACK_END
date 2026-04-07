@@ -94,7 +94,7 @@ public class ChatService {
             throw CustomException.of(CANNOT_CREATE_CHAT_ROOM_WITH_SELF);
         }
 
-        if (currentUser.getRole() == UserRole.ADMIN && targetUser.getRole() != UserRole.ADMIN) {
+        if (currentUser.isAdmin() && !targetUser.isAdmin()) {
             return getOrCreateSystemAdminChatRoomForUser(targetUser, currentUser);
         }
 
@@ -396,7 +396,7 @@ public class ChatService {
         LocalDateTime readAt = LocalDateTime.now();
 
         if (room.isDirectRoom()) {
-            boolean isAdminViewingSystemRoom = user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room);
+            boolean isAdminViewingSystemRoom = user.isAdmin() && isSystemAdminRoom(room);
             if (isAdminViewingSystemRoom) {
                 chatRoomMembershipService.updateLastReadAt(roomId, SYSTEM_ADMIN_ID, readAt);
                 recordPresenceSafely(roomId, userId);
@@ -448,7 +448,7 @@ public class ChatService {
             ensureRoomMember(room, member.getUser(), member.getCreatedAt());
         } else if (room.isDirectRoom()) {
             // 어드민이 SYSTEM_ADMIN 방에 접근하는 경우는 멤버십 체크를 건너뜀
-            boolean isAdminAccessingSystemAdminRoom = user.getRole() == UserRole.ADMIN
+            boolean isAdminAccessingSystemAdminRoom = user.isAdmin()
                 && isSystemAdminRoom(room);
             if (!isAdminAccessingSystemAdminRoom) {
                 getAccessibleDirectRoomMember(room, user);
@@ -491,7 +491,7 @@ public class ChatService {
     private List<ChatRoomSummaryResponse> getDirectChatRooms(Integer userId) {
         User user = userRepository.getById(userId);
 
-        if (user.getRole() == UserRole.ADMIN) {
+        if (user.isAdmin()) {
             return getAdminDirectChatRooms(userId);
         }
 
@@ -720,7 +720,7 @@ public class ChatService {
         User sender = userRepository.getById(userId);
 
         // 어드민이 SYSTEM_ADMIN 방에 메시지를 보내는 경우
-        boolean isAdminSendingToSystemAdminRoom = sender.getRole() == UserRole.ADMIN
+        boolean isAdminSendingToSystemAdminRoom = sender.isAdmin()
             && isSystemAdminRoom(chatRoom);
 
         ChatRoomMember senderMember = null;
@@ -1175,7 +1175,7 @@ public class ChatService {
     }
 
     private Integer getMaskedAdminId(User user, ChatRoom chatRoom) {
-        if (user.getRole() == UserRole.ADMIN) {
+        if (user.isAdmin()) {
             return null;
         }
 
@@ -1197,7 +1197,7 @@ public class ChatService {
     }
 
     private void publishAdminChatEventIfNeeded(boolean isSystemAdminRoom, User sender, String content) {
-        if (isSystemAdminRoom && sender.getRole() != UserRole.ADMIN) {
+        if (isSystemAdminRoom && !sender.isAdmin()) {
             eventPublisher.publishEvent(AdminChatReceivedEvent.of(sender.getId(), sender.getName(), content));
         }
     }
@@ -1260,7 +1260,7 @@ public class ChatService {
     private boolean shouldSkipSystemAdminMembership(ChatRoom room, User user) {
         // 문의방은 SYSTEM_ADMIN + 일반 사용자 2인 구조를 전제로 재사용(findByTwoUsers)되므로,
         // 생성/재오픈 경로에서도 일반 ADMIN을 멤버로 추가하면 안 된다.
-        return user.getRole() == UserRole.ADMIN && isSystemAdminRoom(room);
+        return user.isAdmin() && isSystemAdminRoom(room);
     }
 
     private String normalizeCustomRoomName(String roomName) {
@@ -1308,7 +1308,7 @@ public class ChatService {
         LocalDateTime userLastReadAt = null;
 
         for (ChatRoomMember member : members) {
-            if (member.getUser().getRole() == UserRole.ADMIN) {
+            if (member.getUser().isAdmin()) {
                 if (adminLastReadAt == null || member.getLastReadAt().isAfter(adminLastReadAt)) {
                     adminLastReadAt = member.getLastReadAt();
                 }
@@ -1383,7 +1383,7 @@ public class ChatService {
         return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
             .orElseGet(() -> {
                 // 어드민은 SYSTEM_ADMIN 방에 멤버로 추가되지 않음
-                if (user.getRole() == UserRole.ADMIN && isSystemAdminRoom(chatRoom)) {
+                if (user.isAdmin() && isSystemAdminRoom(chatRoom)) {
                     throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
                 }
                 throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
@@ -1440,13 +1440,13 @@ public class ChatService {
         boolean isAdminViewingSystemRoom
     ) {
         if (isAdminViewingSystemRoom) {
-            return message.getSender().getRole() == UserRole.ADMIN;
+            return message.getSender().isAdmin();
         }
         return message.isSentBy(currentUser.getId());
     }
 
     private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
-        if (maskedAdminId != null && message.getSender().getRole() == UserRole.ADMIN) {
+        if (maskedAdminId != null && message.getSender().isAdmin()) {
             return maskedAdminId;
         }
         return message.getSender().getId();
@@ -1533,13 +1533,13 @@ public class ChatService {
     private User findNonAdminUser(List<ChatRoomMember> members) {
         return members.stream()
             .map(ChatRoomMember::getUser)
-            .filter(memberUser -> memberUser.getRole() != UserRole.ADMIN)
+            .filter(memberUser -> !memberUser.isAdmin())
             .findFirst()
             .orElse(null);
     }
 
     private User resolveDirectMessageReceiver(List<ChatRoomMember> members, User sender) {
-        if (sender.getRole() == UserRole.ADMIN) {
+        if (sender.isAdmin()) {
             User nonAdminUser = findNonAdminUser(members);
             if (nonAdminUser != null) {
                 return nonAdminUser;
@@ -1585,7 +1585,7 @@ public class ChatService {
             .sorted(Comparator.comparing(MemberInfo::createdAt))
             .map(info -> userMap.get(info.userId()))
             .filter(Objects::nonNull)
-            .filter(user -> user.getRole() != UserRole.ADMIN)
+            .filter(user -> !user.isAdmin())
             .findFirst()
             .orElse(null);
     }
@@ -1595,7 +1595,7 @@ public class ChatService {
         List<MemberInfo> memberInfos,
         Map<Integer, User> userMap
     ) {
-        if (sender.getRole() == UserRole.ADMIN) {
+        if (sender.isAdmin()) {
             User nonAdminUser = findNonAdminUserFromMemberInfo(memberInfos, userMap);
             if (nonAdminUser != null) {
                 return nonAdminUser;
