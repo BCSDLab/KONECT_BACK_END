@@ -735,6 +735,10 @@ public class ChatService {
         }
 
         chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        members.stream()
+            .filter(member -> !member.getUserId().equals(userId))
+            .filter(ChatRoomMember::hasLeft)
+            .forEach(member -> member.restoreDirectRoomFromIncomingMessage(chatMessage.getCreatedAt()));
 
         // 어드민이 보낸 경우는 lastReadAt 업데이트하지 않음 (멤버가 아니므로)
         if (!isAdminSendingToSystemAdminRoom) {
@@ -1455,14 +1459,14 @@ public class ChatService {
     }
 
     private String getVisibleLastMessageContent(ChatRoom room, ChatRoomMember member) {
-        if (!member.hasVisibleMessages(room)) {
+        if (member.hasLeft() && !member.hasVisibleMessages(room)) {
             return null;
         }
         return room.getLastMessageContent();
     }
 
     private LocalDateTime getVisibleLastMessageSentAt(ChatRoom room, ChatRoomMember member) {
-        if (!member.hasVisibleMessages(room)) {
+        if (member.hasLeft() && !member.hasVisibleMessages(room)) {
             return null;
         }
         return room.getLastMessageSentAt();
