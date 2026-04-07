@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Propagation;
@@ -51,6 +53,16 @@ import gg.agit.konect.support.fixture.UserFixture;
 class ChatApiTest extends IntegrationTestSupport {
 
     private static final int SYSTEM_ADMIN_ID = 1;
+    private static final String CHAT_TEST_DATA_CLEANUP_SQL = """
+        DELETE FROM notification_mute_setting;
+        DELETE FROM chat_message;
+        DELETE FROM chat_room_member;
+        DELETE FROM chat_room;
+        DELETE FROM club_member;
+        DELETE FROM club;
+        DELETE FROM users;
+        DELETE FROM university;
+        """;
 
     @Autowired
     private ChatRoomRepository chatRoomRepository;
@@ -376,8 +388,12 @@ class ChatApiTest extends IntegrationTestSupport {
 
         @Test
         @DisplayName("어드민이 나간 문의 채팅방에 사용자가 새 메시지를 보내 어드민 목록에 다시 노출된다")
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @Transactional(propagation = Propagation.REQUIRES_NEW)
+        @Sql(
+            statements = CHAT_TEST_DATA_CLEANUP_SQL,
+            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        )
         void adminLeftInquiryRoomReappearsWhenUserSendsNewMessage() throws Exception {
             // given - 문의 채팅방 생성 (일반 사용자 -> system admin)
             mockLoginUser(normalUser.getId());
@@ -1033,8 +1049,12 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("참여하지 않은 사용자가 조회하면 403을 반환한다")
+        @Sql(
+            statements = CHAT_TEST_DATA_CLEANUP_SQL,
+            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        )
         void getMessagesForbidden() throws Exception {
             // given
             ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
@@ -1646,8 +1666,12 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("강퇴된 멤버는 메시지를 조회할 수 없다")
+        @Sql(
+            statements = CHAT_TEST_DATA_CLEANUP_SQL,
+            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        )
         void kickedMemberCannotGetMessages() throws Exception {
             // given
             Integer roomId = groupRoom.getId();
@@ -1764,6 +1788,11 @@ class ChatApiTest extends IntegrationTestSupport {
 
     @Nested
     @DisplayName("GET /chats/rooms/{chatRoomId} - 메시지 조회 페이지네이션 엣지 케이스")
+    @Sql(
+        statements = CHAT_TEST_DATA_CLEANUP_SQL,
+        config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+    )
     class GetMessagesPaginationEdgeCases {
 
         private ChatRoom directRoom;
@@ -1776,7 +1805,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("빈 채팅방의 메시지를 조회하면 빈 목록을 반환한다")
         void getMessagesFromEmptyRoomReturnsEmptyList() throws Exception {
             // given - 메시지가 없는 새로 생성된 방
@@ -1797,7 +1825,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("존재하지 않는 페이지를 조회하면 빈 목록을 반환한다")
         void getMessagesFromNonExistentPageReturnsEmptyList() throws Exception {
             // given - 메시지 5개 생성
@@ -1820,7 +1847,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("마지막 페이지는 부분 결과를 반환할 수 있다")
         void getMessagesLastPageReturnsPartialResults() throws Exception {
             // given - 메시지 25개 생성
@@ -1845,6 +1871,11 @@ class ChatApiTest extends IntegrationTestSupport {
 
     @Nested
     @DisplayName("POST /chats/rooms/{chatRoomId}/messages - 메시지 전송 권한 및 엣지 케이스")
+    @Sql(
+        statements = CHAT_TEST_DATA_CLEANUP_SQL,
+        config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+    )
     class SendMessageEdgeCases {
 
         private ChatRoom groupRoom;
@@ -1861,7 +1892,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("정확히 1000자 메시지는 전송 성공한다")
         void sendMessageExactly1000CharsSuccess() throws Exception {
             // given
@@ -1880,7 +1910,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("채팅방 멤버가 아닌 사용자는 메시지를 전송할 수 없다")
         void sendMessageByNonMemberReturnsForbidden() throws Exception {
             // given
@@ -1898,7 +1927,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("강퇴된 멤버는 메시지를 전송할 수 없다")
         void sendMessageByKickedMemberReturnsForbidden() throws Exception {
             // given - 방장이 멤버를 강퇴
@@ -1921,6 +1949,11 @@ class ChatApiTest extends IntegrationTestSupport {
 
     @Nested
     @DisplayName("POST /chats/rooms/{chatRoomId}/mute - 채팅방 뮤트 권한 케이스")
+    @Sql(
+        statements = CHAT_TEST_DATA_CLEANUP_SQL,
+        config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+    )
     class ToggleMutePermissionCases {
 
         private ChatRoom groupRoom;
@@ -1937,7 +1970,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("채팅방 멤버가 아닌 사용자는 뮤트 설정을 변경할 수 없다")
         void toggleMuteByNonMemberReturnsForbidden() throws Exception {
             // given
@@ -1954,7 +1986,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("강퇴된 멤버는 뮤트 설정을 변경할 수 없다")
         void toggleMuteByKickedMemberReturnsForbidden() throws Exception {
             // given - 방장이 멤버를 강퇴
