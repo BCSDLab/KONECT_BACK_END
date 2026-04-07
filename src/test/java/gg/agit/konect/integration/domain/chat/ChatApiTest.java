@@ -2036,8 +2036,8 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("검색 키워드가 2자 미만이면 결과가 제한될 수 있다")
-        void searchChatsWithShortKeyword() throws Exception {
+        @DisplayName("한 글자 키워드로 검색해도 200을 반환한다")
+        void searchChatsWithSingleCharacterKeywordReturnsOk() throws Exception {
             // given
             mockLoginUser(normalUser.getId());
 
