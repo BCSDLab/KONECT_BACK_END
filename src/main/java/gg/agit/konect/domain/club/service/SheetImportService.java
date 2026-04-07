@@ -6,11 +6,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
@@ -48,8 +52,8 @@ public class SheetImportService {
     private final UserRepository userRepository;
     private final ChatRoomMembershipService chatRoomMembershipService;
     private final ClubPermissionValidator clubPermissionValidator;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional(readOnly = true)
     public SheetImportPreviewResponse previewPreMembersFromSheet(
         Integer clubId,
         Integer requesterId,
@@ -60,16 +64,17 @@ public class SheetImportService {
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
-        Club club = clubRepository.getById(clubId);
         SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
-
-        SheetImportPlan plan = buildImportPlan(
-            clubId,
-            club,
-            source.members(),
-            source.warnings()
-        );
-        return SheetImportPreviewResponse.of(plan.previewMembers(), plan.warnings());
+        return executeReadOnlyTransaction(() -> {
+            Club club = clubRepository.getById(clubId);
+            SheetImportPlan plan = buildImportPlan(
+                clubId,
+                club,
+                source.members(),
+                source.warnings()
+            );
+            return SheetImportPreviewResponse.of(plan.previewMembers(), plan.warnings());
+        });
     }
 
     @Transactional
@@ -95,7 +100,6 @@ public class SheetImportService {
         );
     }
 
-    @Transactional
     public SheetImportResponse importPreMembersFromSheet(
         Integer clubId,
         Integer requesterId,
@@ -106,24 +110,14 @@ public class SheetImportService {
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
-        Club club = clubRepository.getById(clubId);
         SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
-
-        SheetImportPlan plan = buildImportPlan(
+        return executeTransaction(() -> importPreMembers(
             clubId,
-            club,
-            source.members(),
-            source.warnings()
-        );
-        applyImportPlan(clubId, spreadsheetId, plan);
-        return SheetImportResponse.of(
-            plan.preRegisteredCount(),
-            plan.autoRegisteredCount(),
-            plan.warnings()
-        );
+            spreadsheetId,
+            source
+        ));
     }
 
-    @Transactional
     SheetImportResponse importPreMembersFromSheet(
         Integer clubId,
         Integer requesterId,
@@ -131,16 +125,27 @@ public class SheetImportService {
         SheetColumnMapping mapping
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-        Club club = clubRepository.getById(clubId);
         SheetImportSource source = loadSheetImportSource(spreadsheetId, mapping);
+        return executeTransaction(() -> importPreMembers(
+            clubId,
+            spreadsheetId,
+            source
+        ));
+    }
 
+    private SheetImportResponse importPreMembers(
+        Integer clubId,
+        String importSource,
+        SheetImportSource source
+    ) {
+        Club club = clubRepository.getById(clubId);
         SheetImportPlan plan = buildImportPlan(
             clubId,
             club,
             source.members(),
             source.warnings()
         );
-        applyImportPlan(clubId, spreadsheetId, plan);
+        applyImportPlan(clubId, importSource, plan);
         return SheetImportResponse.of(
             plan.preRegisteredCount(),
             plan.autoRegisteredCount(),
@@ -341,11 +346,25 @@ public class SheetImportService {
         return members.stream()
             .filter(SheetImportConfirmRequest.ConfirmMember::isEnabled)
             .map(member -> new ImportMember(
-                member.studentNumber() == null ? "" : member.studentNumber().trim(),
-                member.name() == null ? "" : member.name().trim(),
+                member.studentNumber().trim(),
+                member.name().trim(),
                 member.clubPosition() == null ? ClubPosition.MEMBER : member.clubPosition()
             ))
             .toList();
+    }
+
+    private <T> T executeTransaction(Supplier<T> action) {
+        return executeWithTemplate(false, action);
+    }
+
+    private <T> T executeReadOnlyTransaction(Supplier<T> action) {
+        return executeWithTemplate(true, action);
+    }
+
+    private <T> T executeWithTemplate(boolean readOnly, Supplier<T> action) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setReadOnly(readOnly);
+        return Objects.requireNonNull(transactionTemplate.execute(status -> action.get()));
     }
 
     private List<List<Object>> readDataRows(String spreadsheetId, SheetColumnMapping mapping) {

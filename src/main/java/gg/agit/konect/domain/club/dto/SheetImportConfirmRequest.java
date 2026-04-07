@@ -16,6 +16,7 @@ import jakarta.validation.constraints.Size;
 
 public record SheetImportConfirmRequest(
     @NotNull(message = "최종 등록할 부원 목록은 필수입니다.")
+    @NotEmpty(message = "최종 등록할 부원 목록은 최소 1명 이상이어야 합니다.")
     @Valid
     @ArraySchema(schema = @Schema(implementation = ConfirmMember.class))
     List<ConfirmMember> members

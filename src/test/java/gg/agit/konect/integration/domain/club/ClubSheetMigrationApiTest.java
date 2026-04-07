@@ -186,14 +186,14 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
                 eq(CLUB_ID),
                 eq(REQUESTER_ID),
                 eq(request.members())
-            )).willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS));
+            )).willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
 
             performPost("/clubs/" + CLUB_ID + "/sheet/import/confirm", request)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code")
-                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.name()))
+                    .value(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS.name()))
                 .andExpect(jsonPath("$.message")
-                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.getMessage()));
+                    .value(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS.getMessage()));
         }
     }
 

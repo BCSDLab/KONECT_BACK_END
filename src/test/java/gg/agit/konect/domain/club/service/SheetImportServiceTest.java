@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,6 +15,8 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
@@ -76,6 +79,9 @@ class SheetImportServiceTest extends ServiceTestSupport {
     @Mock
     private ClubPermissionValidator clubPermissionValidator;
 
+    @Mock
+    private PlatformTransactionManager transactionManager;
+
     @InjectMocks
     private SheetImportService sheetImportService;
 
@@ -92,6 +98,7 @@ class SheetImportServiceTest extends ServiceTestSupport {
         given(clubPreMemberRepository.findStudentNumberAndNameByClubId(CLUB_ID))
             .willReturn(List.<ClubPreMemberRepository.PreMemberKey>of());
         given(clubMemberRepository.findUserIdsByClubId(CLUB_ID)).willReturn(List.of());
+        given(transactionManager.getTransaction(any())).willReturn(new SimpleTransactionStatus());
         given(userRepository.findAllByUniversityIdAndStudentNumberIn(
             eq(club.getUniversity().getId()),
             anySet()
