@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
+import gg.agit.konect.domain.club.dto.SheetImportConfirmRequest;
+import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import gg.agit.konect.domain.club.dto.SheetMigrateRequest;
@@ -20,11 +22,11 @@ import jakarta.validation.Valid;
 public interface ClubSheetMigrationApi {
 
     @Operation(
-        summary = "기존 스프레드시트 → 팀 양식으로 이관",
-        description = "동아리가 기존에 사용하던 스프레드시트 URL을 제출하면, "
-            + "AI가 데이터를 분석하여 KONECT 팀이 마련한 표준 양식 파일로 복사합니다. "
-            + "새 파일은 기존 URL과 동일한 Google Drive 폴더에 생성됩니다. "
-            + "이후 동기화는 새로 생성된 파일 기준으로 진행됩니다."
+        summary = "기존 스프레드시트를 공식 시트로 이관한다",
+        description = """
+            기존 스프레드시트 URL을 제출하면
+            같은 Google Drive 폴더에 KONECT 공식 시트를 만들고 현재 데이터를 복사합니다.
+            """
     )
     @PostMapping("/{clubId}/sheet/migrate")
     ResponseEntity<ClubMemberSheetSyncResponse> migrateSheet(
@@ -34,10 +36,39 @@ public interface ClubSheetMigrationApi {
     );
 
     @Operation(
-        summary = "기존 스프레드시트에서 사전 회원 가져오기",
-        description = "동아리가 기존에 관리하던 스프레드시트의 인명부를 읽어 "
-            + "DB에 사전 회원(ClubPreMember)으로 등록합니다. "
-            + "AI가 헤더를 자동 분석하며, 이미 등록된 회원(이름+학번 중복)은 건너뜁니다."
+        summary = "시트 불러오기 전 부원 목록을 미리본다",
+        description = """
+            스프레드시트 URL을 읽어 등록 예정인 부원 목록을 JSON으로 반환합니다.
+            이 API는 데이터를 저장하지 않고 미리보기 용도로만 사용합니다.
+            """
+    )
+    @PostMapping("/{clubId}/sheet/import/preview")
+    ResponseEntity<SheetImportPreviewResponse> previewPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody SheetImportRequest request,
+        @UserId Integer requesterId
+    );
+
+    @Operation(
+        summary = "편집된 미리보기 부원 목록을 최종 등록한다",
+        description = """
+            미리보기 화면에서 활성화된 부원 목록과 수동 추가한 부원 목록을 최종본으로 받아 등록합니다.
+            비활성화된 부원은 등록 대상에서 제외됩니다.
+            """
+    )
+    @PostMapping("/{clubId}/sheet/import/confirm")
+    ResponseEntity<SheetImportResponse> confirmImportPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody SheetImportConfirmRequest request,
+        @UserId Integer requesterId
+    );
+
+    @Operation(
+        summary = "스프레드시트에서 사전 등록 부원을 가져온다",
+        description = """
+            스프레드시트의 부원 정보를 데이터베이스에 반영합니다.
+            가입된 사용자는 ClubMember로 바로 등록하고, 미가입 사용자는 ClubPreMember로 저장합니다.
+            """
     )
     @PostMapping("/{clubId}/sheet/import")
     ResponseEntity<SheetImportResponse> importPreMembers(
@@ -47,10 +78,11 @@ public interface ClubSheetMigrationApi {
     );
 
     @Operation(
-        summary = "스프레드시트 분석 후 사전 회원 가져오기",
-        description = "구글 스프레드시트 URL을 받아 먼저 시트를 분석 및 등록한 뒤, "
-            + "같은 스프레드시트에서 사전 회원을 읽어 DB에 등록합니다. "
-            + "기존 PUT /clubs/{clubId}/sheet 와 POST /clubs/{clubId}/sheet/import 를 순서대로 실행한 결과와 동일합니다."
+        summary = "시트 분석과 사전 등록 부원 가져오기를 한 번에 수행한다",
+        description = """
+            시트 분석, 시트 등록, 사전 등록 부원 가져오기를 순차적으로 수행합니다.
+            기존 PUT /clubs/{clubId}/sheet 이후 POST /clubs/{clubId}/sheet/import 를 호출한 것과 같은 결과입니다.
+            """
     )
     @PostMapping("/{clubId}/sheet/import/integrated")
     ResponseEntity<SheetImportResponse> analyzeAndImportPreMembers(

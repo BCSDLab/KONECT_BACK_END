@@ -13,14 +13,21 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import gg.agit.konect.domain.club.dto.SheetImportConfirmRequest;
+import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
+import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.service.ClubSheetIntegratedService;
+import gg.agit.konect.domain.club.service.SheetImportService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.IntegrationTestSupport;
 
 class ClubSheetMigrationApiTest extends IntegrationTestSupport {
+
+    @MockitoBean
+    private SheetImportService sheetImportService;
 
     @MockitoBean
     private ClubSheetIntegratedService clubSheetIntegratedService;
@@ -36,11 +43,166 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
     }
 
     @Nested
-    @DisplayName("POST /clubs/{clubId}/sheet/import/integrated - 시트 통합 가져오기")
+    @DisplayName("POST /clubs/{clubId}/sheet/import/preview")
+    class PreviewPreMembers {
+
+        @Test
+        @DisplayName("returns preview member list")
+        void previewPreMembersSuccess() throws Exception {
+            SheetImportPreviewResponse response = SheetImportPreviewResponse.of(
+                List.of(
+                    new SheetImportPreviewResponse.PreviewMember(
+                        "2021232948",
+                        "Kim Manager",
+                        ClubPosition.MANAGER,
+                        true,
+                        true
+                    ),
+                    new SheetImportPreviewResponse.PreviewMember(
+                        "2021232949",
+                        "Lee Member",
+                        ClubPosition.MEMBER,
+                        false,
+                        true
+                    )
+                ),
+                List.of("전화번호 형식 경고")
+            );
+
+            given(sheetImportService.previewPreMembersFromSheet(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(SPREADSHEET_URL)
+            )).willReturn(response);
+
+            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.previewCount").value(2))
+                .andExpect(jsonPath("$.autoRegisteredCount").value(1))
+                .andExpect(jsonPath("$.preRegisteredCount").value(1))
+                .andExpect(jsonPath("$.members[0].studentNumber").value("2021232948"))
+                .andExpect(jsonPath("$.members[0].isDirectMember").value(true))
+                .andExpect(jsonPath("$.members[0].enabled").value(true))
+                .andExpect(jsonPath("$.members[1].studentNumber").value("2021232949"))
+                .andExpect(jsonPath("$.members[1].isDirectMember").value(false))
+                .andExpect(jsonPath("$.members[1].enabled").value(true))
+                .andExpect(jsonPath("$.warnings[0]").value("전화번호 형식 경고"));
+        }
+
+        @Test
+        @DisplayName("returns 403 when sheet access is forbidden")
+        void previewPreMembersForbiddenGoogleSheetAccess() throws Exception {
+            given(sheetImportService.previewPreMembersFromSheet(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(SPREADSHEET_URL)
+            )).willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS));
+
+            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview", request)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code")
+                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.name()))
+                .andExpect(jsonPath("$.message")
+                    .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.getMessage()));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /clubs/{clubId}/sheet/import/confirm")
+    class ConfirmImportPreMembers {
+
+        @Test
+        @DisplayName("imports only enabled preview members")
+        void confirmImportPreMembersSuccess() throws Exception {
+            given(sheetImportService.confirmImportPreMembers(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(List.of(
+                    new SheetImportConfirmRequest.ConfirmMember(
+                        "2021232948",
+                        "Kim Manager",
+                        ClubPosition.MANAGER,
+                        true
+                    ),
+                    new SheetImportConfirmRequest.ConfirmMember(
+                        "2021232949",
+                        "Lee Member",
+                        ClubPosition.MEMBER,
+                        false
+                    ),
+                    new SheetImportConfirmRequest.ConfirmMember(
+                        "2021232950",
+                        "Park Member",
+                        ClubPosition.MEMBER,
+                        true
+                    )
+                ))
+            )).willReturn(SheetImportResponse.of(1, 1, List.of()));
+
+            SheetImportConfirmRequest request = new SheetImportConfirmRequest(List.of(
+                new SheetImportConfirmRequest.ConfirmMember(
+                    "2021232948",
+                    "Kim Manager",
+                    ClubPosition.MANAGER,
+                    true
+                ),
+                new SheetImportConfirmRequest.ConfirmMember(
+                    "2021232949",
+                    "Lee Member",
+                    ClubPosition.MEMBER,
+                    false
+                ),
+                new SheetImportConfirmRequest.ConfirmMember(
+                    "2021232950",
+                    "Park Member",
+                    ClubPosition.MEMBER,
+                    true
+                )
+            ));
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/confirm", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.importedCount").value(1))
+                .andExpect(jsonPath("$.autoRegisteredCount").value(1));
+        }
+
+        @Test
+        @DisplayName("returns 403 when confirm import access is forbidden")
+        void confirmImportPreMembersForbidden() throws Exception {
+            SheetImportConfirmRequest request = new SheetImportConfirmRequest(List.of(
+                new SheetImportConfirmRequest.ConfirmMember(
+                    "2021232948",
+                    "Kim Manager",
+                    ClubPosition.MANAGER,
+                    true
+                )
+            ));
+
+            given(sheetImportService.confirmImportPreMembers(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID),
+                eq(request.members())
+            )).willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS));
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/confirm", request)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code")
+                    .value(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS.name()))
+                .andExpect(jsonPath("$.message")
+                    .value(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS.getMessage()));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /clubs/{clubId}/sheet/import/integrated")
     class AnalyzeAndImportPreMembers {
 
         @Test
-        @DisplayName("시트 분석 등록 후 사전 회원 가져오기 결과를 반환한다")
+        @DisplayName("returns integrated import result")
         void analyzeAndImportPreMembersSuccess() throws Exception {
             given(clubSheetIntegratedService.analyzeAndImportPreMembers(
                 eq(CLUB_ID),
@@ -58,7 +220,7 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("구글 스프레드시트 403 오류를 response body로 반환한다")
+        @DisplayName("returns 403 response body for forbidden sheet access")
         void analyzeAndImportPreMembersForbiddenGoogleSheetAccess() throws Exception {
             given(clubSheetIntegratedService.analyzeAndImportPreMembers(
                 eq(CLUB_ID),
@@ -77,7 +239,7 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("Google Drive invalid_grant 400 오류를 response body detail로 반환한다")
+        @DisplayName("returns detail for invalid Google Drive auth")
         void analyzeAndImportPreMembersInvalidGoogleDriveAuth() throws Exception {
             String detail =
                 "400 Bad Request\nPOST https://oauth2.googleapis.com/token\n{\"error\":\"invalid_grant\"}";
