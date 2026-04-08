@@ -71,19 +71,36 @@ JOIN temp_duplicate_room_map m
 SET cm.chat_room_id = m.keep_room_id,
     cm.updated_at = cm.updated_at;
 
--- 4) 삭제 대상 방의 멤버십 삭제
+-- 4) 삭제 대상 방의 멤버십 상태를 keep 방으로 병합 (visible_message_from, left_at 보존)
+-- visible_message_from: 더 이른 값(더 많은 메시지 볼 수 있는) 선택
+-- left_at: 둘 중 하나라도 나간 경우 나간 것으로 처리 (더 이른 값 선택)
+UPDATE chat_room_member t
+JOIN temp_duplicate_room_map m
+  ON t.chat_room_id = m.keep_room_id
+JOIN chat_room_member crm
+  ON crm.chat_room_id = m.from_room_id
+ AND crm.user_id = t.user_id
+SET t.visible_message_from = LEAST(t.visible_message_from, crm.visible_message_from),
+    t.left_at = CASE
+        WHEN t.left_at IS NULL THEN crm.left_at
+        WHEN crm.left_at IS NULL THEN t.left_at
+        ELSE LEAST(t.left_at, crm.left_at)
+    END,
+    t.updated_at = t.updated_at;
+
+-- 5) 삭제 대상 방의 멤버십 삭제
 DELETE crm
 FROM chat_room_member crm
 JOIN temp_duplicate_room_map m
   ON crm.chat_room_id = m.from_room_id;
 
--- 5) 삭제 대상 방 삭제
+-- 6) 삭제 대상 방 삭제
 DELETE cr
 FROM chat_room cr
 JOIN temp_duplicate_room_map m
   ON cr.id = m.from_room_id;
 
--- 6) 남은 방의 last_message_content와 last_message_sent_at 갱신
+-- 7) 남은 방의 last_message_content와 last_message_sent_at 갱신
 UPDATE chat_room cr
 JOIN temp_duplicate_room_map m
   ON cr.id = m.keep_room_id
@@ -102,6 +119,6 @@ LEFT JOIN (
 SET cr.last_message_content = latest_msg.content,
     cr.last_message_sent_at = latest_msg.created_at;
 
--- 7) 임시 테이블 정리
+-- 8) 임시 테이블 정리
 DROP TABLE IF EXISTS temp_duplicate_room_map;
 DROP TABLE IF EXISTS temp_direct_room_pairs;
