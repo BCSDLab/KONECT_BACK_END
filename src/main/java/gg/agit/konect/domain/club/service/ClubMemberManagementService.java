@@ -178,12 +178,12 @@ public class ClubMemberManagementService {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         List<ClubPreMemberBatchResultItem> results = new ArrayList<>();
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 
         for (ClubPreMemberAddRequest memberRequest : request.members()) {
             try {
-                TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
                 ClubPreMemberAddResponse response = Objects.requireNonNull(
-                    transactionTemplate.execute(status -> processSinglePreMember(club, memberRequest))
+                    transactionTemplate.execute(status -> addPreMember(clubId, requesterId, memberRequest))
                 );
                 results.add(ClubPreMemberBatchResultItem.success(memberRequest, response));
             } catch (CustomException e) {
@@ -194,31 +194,6 @@ public class ClubMemberManagementService {
         }
 
         return ClubPreMemberBatchAddResponse.from(results);
-    }
-
-    private ClubPreMemberAddResponse processSinglePreMember(Club club, ClubPreMemberAddRequest request) {
-        String studentNumber = request.studentNumber();
-        String name = request.name();
-        ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
-        Integer universityId = club.getUniversity().getId();
-
-        List<User> candidates = userRepository.findAllByUniversityIdAndStudentNumber(
-            universityId, studentNumber
-        );
-
-        List<User> matchedUsers = candidates.stream()
-            .filter(user -> name.equals(user.getName()))
-            .toList();
-
-        if (matchedUsers.isEmpty()) {
-            return addPreMemberInternal(club, studentNumber, name, clubPosition);
-        }
-
-        if (matchedUsers.size() == 1) {
-            return addDirectMember(club, matchedUsers.get(0), clubPosition);
-        }
-
-        throw CustomException.of(AMBIGUOUS_USER_MATCH);
     }
 
     public ClubPreMembersResponse getPreMembers(Integer clubId, Integer requesterId) {
