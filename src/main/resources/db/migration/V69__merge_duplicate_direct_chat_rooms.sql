@@ -41,7 +41,8 @@ WITH ranked_rooms AS (
         ROW_NUMBER() OVER (
             PARTITION BY user1_id, user2_id
             ORDER BY
-                COALESCE(last_message_at, created_at) DESC,
+                (last_message_at IS NOT NULL) DESC,
+                last_message_at DESC,
                 created_at DESC,
                 room_id DESC
         ) AS rn,
@@ -81,6 +82,25 @@ FROM chat_room cr
 JOIN temp_duplicate_room_map m
   ON cr.id = m.from_room_id;
 
--- 6) 임시 테이블 정리
+-- 6) 남은 방의 last_message_content와 last_message_sent_at 갱신
+UPDATE chat_room cr
+JOIN temp_duplicate_room_map m
+  ON cr.id = m.keep_room_id
+LEFT JOIN (
+    SELECT
+        chat_room_id,
+        content,
+        created_at
+    FROM chat_message cm1
+    WHERE created_at = (
+        SELECT MAX(created_at)
+        FROM chat_message cm2
+        WHERE cm2.chat_room_id = cm1.chat_room_id
+    )
+) latest_msg ON latest_msg.chat_room_id = cr.id
+SET cr.last_message_content = latest_msg.content,
+    cr.last_message_sent_at = latest_msg.created_at;
+
+-- 7) 임시 테이블 정리
 DROP TABLE IF EXISTS temp_duplicate_room_map;
 DROP TABLE IF EXISTS temp_direct_room_pairs;
