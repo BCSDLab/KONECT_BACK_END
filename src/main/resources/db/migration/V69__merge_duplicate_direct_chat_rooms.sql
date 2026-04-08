@@ -6,10 +6,11 @@
 -- 1. 재시도 시 매핑 테이블 보호: NOT EXISTS로 기존 매핑 유지
 -- 2. 연산자 우선순위: WHERE 조건에 괄호로 묶어 AND/OR 우선순위 명확화
 -- 3. chat_room_member 병합: visible_message_from, left_at, last_read_at, custom_room_name, is_owner 모두 처리
--- 4. notification_mute_setting 충돌: keep 방의 기존 설정 먼저 삭제 후 UPDATE
--- 5. 데이터 유실 방지: loser 방의 멤버가 keep 방에 없으면 INSERT (orphan member 처리)
--- 6. 메시지 중복 방지: from_room_id는 PK라 자연스럽게 중복 없음
--- 7. 롤백 지원: 매핑 테이블 DROP/CREATE 대신 재사용 패턴
+--    - 기존 멤버 UPDATE 후 GROUP BY로 집계하여 orphan INSERT (다중 loser 시 PK 충돌 방지)
+-- 4. notification_mute_setting 충돌: 여러 loser 방의 설정을 GROUP BY로 집계 후 INSERT
+--    - 동일 사용자가 여러 loser 방에 뮤트 설정 시 MAX(is_muted)로 병합
+-- 5. 메시지 중복 방지: from_room_id는 PK라 자연스럽게 중복 없음
+-- 6. 롤백 지원: 매핑 테이블 DROP/CREATE 대신 재사용 패턴
 
 -- 임시 테이블 대신 실제 테이블 사용 (MySQL 임시 테이블 재참조 제한 회피)
 -- 재시도 가능하도록: 기존 매핑 테이블이 있으면 스킵, 없으면 생성
@@ -149,7 +150,7 @@ SET t.visible_message_from = LEAST(t.visible_message_from, la.min_visible_from),
     t.updated_at = t.updated_at;
 
 -- 4b) keep_room에 없는 loser 멤버 INSERT (orphan member 처리)
--- loser 방에만 있고 keep 방에는 없는 멤버를 keep 방에 추가
+-- 여러 loser 방이 같은 keep 방으로 매핑될 수 있으므로 GROUP BY로 집계하여 PK 충돌 방지
 INSERT INTO chat_room_member (
     chat_room_id, user_id, last_read_at, created_at, updated_at,
     visible_message_from, left_at, custom_room_name, is_owner
@@ -157,41 +158,65 @@ INSERT INTO chat_room_member (
 SELECT
     m.keep_room_id,
     crm.user_id,
-    crm.last_read_at,
-    crm.created_at,
-    crm.updated_at,
-    crm.visible_message_from,
-    crm.left_at,
-    crm.custom_room_name,
-    crm.is_owner
+    MAX(crm.last_read_at) AS last_read_at,
+    MIN(crm.created_at) AS created_at,
+    MAX(crm.updated_at) AS updated_at,
+    MIN(crm.visible_message_from) AS visible_message_from,
+    MIN(crm.left_at) AS left_at,
+    MAX(crm.custom_room_name) AS custom_room_name,
+    MAX(CASE WHEN crm.is_owner THEN 1 ELSE 0 END) AS is_owner
 FROM temp_duplicate_room_map m
 JOIN chat_room_member crm ON crm.chat_room_id = m.from_room_id
 LEFT JOIN chat_room_member existing
     ON existing.chat_room_id = m.keep_room_id
     AND existing.user_id = crm.user_id
-WHERE existing.chat_room_id IS NULL;
+WHERE existing.chat_room_id IS NULL
+GROUP BY m.keep_room_id, crm.user_id;
 
 -- 5) 삭제 대상 방의 알림 뮤트 설정을 keep 방으로 이동
--- 충돌 방지: keep 방에 이미 존재하는 뮤트 설정을 먼저 삭제 (from_room 설정으로 덮어쓰기)
-DELETE nms_keep
-FROM notification_mute_setting nms_keep
-JOIN temp_duplicate_room_map m
-  ON nms_keep.target_id = m.keep_room_id
-WHERE nms_keep.target_type = 'CHAT_ROOM'
-  AND EXISTS (
-      SELECT 1 FROM notification_mute_setting nms_from
-      WHERE nms_from.user_id = nms_keep.user_id
-        AND nms_from.target_type = 'CHAT_ROOM'
-        AND nms_from.target_id = m.from_room_id
-  );
+-- 여러 loser 방이 같은 keep 방으로 매핑될 수 있으므로 먼저 집계하여 UNIQUE 충돌 방지
 
--- 삭제 대상 방의 알림 뮤트 설정을 keep 방으로 이동
-UPDATE notification_mute_setting nms
-JOIN temp_duplicate_room_map m
-  ON nms.target_id = m.from_room_id
-SET nms.target_id = m.keep_room_id,
-    nms.updated_at = nms.updated_at
+-- 5a) loser 방들의 뮤트 설정을 keep_room_id 기준으로 집계
+-- 동일 사용자가 여러 loser 방에 뮤트 설정을 가진 경우 MAX(is_muted)로 병합
+CREATE TEMPORARY TABLE temp_mute_setting_agg AS
+SELECT
+    m.keep_room_id,
+    nms.user_id,
+    MAX(nms.is_muted) AS is_muted
+FROM temp_duplicate_room_map m
+JOIN notification_mute_setting nms
+    ON nms.target_id = m.from_room_id
+    AND nms.target_type = 'CHAT_ROOM'
+GROUP BY m.keep_room_id, nms.user_id;
+
+-- 5b) 집계된 설정과 충돌하는 기존 keep 방 뮤트 설정 삭제
+DELETE nms
+FROM notification_mute_setting nms
+JOIN temp_mute_setting_agg agg
+    ON nms.target_id = agg.keep_room_id
+    AND nms.user_id = agg.user_id
 WHERE nms.target_type = 'CHAT_ROOM';
+
+-- 5c) 집계된 뮤트 설정을 keep 방에 INSERT
+INSERT INTO notification_mute_setting (user_id, target_type, target_id, is_muted, created_at, updated_at)
+SELECT
+    agg.user_id,
+    'CHAT_ROOM',
+    agg.keep_room_id,
+    agg.is_muted,
+    NOW(),
+    NOW()
+FROM temp_mute_setting_agg agg;
+
+-- 5d) loser 방의 뮤트 설정 삭제 (이미 집계되어 이동 완료)
+DELETE nms
+FROM notification_mute_setting nms
+JOIN temp_duplicate_room_map m
+    ON nms.target_id = m.from_room_id
+WHERE nms.target_type = 'CHAT_ROOM';
+
+-- 임시 테이블 정리
+DROP TEMPORARY TABLE IF EXISTS temp_mute_setting_agg;
 
 -- 6) 삭제 대상 방의 멤버십 삭제
 DELETE crm
