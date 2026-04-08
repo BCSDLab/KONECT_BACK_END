@@ -5,14 +5,20 @@ import static gg.agit.konect.global.code.ApiResponseCode.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddRequest;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchResultItem;
 import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
@@ -42,6 +48,7 @@ public class ClubMemberManagementService {
     private final ClubPermissionValidator clubPermissionValidator;
     private final UserRepository userRepository;
     private final ChatRoomMembershipService chatRoomMembershipService;
+    private final PlatformTransactionManager transactionManager;
 
     @Transactional
     public ClubMember changeMemberPosition(
@@ -159,6 +166,59 @@ public class ClubMemberManagementService {
 
         ClubPreMember savedPreMember = clubPreMemberRepository.save(preMember);
         return ClubPreMemberAddResponse.from(savedPreMember);
+    }
+
+    public ClubPreMemberBatchAddResponse addPreMembersBatch(
+        Integer clubId,
+        Integer requesterId,
+        ClubPreMemberBatchAddRequest request
+    ) {
+        Club club = clubRepository.getById(clubId);
+
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+
+        List<ClubPreMemberBatchResultItem> results = new ArrayList<>();
+
+        for (ClubPreMemberAddRequest memberRequest : request.members()) {
+            try {
+                TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+                ClubPreMemberAddResponse response = Objects.requireNonNull(
+                    transactionTemplate.execute(status -> processSinglePreMember(club, memberRequest))
+                );
+                results.add(ClubPreMemberBatchResultItem.success(memberRequest, response));
+            } catch (CustomException e) {
+                results.add(ClubPreMemberBatchResultItem.fail(memberRequest, e.getErrorCode()));
+            } catch (Exception e) {
+                results.add(ClubPreMemberBatchResultItem.fail(memberRequest, UNEXPECTED_SERVER_ERROR));
+            }
+        }
+
+        return ClubPreMemberBatchAddResponse.from(results);
+    }
+
+    private ClubPreMemberAddResponse processSinglePreMember(Club club, ClubPreMemberAddRequest request) {
+        String studentNumber = request.studentNumber();
+        String name = request.name();
+        ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
+        Integer universityId = club.getUniversity().getId();
+
+        List<User> candidates = userRepository.findAllByUniversityIdAndStudentNumber(
+            universityId, studentNumber
+        );
+
+        List<User> matchedUsers = candidates.stream()
+            .filter(user -> name.equals(user.getName()))
+            .toList();
+
+        if (matchedUsers.isEmpty()) {
+            return addPreMemberInternal(club, studentNumber, name, clubPosition);
+        }
+
+        if (matchedUsers.size() == 1) {
+            return addDirectMember(club, matchedUsers.get(0), clubPosition);
+        }
+
+        throw CustomException.of(AMBIGUOUS_USER_MATCH);
     }
 
     public ClubPreMembersResponse getPreMembers(Integer clubId, Integer requesterId) {

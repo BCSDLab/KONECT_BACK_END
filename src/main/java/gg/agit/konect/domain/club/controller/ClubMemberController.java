@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddRequest;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberChangesResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberResponse;
 import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
@@ -73,6 +75,16 @@ public class ClubMemberController implements ClubMemberApi {
         @UserId Integer userId
     ) {
         ClubPreMemberAddResponse response = clubMemberManagementService.addPreMember(clubId, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ClubPreMemberBatchAddResponse> addPreMembersBatch(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubPreMemberBatchAddRequest request,
+        @UserId Integer userId
+    ) {
+        ClubPreMemberBatchAddResponse response = clubMemberManagementService.addPreMembersBatch(clubId, userId, request);
         return ResponseEntity.ok(response);
     }
 

@@ -2,8 +2,12 @@ package gg.agit.konect.integration.domain.club;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddRequest;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.dto.PresidentTransferRequest;
 import gg.agit.konect.domain.club.dto.VicePresidentChangeRequest;
@@ -361,6 +366,116 @@ class ClubMemberApiTest extends IntegrationTestSupport {
             // when & then
             performPost("/clubs/" + club.getId() + "/pre-members", request)
                 .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /clubs/{clubId}/pre-members/batch - 사전 멤버 일괄 등록")
+    class AddPreMembersBatch {
+
+        @Test
+        @DisplayName("여러 명의 사전 멤버를 일괄 등록한다")
+        void addPreMembersBatchSuccess() throws Exception {
+            // given
+            clearPersistenceContext();
+            mockLoginUser(president.getId());
+
+            List<ClubPreMemberAddRequest> members = List.of(
+                new ClubPreMemberAddRequest("2022000001", "신입생1", ClubPosition.MEMBER),
+                new ClubPreMemberAddRequest("2022000002", "신입생2", ClubPosition.MEMBER),
+                new ClubPreMemberAddRequest("2022000003", "신입생3", ClubPosition.MANAGER)
+            );
+            ClubPreMemberBatchAddRequest request = new ClubPreMemberBatchAddRequest(members);
+
+            // when & then
+            performPost("/clubs/" + club.getId() + "/pre-members/batch", request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(3))
+                .andExpect(jsonPath("$.successCount").value(3))
+                .andExpect(jsonPath("$.failedCount").value(0))
+                .andExpect(jsonPath("$.results", hasSize(3)))
+                .andExpect(jsonPath("$.results[0].success").value(true))
+                .andExpect(jsonPath("$.results[1].success").value(true))
+                .andExpect(jsonPath("$.results[2].success").value(true));
+        }
+
+        @Test
+        @DisplayName("일부 실패 시에도 나머지는 등록된다 (부분 성공)")
+        void addPreMembersBatchPartialSuccess() throws Exception {
+            // given - 이미 존재하는 사용자를 먼저 사전 등록
+            User existingUser = persist(UserFixture.createUser(university, "기존유저", "2022000002"));
+            clearPersistenceContext();
+            mockLoginUser(president.getId());
+
+            // 첫 번째는 이미 등록됨(실패 예상), 두 번째는 신규(성공 예상)
+            List<ClubPreMemberAddRequest> members = List.of(
+                new ClubPreMemberAddRequest(existingUser.getStudentNumber(), existingUser.getName(), ClubPosition.MEMBER),
+                new ClubPreMemberAddRequest("2022000003", "신입생", ClubPosition.MEMBER)
+            );
+            // 먼저 첫 번째 멤버를 등록하여 중복 상황 만들기
+            performPost("/clubs/" + club.getId() + "/pre-members", members.get(0));
+            clearPersistenceContext();
+            mockLoginUser(president.getId());
+
+            ClubPreMemberBatchAddRequest batchRequest = new ClubPreMemberBatchAddRequest(members);
+
+            // when & then - 같은 멤버를 다시 배치 등록 시도
+            performPost("/clubs/" + club.getId() + "/pre-members/batch", batchRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2))
+                .andExpect(jsonPath("$.successCount").value(1))
+                .andExpect(jsonPath("$.failedCount").value(1))
+                .andExpect(jsonPath("$.results[0].success").value(false))
+                .andExpect(jsonPath("$.results[1].success").value(true));
+        }
+
+        @Test
+        @DisplayName("50명 초과 요청 시 400을 반환한다")
+        void addPreMembersBatchExceedsLimit() throws Exception {
+            // given
+            clearPersistenceContext();
+            mockLoginUser(president.getId());
+
+            List<ClubPreMemberAddRequest> members = new ArrayList<>();
+            for (int i = 0; i < 51; i++) {
+                members.add(new ClubPreMemberAddRequest("2022" + String.format("%06d", i), "학생" + i, ClubPosition.MEMBER));
+            }
+            ClubPreMemberBatchAddRequest request = new ClubPreMemberBatchAddRequest(members);
+
+            // when & then
+            performPost("/clubs/" + club.getId() + "/pre-members/batch", request)
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("일반 멤버는 배치 등록을 할 수 없다")
+        void addPreMembersBatchByMemberFails() throws Exception {
+            // given
+            clearPersistenceContext();
+            mockLoginUser(member.getId());
+
+            List<ClubPreMemberAddRequest> members = List.of(
+                new ClubPreMemberAddRequest("2022000001", "신입생", ClubPosition.MEMBER)
+            );
+            ClubPreMemberBatchAddRequest request = new ClubPreMemberBatchAddRequest(members);
+
+            // when & then
+            performPost("/clubs/" + club.getId() + "/pre-members/batch", request)
+                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("빈 리스트 요청 시 400을 반환한다")
+        void addPreMembersBatchEmptyListFails() throws Exception {
+            // given
+            clearPersistenceContext();
+            mockLoginUser(president.getId());
+
+            ClubPreMemberBatchAddRequest request = new ClubPreMemberBatchAddRequest(List.of());
+
+            // when & then
+            performPost("/clubs/" + club.getId() + "/pre-members/batch", request)
+                .andExpect(status().isBadRequest());
         }
     }
 

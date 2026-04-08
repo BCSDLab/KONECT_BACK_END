@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddRequest;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberChangesResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberResponse;
 import gg.agit.konect.domain.club.dto.ClubPreMembersResponse;
@@ -104,6 +106,28 @@ public interface ClubMemberApi {
     ResponseEntity<ClubPreMemberAddResponse> addPreMember(
         @PathVariable(name = "clubId") Integer clubId,
         @Valid @RequestBody ClubPreMemberAddRequest request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "학번으로 여러 회원을 동아리에 일괄 등록한다.", description = """
+        운영진 이상만 사전 등록 회원을 일괄 등록할 수 있습니다.
+
+        ## 로직
+        - 각 회원은 개별적으로 처리되어, 일부 실패 시에도 나머지는 등록됩니다.
+        - 해당 학번의 사용자가 이미 서비스에 가입한 경우: 동아리 회원(ClubMember)에 직접 추가됩니다.
+        - 해당 학번의 사용자가 서비스에 가입하지 않은 경우: 사전 회원(ClubPreMember)으로 등록됩니다.
+        - 응답의 `success` 필드로 개별 회원의 등록 성공 여부를 확인할 수 있습니다.
+
+        ## 에러
+        - INVALID_INPUT (400): 회원 목록은 1~50명까지 가능합니다.
+        - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
+        - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
+        """
+    )
+    @PostMapping("/{clubId}/pre-members/batch")
+    ResponseEntity<ClubPreMemberBatchAddResponse> addPreMembersBatch(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody ClubPreMemberBatchAddRequest request,
         @UserId Integer userId
     );
 
