@@ -22,7 +22,7 @@ public record ClubPreMemberBatchAddResponse(
 
     public static ClubPreMemberBatchAddResponse from(List<ClubPreMemberBatchResultItem> results) {
         int totalCount = results.size();
-        int successCount = (int) results.stream()
+        int successCount = (int)results.stream()
             .filter(ClubPreMemberBatchResultItem::success)
             .count();
         int failedCount = totalCount - successCount;

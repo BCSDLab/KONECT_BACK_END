@@ -84,7 +84,8 @@ public class ClubMemberController implements ClubMemberApi {
         @Valid @RequestBody ClubPreMemberBatchAddRequest request,
         @UserId Integer userId
     ) {
-        ClubPreMemberBatchAddResponse response = clubMemberManagementService.addPreMembersBatch(clubId, userId, request);
+        ClubPreMemberBatchAddResponse response = clubMemberManagementService.addPreMembersBatch(clubId, userId,
+            request);
         return ResponseEntity.ok(response);
     }
 

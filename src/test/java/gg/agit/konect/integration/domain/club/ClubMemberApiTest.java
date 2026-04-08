@@ -416,8 +416,8 @@ class ClubMemberApiTest extends IntegrationTestSupport {
                 {"members": [{"studentNumber": "%s", "name": "%s", "clubPosition": "MEMBER"}]}
                 """.formatted(existingUser.getStudentNumber(), existingUser.getName());
             mockMvc.perform(post("/clubs/" + club.getId() + "/pre-members/batch")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(firstRequest));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(firstRequest));
             clearPersistenceContext();
             mockLoginUser(president.getId());
 
@@ -450,7 +450,8 @@ class ClubMemberApiTest extends IntegrationTestSupport {
 
             List<ClubPreMemberAddRequest> members = new ArrayList<>();
             for (int i = 0; i < 51; i++) {
-                members.add(new ClubPreMemberAddRequest("2022" + String.format("%06d", i), "학생" + i, ClubPosition.MEMBER));
+                members.add(
+                    new ClubPreMemberAddRequest("2022" + String.format("%06d", i), "학생" + i, ClubPosition.MEMBER));
             }
             ClubPreMemberBatchAddRequest request = new ClubPreMemberBatchAddRequest(members);
 
