@@ -108,20 +108,28 @@ SET cm.chat_room_id = m.keep_room_id,
 -- left_at: 둘 중 하나라도 나간 경우 나간 것으로 처리 (더 이른 값 선택)
 -- last_read_at: 더 나중에 읽은 값(최신 읽음 시점) 선택
 -- custom_room_name: 사용자가 설정한 방 이름이 있으면 보존
+-- 여러 loser 방이 같은 keep 방으로 매핑될 수 있으므로 먼저 집계하여 중복 업데이트 방지
 UPDATE chat_room_member t
-JOIN temp_duplicate_room_map m
-  ON t.chat_room_id = m.keep_room_id
-JOIN chat_room_member crm
-  ON crm.chat_room_id = m.from_room_id
- AND crm.user_id = t.user_id
-SET t.visible_message_from = LEAST(t.visible_message_from, crm.visible_message_from),
+JOIN (
+    SELECT
+        m.keep_room_id,
+        crm.user_id,
+        MIN(crm.visible_message_from) AS min_visible_from,
+        MIN(crm.left_at) AS min_left_at,
+        MAX(crm.last_read_at) AS max_last_read_at,
+        MAX(crm.custom_room_name) AS max_custom_room_name
+    FROM temp_duplicate_room_map m
+    JOIN chat_room_member crm ON crm.chat_room_id = m.from_room_id
+    GROUP BY m.keep_room_id, crm.user_id
+) la ON t.chat_room_id = la.keep_room_id AND t.user_id = la.user_id
+SET t.visible_message_from = LEAST(t.visible_message_from, la.min_visible_from),
     t.left_at = CASE
-        WHEN t.left_at IS NULL THEN crm.left_at
-        WHEN crm.left_at IS NULL THEN t.left_at
-        ELSE LEAST(t.left_at, crm.left_at)
+        WHEN t.left_at IS NULL THEN la.min_left_at
+        WHEN la.min_left_at IS NULL THEN t.left_at
+        ELSE LEAST(t.left_at, la.min_left_at)
     END,
-    t.last_read_at = GREATEST(t.last_read_at, crm.last_read_at),
-    t.custom_room_name = COALESCE(t.custom_room_name, crm.custom_room_name),
+    t.last_read_at = GREATEST(t.last_read_at, la.max_last_read_at),
+    t.custom_room_name = COALESCE(t.custom_room_name, la.max_custom_room_name),
     t.updated_at = t.updated_at;
 
 -- 5) 삭제 대상 방의 알림 뮤트 설정을 keep 방으로 이동
