@@ -1,6 +1,7 @@
 package gg.agit.konect.domain.club.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -33,6 +34,8 @@ import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
@@ -43,8 +46,6 @@ class SheetImportServiceTest extends ServiceTestSupport {
     private static final Integer CLUB_ID = 1;
     private static final Integer REQUESTER_ID = 2;
     private static final String SPREADSHEET_ID = "sheet-id";
-    private static final String SPREADSHEET_URL =
-        "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID + "/edit";
 
     @Mock
     private Sheets googleSheetsService;
@@ -88,6 +89,7 @@ class SheetImportServiceTest extends ServiceTestSupport {
     @Test
     void previewPreMembersFromSheetReturnsDirectAndPreMembers() throws IOException {
         Club club = ClubFixture.create(UniversityFixture.create());
+        club.updateGoogleSheetId(SPREADSHEET_ID);
         User directUser = UserFixture.createUser(club.getUniversity(), "Alex Kim", "2021232948");
 
         given(clubRepository.getById(CLUB_ID)).willReturn(club);
@@ -115,8 +117,7 @@ class SheetImportServiceTest extends ServiceTestSupport {
 
         SheetImportPreviewResponse response = sheetImportService.previewPreMembersFromSheet(
             CLUB_ID,
-            REQUESTER_ID,
-            SPREADSHEET_URL
+            REQUESTER_ID
         );
 
         assertThat(response.previewCount()).isEqualTo(2);
@@ -131,6 +132,20 @@ class SheetImportServiceTest extends ServiceTestSupport {
         assertThat(response.members())
             .extracting(SheetImportPreviewResponse.PreviewMember::enabled)
             .containsExactly(true, true);
+    }
+
+    @Test
+    void previewPreMembersFromSheetThrowsWhenSheetIsNotRegistered() {
+        Club club = ClubFixture.create(UniversityFixture.create());
+
+        given(clubRepository.getById(CLUB_ID)).willReturn(club);
+
+        assertThatThrownBy(() -> sheetImportService.previewPreMembersFromSheet(CLUB_ID, REQUESTER_ID))
+            .isInstanceOf(CustomException.class)
+            .extracting(exception -> ((CustomException)exception).getErrorCode())
+            .isEqualTo(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
+
+        verifyNoInteractions(googleSheetsService, sheetHeaderMapper);
     }
 
     @Test

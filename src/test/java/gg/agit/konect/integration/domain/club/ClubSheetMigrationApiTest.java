@@ -71,13 +71,10 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
 
             given(sheetImportService.previewPreMembersFromSheet(
                 eq(CLUB_ID),
-                eq(REQUESTER_ID),
-                eq(SPREADSHEET_URL)
+                eq(REQUESTER_ID)
             )).willReturn(response);
 
-            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
-
-            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview", request)
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.previewCount").value(2))
                 .andExpect(jsonPath("$.autoRegisteredCount").value(1))
@@ -96,18 +93,31 @@ class ClubSheetMigrationApiTest extends IntegrationTestSupport {
         void previewPreMembersForbiddenGoogleSheetAccess() throws Exception {
             given(sheetImportService.previewPreMembersFromSheet(
                 eq(CLUB_ID),
-                eq(REQUESTER_ID),
-                eq(SPREADSHEET_URL)
+                eq(REQUESTER_ID)
             )).willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS));
 
-            SheetImportRequest request = new SheetImportRequest(SPREADSHEET_URL);
-
-            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview", request)
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview")
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code")
                     .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.name()))
                 .andExpect(jsonPath("$.message")
                     .value(ApiResponseCode.FORBIDDEN_GOOGLE_SHEET_ACCESS.getMessage()));
+        }
+
+        @Test
+        @DisplayName("returns 400 when sheet analysis and registration are not completed")
+        void previewPreMembersRequiresRegisteredSheet() throws Exception {
+            given(sheetImportService.previewPreMembersFromSheet(
+                eq(CLUB_ID),
+                eq(REQUESTER_ID)
+            )).willThrow(CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED));
+
+            performPost("/clubs/" + CLUB_ID + "/sheet/import/preview")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                    .value(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED.name()))
+                .andExpect(jsonPath("$.message")
+                    .value(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED.getMessage()));
         }
     }
 
