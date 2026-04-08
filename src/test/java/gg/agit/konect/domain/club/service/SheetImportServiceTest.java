@@ -16,9 +16,11 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
@@ -83,6 +85,9 @@ class SheetImportServiceTest extends ServiceTestSupport {
     @Mock
     private PlatformTransactionManager transactionManager;
 
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @InjectMocks
     private SheetImportService sheetImportService;
 
@@ -90,17 +95,16 @@ class SheetImportServiceTest extends ServiceTestSupport {
     void previewPreMembersFromSheetReturnsDirectAndPreMembers() throws IOException {
         Club club = ClubFixture.create(UniversityFixture.create());
         club.updateGoogleSheetId(SPREADSHEET_ID);
+        club.updateSheetColumnMapping(objectMapper.writeValueAsString(
+            SheetColumnMapping.defaultMapping().toMap()
+        ));
         User directUser = UserFixture.createUser(club.getUniversity(), "Alex Kim", "2021232948");
 
         given(clubRepository.getById(CLUB_ID)).willReturn(club);
-        given(sheetHeaderMapper.analyzeAllSheets(SPREADSHEET_ID)).willReturn(
-            new SheetHeaderMapper.SheetAnalysisResult(SheetColumnMapping.defaultMapping(), null, null)
-        );
         given(clubMemberRepository.findStudentNumbersByClubId(CLUB_ID)).willReturn(Set.of());
         given(clubPreMemberRepository.findStudentNumberAndNameByClubId(CLUB_ID))
             .willReturn(List.<ClubPreMemberRepository.PreMemberKey>of());
         given(clubMemberRepository.findUserIdsByClubId(CLUB_ID)).willReturn(List.of());
-        given(transactionManager.getTransaction(any())).willReturn(new SimpleTransactionStatus());
         given(userRepository.findAllByUniversityIdAndStudentNumberIn(
             eq(club.getUniversity().getId()),
             anySet()
@@ -137,6 +141,21 @@ class SheetImportServiceTest extends ServiceTestSupport {
     @Test
     void previewPreMembersFromSheetThrowsWhenSheetIsNotRegistered() {
         Club club = ClubFixture.create(UniversityFixture.create());
+
+        given(clubRepository.getById(CLUB_ID)).willReturn(club);
+
+        assertThatThrownBy(() -> sheetImportService.previewPreMembersFromSheet(CLUB_ID, REQUESTER_ID))
+            .isInstanceOf(CustomException.class)
+            .extracting(exception -> ((CustomException)exception).getErrorCode())
+            .isEqualTo(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
+
+        verifyNoInteractions(googleSheetsService, sheetHeaderMapper);
+    }
+
+    @Test
+    void previewPreMembersFromSheetThrowsWhenSheetMappingIsMissing() {
+        Club club = ClubFixture.create(UniversityFixture.create());
+        club.updateGoogleSheetId(SPREADSHEET_ID);
 
         given(clubRepository.getById(CLUB_ID)).willReturn(club);
 
