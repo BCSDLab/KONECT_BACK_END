@@ -3,10 +3,20 @@
 -- 해결: 메시지를 하나의 방으로 합치고 중복 방 제거
 
 -- 임시 테이블 대신 실제 테이블 사용 (MySQL 임시 테이블 재참조 제한 회피)
+-- 재시도 가능하도록: 기존 매핑 테이블이 있으면 스킵, 없으면 생성
 DROP TABLE IF EXISTS temp_direct_room_pairs;
-DROP TABLE IF EXISTS temp_duplicate_room_map;
+
+-- 이전 실행에서 남은 매핑 테이블이 있으면 재사용 (재시도 시)
+-- 없으면 새로 생성
+CREATE TABLE IF NOT EXISTS temp_duplicate_room_map (
+    from_room_id INT PRIMARY KEY,
+    keep_room_id INT NOT NULL,
+    user1_id INT NOT NULL,
+    user2_id INT NOT NULL
+);
 
 -- 1) DIRECT 방 중 "정확히 2명"인 방만 유저쌍 단위로 펼침
+-- 또는 이미 매핑 테이블에 있는 방도 포함 (재시도 시 0명이 된 방 처리)
 CREATE TABLE temp_direct_room_pairs AS
 SELECT
     cr.id AS room_id,
@@ -29,11 +39,21 @@ WHERE cr.room_type = 'DIRECT'
       SELECT COUNT(*)
       FROM chat_room_member m
       WHERE m.chat_room_id = cr.id
-  ) = 2;
+  ) = 2
+   OR EXISTS (
+      SELECT 1 FROM temp_duplicate_room_map existing
+      WHERE existing.from_room_id = cr.id OR existing.keep_room_id = cr.id
+  );
 
 -- 2) 중복 방 중 어떤 방을 남기고 어떤 방을 지울지 매핑 테이블 생성
-CREATE TABLE temp_duplicate_room_map AS
-WITH ranked_rooms AS (
+-- 매핑 테이블이 비어있는 경우에만 채움 (재시도 시 기존 매핑 유지)
+INSERT INTO temp_duplicate_room_map (from_room_id, keep_room_id, user1_id, user2_id)
+SELECT
+    loser.room_id AS from_room_id,
+    winner.room_id AS keep_room_id,
+    loser.user1_id,
+    loser.user2_id
+FROM (
     SELECT
         room_id,
         user1_id,
@@ -50,19 +70,31 @@ WITH ranked_rooms AS (
             PARTITION BY user1_id, user2_id
         ) AS room_count
     FROM temp_direct_room_pairs
-)
-SELECT
-    loser.room_id AS from_room_id,
-    winner.room_id AS keep_room_id,
-    loser.user1_id,
-    loser.user2_id
-FROM ranked_rooms loser
-JOIN ranked_rooms winner
+) loser
+JOIN (
+    SELECT
+        room_id,
+        user1_id,
+        user2_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY user1_id, user2_id
+            ORDER BY
+                (last_message_at IS NOT NULL) DESC,
+                last_message_at DESC,
+                created_at DESC,
+                room_id DESC
+        ) AS rn
+    FROM temp_direct_room_pairs
+) winner
   ON winner.user1_id = loser.user1_id
  AND winner.user2_id = loser.user2_id
  AND winner.rn = 1
 WHERE loser.room_count > 1
-  AND loser.rn > 1;
+  AND loser.rn > 1
+ON DUPLICATE KEY UPDATE
+    keep_room_id = VALUES(keep_room_id),
+    user1_id = VALUES(user1_id),
+    user2_id = VALUES(user2_id);
 
 -- 3) 삭제 대상 방의 메시지를 keep 방으로 이동
 UPDATE chat_message cm
