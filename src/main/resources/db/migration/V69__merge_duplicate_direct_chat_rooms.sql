@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS temp_duplicate_room_map (
 -- 1) DIRECT 방 중 "정확히 2명"인 방만 유저쌍 단위로 펼침
 -- 또는 이미 매핑 테이블에 있는 방도 포함 (재시도 시 0명이 된 방 처리)
 -- 주의: AND/OR 우선순위 때문에 조건을 명확히 괄호로 묶음
+-- LEFT JOIN 사용: 0명 방도 EXISTS 조건으로 포함되도록 보존
 CREATE TABLE temp_direct_room_pairs AS
 SELECT
     cr.id AS room_id,
@@ -40,9 +41,9 @@ SELECT
         WHERE cm.chat_room_id = cr.id
     ) AS last_message_at
 FROM chat_room cr
-JOIN chat_room_member c1
+LEFT JOIN chat_room_member c1
   ON c1.chat_room_id = cr.id
-JOIN chat_room_member c2
+LEFT JOIN chat_room_member c2
   ON c2.chat_room_id = cr.id
  AND c1.user_id < c2.user_id
 WHERE cr.room_type = 'DIRECT'
