@@ -56,12 +56,11 @@ public class SheetImportService {
 
     public SheetImportPreviewResponse previewPreMembersFromSheet(
         Integer clubId,
-        Integer requesterId,
-        String spreadsheetUrl
+        Integer requesterId
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
-        String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
+        String spreadsheetId = resolveRegisteredSpreadsheetId(clubId);
         SheetHeaderMapper.SheetAnalysisResult analysis =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
         SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
@@ -75,6 +74,15 @@ public class SheetImportService {
             );
             return SheetImportPreviewResponse.of(plan.previewMembers(), plan.warnings());
         });
+    }
+
+    private String resolveRegisteredSpreadsheetId(Integer clubId) {
+        Club club = clubRepository.getById(clubId);
+        String spreadsheetId = club.getGoogleSheetId();
+        if (spreadsheetId == null || spreadsheetId.isBlank()) {
+            throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
+        }
+        return spreadsheetId;
     }
 
     @Transactional
