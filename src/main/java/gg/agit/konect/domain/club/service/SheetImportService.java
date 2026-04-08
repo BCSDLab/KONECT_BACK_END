@@ -59,13 +59,12 @@ public class SheetImportService {
         Integer requesterId
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-
-        String spreadsheetId = resolveRegisteredSpreadsheetId(clubId);
-        SheetHeaderMapper.SheetAnalysisResult analysis =
-            sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
-        SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
         return executeReadOnlyTransaction(() -> {
-            Club club = clubRepository.getById(clubId);
+            Club club = resolveRegisteredSpreadsheetId(clubId);
+            String spreadsheetId = club.getGoogleSheetId();
+            SheetHeaderMapper.SheetAnalysisResult analysis =
+                sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
+            SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
             SheetImportPlan plan = buildImportPlan(
                 clubId,
                 club,
@@ -76,13 +75,13 @@ public class SheetImportService {
         });
     }
 
-    private String resolveRegisteredSpreadsheetId(Integer clubId) {
+    private Club resolveRegisteredSpreadsheetId(Integer clubId) {
         Club club = clubRepository.getById(clubId);
         String spreadsheetId = club.getGoogleSheetId();
         if (spreadsheetId == null || spreadsheetId.isBlank()) {
             throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
         }
-        return spreadsheetId;
+        return club;
     }
 
     @Transactional
