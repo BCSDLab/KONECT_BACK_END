@@ -240,7 +240,7 @@ JOIN temp_duplicate_room_map m
   ON cr.id = m.from_room_id;
 
 -- 8) 남은 방의 last_message_content와 last_message_sent_at 갱신
--- 타임스탬프 동일 시 id가 큰 메시지(나중에 생성된)를 선택하여 결정론적으로 만듦
+-- MAX(created_at)으로 최신 메시지 선택, 동일 타임스탬프 시 id로 타임브레이커
 UPDATE chat_room cr
 JOIN temp_duplicate_room_map m
   ON cr.id = m.keep_room_id
@@ -251,10 +251,16 @@ LEFT JOIN (
         cm1.created_at
     FROM chat_message cm1
     JOIN (
-        SELECT chat_room_id, MAX(id) AS max_id
+        SELECT chat_room_id, MAX(created_at) AS max_created_at
         FROM chat_message
         GROUP BY chat_room_id
-    ) cm2 ON cm2.chat_room_id = cm1.chat_room_id AND cm2.max_id = cm1.id
+    ) cm2 ON cm2.chat_room_id = cm1.chat_room_id AND cm2.max_created_at = cm1.created_at
+    WHERE cm1.id = (
+        SELECT MAX(id)
+        FROM chat_message
+        WHERE chat_room_id = cm1.chat_room_id
+          AND created_at = cm2.max_created_at
+    )
 ) latest_msg ON latest_msg.chat_room_id = cr.id
 SET cr.last_message_content = latest_msg.content,
     cr.last_message_sent_at = latest_msg.created_at;
