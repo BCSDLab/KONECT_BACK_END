@@ -173,7 +173,7 @@ public class ClubMemberManagementService {
         Integer requesterId,
         ClubPreMemberBatchAddRequest request
     ) {
-        Club club = clubRepository.getById(clubId);
+        clubRepository.getById(clubId);
 
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
