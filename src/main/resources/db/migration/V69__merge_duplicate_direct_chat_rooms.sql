@@ -68,7 +68,8 @@ WHERE loser.room_count > 1
 UPDATE chat_message cm
 JOIN temp_duplicate_room_map m
   ON cm.chat_room_id = m.from_room_id
-SET cm.chat_room_id = m.keep_room_id;
+SET cm.chat_room_id = m.keep_room_id,
+    cm.updated_at = cm.updated_at;
 
 -- 4) 삭제 대상 방의 멤버십 삭제
 DELETE crm
