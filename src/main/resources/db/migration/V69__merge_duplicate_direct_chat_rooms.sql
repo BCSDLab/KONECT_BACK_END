@@ -130,7 +130,20 @@ SET t.visible_message_from = LEAST(t.visible_message_from, la.min_visible_from),
     t.updated_at = t.updated_at;
 
 -- 5) 삭제 대상 방의 알림 뮤트 설정을 keep 방으로 이동
--- 이미 keep 방에 뮤트 설정이 있으면 from_room 설정은 삭제됨 (UNIQUE 제약조건)
+-- 충돌 방지: keep 방에 이미 존재하는 뮤트 설정을 먼저 삭제 (from_room 설정으로 덮어쓰기)
+DELETE nms_keep
+FROM notification_mute_setting nms_keep
+JOIN temp_duplicate_room_map m
+  ON nms_keep.target_id = m.keep_room_id
+WHERE nms_keep.target_type = 'CHAT_ROOM'
+  AND EXISTS (
+      SELECT 1 FROM notification_mute_setting nms_from
+      WHERE nms_from.user_id = nms_keep.user_id
+        AND nms_from.target_type = 'CHAT_ROOM'
+        AND nms_from.target_id = m.from_room_id
+  );
+
+-- 삭제 대상 방의 알림 뮤트 설정을 keep 방으로 이동
 UPDATE notification_mute_setting nms
 JOIN temp_duplicate_room_map m
   ON nms.target_id = m.from_room_id
