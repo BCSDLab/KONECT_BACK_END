@@ -125,7 +125,9 @@ SET cm.chat_room_id = m.keep_room_id,
 -- 여러 loser 방이 같은 keep 방으로 매핑될 수 있으므로 먼저 집계하여 중복 업데이트 방지
 
 -- 4a) 기존 keep_room 멤버 업데이트
--- LEAST/GREATEST는 인자 중 NULL이 있으면 결과도 NULL이 되므로 CASE로 NULL 처리
+-- LEAST/GREATEST는 인자 중 NULL이 있으면 결과도 NULL이 되고, zero date('0000-00-00')도 문제 발생
+SET @ZERO_DATE = '0000-00-00 00:00:00';
+
 UPDATE chat_room_member t
 JOIN (
     SELECT
@@ -141,18 +143,18 @@ JOIN (
     GROUP BY m.keep_room_id, crm.user_id
 ) la ON t.chat_room_id = la.keep_room_id AND t.user_id = la.user_id
 SET t.visible_message_from = CASE
-        WHEN t.visible_message_from IS NULL THEN la.min_visible_from
-        WHEN la.min_visible_from IS NULL THEN t.visible_message_from
+        WHEN t.visible_message_from IS NULL OR t.visible_message_from = @ZERO_DATE THEN la.min_visible_from
+        WHEN la.min_visible_from IS NULL OR la.min_visible_from = @ZERO_DATE THEN t.visible_message_from
         ELSE LEAST(t.visible_message_from, la.min_visible_from)
     END,
     t.left_at = CASE
-        WHEN t.left_at IS NULL THEN la.min_left_at
-        WHEN la.min_left_at IS NULL THEN t.left_at
+        WHEN t.left_at IS NULL OR t.left_at = @ZERO_DATE THEN la.min_left_at
+        WHEN la.min_left_at IS NULL OR la.min_left_at = @ZERO_DATE THEN t.left_at
         ELSE LEAST(t.left_at, la.min_left_at)
     END,
     t.last_read_at = CASE
-        WHEN t.last_read_at IS NULL THEN la.max_last_read_at
-        WHEN la.max_last_read_at IS NULL THEN t.last_read_at
+        WHEN t.last_read_at IS NULL OR t.last_read_at = @ZERO_DATE THEN la.max_last_read_at
+        WHEN la.max_last_read_at IS NULL OR la.max_last_read_at = @ZERO_DATE THEN t.last_read_at
         ELSE GREATEST(t.last_read_at, la.max_last_read_at)
     END,
     t.custom_room_name = COALESCE(t.custom_room_name, la.max_custom_room_name),
