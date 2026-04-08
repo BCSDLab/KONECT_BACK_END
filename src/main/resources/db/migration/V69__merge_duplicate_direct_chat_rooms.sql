@@ -2,6 +2,9 @@
 -- 이유: findByTwoUsers 쿼리가 유니크 결과를 기대하지만 중복 방으로 인해 2개 이상 반환됨
 -- 해결: 메시지를 하나의 방으로 합치고 중복 방 제거
 --
+SET @OLD_SQL_MODE = @@SESSION.sql_mode;
+SET SESSION sql_mode = TRIM(BOTH ',' FROM REPLACE(REPLACE(REPLACE(REPLACE(CONCAT(',', @@SESSION.sql_mode, ','), ',NO_ZERO_DATE,', ','), ',NO_ZERO_IN_DATE,', ','), ',STRICT_TRANS_TABLES,', ','), ',STRICT_ALL_TABLES,', ','));
+
 -- [엣지케이스 처리]
 -- 1. 재시도 시 매핑 테이블 보호: NOT EXISTS로 기존 매핑 유지
 -- 2. 연산자 우선순위: WHERE 조건에 괄호로 묶어 AND/OR 우선순위 명확화
@@ -126,7 +129,6 @@ SET cm.chat_room_id = m.keep_room_id,
 
 -- 4a) 기존 keep_room 멤버 업데이트
 -- LEAST/GREATEST는 인자 중 NULL이 있으면 결과도 NULL이 되고, zero date('0000-00-00')도 문제 발생
--- 서브쿼리에서 zero date를 NULL로 변환하여 처리
 UPDATE chat_room_member t
 JOIN (
     SELECT
@@ -162,7 +164,6 @@ SET t.visible_message_from = CASE
 
 -- 4b) keep_room에 없는 loser 멤버 INSERT (orphan member 처리)
 -- 여러 loser 방이 같은 keep 방으로 매핑될 수 있으므로 GROUP BY로 집계하여 PK 충돌 방지
--- zero date는 NULL로 변환하여 INSERT
 INSERT INTO chat_room_member (
     chat_room_id, user_id, last_read_at, created_at, updated_at,
     visible_message_from, left_at, custom_room_name, is_owner
@@ -271,3 +272,5 @@ SET cr.last_message_content = latest_msg.content,
 -- 9) 임시 테이블 정리
 DROP TABLE IF EXISTS temp_duplicate_room_map;
 DROP TABLE IF EXISTS temp_direct_room_pairs;
+
+SET SESSION sql_mode = @OLD_SQL_MODE;
