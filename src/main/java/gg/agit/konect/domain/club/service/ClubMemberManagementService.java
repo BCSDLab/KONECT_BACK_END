@@ -98,6 +98,13 @@ public class ClubMemberManagementService {
 
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
+        return processPreMemberWithoutValidation(club, request);
+    }
+
+    private ClubPreMemberAddResponse processPreMemberWithoutValidation(
+        Club club,
+        ClubPreMemberAddRequest request
+    ) {
         String studentNumber = request.studentNumber();
         String name = request.name();
         ClubPosition clubPosition = request.clubPosition() == null ? MEMBER : request.clubPosition();
@@ -173,7 +180,7 @@ public class ClubMemberManagementService {
         Integer requesterId,
         ClubPreMemberBatchAddRequest request
     ) {
-        clubRepository.getById(clubId);
+        Club club = clubRepository.getById(clubId);
 
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
@@ -183,7 +190,7 @@ public class ClubMemberManagementService {
         for (ClubPreMemberAddRequest memberRequest : request.members()) {
             try {
                 ClubPreMemberAddResponse response = Objects.requireNonNull(
-                    transactionTemplate.execute(status -> addPreMember(clubId, requesterId, memberRequest))
+                    transactionTemplate.execute(status -> processPreMemberWithoutValidation(club, memberRequest))
                 );
                 results.add(ClubPreMemberBatchResultItem.success(memberRequest, response));
             } catch (CustomException e) {
