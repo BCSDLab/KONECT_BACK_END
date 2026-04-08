@@ -71,9 +71,11 @@ JOIN temp_duplicate_room_map m
 SET cm.chat_room_id = m.keep_room_id,
     cm.updated_at = cm.updated_at;
 
--- 4) 삭제 대상 방의 멤버십 상태를 keep 방으로 병합 (visible_message_from, left_at 보존)
--- visible_message_from: 더 이른 값(더 많은 메시지 볼 수 있는) 선택
+-- 4) 삭제 대상 방의 멤버십 상태를 keep 방으로 병합 (visible_message_from, left_at, last_read_at, custom_room_name 보존)
+-- visible_message_from: 더 이른 값(더 많은 메시지 조회 가능) 선택
 -- left_at: 둘 중 하나라도 나간 경우 나간 것으로 처리 (더 이른 값 선택)
+-- last_read_at: 더 나중에 읽은 값(최신 읽음 시점) 선택
+-- custom_room_name: 사용자가 설정한 방 이름이 있으면 보존
 UPDATE chat_room_member t
 JOIN temp_duplicate_room_map m
   ON t.chat_room_id = m.keep_room_id
@@ -86,21 +88,32 @@ SET t.visible_message_from = LEAST(t.visible_message_from, crm.visible_message_f
         WHEN crm.left_at IS NULL THEN t.left_at
         ELSE LEAST(t.left_at, crm.left_at)
     END,
+    t.last_read_at = GREATEST(t.last_read_at, crm.last_read_at),
+    t.custom_room_name = COALESCE(t.custom_room_name, crm.custom_room_name),
     t.updated_at = t.updated_at;
 
--- 5) 삭제 대상 방의 멤버십 삭제
+-- 5) 삭제 대상 방의 알림 뮤트 설정을 keep 방으로 이동
+-- 이미 keep 방에 뮤트 설정이 있으면 from_room 설정은 삭제됨 (UNIQUE 제약조건)
+UPDATE notification_mute_setting nms
+JOIN temp_duplicate_room_map m
+  ON nms.target_id = m.from_room_id
+SET nms.target_id = m.keep_room_id,
+    nms.updated_at = nms.updated_at
+WHERE nms.target_type = 'CHAT_ROOM';
+
+-- 6) 삭제 대상 방의 멤버십 삭제
 DELETE crm
 FROM chat_room_member crm
 JOIN temp_duplicate_room_map m
   ON crm.chat_room_id = m.from_room_id;
 
--- 6) 삭제 대상 방 삭제
+-- 7) 삭제 대상 방 삭제
 DELETE cr
 FROM chat_room cr
 JOIN temp_duplicate_room_map m
   ON cr.id = m.from_room_id;
 
--- 7) 남은 방의 last_message_content와 last_message_sent_at 갱신
+-- 8) 남은 방의 last_message_content와 last_message_sent_at 갱신
 UPDATE chat_room cr
 JOIN temp_duplicate_room_map m
   ON cr.id = m.keep_room_id
@@ -119,6 +132,6 @@ LEFT JOIN (
 SET cr.last_message_content = latest_msg.content,
     cr.last_message_sent_at = latest_msg.created_at;
 
--- 8) 임시 테이블 정리
+-- 9) 임시 테이블 정리
 DROP TABLE IF EXISTS temp_duplicate_room_map;
 DROP TABLE IF EXISTS temp_direct_room_pairs;
