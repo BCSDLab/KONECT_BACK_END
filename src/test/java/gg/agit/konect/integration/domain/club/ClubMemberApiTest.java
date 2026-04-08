@@ -442,14 +442,14 @@ class ClubMemberApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("50명 초과 요청 시 400을 반환한다")
+        @DisplayName("300명 초과 요청 시 400을 반환한다")
         void addPreMembersBatchExceedsLimit() throws Exception {
             // given
             clearPersistenceContext();
             mockLoginUser(president.getId());
 
             List<ClubPreMemberAddRequest> members = new ArrayList<>();
-            for (int i = 0; i < 51; i++) {
+            for (int i = 0; i < 301; i++) {
                 members.add(
                     new ClubPreMemberAddRequest("2022" + String.format("%06d", i), "학생" + i, ClubPosition.MEMBER));
             }
