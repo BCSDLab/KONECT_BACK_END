@@ -1,6 +1,15 @@
 -- DIRECT 타입 채팅방 중 같은 두 유저 간 중복된 방 병합
 -- 이유: findByTwoUsers 쿼리가 유니크 결과를 기대하지만 중복 방으로 인해 2개 이상 반환됨
 -- 해결: 메시지를 하나의 방으로 합치고 중복 방 제거
+--
+-- [엣지케이스 처리]
+-- 1. 재시도 시 매핑 테이블 보호: NOT EXISTS로 기존 매핑 유지
+-- 2. 연산자 우선순위: WHERE 조건에 괄호로 묶어 AND/OR 우선순위 명확화
+-- 3. chat_room_member 병합: visible_message_from, left_at, last_read_at, custom_room_name, is_owner 모두 처리
+-- 4. notification_mute_setting 충돌: keep 방의 기존 설정 먼저 삭제 후 UPDATE
+-- 5. 데이터 유실 방지: loser 방의 멤버가 keep 방에 없으면 INSERT (orphan member 처리)
+-- 6. 메시지 중복 방지: from_room_id는 PK라 자연스럽게 중복 없음
+-- 7. 롤백 지원: 매핑 테이블 DROP/CREATE 대신 재사용 패턴
 
 -- 임시 테이블 대신 실제 테이블 사용 (MySQL 임시 테이블 재참조 제한 회피)
 -- 재시도 가능하도록: 기존 매핑 테이블이 있으면 스킵, 없으면 생성
@@ -17,6 +26,7 @@ CREATE TABLE IF NOT EXISTS temp_duplicate_room_map (
 
 -- 1) DIRECT 방 중 "정확히 2명"인 방만 유저쌍 단위로 펼침
 -- 또는 이미 매핑 테이블에 있는 방도 포함 (재시도 시 0명이 된 방 처리)
+-- 주의: AND/OR 우선순위 때문에 조건을 명확히 괄호로 묶음
 CREATE TABLE temp_direct_room_pairs AS
 SELECT
     cr.id AS room_id,
@@ -36,17 +46,20 @@ JOIN chat_room_member c2
  AND c1.user_id < c2.user_id
 WHERE cr.room_type = 'DIRECT'
   AND (
-      SELECT COUNT(*)
-      FROM chat_room_member m
-      WHERE m.chat_room_id = cr.id
-  ) = 2
-   OR EXISTS (
-      SELECT 1 FROM temp_duplicate_room_map existing
-      WHERE existing.from_room_id = cr.id OR existing.keep_room_id = cr.id
+      (
+          SELECT COUNT(*)
+          FROM chat_room_member m
+          WHERE m.chat_room_id = cr.id
+      ) = 2
+       OR EXISTS (
+          SELECT 1 FROM temp_duplicate_room_map existing
+          WHERE existing.from_room_id = cr.id OR existing.keep_room_id = cr.id
+      )
   );
 
 -- 2) 중복 방 중 어떤 방을 남기고 어떤 방을 지울지 매핑 테이블 생성
 -- 매핑 테이블이 비어있는 경우에만 채움 (재시도 시 기존 매핑 유지)
+-- ON DUPLICATE KEY UPDATE 제거: 재시도 시 매핑 방향이 뒤바뀌지 않도록 보호
 INSERT INTO temp_duplicate_room_map (from_room_id, keep_room_id, user1_id, user2_id)
 SELECT
     loser.room_id AS from_room_id,
@@ -94,18 +107,22 @@ WHERE loser.room_count > 1
   AND NOT EXISTS (SELECT 1 FROM temp_duplicate_room_map);
 
 -- 3) 삭제 대상 방의 메시지를 keep 방으로 이동
+-- 메시지는 PK(id)로 관리되므로 중복 키 충돌 없음
 UPDATE chat_message cm
 JOIN temp_duplicate_room_map m
   ON cm.chat_room_id = m.from_room_id
 SET cm.chat_room_id = m.keep_room_id,
     cm.updated_at = cm.updated_at;
 
--- 4) 삭제 대상 방의 멤버십 상태를 keep 방으로 병합 (visible_message_from, left_at, last_read_at, custom_room_name 보존)
+-- 4) 삭제 대상 방의 멤버십 상태를 keep 방으로 병합
 -- visible_message_from: 더 이른 값(더 많은 메시지 조회 가능) 선택
 -- left_at: 둘 중 하나라도 나간 경우 나간 것으로 처리 (더 이른 값 선택)
 -- last_read_at: 더 나중에 읽은 값(최신 읽음 시점) 선택
 -- custom_room_name: 사용자가 설정한 방 이름이 있으면 보존
+-- is_owner: 하나라도 owner면 owner 유지 (OR 조건)
 -- 여러 loser 방이 같은 keep 방으로 매핑될 수 있으므로 먼저 집계하여 중복 업데이트 방지
+
+-- 4a) 기존 keep_room 멤버 업데이트
 UPDATE chat_room_member t
 JOIN (
     SELECT
@@ -114,7 +131,8 @@ JOIN (
         MIN(crm.visible_message_from) AS min_visible_from,
         MIN(crm.left_at) AS min_left_at,
         MAX(crm.last_read_at) AS max_last_read_at,
-        MAX(crm.custom_room_name) AS max_custom_room_name
+        MAX(crm.custom_room_name) AS max_custom_room_name,
+        MAX(CASE WHEN crm.is_owner THEN 1 ELSE 0 END) AS max_is_owner
     FROM temp_duplicate_room_map m
     JOIN chat_room_member crm ON crm.chat_room_id = m.from_room_id
     GROUP BY m.keep_room_id, crm.user_id
@@ -127,7 +145,31 @@ SET t.visible_message_from = LEAST(t.visible_message_from, la.min_visible_from),
     END,
     t.last_read_at = GREATEST(t.last_read_at, la.max_last_read_at),
     t.custom_room_name = COALESCE(t.custom_room_name, la.max_custom_room_name),
+    t.is_owner = (t.is_owner OR la.max_is_owner > 0),
     t.updated_at = t.updated_at;
+
+-- 4b) keep_room에 없는 loser 멤버 INSERT (orphan member 처리)
+-- loser 방에만 있고 keep 방에는 없는 멤버를 keep 방에 추가
+INSERT INTO chat_room_member (
+    chat_room_id, user_id, last_read_at, created_at, updated_at,
+    visible_message_from, left_at, custom_room_name, is_owner
+)
+SELECT
+    m.keep_room_id,
+    crm.user_id,
+    crm.last_read_at,
+    crm.created_at,
+    crm.updated_at,
+    crm.visible_message_from,
+    crm.left_at,
+    crm.custom_room_name,
+    crm.is_owner
+FROM temp_duplicate_room_map m
+JOIN chat_room_member crm ON crm.chat_room_id = m.from_room_id
+LEFT JOIN chat_room_member existing
+    ON existing.chat_room_id = m.keep_room_id
+    AND existing.user_id = crm.user_id
+WHERE existing.chat_room_id IS NULL;
 
 -- 5) 삭제 대상 방의 알림 뮤트 설정을 keep 방으로 이동
 -- 충돌 방지: keep 방에 이미 존재하는 뮤트 설정을 먼저 삭제 (from_room 설정으로 덮어쓰기)
