@@ -91,10 +91,7 @@ JOIN (
  AND winner.rn = 1
 WHERE loser.room_count > 1
   AND loser.rn > 1
-ON DUPLICATE KEY UPDATE
-    keep_room_id = VALUES(keep_room_id),
-    user1_id = VALUES(user1_id),
-    user2_id = VALUES(user2_id);
+  AND NOT EXISTS (SELECT 1 FROM temp_duplicate_room_map);
 
 -- 3) 삭제 대상 방의 메시지를 keep 방으로 이동
 UPDATE chat_message cm
