@@ -126,16 +126,15 @@ SET cm.chat_room_id = m.keep_room_id,
 
 -- 4a) 기존 keep_room 멤버 업데이트
 -- LEAST/GREATEST는 인자 중 NULL이 있으면 결과도 NULL이 되고, zero date('0000-00-00')도 문제 발생
-SET @ZERO_DATE = '0000-00-00 00:00:00';
-
+-- 서브쿼리에서 zero date를 NULL로 변환하여 처리
 UPDATE chat_room_member t
 JOIN (
     SELECT
         m.keep_room_id,
         crm.user_id,
-        MIN(crm.visible_message_from) AS min_visible_from,
-        MIN(crm.left_at) AS min_left_at,
-        MAX(crm.last_read_at) AS max_last_read_at,
+        NULLIF(MIN(crm.visible_message_from), '0000-00-00 00:00:00') AS min_visible_from,
+        NULLIF(MIN(crm.left_at), '0000-00-00 00:00:00') AS min_left_at,
+        NULLIF(MAX(crm.last_read_at), '0000-00-00 00:00:00') AS max_last_read_at,
         MAX(crm.custom_room_name) AS max_custom_room_name,
         MAX(CASE WHEN crm.is_owner THEN 1 ELSE 0 END) AS max_is_owner
     FROM temp_duplicate_room_map m
@@ -143,18 +142,18 @@ JOIN (
     GROUP BY m.keep_room_id, crm.user_id
 ) la ON t.chat_room_id = la.keep_room_id AND t.user_id = la.user_id
 SET t.visible_message_from = CASE
-        WHEN t.visible_message_from IS NULL OR t.visible_message_from = @ZERO_DATE THEN la.min_visible_from
-        WHEN la.min_visible_from IS NULL OR la.min_visible_from = @ZERO_DATE THEN t.visible_message_from
+        WHEN t.visible_message_from IS NULL THEN la.min_visible_from
+        WHEN la.min_visible_from IS NULL THEN t.visible_message_from
         ELSE LEAST(t.visible_message_from, la.min_visible_from)
     END,
     t.left_at = CASE
-        WHEN t.left_at IS NULL OR t.left_at = @ZERO_DATE THEN la.min_left_at
-        WHEN la.min_left_at IS NULL OR la.min_left_at = @ZERO_DATE THEN t.left_at
+        WHEN t.left_at IS NULL THEN la.min_left_at
+        WHEN la.min_left_at IS NULL THEN t.left_at
         ELSE LEAST(t.left_at, la.min_left_at)
     END,
     t.last_read_at = CASE
-        WHEN t.last_read_at IS NULL OR t.last_read_at = @ZERO_DATE THEN la.max_last_read_at
-        WHEN la.max_last_read_at IS NULL OR la.max_last_read_at = @ZERO_DATE THEN t.last_read_at
+        WHEN t.last_read_at IS NULL THEN la.max_last_read_at
+        WHEN la.max_last_read_at IS NULL THEN t.last_read_at
         ELSE GREATEST(t.last_read_at, la.max_last_read_at)
     END,
     t.custom_room_name = COALESCE(t.custom_room_name, la.max_custom_room_name),
@@ -163,6 +162,7 @@ SET t.visible_message_from = CASE
 
 -- 4b) keep_room에 없는 loser 멤버 INSERT (orphan member 처리)
 -- 여러 loser 방이 같은 keep 방으로 매핑될 수 있으므로 GROUP BY로 집계하여 PK 충돌 방지
+-- zero date는 NULL로 변환하여 INSERT
 INSERT INTO chat_room_member (
     chat_room_id, user_id, last_read_at, created_at, updated_at,
     visible_message_from, left_at, custom_room_name, is_owner
@@ -170,11 +170,11 @@ INSERT INTO chat_room_member (
 SELECT
     m.keep_room_id,
     crm.user_id,
-    MAX(crm.last_read_at) AS last_read_at,
+    NULLIF(MAX(crm.last_read_at), '0000-00-00 00:00:00') AS last_read_at,
     MIN(crm.created_at) AS created_at,
     MAX(crm.updated_at) AS updated_at,
-    MIN(crm.visible_message_from) AS visible_message_from,
-    MIN(crm.left_at) AS left_at,
+    NULLIF(MIN(crm.visible_message_from), '0000-00-00 00:00:00') AS visible_message_from,
+    NULLIF(MIN(crm.left_at), '0000-00-00 00:00:00') AS left_at,
     MAX(crm.custom_room_name) AS custom_room_name,
     MAX(CASE WHEN crm.is_owner THEN 1 ELSE 0 END) AS is_owner
 FROM temp_duplicate_room_map m
