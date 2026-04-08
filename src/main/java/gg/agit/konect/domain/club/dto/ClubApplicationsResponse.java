@@ -32,6 +32,9 @@ public record ClubApplicationsResponse(
         @Schema(description = "지원 ID", example = "1", requiredMode = REQUIRED)
         Integer id,
 
+        @Schema(description = "유저 ID", example = "1", requiredMode = REQUIRED)
+        Integer userId,
+
         @Schema(description = "지원자 학번", example = "20250120", requiredMode = REQUIRED)
         String studentNumber,
 
@@ -51,6 +54,7 @@ public record ClubApplicationsResponse(
         public static ClubApplicationResponse from(ClubApply clubApply) {
             return new ClubApplicationResponse(
                 clubApply.getId(),
+                clubApply.getUser().getId(),
                 clubApply.getUser().getStudentNumber(),
                 clubApply.getUser().getName(),
                 clubApply.getUser().getImageUrl(),
