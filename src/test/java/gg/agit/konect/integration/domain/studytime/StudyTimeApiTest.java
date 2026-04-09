@@ -186,9 +186,7 @@ class StudyTimeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk());
 
             StudyTimer timer = studyTimerRepository.getByUserId(user.getId());
-            timer.updateStartedAt(LocalDateTime.now().minusSeconds(5));
-            persist(timer);
-            clearPersistenceContext();
+            backdateTimer(timer, 5L, 5L);
 
             StudyTimerStopRequest request = new StudyTimerStopRequest(5L);
 
@@ -216,7 +214,7 @@ class StudyTimeApiTest extends IntegrationTestSupport {
     }
 
     @Nested
-    @DisplayName("POST /studytimes/timers/sync - 타이머 동기화")
+    @DisplayName("PATCH /studytimes/timers - 타이머 동기화")
     class SyncTimer {
 
         @Test
@@ -229,14 +227,12 @@ class StudyTimeApiTest extends IntegrationTestSupport {
 
             StudyTimer timer = studyTimerRepository.getByUserId(user.getId());
             LocalDateTime originalStartedAt = timer.getStartedAt();
-            timer.updateStartedAt(LocalDateTime.now().minusSeconds(5));
-            persist(timer);
-            clearPersistenceContext();
+            backdateTimer(timer, 5L, 5L);
 
             StudyTimerSyncRequest request = new StudyTimerSyncRequest(5L);
 
             // when
-            performPost("/studytimes/timers/sync", request)
+            performPatch("/studytimes/timers", request)
                 .andExpect(status().isOk());
 
             // then
@@ -259,7 +255,7 @@ class StudyTimeApiTest extends IntegrationTestSupport {
             StudyTimerSyncRequest request = new StudyTimerSyncRequest(0L);
 
             // when & then
-            performPost("/studytimes/timers/sync", request)
+            performPatch("/studytimes/timers", request)
                 .andExpect(status().isBadRequest());
         }
 
@@ -274,7 +270,7 @@ class StudyTimeApiTest extends IntegrationTestSupport {
             StudyTimerSyncRequest request = new StudyTimerSyncRequest(MISMATCHED_CLIENT_SECONDS);
 
             // when & then
-            performPost("/studytimes/timers/sync", request)
+            performPatch("/studytimes/timers", request)
                 .andExpect(status().isBadRequest());
 
             assertThat(studyTimerRepository.existsByUserId(user.getId())).isFalse();
@@ -290,20 +286,16 @@ class StudyTimeApiTest extends IntegrationTestSupport {
 
             // 첫 번째 동기화
             StudyTimer timer = studyTimerRepository.getByUserId(user.getId());
-            timer.updateStartedAt(LocalDateTime.now().minusSeconds(3));
-            persist(timer);
-            clearPersistenceContext();
+            backdateTimer(timer, 3L, 3L);
 
-            performPost("/studytimes/timers/sync", new StudyTimerSyncRequest(3L))
+            performPatch("/studytimes/timers", new StudyTimerSyncRequest(3L))
                 .andExpect(status().isOk());
 
             // 두 번째 동기화
             timer = studyTimerRepository.getByUserId(user.getId());
-            timer.updateStartedAt(LocalDateTime.now().minusSeconds(5));
-            persist(timer);
-            clearPersistenceContext();
+            backdateTimer(timer, 8L, 5L);
 
-            performPost("/studytimes/timers/sync", new StudyTimerSyncRequest(5L))
+            performPatch("/studytimes/timers", new StudyTimerSyncRequest(8L))
                 .andExpect(status().isOk());
 
             // then
@@ -373,5 +365,26 @@ class StudyTimeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sessionSeconds").value(0));
         }
+    }
+
+    private void backdateTimer(StudyTimer timer, long sessionElapsedSeconds, long lastSyncElapsedSeconds) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime createdAt = now.minusSeconds(sessionElapsedSeconds);
+        LocalDateTime startedAt = now.minusSeconds(lastSyncElapsedSeconds);
+
+        // StudyTimerService는 createdAt 기반 totalSeconds를 검증하므로 auditing 컬럼까지 DB에 직접 맞춰둔다.
+        entityManager.createNativeQuery("""
+                    UPDATE study_timer
+                    SET created_at = :createdAt,
+                        started_at = :startedAt,
+                        updated_at = :updatedAt
+                    WHERE id = :id
+                """)
+            .setParameter("createdAt", createdAt)
+            .setParameter("startedAt", startedAt)
+            .setParameter("updatedAt", now)
+            .setParameter("id", timer.getId())
+            .executeUpdate();
+        clearPersistenceContext();
     }
 }

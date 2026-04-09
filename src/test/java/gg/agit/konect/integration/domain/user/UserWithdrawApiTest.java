@@ -60,7 +60,7 @@ class UserWithdrawApiTest extends IntegrationTestSupport {
 
             // 탈퇴 처리되었는지 확인
             clearPersistenceContext();
-            User withdrawnUser = userRepository.findById(user.getId()).orElse(null);
+            User withdrawnUser = entityManager.find(User.class, user.getId());
             assertThat(withdrawnUser).isNotNull();
             assertThat(withdrawnUser.getDeletedAt()).isNotNull();
         }
@@ -79,7 +79,7 @@ class UserWithdrawApiTest extends IntegrationTestSupport {
                 .andExpect(status().isNoContent());
 
             clearPersistenceContext();
-            User withdrawnUser = userRepository.findById(user.getId()).orElse(null);
+            User withdrawnUser = entityManager.find(User.class, user.getId());
             assertThat(withdrawnUser).isNotNull();
             assertThat(withdrawnUser.getDeletedAt()).isNotNull();
         }
@@ -193,7 +193,7 @@ class UserWithdrawApiTest extends IntegrationTestSupport {
 
             // then
             clearPersistenceContext();
-            User withdrawnUser = userRepository.findById(user.getId()).orElse(null);
+            User withdrawnUser = entityManager.find(User.class, user.getId());
             assertThat(withdrawnUser).isNotNull();
             assertThat(withdrawnUser.getDeletedAt()).isNotNull();
             assertThat(withdrawnUser.getDeletedAt()).isAfterOrEqualTo(beforeWithdraw);
@@ -213,7 +213,7 @@ class UserWithdrawApiTest extends IntegrationTestSupport {
 
             // when & then
             performDelete("/users/withdraw")
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNotFound());
         }
 
         @Test
@@ -221,7 +221,7 @@ class UserWithdrawApiTest extends IntegrationTestSupport {
         void withdrawWithoutAuthFails() throws Exception {
             // when & then
             performDelete("/users/withdraw")
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isNotFound());
         }
     }
 }

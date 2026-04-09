@@ -67,15 +67,13 @@ class GoogleDrivePermissionHelperTest extends ServiceTestSupport {
 
         given(driveService.permissions()).willReturn(permissions);
         given(permissions.list(FILE_ID)).willReturn(firstListRequest, secondListRequest);
-        given(firstListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(firstListRequest);
+        stubListRequest(firstListRequest);
         given(firstListRequest.execute()).willReturn(
             new PermissionList()
                 .setPermissions(List.of(firstPermission))
                 .setNextPageToken("next-page")
         );
-        given(secondListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(secondListRequest);
+        stubListRequest(secondListRequest);
         given(secondListRequest.setPageToken("next-page")).willReturn(secondListRequest);
         given(secondListRequest.execute()).willReturn(
             new PermissionList().setPermissions(List.of(secondPermission))
@@ -94,12 +92,9 @@ class GoogleDrivePermissionHelperTest extends ServiceTestSupport {
 
         given(driveService.permissions()).willReturn(permissions);
         given(permissions.list(FILE_ID)).willReturn(initialListRequest, applyListRequest, recheckListRequest);
-        given(initialListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(initialListRequest);
-        given(applyListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(applyListRequest);
-        given(recheckListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(recheckListRequest);
+        stubListRequest(initialListRequest);
+        stubListRequest(applyListRequest);
+        stubListRequest(recheckListRequest);
         given(initialListRequest.execute()).willReturn(new PermissionList().setPermissions(List.of()));
         given(applyListRequest.execute()).willReturn(new PermissionList().setPermissions(List.of()));
         given(recheckListRequest.execute()).willReturn(
@@ -108,6 +103,7 @@ class GoogleDrivePermissionHelperTest extends ServiceTestSupport {
         given(permissions.create(eq(FILE_ID), org.mockito.ArgumentMatchers.any(Permission.class)))
             .willReturn(createRequest);
         given(createRequest.setSendNotificationEmail(false)).willReturn(createRequest);
+        given(createRequest.setSupportsAllDrives(true)).willReturn(createRequest);
         given(createRequest.execute()).willThrow(new IOException("create failed after applying"));
 
         assertThat(
@@ -129,12 +125,9 @@ class GoogleDrivePermissionHelperTest extends ServiceTestSupport {
 
         given(driveService.permissions()).willReturn(permissions);
         given(permissions.list(FILE_ID)).willReturn(initialListRequest, applyListRequest, recheckListRequest);
-        given(initialListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(initialListRequest);
-        given(applyListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(applyListRequest);
-        given(recheckListRequest.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
-            .willReturn(recheckListRequest);
+        stubListRequest(initialListRequest);
+        stubListRequest(applyListRequest);
+        stubListRequest(recheckListRequest);
         given(initialListRequest.execute()).willReturn(
             new PermissionList().setPermissions(List.of(serviceAccountPermission("perm-1", "reader")))
         );
@@ -146,6 +139,7 @@ class GoogleDrivePermissionHelperTest extends ServiceTestSupport {
         );
         given(permissions.update(eq(FILE_ID), eq("perm-1"), org.mockito.ArgumentMatchers.any(Permission.class)))
             .willReturn(updateRequest);
+        given(updateRequest.setSupportsAllDrives(true)).willReturn(updateRequest);
         given(updateRequest.execute()).willThrow(new IOException("update failed after applying"));
 
         assertThat(
@@ -178,5 +172,12 @@ class GoogleDrivePermissionHelperTest extends ServiceTestSupport {
             .setType("user")
             .setEmailAddress("service-account@project.iam.gserviceaccount.com")
             .setRole(role);
+    }
+
+    private void stubListRequest(Drive.Permissions.List request) throws IOException {
+        // Production code chains fluent setters before execute(), so Mockito defaults(null)를 끊어야 한다.
+        given(request.setFields("nextPageToken,permissions(id,type,emailAddress,role)"))
+            .willReturn(request);
+        given(request.setSupportsAllDrives(true)).willReturn(request);
     }
 }

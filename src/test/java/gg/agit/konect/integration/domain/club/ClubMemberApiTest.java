@@ -383,9 +383,9 @@ class ClubMemberApiTest extends IntegrationTestSupport {
 
             String requestBody = """
                 {"members": [
-                    {"studentNumber": "2022000001", "name": "신입생1", "clubPosition": "MEMBER"},
-                    {"studentNumber": "2022000002", "name": "신입생2", "clubPosition": "MEMBER"},
-                    {"studentNumber": "2022000003", "name": "신입생3", "clubPosition": "MANAGER"}
+                    {"studentNumber": "2022000001", "name": "신입가", "clubPosition": "MEMBER"},
+                    {"studentNumber": "2022000002", "name": "신입나", "clubPosition": "MEMBER"},
+                    {"studentNumber": "2022000003", "name": "신입다", "clubPosition": "MANAGER"}
                 ]}
                 """;
 

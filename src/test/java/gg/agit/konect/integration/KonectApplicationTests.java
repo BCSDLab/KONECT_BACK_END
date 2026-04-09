@@ -10,6 +10,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import gg.agit.konect.support.TestClaudeConfig;
 import gg.agit.konect.support.TestMcpConfig;
@@ -23,6 +24,9 @@ class KonectApplicationTests {
 
     @MockitoBean
     private GoogleCredentials googleCredentials;
+
+    @MockitoBean
+    private ServiceAccountCredentials serviceAccountCredentials;
 
     @MockitoBean
     private Sheets googleSheetsService;

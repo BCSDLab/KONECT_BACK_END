@@ -14,6 +14,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import gg.agit.konect.admin.schedule.dto.AdminScheduleCreateRequest;
 import gg.agit.konect.admin.schedule.dto.AdminScheduleUpsertItemRequest;
@@ -33,6 +37,9 @@ import gg.agit.konect.support.fixture.UserFixture;
 class AdminScheduleApiTest extends IntegrationTestSupport {
 
     private static final String BASE_URL = "/admin/schedules";
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     private University university;
     private User admin;
@@ -515,11 +522,11 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
 
             clearPersistenceContext();
 
-            List<UniversitySchedule> saved = entityManager.createQuery(
+            List<UniversitySchedule> saved = newTransaction().execute(status -> entityManager.createQuery(
                     "SELECT us FROM UniversitySchedule us WHERE us.university.id = :universityId",
                     UniversitySchedule.class)
                 .setParameter("universityId", university.getId())
-                .getResultList();
+                .getResultList());
             assertThat(saved).isEmpty();
         }
 
@@ -753,5 +760,12 @@ class AdminScheduleApiTest extends IntegrationTestSupport {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.FORBIDDEN_ROLE_ACCESS.getCode()));
         }
+    }
+
+    private TransactionTemplate newTransaction() {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.setReadOnly(true);
+        return template;
     }
 }
