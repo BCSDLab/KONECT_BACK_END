@@ -90,6 +90,33 @@ class NoticeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.FORBIDDEN_COUNCIL_NOTICE_ACCESS.getCode()));
         }
+
+        @Test
+        @DisplayName("같은 공지를 다시 조회해도 읽음 이력은 한 번만 저장된다")
+        void getNoticeDoesNotDuplicateReadHistory() throws Exception {
+            // given
+            Council council = persist(CouncilFixture.create(university));
+            CouncilNotice notice = persist(CouncilNoticeFixture.create(council));
+            clearPersistenceContext();
+
+            // when
+            performGet(NOTICES_ENDPOINT + "/" + notice.getId())
+                .andExpect(status().isOk());
+            performGet(NOTICES_ENDPOINT + "/" + notice.getId())
+                .andExpect(status().isOk());
+
+            // then
+            Number readHistoryCount = (Number)entityManager.createNativeQuery("""
+                select count(*)
+                from council_notice_read_history
+                where user_id = ? and council_notice_id = ?
+                """)
+                .setParameter(1, user.getId())
+                .setParameter(2, notice.getId())
+                .getSingleResult();
+
+            org.assertj.core.api.Assertions.assertThat(readHistoryCount.longValue()).isEqualTo(1L);
+        }
     }
 
     @Nested
@@ -113,6 +140,28 @@ class NoticeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.councilNotices", hasSize(1)))
                 .andExpect(jsonPath("$.councilNotices[0].title").value("생성 공지"));
+        }
+
+        @Test
+        @DisplayName("연결된 총동아리연합회가 없으면 404를 반환한다")
+        void createNoticeWithoutCouncilFails() throws Exception {
+            // when & then
+            performPost(NOTICES_ENDPOINT, new CouncilNoticeCreateRequest("생성 공지", "생성 내용"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL.getCode()));
+        }
+
+        @Test
+        @DisplayName("공지 제목이 비어 있으면 400을 반환한다")
+        void createNoticeInvalidBodyFails() throws Exception {
+            // given
+            insertCouncilWithIdOne(university.getId());
+            clearPersistenceContext();
+
+            // when & then
+            performPost(NOTICES_ENDPOINT, new CouncilNoticeCreateRequest(" ", "생성 내용"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
     }
 
@@ -139,6 +188,15 @@ class NoticeApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.title").value("수정 제목"))
                 .andExpect(jsonPath("$.content").value("수정 내용"));
         }
+
+        @Test
+        @DisplayName("수정 대상 공지가 없으면 404를 반환한다")
+        void updateNoticeNotFound() throws Exception {
+            // when & then
+            performPut(NOTICES_ENDPOINT + "/99999", new CouncilNoticeUpdateRequest("수정 제목", "수정 내용"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL_NOTICE.getCode()));
+        }
     }
 
     @Nested
@@ -158,6 +216,15 @@ class NoticeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isNoContent());
 
             performGet(NOTICES_ENDPOINT + "/" + notice.getId())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL_NOTICE.getCode()));
+        }
+
+        @Test
+        @DisplayName("삭제 대상 공지가 없으면 404를 반환한다")
+        void deleteNoticeNotFound() throws Exception {
+            // when & then
+            performDelete(NOTICES_ENDPOINT + "/99999")
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL_NOTICE.getCode()));
         }
