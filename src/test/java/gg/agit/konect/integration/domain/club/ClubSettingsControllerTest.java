@@ -74,9 +74,11 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
         void getSettingsAsVicePresident() throws Exception {
             mockLoginUser(vicePresident.getId());
 
-            performGet("/clubs/" + club.getId() + "/settings")
+            ResultActions result = performGet("/clubs/" + club.getId() + "/settings")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
+
+            assertPresidentSettingsPayload(result);
         }
 
         @Test
@@ -84,9 +86,11 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
         void getSettingsAsManager() throws Exception {
             mockLoginUser(manager.getId());
 
-            performGet("/clubs/" + club.getId() + "/settings")
+            ResultActions result = performGet("/clubs/" + club.getId() + "/settings")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
+
+            assertPresidentSettingsPayload(result);
         }
 
         @Test
