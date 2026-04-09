@@ -41,5 +41,14 @@ class InquiryApiTest extends IntegrationTestSupport {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
+
+        @Test
+        @DisplayName("요청 본문이 없으면 400을 반환한다")
+        void submitInquiryWithoutBodyFails() throws Exception {
+            // when & then
+            performPost(INQUIRIES_ENDPOINT)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_JSON_FORMAT.getCode()));
+        }
     }
 }
