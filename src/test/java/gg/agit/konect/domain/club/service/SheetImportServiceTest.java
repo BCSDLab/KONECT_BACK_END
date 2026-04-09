@@ -18,7 +18,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.sheets.v4.Sheets;
@@ -100,7 +99,7 @@ class SheetImportServiceTest extends ServiceTestSupport {
         ));
         User directUser = UserFixture.createUser(club.getUniversity(), "Alex Kim", "2021232948");
 
-        given(clubRepository.getById(CLUB_ID)).willReturn(club);
+        given(clubRepository.getByIdWithUniversity(CLUB_ID)).willReturn(club);
         given(clubMemberRepository.findStudentNumbersByClubId(CLUB_ID)).willReturn(Set.of());
         given(clubPreMemberRepository.findStudentNumberAndNameByClubId(CLUB_ID))
             .willReturn(List.<ClubPreMemberRepository.PreMemberKey>of());
@@ -142,7 +141,7 @@ class SheetImportServiceTest extends ServiceTestSupport {
     void previewPreMembersFromSheetThrowsWhenSheetIsNotRegistered() {
         Club club = ClubFixture.create(UniversityFixture.create());
 
-        given(clubRepository.getById(CLUB_ID)).willReturn(club);
+        given(clubRepository.getByIdWithUniversity(CLUB_ID)).willReturn(club);
 
         assertThatThrownBy(() -> sheetImportService.previewPreMembersFromSheet(CLUB_ID, REQUESTER_ID))
             .isInstanceOf(CustomException.class)
@@ -157,7 +156,7 @@ class SheetImportServiceTest extends ServiceTestSupport {
         Club club = ClubFixture.create(UniversityFixture.create());
         club.updateGoogleSheetId(SPREADSHEET_ID);
 
-        given(clubRepository.getById(CLUB_ID)).willReturn(club);
+        given(clubRepository.getByIdWithUniversity(CLUB_ID)).willReturn(club);
 
         assertThatThrownBy(() -> sheetImportService.previewPreMembersFromSheet(CLUB_ID, REQUESTER_ID))
             .isInstanceOf(CustomException.class)

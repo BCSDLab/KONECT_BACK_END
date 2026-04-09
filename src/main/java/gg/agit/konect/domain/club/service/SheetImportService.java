@@ -76,7 +76,7 @@ public class SheetImportService {
     }
 
     private Club resolveClubWithRegisteredSheet(Integer clubId) {
-        Club club = clubRepository.getById(clubId);
+        Club club = clubRepository.getByIdWithUniversity(clubId);
         String spreadsheetId = club.getGoogleSheetId();
         if (spreadsheetId == null || spreadsheetId.isBlank()) {
             throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
