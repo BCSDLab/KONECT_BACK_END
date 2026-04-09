@@ -332,10 +332,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
             stubSignupTokenClaims(email);
 
             // when & then
-            mockMvc.perform(post("/users/signup")
-                    .cookie(signupTokenCookie())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonRequest))
+            performSignup(jsonRequest)
                 .andExpect(status().isBadRequest());
         }
 
@@ -394,10 +391,14 @@ class UserSignupApiTest extends IntegrationTestSupport {
     }
 
     private ResultActions performSignup(SignupRequest request) throws Exception {
+        return performSignup(objectMapper.writeValueAsString(request));
+    }
+
+    private ResultActions performSignup(String rawJson) throws Exception {
         return mockMvc.perform(post("/users/signup")
             .cookie(signupTokenCookie())
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)));
+            .content(rawJson));
     }
 
     private Cookie signupTokenCookie() {
