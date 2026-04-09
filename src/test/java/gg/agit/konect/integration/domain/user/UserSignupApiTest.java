@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Duration;
+
 import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;

@@ -374,12 +374,12 @@ class StudyTimeApiTest extends IntegrationTestSupport {
 
         // StudyTimerService는 createdAt 기반 totalSeconds를 검증하므로 auditing 컬럼까지 DB에 직접 맞춰둔다.
         entityManager.createNativeQuery("""
-                UPDATE study_timer
-                SET created_at = :createdAt,
-                    started_at = :startedAt,
-                    updated_at = :updatedAt
-                WHERE id = :id
-            """)
+                    UPDATE study_timer
+                    SET created_at = :createdAt,
+                        started_at = :startedAt,
+                        updated_at = :updatedAt
+                    WHERE id = :id
+                """)
             .setParameter("createdAt", createdAt)
             .setParameter("startedAt", startedAt)
             .setParameter("updatedAt", now)
