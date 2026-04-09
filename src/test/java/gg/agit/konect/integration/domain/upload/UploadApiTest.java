@@ -25,8 +25,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.jayway.jsonpath.JsonPath;
-import com.google.auth.oauth2.GoogleCredentials;
-
 import gg.agit.konect.domain.upload.enums.UploadTarget;
 import gg.agit.konect.support.IntegrationTestSupport;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -42,9 +40,6 @@ class UploadApiTest extends IntegrationTestSupport {
 
     @MockitoBean
     private S3Client s3Client;
-
-    @MockitoBean
-    private GoogleCredentials googleCredentials;
 
     @BeforeEach
     void setUp() throws Exception {
