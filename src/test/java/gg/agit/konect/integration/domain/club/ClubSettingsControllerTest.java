@@ -60,36 +60,21 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
         @Test
         @DisplayName("회장 권한으로 설정 조회 시 200을 반환한다")
         void getSettingsAsPresident() throws Exception {
-            mockLoginUser(president.getId());
-
-            ResultActions result = performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
-
+            ResultActions result = performSettingsGet(president.getId());
             assertPresidentSettingsPayload(result);
         }
 
         @Test
         @DisplayName("부회장 권한으로 설정 조회 시 200을 반환한다")
         void getSettingsAsVicePresident() throws Exception {
-            mockLoginUser(vicePresident.getId());
-
-            ResultActions result = performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
-
+            ResultActions result = performSettingsGet(vicePresident.getId());
             assertPresidentSettingsPayload(result);
         }
 
         @Test
         @DisplayName("운영진 권한으로 설정 조회 시 200을 반환한다")
         void getSettingsAsManager() throws Exception {
-            mockLoginUser(manager.getId());
-
-            ResultActions result = performGet("/clubs/" + club.getId() + "/settings")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
-
+            ResultActions result = performSettingsGet(manager.getId());
             assertPresidentSettingsPayload(result);
         }
 
@@ -118,6 +103,14 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.application").exists())
                 .andExpect(jsonPath("$.application.questionCount").isNumber())
                 .andExpect(jsonPath("$.fee").doesNotExist());
+        }
+
+        private ResultActions performSettingsGet(Integer userId) throws Exception {
+            mockLoginUser(userId);
+
+            return performGet("/clubs/" + club.getId() + "/settings")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isRecruitmentEnabled").value(true));
         }
 
         @Test
