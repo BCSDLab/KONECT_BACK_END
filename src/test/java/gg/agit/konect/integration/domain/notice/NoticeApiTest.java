@@ -28,11 +28,13 @@ class NoticeApiTest extends IntegrationTestSupport {
 
     private University university;
     private User user;
+    private User otherUser;
 
     @BeforeEach
     void setUp() throws Exception {
         university = persist(UniversityFixture.create());
         user = persist(UserFixture.createUser(university, "공지유저", "2021136001"));
+        otherUser = persist(UserFixture.createUser(university, "다른공지유저", "2021136002"));
         clearPersistenceContext();
         mockLoginUser(user.getId());
     }
@@ -69,6 +71,25 @@ class NoticeApiTest extends IntegrationTestSupport {
             performGet(NOTICES_ENDPOINT + "?page=0&limit=10")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
+        }
+
+        @Test
+        @DisplayName("다른 대학 공지는 목록에서 제외된다")
+        void getNoticesExcludesOtherUniversityNotices() throws Exception {
+            // given
+            Council council = persist(CouncilFixture.create(university));
+            persist(CouncilNoticeFixture.create(council, "우리 대학 공지", "내용1"));
+
+            University otherUniversity = persist(UniversityFixture.createWithName("다른대학교"));
+            Council otherCouncil = persist(CouncilFixture.create(otherUniversity));
+            persist(CouncilNoticeFixture.create(otherCouncil, "다른 대학 공지", "내용2"));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(NOTICES_ENDPOINT + "?page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.councilNotices", hasSize(1)))
+                .andExpect(jsonPath("$.councilNotices[0].title").value("우리 대학 공지"));
         }
     }
 
@@ -116,6 +137,26 @@ class NoticeApiTest extends IntegrationTestSupport {
                 .getSingleResult();
 
             org.assertj.core.api.Assertions.assertThat(readHistoryCount.longValue()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("한 사용자의 읽음 처리는 다른 사용자의 읽음 여부에 영향을 주지 않는다")
+        void getNoticeReadHistoryIsIsolatedPerUser() throws Exception {
+            // given
+            Council council = persist(CouncilFixture.create(university));
+            CouncilNotice notice = persist(CouncilNoticeFixture.create(council));
+            clearPersistenceContext();
+
+            performGet(NOTICES_ENDPOINT + "/" + notice.getId())
+                .andExpect(status().isOk());
+
+            mockLoginUser(otherUser.getId());
+
+            // when & then
+            performGet(NOTICES_ENDPOINT + "?page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.councilNotices", hasSize(1)))
+                .andExpect(jsonPath("$.councilNotices[0].isRead").value(false));
         }
     }
 
