@@ -23,6 +23,8 @@ import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UnRegisteredUserFixture;
@@ -65,7 +67,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
     private static final String SIGNUP_TOKEN_COOKIE_NAME = "signup_token";
     private static final String VALID_SIGNUP_TOKEN = "valid-test-signup-token";
-    private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(14);
+    private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
     private University university;
     private Club club;
@@ -386,8 +388,12 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
     private void stubSignupTokenClaims(String email) {
         String providerId = "google_" + email.split("@")[0];
+        SignupTokenService.SignupClaims claims =
+            new SignupTokenService.SignupClaims(email, Provider.GOOGLE, providerId, "임시유저");
+
         given(signupTokenService.consumeOrThrow(VALID_SIGNUP_TOKEN))
-            .willReturn(new SignupTokenService.SignupClaims(email, Provider.GOOGLE, providerId, "임시유저"));
+            .willReturn(claims)
+            .willThrow(CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN));
     }
 
     private ResultActions performSignup(SignupRequest request) throws Exception {
