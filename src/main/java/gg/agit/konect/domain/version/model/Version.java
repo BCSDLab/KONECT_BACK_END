@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uq_version_platform_version",
-            columnNames = {"platform, version"}
+            columnNames = {"platform", "version"}
         )
     }
 )
