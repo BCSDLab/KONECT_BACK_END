@@ -61,6 +61,20 @@ class CouncilApiTest extends IntegrationTestSupport {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL.getCode()));
         }
+
+        @Test
+        @DisplayName("다른 대학 총동아리연합회는 현재 사용자 조회 대상이 아니다")
+        void getCouncilDoesNotReturnOtherUniversityCouncil() throws Exception {
+            // given
+            University otherUniversity = persist(UniversityFixture.createWithName("다른대학교"));
+            persist(CouncilFixture.create(otherUniversity));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(COUNCILS_ENDPOINT)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL.getCode()));
+        }
     }
 
     @Nested
@@ -91,6 +105,23 @@ class CouncilApiTest extends IntegrationTestSupport {
             performPost(COUNCILS_ENDPOINT, createRequest())
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.ALREADY_EXIST_COUNCIL.getCode()));
+        }
+
+        @Test
+        @DisplayName("다른 대학에 총동아리연합회가 있어도 현재 대학에는 새로 만들 수 있다")
+        void createCouncilWhenOtherUniversityHasCouncil() throws Exception {
+            // given
+            University otherUniversity = persist(UniversityFixture.createWithName("다른대학교"));
+            persist(CouncilFixture.create(otherUniversity));
+            clearPersistenceContext();
+
+            // when & then
+            performPost(COUNCILS_ENDPOINT, createRequest())
+                .andExpect(status().isOk());
+
+            performGet(COUNCILS_ENDPOINT)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("개화"));
         }
 
         @Test
