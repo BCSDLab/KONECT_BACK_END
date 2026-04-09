@@ -55,6 +55,21 @@ class VersionApiTest extends IntegrationTestSupport {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_TYPE_VALUE.getCode()));
         }
+
+        @Test
+        @DisplayName("릴리즈 노트가 없어도 최신 버전을 조회할 수 있다")
+        void getLatestVersionWithNullReleaseNotes() throws Exception {
+            // given
+            insertVersion(PlatformType.ANDROID, "2.0.0", null, LocalDateTime.of(2026, 4, 1, 0, 0));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(LATEST_VERSION_ENDPOINT + "?platform=ANDROID")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.platform").value("ANDROID"))
+                .andExpect(jsonPath("$.version").value("2.0.0"))
+                .andExpect(jsonPath("$.releaseNotes").isEmpty());
+        }
     }
 
     private void insertVersion(PlatformType platform, String version, String releaseNotes, LocalDateTime createdAt) {

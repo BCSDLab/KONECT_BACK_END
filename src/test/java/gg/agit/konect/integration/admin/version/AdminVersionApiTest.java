@@ -102,6 +102,33 @@ class AdminVersionApiTest extends IntegrationTestSupport {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.FORBIDDEN_ROLE_ACCESS.getCode()));
         }
+
+        @Test
+        @DisplayName("같은 버전 문자열이라도 플랫폼이 다르면 중복이 아니다")
+        void createVersionWithSameVersionDifferentPlatformSucceeds() throws Exception {
+            // given
+            mockLoginUser(adminUser.getId());
+
+            // when & then
+            performPost(ADMIN_VERSIONS_ENDPOINT, createRequest(PlatformType.IOS, "3.0.0"))
+                .andExpect(status().isOk());
+
+            performPost(ADMIN_VERSIONS_ENDPOINT, createRequest(PlatformType.ANDROID, "3.0.0"))
+                .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("플랫폼이 없으면 400을 반환한다")
+        void createVersionWithoutPlatformFails() throws Exception {
+            // given
+            mockLoginUser(adminUser.getId());
+            AdminVersionCreateRequest request = new AdminVersionCreateRequest(null, "1.0.0", "릴리즈 노트");
+
+            // when & then
+            performPost(ADMIN_VERSIONS_ENDPOINT, request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
+        }
     }
 
     private AdminVersionCreateRequest createRequest(PlatformType platform, String version) {
