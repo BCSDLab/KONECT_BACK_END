@@ -11,10 +11,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.H2Dialect
 
   flyway:
@@ -24,6 +24,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+      repositories:
+        enabled: false
 
   security:
     oauth2:
@@ -97,6 +99,8 @@ app:
     base-url: http://localhost:3000
   backend:
     base-url: http://localhost:8080
+  scheduling:
+    enabled: false
 
 cors:
   allowedOrigins: http://localhost:3000
@@ -141,5 +145,6 @@ logging:
   ignored-url-patterns:
     - /**/api-docs/**
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.type.descriptor.sql: trace
+    org.hibernate.SQL: warn
+    org.hibernate.type.descriptor.sql: warn
+    scheduler.studytime: warn
