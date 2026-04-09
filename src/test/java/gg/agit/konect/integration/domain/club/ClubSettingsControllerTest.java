@@ -60,21 +60,21 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
         @Test
         @DisplayName("회장 권한으로 설정 조회 시 200을 반환한다")
         void getSettingsAsPresident() throws Exception {
-            ResultActions result = performSettingsGet(president.getId());
+            ResultActions result = performSettingsGetAndAssertRecruitmentEnabled(president.getId());
             assertPresidentSettingsPayload(result);
         }
 
         @Test
         @DisplayName("부회장 권한으로 설정 조회 시 200을 반환한다")
         void getSettingsAsVicePresident() throws Exception {
-            ResultActions result = performSettingsGet(vicePresident.getId());
+            ResultActions result = performSettingsGetAndAssertRecruitmentEnabled(vicePresident.getId());
             assertPresidentSettingsPayload(result);
         }
 
         @Test
         @DisplayName("운영진 권한으로 설정 조회 시 200을 반환한다")
         void getSettingsAsManager() throws Exception {
-            ResultActions result = performSettingsGet(manager.getId());
+            ResultActions result = performSettingsGetAndAssertRecruitmentEnabled(manager.getId());
             assertPresidentSettingsPayload(result);
         }
 
@@ -105,7 +105,7 @@ class ClubSettingsControllerTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.fee").doesNotExist());
         }
 
-        private ResultActions performSettingsGet(Integer userId) throws Exception {
+        private ResultActions performSettingsGetAndAssertRecruitmentEnabled(Integer userId) throws Exception {
             mockLoginUser(userId);
 
             return performGet("/clubs/" + club.getId() + "/settings")
