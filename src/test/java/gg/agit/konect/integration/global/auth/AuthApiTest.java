@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -267,6 +268,50 @@ class AuthApiTest extends IntegrationTestSupport {
                             .isEqualTo("no-store, no-cache, must-revalidate");
                     }
                 );
+        }
+
+        @Test
+        void 기존_세션이_있으면_브릿지_성공_후_기존_세션을_무효화한다() throws Exception {
+            // given
+            given(nativeSessionBridgeService.consume("bridge-token-success"))
+                .willReturn(Optional.of(BRIDGE_USER_ID));
+
+            MockHttpSession existingSession = new MockHttpSession();
+            existingSession.setAttribute("userId", 12345);
+
+            // when, then
+            mockMvc.perform(
+                    org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/native/session/bridge")
+                        .param("bridge_token", "bridge-token-success")
+                        .session(existingSession)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+            assertThat(existingSession.isInvalid()).isTrue();
+        }
+
+        @Test
+        void https_프록시_헤더가_있으면_리프레시_쿠키에_Secure와_SameSite_None을_설정한다() throws Exception {
+            // given
+            given(nativeSessionBridgeService.consume("bridge-token-secure"))
+                .willReturn(Optional.of(BRIDGE_USER_ID));
+
+            // when, then
+            mockMvc.perform(
+                    org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/native/session/bridge")
+                        .param("bridge_token", "bridge-token-secure")
+                        .header("X-Forwarded-Proto", "https")
+                )
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    List<String> setCookies = result.getResponse().getHeaders(HttpHeaders.SET_COOKIE);
+                    assertThat(setCookies).anyMatch(
+                        cookie -> cookie.contains("refresh_token=")
+                            && cookie.contains("Secure")
+                            && cookie.contains("SameSite=None")
+                    );
+                });
         }
     }
 
