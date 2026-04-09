@@ -70,6 +70,21 @@ class VersionApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.version").value("2.0.0"))
                 .andExpect(jsonPath("$.releaseNotes").isEmpty());
         }
+
+        @Test
+        @DisplayName("버전 문자열 크기보다 실제 등록 시점이 최신 버전 판단 기준이다")
+        void getLatestVersionByCreatedAt() throws Exception {
+            // given
+            insertVersion(PlatformType.IOS, "9.9.9", "오래된 큰 버전", LocalDateTime.of(2026, 1, 1, 0, 0));
+            insertVersion(PlatformType.IOS, "1.0.1", "최근 릴리즈", LocalDateTime.of(2026, 5, 1, 0, 0));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(LATEST_VERSION_ENDPOINT + "?platform=IOS")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value("1.0.1"))
+                .andExpect(jsonPath("$.releaseNotes").value("최근 릴리즈"));
+        }
     }
 
     private void insertVersion(PlatformType platform, String version, String releaseNotes, LocalDateTime createdAt) {
