@@ -283,10 +283,10 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
 
     private Integer insertAdvertisement(String title, boolean isVisible, int clickCount) {
         entityManager.createNativeQuery("""
-            insert into advertisement (
-                title, description, image_url, link_url, is_visible, click_count, created_at, updated_at
-            ) values (?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
-            """)
+                insert into advertisement (
+                    title, description, image_url, link_url, is_visible, click_count, created_at, updated_at
+                ) values (?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
+                """)
             .setParameter(1, title)
             .setParameter(2, title + " 설명")
             .setParameter(3, "https://example.com/image.png")
@@ -296,6 +296,7 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
             .executeUpdate();
 
         entityManager.flush();
-        return ((Number)entityManager.createNativeQuery("select max(id) from advertisement").getSingleResult()).intValue();
+        return ((Number)entityManager.createNativeQuery("select max(id) from advertisement")
+            .getSingleResult()).intValue();
     }
 }

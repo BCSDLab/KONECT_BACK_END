@@ -128,10 +128,10 @@ class NoticeApiTest extends IntegrationTestSupport {
 
             // then
             Number readHistoryCount = (Number)entityManager.createNativeQuery("""
-                select count(*)
-                from council_notice_read_history
-                where user_id = ? and council_notice_id = ?
-                """)
+                    select count(*)
+                    from council_notice_read_history
+                    where user_id = ? and council_notice_id = ?
+                    """)
                 .setParameter(1, user.getId())
                 .setParameter(2, notice.getId())
                 .getSingleResult();
@@ -273,12 +273,12 @@ class NoticeApiTest extends IntegrationTestSupport {
 
     private void insertCouncilWithIdOne(Integer universityId) {
         entityManager.createNativeQuery("""
-            insert into council (
-                id, name, image_url, introduce, location, personal_color,
-                phone_number, email, instagram_user_name, operating_hour,
-                university_id, created_at, updated_at
-            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
-            """)
+                insert into council (
+                    id, name, image_url, introduce, location, personal_color,
+                    phone_number, email, instagram_user_name, operating_hour,
+                    university_id, created_at, updated_at
+                ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
+                """)
             .setParameter(1, 1)
             .setParameter(2, "총학생회")
             .setParameter(3, "https://example.com/council.png")
