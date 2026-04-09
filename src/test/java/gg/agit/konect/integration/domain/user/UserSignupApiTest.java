@@ -1,8 +1,12 @@
 package gg.agit.konect.integration.domain.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
 import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -10,9 +14,12 @@ import gg.agit.konect.domain.club.model.ClubPreMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.service.RefreshTokenService;
+import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.support.IntegrationTestSupport;
@@ -26,6 +33,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.List;
 
@@ -46,8 +56,15 @@ class UserSignupApiTest extends IntegrationTestSupport {
     @Autowired
     private ClubMemberRepository clubMemberRepository;
 
+    @MockitoBean
+    private SignupTokenService signupTokenService;
+
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
+
     private static final String SIGNUP_TOKEN_COOKIE_NAME = "signup_token";
     private static final String VALID_SIGNUP_TOKEN = "valid-test-signup-token";
+    private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(14);
 
     private University university;
     private Club club;
@@ -60,10 +77,9 @@ class UserSignupApiTest extends IntegrationTestSupport {
         existingPresident = persist(UserFixture.createUser(university, "기존회장", "2020000001"));
         persist(gg.agit.konect.support.fixture.ClubMemberFixture.createPresident(club, existingPresident));
         clearPersistenceContext();
-
-        // signup_token 쿠키 설정
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/test-setup")
-            .cookie(new Cookie(SIGNUP_TOKEN_COOKIE_NAME, VALID_SIGNUP_TOKEN)));
+        given(refreshTokenService.issue(anyInt())).willReturn("refresh-token-for-test");
+        given(refreshTokenService.refreshTtl()).willReturn(REFRESH_TOKEN_TTL);
+        given(jwtProvider.createToken(anyInt())).willReturn("access-token-for-test");
     }
 
     @Nested
@@ -86,9 +102,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
                 studentNumber,
                 true
             );
+            stubSignupTokenClaims(email);
 
             // when & then
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isOk());
 
             // 회원이 생성되었는지 확인
@@ -121,9 +138,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             SignupRequest request = new SignupRequest(name, university.getId(), studentNumber, true);
+            stubSignupTokenClaims(email);
 
             // when
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isOk());
 
             // then
@@ -168,9 +186,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
             assertThat(clubMemberRepository.findPresidentByClubId(club.getId())).isPresent();
 
             SignupRequest request = new SignupRequest(name, university.getId(), studentNumber, true);
+            stubSignupTokenClaims(email);
 
             // when
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isOk());
 
             // then
@@ -219,9 +238,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             SignupRequest request = new SignupRequest(name, university.getId(), studentNumber, true);
+            stubSignupTokenClaims(email);
 
             // when
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isOk());
 
             // then
@@ -253,9 +273,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
             // 이름 1글자 (유효하지 않음)
             SignupRequest request = new SignupRequest("홍", university.getId(), "2021136005", true);
+            stubSignupTokenClaims(email);
 
             // when & then
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isBadRequest());
         }
 
@@ -269,9 +290,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             SignupRequest request = new SignupRequest("홍길동", university.getId(), "ABC123", true);
+            stubSignupTokenClaims(email);
 
             // when & then
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isBadRequest());
         }
 
@@ -285,9 +307,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             SignupRequest request = new SignupRequest("홍길동", 99999, "2021136006", true);
+            stubSignupTokenClaims(email);
 
             // when & then
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isNotFound());
         }
 
@@ -305,10 +328,12 @@ class UserSignupApiTest extends IntegrationTestSupport {
                 "{\"name\": \"홍길동\", \"universityId\": %d, \"studentNumber\": \"2021136007\"}",
                 university.getId()
             );
+            stubSignupTokenClaims(email);
 
             // when & then
-            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/users/signup")
-                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            mockMvc.perform(post("/users/signup")
+                    .cookie(signupTokenCookie())
+                    .contentType(MediaType.APPLICATION_JSON)
                     .content(jsonRequest))
                 .andExpect(status().isBadRequest());
         }
@@ -335,9 +360,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             SignupRequest request = new SignupRequest(name, university.getId(), studentNumber, true);
+            stubSignupTokenClaims(email);
 
             // when
-            performPost("/users/signup", request)
+            performSignup(request)
                 .andExpect(status().isOk());
 
             // then
@@ -358,5 +384,22 @@ class UserSignupApiTest extends IntegrationTestSupport {
             ).stream()
             .findFirst()
             .orElse(null);
+    }
+
+    private void stubSignupTokenClaims(String email) {
+        String providerId = "google_" + email.split("@")[0];
+        given(signupTokenService.consumeOrThrow(VALID_SIGNUP_TOKEN))
+            .willReturn(new SignupTokenService.SignupClaims(email, Provider.GOOGLE, providerId, "임시유저"));
+    }
+
+    private ResultActions performSignup(SignupRequest request) throws Exception {
+        return mockMvc.perform(post("/users/signup")
+            .cookie(signupTokenCookie())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)));
+    }
+
+    private Cookie signupTokenCookie() {
+        return new Cookie(SIGNUP_TOKEN_COOKIE_NAME, VALID_SIGNUP_TOKEN);
     }
 }

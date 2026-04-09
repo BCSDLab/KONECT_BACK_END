@@ -90,6 +90,12 @@ public class UploadService {
             throw CustomException.of(ApiResponseCode.INVALID_REQUEST_BODY);
         }
 
+        if (s3StorageProperties.maxUploadBytes() != null
+            && s3StorageProperties.maxUploadBytes() > 0
+            && file.getSize() > s3StorageProperties.maxUploadBytes()) {
+            throw CustomException.of(ApiResponseCode.PAYLOAD_TOO_LARGE);
+        }
+
         String contentType = file.getContentType();
         if (contentType == null || contentType.isBlank() || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
             throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
