@@ -46,5 +46,21 @@ class UniversityApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.universities", hasSize(0)));
         }
+
+        @Test
+        @DisplayName("동일한 이름이라도 캠퍼스가 다르면 각각 조회된다")
+        void getUniversitiesWithSameNameDifferentCampus() throws Exception {
+            // given
+            persist(UniversityFixture.create("한국기술교육대학교", Campus.SECOND));
+            persist(UniversityFixture.create("한국기술교육대학교", Campus.MAIN));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(UNIVERSITIES_ENDPOINT)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.universities", hasSize(2)))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"))
+                .andExpect(jsonPath("$.universities[1].name").value("한국기술교육대학교"));
+        }
     }
 }
