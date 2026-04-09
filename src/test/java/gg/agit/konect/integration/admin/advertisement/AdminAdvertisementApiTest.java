@@ -123,7 +123,8 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.advertisements", hasSize(1)))
                 .andExpect(jsonPath("$.advertisements[0].title").value("생성 광고"))
-                .andExpect(jsonPath("$.advertisements[0].isVisible").value(true));
+                .andExpect(jsonPath("$.advertisements[0].isVisible").value(true))
+                .andExpect(jsonPath("$.advertisements[0].clickCount").value(0));
         }
 
         @Test
@@ -209,6 +210,31 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_ADVERTISEMENT.getCode()));
         }
+
+        @Test
+        @DisplayName("광고 수정은 기존 클릭 수를 보존한다")
+        void updateAdvertisementPreservesClickCount() throws Exception {
+            // given
+            mockLoginUser(adminUser.getId());
+            Integer advertisementId = insertAdvertisement("기존 광고", true, 7);
+            clearPersistenceContext();
+
+            AdminAdvertisementUpdateRequest request = new AdminAdvertisementUpdateRequest(
+                "수정 광고",
+                "수정 설명",
+                "https://example.com/new-image.png",
+                "https://example.com/new-link",
+                false
+            );
+
+            // when & then
+            performPut(ADMIN_ADVERTISEMENTS_ENDPOINT + "/" + advertisementId, request)
+                .andExpect(status().isOk());
+
+            performGet(ADMIN_ADVERTISEMENTS_ENDPOINT + "/" + advertisementId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clickCount").value(7));
+        }
     }
 
     @Nested
@@ -253,5 +279,23 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
             "https://example.com/link",
             isVisible
         );
+    }
+
+    private Integer insertAdvertisement(String title, boolean isVisible, int clickCount) {
+        entityManager.createNativeQuery("""
+            insert into advertisement (
+                title, description, image_url, link_url, is_visible, click_count, created_at, updated_at
+            ) values (?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
+            """)
+            .setParameter(1, title)
+            .setParameter(2, title + " 설명")
+            .setParameter(3, "https://example.com/image.png")
+            .setParameter(4, "https://example.com/link")
+            .setParameter(5, isVisible)
+            .setParameter(6, clickCount)
+            .executeUpdate();
+
+        entityManager.flush();
+        return ((Number)entityManager.createNativeQuery("select max(id) from advertisement").getSingleResult()).intValue();
     }
 }
