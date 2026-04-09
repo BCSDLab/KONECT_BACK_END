@@ -46,9 +46,9 @@ class BankApiTest extends IntegrationTestSupport {
 
     private void insertBank(String name, String imageUrl) {
         entityManager.createNativeQuery("""
-            insert into bank (name, image_url, created_at, updated_at)
-            values (?, ?, current_timestamp, current_timestamp)
-            """)
+                insert into bank (name, image_url, created_at, updated_at)
+                values (?, ?, current_timestamp, current_timestamp)
+                """)
             .setParameter(1, name)
             .setParameter(2, imageUrl)
             .executeUpdate();

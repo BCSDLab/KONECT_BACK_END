@@ -59,9 +59,9 @@ class VersionApiTest extends IntegrationTestSupport {
 
     private void insertVersion(PlatformType platform, String version, String releaseNotes, LocalDateTime createdAt) {
         entityManager.createNativeQuery("""
-            insert into version (platform, version, release_notes, created_at, updated_at)
-            values (?, ?, ?, ?, ?)
-            """)
+                insert into version (platform, version, release_notes, created_at, updated_at)
+                values (?, ?, ?, ?, ?)
+                """)
             .setParameter(1, platform.name())
             .setParameter(2, version)
             .setParameter(3, releaseNotes)
