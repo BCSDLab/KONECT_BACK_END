@@ -3,6 +3,8 @@ package gg.agit.konect.integration.domain.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -117,6 +119,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
             assertThat(savedUser).isNotNull();
             assertThat(savedUser.getName()).isEqualTo("홍길동");
             assertThat(savedUser.getEmail()).isEqualTo(email);
+            assertSignupTokenConsumedOnce();
         }
 
         @Test
@@ -162,6 +165,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
             // PreMember는 삭제되었는지 확인
             List<ClubPreMember> remainingPreMembers = clubPreMemberRepository.findAllByClubId(club.getId());
             assertThat(remainingPreMembers).isEmpty();
+            assertSignupTokenConsumedOnce();
         }
 
         @Test
@@ -208,6 +212,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
             assertThat(clubMemberRepository.findPresidentByClubId(club.getId())).isPresent();
             assertThat(clubMemberRepository.findPresidentByClubId(club.getId()).get().getUser().getId())
                 .isEqualTo(savedUser.getId());
+            assertSignupTokenConsumedOnce();
         }
 
         @Test
@@ -263,6 +268,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
             ClubMember memberInClub2 = clubMemberRepository.getByClubIdAndUserId(club2.getId(), savedUser.getId());
             assertThat(memberInClub1.getClubPosition()).isEqualTo(ClubPosition.MEMBER);
             assertThat(memberInClub2.getClubPosition()).isEqualTo(ClubPosition.MANAGER);
+            assertSignupTokenConsumedOnce();
         }
 
         @Test
@@ -315,6 +321,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
             // when & then
             performSignup(request)
                 .andExpect(status().isNotFound());
+            assertSignupTokenConsumedOnce();
         }
 
         @Test
@@ -374,6 +381,7 @@ class UserSignupApiTest extends IntegrationTestSupport {
             // 동아리에 가입되지 않았는지 확인
             boolean isMember = clubMemberRepository.existsByClubIdAndUserId(club.getId(), savedUser.getId());
             assertThat(isMember).isFalse();
+            assertSignupTokenConsumedOnce();
         }
     }
 
@@ -394,6 +402,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
         given(signupTokenService.consumeOrThrow(VALID_SIGNUP_TOKEN))
             .willReturn(claims)
             .willThrow(CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN));
+    }
+
+    private void assertSignupTokenConsumedOnce() {
+        verify(signupTokenService, times(1)).consumeOrThrow(VALID_SIGNUP_TOKEN);
     }
 
     private ResultActions performSignup(SignupRequest request) throws Exception {
