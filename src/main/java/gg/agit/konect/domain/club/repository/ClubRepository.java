@@ -21,8 +21,22 @@ public interface ClubRepository extends Repository<Club, Integer> {
         """)
     Optional<Club> findById(@Param(value = "id") Integer id);
 
+    @Query(value = """
+        SELECT c
+        FROM Club c
+        LEFT JOIN FETCH c.university
+        LEFT JOIN FETCH c.clubRecruitment cr
+        WHERE c.id = :id
+        """)
+    Optional<Club> findByIdWithUniversity(@Param(value = "id") Integer id);
+
     default Club getById(Integer id) {
         return findById(id).orElseThrow(() ->
+            CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
+    }
+
+    default Club getByIdWithUniversity(Integer id) {
+        return findByIdWithUniversity(id).orElseThrow(() ->
             CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
     }
 

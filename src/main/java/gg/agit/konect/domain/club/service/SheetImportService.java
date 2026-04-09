@@ -16,6 +16,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
@@ -53,28 +55,55 @@ public class SheetImportService {
     private final ChatRoomMembershipService chatRoomMembershipService;
     private final ClubPermissionValidator clubPermissionValidator;
     private final PlatformTransactionManager transactionManager;
+    private final ObjectMapper objectMapper;
 
     public SheetImportPreviewResponse previewPreMembersFromSheet(
         Integer clubId,
-        Integer requesterId,
-        String spreadsheetUrl
+        Integer requesterId
     ) {
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+        Club club = resolveClubWithRegisteredSheet(clubId);
+        String spreadsheetId = club.getGoogleSheetId();
+        SheetColumnMapping mapping = resolveRegisteredMemberListMapping(club);
+        SheetImportSource source = loadSheetImportSource(spreadsheetId, mapping);
+        SheetImportPlan plan = buildImportPlan(
+            clubId,
+            club,
+            source.members(),
+            source.warnings()
+        );
+        return SheetImportPreviewResponse.of(plan.previewMembers(), plan.warnings());
+    }
 
-        String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
-        SheetHeaderMapper.SheetAnalysisResult analysis =
-            sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
-        SheetImportSource source = loadSheetImportSource(spreadsheetId, analysis.memberListMapping());
-        return executeReadOnlyTransaction(() -> {
-            Club club = clubRepository.getById(clubId);
-            SheetImportPlan plan = buildImportPlan(
-                clubId,
-                club,
-                source.members(),
-                source.warnings()
-            );
-            return SheetImportPreviewResponse.of(plan.previewMembers(), plan.warnings());
-        });
+    private Club resolveClubWithRegisteredSheet(Integer clubId) {
+        Club club = clubRepository.getByIdWithUniversity(clubId);
+        String spreadsheetId = club.getGoogleSheetId();
+        if (spreadsheetId == null || spreadsheetId.isBlank()) {
+            throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
+        }
+        return club;
+    }
+
+    private SheetColumnMapping resolveRegisteredMemberListMapping(Club club) {
+        String mappingJson = club.getSheetColumnMapping();
+        if (mappingJson == null || mappingJson.isBlank()) {
+            throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
+        }
+
+        try {
+            Map<String, Object> raw = objectMapper.readValue(mappingJson, new TypeReference<>() {});
+            int dataStartRow = raw.containsKey("dataStartRow")
+                ? ((Number)raw.get("dataStartRow")).intValue() : 2;
+            Map<String, Integer> fieldMap = new HashMap<>();
+            raw.forEach((key, value) -> {
+                if (!"dataStartRow".equals(key) && value instanceof Number number) {
+                    fieldMap.put(key, number.intValue());
+                }
+            });
+            return new SheetColumnMapping(fieldMap, dataStartRow);
+        } catch (Exception e) {
+            throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
+        }
     }
 
     @Transactional

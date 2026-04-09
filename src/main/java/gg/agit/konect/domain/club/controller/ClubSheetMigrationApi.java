@@ -38,14 +38,14 @@ public interface ClubSheetMigrationApi {
     @Operation(
         summary = "시트 불러오기 전 부원 목록을 미리본다",
         description = """
-            스프레드시트 URL을 읽어 등록 예정인 부원 목록을 JSON으로 반환합니다.
+            PUT /clubs/{clubId}/sheet 로 AI 분석 및 등록이 완료된 스프레드시트를 읽어
+            등록 예정인 부원 목록을 JSON으로 반환합니다.
             이 API는 데이터를 저장하지 않고 미리보기 용도로만 사용합니다.
             """
     )
     @PostMapping("/{clubId}/sheet/import/preview")
     ResponseEntity<SheetImportPreviewResponse> previewPreMembers(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody SheetImportRequest request,
         @UserId Integer requesterId
     );
 

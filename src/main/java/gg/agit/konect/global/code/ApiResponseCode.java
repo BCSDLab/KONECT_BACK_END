@@ -49,6 +49,8 @@ public enum ApiResponseCode {
     INVALID_NOTIFICATION_TOKEN(HttpStatus.BAD_REQUEST, "푸시 알림 토큰이 유효하지 않습니다."),
     FEE_PAYMENT_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "회비 납부가 필요한 동아리입니다. 납부 증빙 사진을 첨부해주세요."),
     AMBIGUOUS_USER_MATCH(HttpStatus.BAD_REQUEST, "동일한 정보로 식별되는 사용자가 2명 이상입니다. 관리자에게 문의해주세요."),
+    CLUB_SHEET_ANALYSIS_REQUIRED(HttpStatus.BAD_REQUEST,
+        "구글 시트 파일에서 동아리 부원을 가져오기 전에 먼저 AI 분석 및 등록이 완료되어야 합니다."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
