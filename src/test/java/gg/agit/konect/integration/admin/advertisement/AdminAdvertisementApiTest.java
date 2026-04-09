@@ -58,6 +58,18 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.advertisements[0].id").value(second.getId()))
                 .andExpect(jsonPath("$.advertisements[1].id").value(first.getId()));
         }
+
+        @Test
+        @DisplayName("광고가 없으면 빈 목록을 반환한다")
+        void getAdvertisementsWhenEmpty() throws Exception {
+            // given
+            mockLoginUser(adminUser.getId());
+
+            // when & then
+            performGet(ADMIN_ADVERTISEMENTS_ENDPOINT)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.advertisements", hasSize(0)));
+        }
     }
 
     @Nested
@@ -178,6 +190,25 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.description").value("수정 설명"))
                 .andExpect(jsonPath("$.isVisible").value(false));
         }
+
+        @Test
+        @DisplayName("수정 대상 광고가 없으면 404를 반환한다")
+        void updateAdvertisementNotFound() throws Exception {
+            // given
+            mockLoginUser(adminUser.getId());
+            AdminAdvertisementUpdateRequest request = new AdminAdvertisementUpdateRequest(
+                "수정 광고",
+                "수정 설명",
+                "https://example.com/new-image.png",
+                "https://example.com/new-link",
+                false
+            );
+
+            // when & then
+            performPut(ADMIN_ADVERTISEMENTS_ENDPOINT + "/99999", request)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_ADVERTISEMENT.getCode()));
+        }
     }
 
     @Nested
@@ -197,6 +228,18 @@ class AdminAdvertisementApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk());
 
             performGet(ADMIN_ADVERTISEMENTS_ENDPOINT + "/" + advertisement.getId())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_ADVERTISEMENT.getCode()));
+        }
+
+        @Test
+        @DisplayName("삭제 대상 광고가 없으면 404를 반환한다")
+        void deleteAdvertisementNotFound() throws Exception {
+            // given
+            mockLoginUser(adminUser.getId());
+
+            // when & then
+            performDelete(ADMIN_ADVERTISEMENTS_ENDPOINT + "/99999")
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_ADVERTISEMENT.getCode()));
         }
