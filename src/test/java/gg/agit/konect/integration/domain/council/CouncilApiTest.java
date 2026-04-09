@@ -114,6 +114,28 @@ class CouncilApiTest extends IntegrationTestSupport {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
         }
+
+        @Test
+        @DisplayName("인스타그램 아이디 형식이 잘못되면 400을 반환한다")
+        void createCouncilInvalidInstagramFails() throws Exception {
+            // given
+            CouncilCreateRequest request = new CouncilCreateRequest(
+                "개화",
+                "https://konect.kro.kr/image.jpg",
+                "총동아리연합회 소개",
+                "학생회관 2층 202호",
+                "#FF5733",
+                "01012345678",
+                "council@example.com",
+                "평일 09:00 ~ 18:00",
+                "@koreatechclub"
+            );
+
+            // when & then
+            performPost(COUNCILS_ENDPOINT, request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.INVALID_REQUEST_BODY.getCode()));
+        }
     }
 
     @Nested
@@ -148,6 +170,38 @@ class CouncilApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.name").value("개화 리뉴얼"))
                 .andExpect(jsonPath("$.imageUrl").value("https://konect.kro.kr/new-image.jpg"))
                 .andExpect(jsonPath("$.instagramUserName").value("renewed_council"));
+
+            Council updatedCouncil = entityManager.createQuery("""
+                    select c
+                    from Council c
+                    where c.university.id = :universityId
+                    """, Council.class)
+                .setParameter("universityId", university.getId())
+                .getSingleResult();
+            org.assertj.core.api.Assertions.assertThat(updatedCouncil.getPhoneNumber()).isEqualTo("01012345678");
+            org.assertj.core.api.Assertions.assertThat(updatedCouncil.getEmail()).isEqualTo("updated@example.com");
+        }
+
+        @Test
+        @DisplayName("수정 대상이 없으면 404를 반환한다")
+        void updateCouncilNotFound() throws Exception {
+            // given
+            CouncilUpdateRequest request = new CouncilUpdateRequest(
+                "개화 리뉴얼",
+                "https://konect.kro.kr/new-image.jpg",
+                "새로운 소개",
+                "학생회관 3층 301호",
+                "#000000",
+                "01012345678",
+                "updated@example.com",
+                "평일 10:00 ~ 17:00",
+                "renewed_council"
+            );
+
+            // when & then
+            performPut(COUNCILS_ENDPOINT, request)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL.getCode()));
         }
     }
 
@@ -167,6 +221,15 @@ class CouncilApiTest extends IntegrationTestSupport {
                 .andExpect(status().isNoContent());
 
             performGet(COUNCILS_ENDPOINT)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL.getCode()));
+        }
+
+        @Test
+        @DisplayName("삭제 대상이 없으면 404를 반환한다")
+        void deleteCouncilNotFound() throws Exception {
+            // when & then
+            performDelete(COUNCILS_ENDPOINT)
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ApiResponseCode.NOT_FOUND_COUNCIL.getCode()));
         }
