@@ -256,6 +256,273 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
         verify(userOAuthAccountRepository).flush();
     }
 
+    @Test
+    @DisplayName("getLinkStatus는 OAuth 계정이 없으면 빈 리스트를 반환한다")
+    void getLinkStatusReturnsEmptyListWhenNoOAuthAccounts() {
+        // given
+        User user = UserFixture.createUserWithId(1, "2021136001");
+        given(userRepository.getById(1)).willReturn(user);
+        given(userOAuthAccountRepository.findAllByUserId(1)).willReturn(List.of());
+
+        // when
+        OAuthLinkStatusResponse response = userOAuthAccountService.getLinkStatus(1);
+
+        // then
+        assertThat(response.providers())
+            .extracting(link -> link.provider(), link -> link.linked())
+            .containsExactly(
+                tuple(Provider.GOOGLE, false),
+                tuple(Provider.NAVER, false),
+                tuple(Provider.KAKAO, false),
+                tuple(Provider.APPLE, false)
+            );
+    }
+
+    @Test
+    @DisplayName("linkPrimaryOAuthAccount는 providerId가 null이고 requireProviderId=false인 경우 성공한다")
+    void linkPrimaryOAuthAccountAllowsNullProviderIdWhenNotRequired() {
+        // given
+        User user = createUser(1, "2021136001");
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "google@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("google@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            user,
+            Provider.GOOGLE,
+            null,
+            "google@konect.test",
+            null
+        );
+
+        // then
+        ArgumentCaptor<UserOAuthAccount> captor = ArgumentCaptor.forClass(UserOAuthAccount.class);
+        verify(userOAuthAccountRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(user);
+        assertThat(captor.getValue().getProvider()).isEqualTo(Provider.GOOGLE);
+        assertThat(captor.getValue().getOauthEmail()).isEqualTo("google@konect.test");
+        assertThat(captor.getValue().getProviderId()).isNull();
+    }
+
+    @Test
+    @DisplayName("linkOAuthAccount는 providerId와 oauthEmail 모두 제공된 경우 성공한다")
+    void linkOAuthAccountAcceptsBothProviderIdAndOauthEmail() {
+        // given
+        User user = createUser(1, "2021136001");
+        given(userRepository.getById(1)).willReturn(user);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "google@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("google@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkOAuthAccount(
+            1,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "google@konect.test",
+            null
+        );
+
+        // then
+        ArgumentCaptor<UserOAuthAccount> captor = ArgumentCaptor.forClass(UserOAuthAccount.class);
+        verify(userOAuthAccountRepository).save(captor.capture());
+        assertThat(captor.getValue().getProviderId()).isEqualTo("google-provider-id");
+        assertThat(captor.getValue().getOauthEmail()).isEqualTo("google@konect.test");
+    }
+
+    @Test
+    @DisplayName("linkOAuthAccount는 providerId와 oauthEmail 모두 누락된 경우 예외를 던진다")
+    void linkOAuthAccountRejectsWhenBothProviderIdAndOauthEmailMissing() {
+        // given
+        User user = createUser(1, "2021136001");
+        given(userRepository.getById(1)).willReturn(user);
+
+        // when & then
+        assertCustomException(
+            ApiResponseCode.FAILED_EXTRACT_PROVIDER_ID,
+            () -> userOAuthAccountService.linkOAuthAccount(
+                1,
+                Provider.GOOGLE,
+                null,
+                null,
+                null
+            )
+        );
+        verify(userOAuthAccountRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("linkOAuthAccount는 oauthEmail이 빈 문자열인 경우에도 성공한다")
+    void linkOAuthAccountAcceptsEmptyOauthEmail() {
+        // given
+        User user = createUser(1, "2021136001");
+        given(userRepository.getById(1)).willReturn(user);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkOAuthAccount(
+            1,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "",
+            null
+        );
+
+        // then
+        ArgumentCaptor<UserOAuthAccount> captor = ArgumentCaptor.forClass(UserOAuthAccount.class);
+        verify(userOAuthAccountRepository).save(captor.capture());
+        assertThat(captor.getValue().getProviderId()).isEqualTo("google-provider-id");
+        assertThat(captor.getValue().getOauthEmail()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("restoreOrCleanupWithdrawnByLinkedProvider는 계정이 있지만 사용자가 탈퇴하지 않은 경우 아무것도 하지 않는다")
+    void restoreOrCleanupWithdrawnByLinkedProviderDoesNothingWhenUserNotWithdrawn() {
+        // given
+        User activeUser = createUser(1, "2021136001");
+        UserOAuthAccount existingAccount = UserOAuthAccount.of(
+            activeUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "google@konect.test",
+            null
+        );
+        // activeUser는 deletedAt이 null이므로 restoreOrCleanupWithdrawnByLinkedProvider에서
+        // isStageProfile()이 호출되지 않음 — environment stub 불필요
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.of(existingAccount));
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.of(activeUser));
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "new@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("new@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            activeUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "new@konect.test",
+            null
+        );
+
+        // then
+        verify(userRepository, never()).save(any(User.class));
+        verify(userOAuthAccountRepository, never()).delete(any(UserOAuthAccount.class));
+    }
+
+    @Test
+    @DisplayName("restoreOrCleanupWithdrawnByLinkedProvider는 복구 기간 내인 경우 사용자를 복구한다")
+    void restoreOrCleanupWithdrawnByLinkedProviderRestoresUserWithinWindow() {
+        // given
+        User currentUser = createUser(1, "2021136001");
+        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
+        UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
+            withdrawnUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "old@konect.test",
+            null
+        );
+        given(environment.acceptsProfiles(any(Profiles.class))).willReturn(false);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.of(withdrawnAccount));
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "new@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("new@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            currentUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "new@konect.test",
+            null
+        );
+
+        // then
+        assertThat(withdrawnUser.getDeletedAt()).isNull();
+        verify(userRepository).save(withdrawnUser);
+        verify(userOAuthAccountRepository, never()).delete(any(UserOAuthAccount.class));
+    }
+
+    @Test
+    @DisplayName("restoreOrCleanupWithdrawnByOauthEmail는 복구 기간 내인 경우 사용자를 복구한다")
+    void restoreOrCleanupWithdrawnByOauthEmailRestoresUserWithinWindow() {
+        // given
+        User currentUser = createUser(1, "2021136001");
+        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
+        UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
+            withdrawnUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "old@konect.test",
+            null
+        );
+        given(environment.acceptsProfiles(any(Profiles.class))).willReturn(false);
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "old@konect.test"))
+            .willReturn(Optional.of(withdrawnAccount));
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("old@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            currentUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "old@konect.test",
+            null
+        );
+
+        // then
+        assertThat(withdrawnUser.getDeletedAt()).isNull();
+        verify(userRepository).save(withdrawnUser);
+        verify(userOAuthAccountRepository, never()).delete(any(UserOAuthAccount.class));
+    }
+
+    @Test
+    @DisplayName("getPrimaryOAuthAccount는 계정이 없는 경우 null을 반환한다")
+    void getPrimaryOAuthAccountReturnsNullWhenNoAccounts() {
+        // given
+        given(userOAuthAccountRepository.findAllByUserId(1)).willReturn(List.of());
+
+        // when
+        UserOAuthAccount result = userOAuthAccountService.getPrimaryOAuthAccount(1);
+
+        // then
+        assertThat(result).isNull();
+    }
+
     private User createUser(Integer id, String studentNumber) {
         return UserFixture.createUserWithId(id, studentNumber);
     }
