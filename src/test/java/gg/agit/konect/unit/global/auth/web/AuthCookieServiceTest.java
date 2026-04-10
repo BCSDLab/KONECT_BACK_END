@@ -109,7 +109,7 @@ class AuthCookieServiceTest {
     void getCookieValueHandlesNullCookieArray() {
         // given
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies((Cookie[]) null); // 명시적으로 null 설정
+        request.setCookies((Cookie[])null); // 명시적으로 null 설정
 
         // when & then
         assertThat(authCookieService.getCookieValue(request, "any")).isNull();

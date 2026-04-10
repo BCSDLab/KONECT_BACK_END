@@ -133,7 +133,8 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
             true
         ))
             .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(NOT_FOUND_CLUB_SHEET_ID));
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(
+                NOT_FOUND_CLUB_SHEET_ID));
     }
 
     @Test
@@ -155,7 +156,8 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
             true
         ))
             .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(NOT_FOUND_CLUB_SHEET_ID));
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(
+                NOT_FOUND_CLUB_SHEET_ID));
     }
 
     @Test

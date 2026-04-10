@@ -11,8 +11,6 @@ import static gg.agit.konect.global.code.ApiResponseCode.ILLEGAL_ARGUMENT;
 import static gg.agit.konect.global.code.ApiResponseCode.MANAGER_LIMIT_EXCEEDED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -270,7 +268,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         when(clubPreMemberRepository.findAllByClubId(clubId)).thenReturn(List.of(preMember1, preMember2));
 
         // when
-        gg.agit.konect.domain.club.dto.ClubPreMembersResponse response = clubMemberManagementService.getPreMembers(clubId, requesterId);
+        gg.agit.konect.domain.club.dto.ClubPreMembersResponse response = clubMemberManagementService.getPreMembers(
+            clubId, requesterId);
 
         // then
         assertThat(response.preMembers()).hasSize(2);
@@ -311,7 +310,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Club club = createClub();
         User presidentUser = UserFixture.createUserWithId(currentPresidentId, "회장", UserRole.USER);
         ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
-        gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(currentPresidentId);
+        gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(
+            currentPresidentId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId)).thenReturn(president);
@@ -335,7 +335,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         User newPresidentUser = UserFixture.createUserWithId(newPresidentId, "신회장", UserRole.USER);
         ClubMember currentPresident = ClubMemberFixture.createPresident(club, currentPresidentUser);
         ClubMember newPresident = ClubMemberFixture.createMember(club, newPresidentUser);
-        gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(newPresidentId);
+        gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(
+            newPresidentId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId)).thenReturn(currentPresident);
@@ -359,10 +360,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Club club = createClub();
         User presidentUser = UserFixture.createUserWithId(requesterId, "회장", UserRole.USER);
         ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
-        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(null);
+        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
+            null);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
-        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(List.of());
+        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
+            List.of());
 
         // when
         List<ClubMember> result = clubMemberManagementService.changeVicePresident(clubId, requesterId, request);
@@ -386,10 +389,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
         ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
         ClubMember newVp = ClubMemberFixture.createMember(club, newVpUser);
-        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(newVpId);
+        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
+            newVpId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
-        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(List.of(currentVp));
+        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
+            List.of(currentVp));
         when(clubMemberRepository.getByClubIdAndUserId(clubId, newVpId)).thenReturn(newVp);
 
         // when
@@ -487,10 +492,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         User currentVpUser = UserFixture.createUserWithId(currentVpId, "부회장", UserRole.USER);
         ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
         ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
-        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(currentVpId);
+        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
+            currentVpId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
-        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(List.of(currentVp));
+        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
+            List.of(currentVp));
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentVpId)).thenReturn(currentVp);
 
         // when
@@ -516,10 +523,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
         ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
         ClubMember newVp = ClubMemberFixture.createMember(club, newVpUser);
-        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(newVpId);
+        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
+            newVpId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
-        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(List.of(currentVp));
+        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
+            List.of(currentVp));
         when(clubMemberRepository.getByClubIdAndUserId(clubId, newVpId)).thenReturn(newVp);
 
         // when
@@ -543,7 +552,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         User newPresidentUser = UserFixture.createUserWithId(newPresidentId, "신회장", UserRole.USER);
         ClubMember currentPresident = ClubMemberFixture.createPresident(club, currentPresidentUser);
         ClubMember newPresident = ClubMemberFixture.createManager(club, newPresidentUser);
-        gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(newPresidentId);
+        gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(
+            newPresidentId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId)).thenReturn(currentPresident);
@@ -614,7 +624,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
             new ClubPreMemberAddRequest("20240001", "홍길동", ClubPosition.MEMBER),
             new ClubPreMemberAddRequest("20240002", "김철수", ClubPosition.MANAGER)
         ));
-        User existingUser = UserFixture.createUserWithId(UniversityFixture.create(), 1, "홍길동", "20240001", UserRole.USER);
+        User existingUser = UserFixture.createUserWithId(UniversityFixture.create(), 1, "홍길동", "20240001",
+            UserRole.USER);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(userRepository.findAllByUniversityIdAndStudentNumber(club.getUniversity().getId(), "20240001"))

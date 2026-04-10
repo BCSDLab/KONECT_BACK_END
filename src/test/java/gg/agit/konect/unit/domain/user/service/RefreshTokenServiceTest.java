@@ -168,7 +168,8 @@ class RefreshTokenServiceTest extends ServiceTestSupport {
     @DisplayName("extractUserId는 token_type 클레임이 누락된 토큰을 거부한다")
     void extractUserIdRejectsMissingTokenTypeClaim() throws JOSEException {
         // given
-        String token = createTokenWithoutClaim(Integer.valueOf(11), VALID_ISSUER, Instant.now().plusSeconds(60), VALID_SECRET, "token_type");
+        String token = createTokenWithoutClaim(Integer.valueOf(11), VALID_ISSUER, Instant.now().plusSeconds(60),
+            VALID_SECRET, "token_type");
 
         // when & then
         assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
@@ -199,7 +200,8 @@ class RefreshTokenServiceTest extends ServiceTestSupport {
     @DisplayName("extractUserId는 id 클레임이 누락된 토큰을 거부한다")
     void extractUserIdRejectsMissingIdClaim() throws JOSEException {
         // given
-        String token = createTokenWithoutClaim(Integer.valueOf(11), VALID_ISSUER, Instant.now().plusSeconds(60), VALID_SECRET, "id");
+        String token = createTokenWithoutClaim(Integer.valueOf(11), VALID_ISSUER, Instant.now().plusSeconds(60),
+            VALID_SECRET, "id");
 
         // when & then
         assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
@@ -231,7 +233,7 @@ class RefreshTokenServiceTest extends ServiceTestSupport {
     void extractUserIdRejectsNullIssuerClaim() throws JOSEException {
         // given
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
-            .issuer((String) null) // null issuer
+            .issuer((String)null) // null issuer
             .issueTime(Date.from(Instant.now().minusSeconds(10)))
             .expirationTime(Date.from(Instant.now().plusSeconds(60)))
             .jwtID(UUID.randomUUID().toString())
@@ -313,7 +315,8 @@ class RefreshTokenServiceTest extends ServiceTestSupport {
         return jwt.serialize();
     }
 
-    private String createTokenWithoutClaim(Integer userId, String issuer, Instant expiresAt, String secret, String claimToOmit)
+    private String createTokenWithoutClaim(Integer userId, String issuer, Instant expiresAt, String secret,
+        String claimToOmit)
         throws JOSEException {
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
             .issuer(issuer)
