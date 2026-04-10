@@ -178,6 +178,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         Club club = ClubFixture.create(university);
         ReflectionTestUtils.setField(club, "id", 1);
+
         return club;
     }
 
