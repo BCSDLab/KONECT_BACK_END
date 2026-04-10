@@ -169,7 +169,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.name()).isEqualTo(request.name());
-        assertThat(response.studentNumber()).isEqualTo(request.studentNumber());
+        assertThat(response.studentNumber()).isEqualTo(matchedUser.getStudentNumber());
         assertThat(response.clubPosition()).isEqualTo(ClubPosition.MANAGER);
         verify(clubPreMemberRepository).deleteByClubIdAndStudentNumber(clubId, request.studentNumber());
         verify(chatRoomMembershipService).addClubMember(org.mockito.ArgumentMatchers.any(ClubMember.class));
