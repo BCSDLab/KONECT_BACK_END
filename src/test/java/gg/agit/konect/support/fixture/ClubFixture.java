@@ -32,18 +32,7 @@ public class ClubFixture {
     }
 
     public static Club createWithId(University university, Integer id, String name) {
-        Club club = Club.builder()
-            .university(university)
-            .name(name)
-            .description("테스트 동아리 소개")
-            .introduce("테스트 동아리 상세 소개입니다.")
-            .imageUrl("https://example.com/club.png")
-            .location("학생회관 101호")
-            .clubCategory(ClubCategory.ACADEMIC)
-            .isRecruitmentEnabled(false)
-            .isApplicationEnabled(true)
-            .isFeeRequired(false)
-            .build();
+        Club club = create(university, name);
         ReflectionTestUtils.setField(club, "id", id);
         return club;
     }
