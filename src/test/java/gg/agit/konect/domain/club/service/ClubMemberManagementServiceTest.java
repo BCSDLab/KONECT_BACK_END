@@ -14,7 +14,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
@@ -174,13 +173,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
     }
 
     private Club createClub() {
-        var university = UniversityFixture.create();
-        ReflectionTestUtils.setField(university, "id", 1);
-
-        Club club = ClubFixture.create(university);
-        ReflectionTestUtils.setField(club, "id", 1);
-
-        return club;
+        return ClubFixture.createWithId(UniversityFixture.createWithId(1), 1);
     }
 
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
