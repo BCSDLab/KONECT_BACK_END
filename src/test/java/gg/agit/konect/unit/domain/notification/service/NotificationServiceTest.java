@@ -295,6 +295,294 @@ class NotificationServiceTest extends ServiceTestSupport {
         );
     }
 
+    @Test
+    @DisplayName("registerToken은 null 토큰 값에 대해 NullPointerException을 발생시킨다")
+    void registerTokenThrowsExceptionForNullToken() {
+        // when & then
+        assertThatThrownBy(
+            () -> notificationService.registerToken(1, new NotificationTokenRegisterRequest(null))
+        )
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("registerToken은 빈 토큰 값에 대해 예외를 발생시킨다")
+    void registerTokenThrowsExceptionForEmptyToken() {
+        // when & then
+        assertThatThrownBy(
+            () -> notificationService.registerToken(1, new NotificationTokenRegisterRequest(""))
+        )
+            .isInstanceOf(CustomException.class)
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode())
+                .isEqualTo(ApiResponseCode.INVALID_NOTIFICATION_TOKEN));
+    }
+
+    @Test
+    @DisplayName("deleteToken은 토큰을 찾을 수 없는 경우 아무 동작도 하지 않는다")
+    void deleteTokenDoesNothingWhenTokenNotFound() {
+        // given
+        given(notificationDeviceTokenRepository.findByUserIdAndToken(1, VALID_TOKEN))
+            .willReturn(Optional.empty());
+
+        // when
+        assertThatCode(() -> notificationService.deleteToken(1, new NotificationTokenDeleteRequest(VALID_TOKEN)))
+            .doesNotThrowAnyException();
+
+        // then
+        verify(notificationDeviceTokenRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("sendChatNotification은 사용자가 음소거된 경우 알림을 발송하지 않는다")
+    void sendChatNotificationSkipsWhenUserMuted() {
+        // given
+        User user = createUser(3, "2021136003");
+        gg.agit.konect.domain.notification.model.NotificationMuteSetting muteSetting =
+            gg.agit.konect.domain.notification.model.NotificationMuteSetting.of(
+                NotificationTargetType.CHAT_ROOM,
+                7,
+                user,
+                true
+            );
+        given(chatPresenceService.isUserInChatRoom(7, 3)).willReturn(false);
+        given(
+            notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                NotificationTargetType.CHAT_ROOM,
+                7,
+                3
+            )
+        ).willReturn(Optional.of(muteSetting));
+
+        // when
+        assertThatCode(() -> notificationService.sendChatNotification(3, 7, "보낸이", "메시지"))
+            .doesNotThrowAnyException();
+
+        // then
+        verify(notificationDeviceTokenRepository, never()).findTokensByUserId(any());
+        verify(expoPushClient, never()).sendNotification(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("sendGroupChatNotification은 발신자 필터링 후 빈 수신자 목록이면 전송을 생략한다")
+    void sendGroupChatNotificationSkipsWhenEmptyRecipientsAfterFiltering() {
+        // when
+        assertThatCode(() -> notificationService.sendGroupChatNotification(
+            10,
+            1,
+            "KONECT",
+            "홍길동",
+            "메시지",
+            List.of(1)
+        )).doesNotThrowAnyException();
+
+        // then
+        verify(notificationDeviceTokenRepository, never()).findTokensByUserIds(any());
+        verify(expoPushClient, never()).sendBatchNotifications(any());
+    }
+
+    @Test
+    @DisplayName("sendGroupChatNotification은 일부 사용자만 토큰이 있는 경우 처리한다")
+    void sendGroupChatNotificationHandlesPartialTokens() {
+        // given
+        given(chatPresenceService.findUsersInChatRoom(10, List.of(2, 3, 4)))
+            .willReturn(Set.of());
+        given(notificationMuteSettingRepository.findMutedUserIdsByTargetTypeAndTargetIdAndUserIds(
+            NotificationTargetType.CHAT_ROOM,
+            10,
+            List.of(2, 3, 4)
+        )).willReturn(Set.of());
+        given(notificationDeviceTokenRepository.findTokensByUserIds(List.of(2, 3, 4)))
+            .willReturn(List.of("ExpoPushToken[token-2]", "ExpoPushToken[token-3]"));
+
+        // when
+        assertThatCode(() -> notificationService.sendGroupChatNotification(
+            10,
+            1,
+            "KONECT",
+            "홍길동",
+            "메시지",
+            List.of(1, 2, 3, 4)
+        )).doesNotThrowAnyException();
+
+        // then
+        ArgumentCaptor<List<ExpoPushClient.ExpoPushMessage>> messagesCaptor = ArgumentCaptor.forClass(List.class);
+        verify(expoPushClient).sendBatchNotifications(messagesCaptor.capture());
+        List<ExpoPushClient.ExpoPushMessage> messages = messagesCaptor.getValue();
+        assertThat(messages).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("sendClubApplicationSubmittedNotification은 정상 동작한다")
+    void sendClubApplicationSubmittedNotificationWorksNormally() {
+        // given
+        User user = createUser(3, "2021136003");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_SUBMITTED,
+            "KONECT",
+            "홍길동님이 동아리 가입을 신청했어요.",
+            "mypage/manager/7/applications/1"
+        );
+        given(notificationInboxService.save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_SUBMITTED,
+            "KONECT",
+            "홍길동님이 동아리 가입을 신청했어요.",
+            "mypage/manager/7/applications/1"
+        )).willReturn(inbox);
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        assertThatCode(() -> notificationService.sendClubApplicationSubmittedNotification(
+            3, 1, 7, "KONECT", "홍길동"
+        )).doesNotThrowAnyException();
+
+        // then
+        verify(notificationInboxService).save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_SUBMITTED,
+            "KONECT",
+            "홍길동님이 동아리 가입을 신청했어요.",
+            "mypage/manager/7/applications/1"
+        );
+        verify(notificationInboxService).sendSse(eq(3), any(NotificationInboxResponse.class));
+        verify(expoPushClient).sendNotification(
+            eq(3),
+            eq(List.of(VALID_TOKEN)),
+            eq("KONECT"),
+            eq("홍길동님이 동아리 가입을 신청했어요."),
+            eq(Map.of("path", "mypage/manager/7/applications/1"))
+        );
+    }
+
+    @Test
+    @DisplayName("sendClubApplicationRejectedNotification은 정상 동작한다")
+    void sendClubApplicationRejectedNotificationWorksNormally() {
+        // given
+        User user = createUser(3, "2021136003");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_REJECTED,
+            "KONECT",
+            "동아리 지원이 거절되었어요.",
+            "clubs/7"
+        );
+        given(notificationInboxService.save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_REJECTED,
+            "KONECT",
+            "동아리 지원이 거절되었어요.",
+            "clubs/7"
+        )).willReturn(inbox);
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        assertThatCode(() -> notificationService.sendClubApplicationRejectedNotification(3, 7, "KONECT"))
+            .doesNotThrowAnyException();
+
+        // then
+        verify(notificationInboxService).save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_REJECTED,
+            "KONECT",
+            "동아리 지원이 거절되었어요.",
+            "clubs/7"
+        );
+        verify(notificationInboxService).sendSse(eq(3), any(NotificationInboxResponse.class));
+        verify(expoPushClient).sendNotification(
+            eq(3),
+            eq(List.of(VALID_TOKEN)),
+            eq("KONECT"),
+            eq("동아리 지원이 거절되었어요."),
+            eq(Map.of("path", "clubs/7"))
+        );
+    }
+
+    @Test
+    @DisplayName("buildPreview는 null 메시지에 대해 빈 문자열을 반환한다")
+    void buildPreviewReturnsEmptyForNullMessage() {
+        // given
+        User user = createUser(3, "2021136003");
+        given(chatPresenceService.isUserInChatRoom(7, 3)).willReturn(false);
+        given(
+            notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                NotificationTargetType.CHAT_ROOM,
+                7,
+                3
+            )
+        ).willReturn(Optional.empty());
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        notificationService.sendChatNotification(3, 7, "보낸이", null);
+
+        // then
+        verify(expoPushClient).sendNotification(
+            eq(3),
+            eq(List.of(VALID_TOKEN)),
+            eq("보낸이"),
+            eq(""),
+            eq(Map.of("path", "chats/7"))
+        );
+    }
+
+    @Test
+    @DisplayName("buildPreview는 빈 메시지에 대해 빈 문자열을 반환한다")
+    void buildPreviewReturnsEmptyForEmptyMessage() {
+        // given
+        User user = createUser(3, "2021136003");
+        given(chatPresenceService.isUserInChatRoom(7, 3)).willReturn(false);
+        given(
+            notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                NotificationTargetType.CHAT_ROOM,
+                7,
+                3
+            )
+        ).willReturn(Optional.empty());
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        notificationService.sendChatNotification(3, 7, "보낸이", "");
+
+        // then
+        verify(expoPushClient).sendNotification(
+            eq(3),
+            eq(List.of(VALID_TOKEN)),
+            eq("보낸이"),
+            eq(""),
+            eq(Map.of("path", "chats/7"))
+        );
+    }
+
+    @Test
+    @DisplayName("buildPreview는 최대 길이와 정확히 일치하는 메시지를 자르지 않는다")
+    void buildPreviewDoesNotTruncateExactLengthMessage() {
+        // given
+        String exactLengthMessage = "😀".repeat(30);
+        User user = createUser(3, "2021136003");
+        given(chatPresenceService.isUserInChatRoom(7, 3)).willReturn(false);
+        given(
+            notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
+                NotificationTargetType.CHAT_ROOM,
+                7,
+                3
+            )
+        ).willReturn(Optional.empty());
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        notificationService.sendChatNotification(3, 7, "보낸이", exactLengthMessage);
+
+        // then
+        verify(expoPushClient).sendNotification(
+            eq(3),
+            eq(List.of(VALID_TOKEN)),
+            eq("보낸이"),
+            eq(exactLengthMessage),
+            eq(Map.of("path", "chats/7"))
+        );
+    }
+
     private User createUser(Integer id, String studentNumber) {
         return User.builder()
             .id(id)
