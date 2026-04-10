@@ -188,6 +188,90 @@ class AuthCookieServiceTest {
         assertThat(setCookie).doesNotContain("SameSite=None");
     }
 
+    @Test
+    @DisplayName("setSignupToken은 정상 동작한다")
+    void setSignupTokenWorksNormally() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setSecure(true);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        authCookieService.setSignupToken(request, response, "signup-token", Duration.ofMinutes(5));
+
+        // then
+        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(setCookie)
+            .contains("signup_token=signup-token")
+            .contains("Max-Age=300")
+            .contains("Secure")
+            .contains("SameSite=None");
+        assertCommonCookieAttributes(setCookie);
+    }
+
+    @Test
+    @DisplayName("setSignupToken과 clearSignupToken은 쿠키를 설정하고 제거한다")
+    void setAndClearSignupTokenWorkTogether() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setSecure(true);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when - 설정
+        authCookieService.setSignupToken(request, response, "signup-token", Duration.ofMinutes(5));
+        String setCookie = response.getHeader("Set-Cookie");
+
+        // then - 설정 확인
+        assertThat(setCookie)
+            .contains("signup_token=signup-token")
+            .contains("Max-Age=300");
+
+        // when - 제거
+        MockHttpServletResponse clearResponse = new MockHttpServletResponse();
+        authCookieService.clearSignupToken(request, clearResponse);
+        String clearCookie = clearResponse.getHeader("Set-Cookie");
+
+        // then - 제거 확인
+        assertThat(clearCookie)
+            .contains("signup_token=")
+            .contains("Max-Age=0");
+    }
+
+    @Test
+    @DisplayName("X-Forwarded-Proto 복수 값은 전체 문자열과 비교하므로 https가 아니면 비보안 처리한다")
+    void xForwardedProtoMultipleValuesTreatsEntireString() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Forwarded-Proto", "https,http");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        authCookieService.setRefreshToken(request, response, "refresh-token", Duration.ofMinutes(5));
+
+        // then - 현재 구현에서는 전체 문자열과 비교하므로 "https,http"는 "https"와 다름
+        String setCookie = response.getHeader("Set-Cookie");
+        // equalsIgnoreCase("https")는 false이므로 비보안 처리
+        assertThat(setCookie).doesNotContain("Secure");
+        assertThat(setCookie).doesNotContain("SameSite=None");
+    }
+
+    @Test
+    @DisplayName("X-Forwarded-Proto 복수 값은 첫 번째 값이 http이면 비보안 처리한다")
+    void xForwardedProtoMultipleValuesTreatsHttpAsNonSecure() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Forwarded-Proto", "http,https");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        authCookieService.setRefreshToken(request, response, "refresh-token", Duration.ofMinutes(5));
+
+        // then - 첫 번째 값이 http이므로 비보안 처리
+        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(setCookie).doesNotContain("Secure");
+        assertThat(setCookie).doesNotContain("SameSite=None");
+    }
+
     private void assertCommonCookieAttributes(String setCookie) {
         assertThat(setCookie)
             .contains("Domain=konect.test")
