@@ -91,7 +91,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Integer targetUserId = 200;
         Club club = createClub();
         User admin = UserFixture.createUserWithId(requesterId, "관리자", UserRole.ADMIN);
-        ClubMember targetMember = ClubMemberFixture.createMember(club, UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
+        ClubMember targetMember = ClubMemberFixture.createMember(club,
+            UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(userRepository.getById(requesterId)).thenReturn(admin);
