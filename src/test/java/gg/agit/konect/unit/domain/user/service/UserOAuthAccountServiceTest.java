@@ -23,7 +23,6 @@ import org.springframework.core.env.Profiles;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.dto.OAuthLinkStatusResponse;
 import gg.agit.konect.domain.user.enums.Provider;
-import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
@@ -32,7 +31,7 @@ import gg.agit.konect.domain.user.service.UserOAuthAccountService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;
-import gg.agit.konect.support.fixture.UniversityFixture;
+import gg.agit.konect.support.fixture.UserFixture;
 
 class UserOAuthAccountServiceTest extends ServiceTestSupport {
 
@@ -52,7 +51,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("getLinkStatus는 모든 provider에 대한 연동 여부를 반환한다")
     void getLinkStatusReturnsEveryProvider() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userRepository.getById(1)).willReturn(user);
         given(userOAuthAccountRepository.findAllByUserId(1)).willReturn(List.of(
             UserOAuthAccount.of(user, Provider.GOOGLE, "google-id", "google@konect.test", null),
@@ -258,22 +257,8 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
         verify(userOAuthAccountRepository).flush();
     }
 
-    private User createUser(Integer id, String studentNumber) {
-        University university = UniversityFixture.create();
-        return User.builder()
-            .id(id)
-            .university(university)
-            .email(studentNumber + "@koreatech.ac.kr")
-            .name("테스트유저" + id)
-            .studentNumber(studentNumber)
-            .role(UserRole.USER)
-            .isMarketingAgreement(true)
-            .imageUrl("https://example.com/profile.png")
-            .build();
-    }
-
     private User createWithdrawnUser(Integer id, String studentNumber, LocalDateTime deletedAt) {
-        User user = createUser(id, studentNumber);
+        User user = UserFixture.createUserWithId(id, studentNumber);
         user.withdraw(deletedAt);
         return user;
     }
