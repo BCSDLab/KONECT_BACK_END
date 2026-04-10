@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -34,7 +36,7 @@ class UserActivityServiceTest extends ServiceTestSupport {
         userActivityService.updateLastLoginAt(null);
 
         // then
-        verify(userRepository, never()).getById(null);
+        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -70,17 +72,26 @@ class UserActivityServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("updateLastActivityAt은 사용자가 없거나 userId가 null이면 조용히 종료한다")
-    void updateLastActivityAtSkipsWhenUserMissingOrNull() {
+    @DisplayName("updateLastActivityAt은 userId가 null이면 조용히 종료하고 저장소를 호출하지 않는다")
+    void updateLastActivityAtSkipsWhenUserIdIsNull() {
+        // when
+        userActivityService.updateLastActivityAt(null);
+
+        // then
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    @DisplayName("updateLastActivityAt은 사용자가 없으면 조용히 종료한다")
+    void updateLastActivityAtSkipsWhenUserMissing() {
         // given
         given(userRepository.findById(3)).willReturn(Optional.empty());
 
         // when
         userActivityService.updateLastActivityAt(3);
-        userActivityService.updateLastActivityAt(null);
 
         // then
         verify(userRepository).findById(3);
-        verify(userRepository, never()).findById(null);
+        verifyNoMoreInteractions(userRepository);
     }
 }
