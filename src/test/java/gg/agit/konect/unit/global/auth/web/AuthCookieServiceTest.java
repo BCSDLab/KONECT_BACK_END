@@ -61,6 +61,8 @@ class AuthCookieServiceTest {
 
         // then
         assertThat(response.getHeader("Set-Cookie"))
+            .contains("refresh_token=refresh-token")
+            .contains("Max-Age=30")
             .contains("Secure")
             .contains("SameSite=None");
     }
@@ -79,6 +81,7 @@ class AuthCookieServiceTest {
         assertThat(response.getHeader("Set-Cookie"))
             .contains("signup_token=")
             .contains("Max-Age=0")
+            .contains("Domain=konect.test")
             .contains("Path=/")
             .contains("HttpOnly");
     }
