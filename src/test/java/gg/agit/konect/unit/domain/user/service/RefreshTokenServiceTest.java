@@ -263,6 +263,40 @@ class RefreshTokenServiceTest extends ServiceTestSupport {
         assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
     }
 
+    @Test
+    @DisplayName("extractUserId는 issuer가 빈 문자열인 토큰을 거부한다")
+    void extractUserIdRejectsEmptyIssuerClaim() throws JOSEException {
+        // given
+        String token = createToken(11, "", "refresh", Instant.now().plusSeconds(60), VALID_SECRET);
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
+    }
+
+    @Test
+    @DisplayName("rotate는 만료된 토큰으로 rotate 시도 시 INVALID_REFRESH_TOKEN 예외 발생")
+    void rotateRejectsExpiredToken() throws JOSEException {
+        // given
+        String expiredToken = createToken(11, VALID_ISSUER, "refresh", Instant.now().minusSeconds(5), VALID_SECRET);
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.rotate(expiredToken));
+    }
+
+    @Test
+    @DisplayName("issue와 extractUserId는 토큰 claim 검증 왕복 테스트")
+    void issueAndExtractUserIdClaimsRoundTrip() {
+        // given
+        Integer expectedUserId = 12345;
+
+        // when
+        String token = refreshTokenService.issue(expectedUserId);
+        Integer extractedUserId = refreshTokenService.extractUserId(token);
+
+        // then
+        assertThat(extractedUserId).isEqualTo(expectedUserId);
+    }
+
     private String createToken(Integer userId, String issuer, String tokenType, Instant expiresAt, String secret)
         throws JOSEException {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
