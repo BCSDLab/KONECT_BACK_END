@@ -1,6 +1,7 @@
 package gg.agit.konect.unit.global.auth.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 
@@ -86,6 +87,35 @@ class AuthCookieServiceTest {
     }
 
     @Test
+    @DisplayName("clearRefreshToken은 만료된 빈 쿠키를 내려준다")
+    void clearRefreshTokenSetsExpiredEmptyCookie() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        authCookieService.clearRefreshToken(request, response);
+
+        // then
+        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(setCookie)
+            .contains("refresh_token=")
+            .contains("Max-Age=0");
+        assertCommonCookieAttributes(setCookie);
+    }
+
+    @Test
+    @DisplayName("getCookieValue는 null 쿠키 배열을 처리한다")
+    void getCookieValueHandlesNullCookieArray() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies((Cookie[]) null); // 명시적으로 null 설정
+
+        // when & then
+        assertThat(authCookieService.getCookieValue(request, "any")).isNull();
+    }
+
+    @Test
     @DisplayName("getCookieValue는 대상 쿠키를 찾고 없으면 null을 반환한다")
     void getCookieValueReturnsMatchingCookieValueOrNull() {
         // given
@@ -100,6 +130,62 @@ class AuthCookieServiceTest {
             .isEqualTo("refresh-value");
         assertThat(authCookieService.getCookieValue(request, AuthCookieService.SIGNUP_TOKEN_COOKIE)).isNull();
         assertThat(authCookieService.getCookieValue(new MockHttpServletRequest(), "missing")).isNull();
+    }
+
+    @Test
+    @DisplayName("setRefreshToken은 null duration이면 예외를 던진다")
+    void setRefreshTokenRejectsNullDuration() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setSecure(true);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertThatThrownBy(() -> authCookieService.setRefreshToken(request, response, "refresh-token", null))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("getCookieValue는 쿠키가 없으면 null을 반환한다")
+    void getCookieValueReturnsNullWhenNoCookies() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        // 쿠키를 설정하지 않음
+
+        // when & then
+        assertThat(authCookieService.getCookieValue(request, "missing")).isNull();
+    }
+
+    @Test
+    @DisplayName("isSecureRequest는 대소문자 혼합 HTTPS 헤더를 처리한다")
+    void isSecureRequestHandlesMixedCaseHttpsHeader() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Forwarded-Proto", "HTTPS");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        authCookieService.setRefreshToken(request, response, "refresh-token", Duration.ofMinutes(5));
+
+        // then
+        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(setCookie).contains("Secure").contains("SameSite=None");
+    }
+
+    @Test
+    @DisplayName("isSecureRequest는 X-Forwarded-Proto 헤더가 없고 request.isSecure()가 false이면 비보안으로 처리한다")
+    void isSecureRequestTreatsMissingHeaderAndNonSecureRequestAsNonSecure() {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        // X-Forwarded-Proto 헤더 없음
+        // request.isSecure() 기본값은 false
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        authCookieService.setRefreshToken(request, response, "refresh-token", Duration.ofMinutes(5));
+
+        // then
+        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(setCookie).doesNotContain("Secure");
+        assertThat(setCookie).doesNotContain("SameSite=None");
     }
 
     private void assertCommonCookieAttributes(String setCookie) {
