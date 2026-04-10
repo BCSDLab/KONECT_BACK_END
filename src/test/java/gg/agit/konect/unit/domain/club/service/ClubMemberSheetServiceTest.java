@@ -157,4 +157,57 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
             .isInstanceOf(CustomException.class)
             .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(NOT_FOUND_CLUB_SHEET_ID));
     }
+
+    @Test
+    @DisplayName("syncMembersToSheet는 빈 동아리(멤버 0명)에 대해 정상 동작한다")
+    void syncMembersToSheetHandlesEmptyClub() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 2;
+        String spreadsheetId = "spreadsheet-id";
+        Club club = ClubFixture.create(UniversityFixture.create());
+        club.updateGoogleSheetId(spreadsheetId);
+
+        given(clubRepository.getById(clubId)).willReturn(club);
+        given(clubMemberRepository.countByClubId(clubId)).willReturn(0L);
+        given(clubPreMemberRepository.countByClubId(clubId)).willReturn(0L);
+
+        // when
+        ClubMemberSheetSyncResponse response = clubMemberSheetService.syncMembersToSheet(
+            clubId,
+            requesterId,
+            ClubSheetSortKey.POSITION,
+            true
+        );
+
+        // then
+        verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
+        verify(sheetSyncExecutor).executeWithSort(clubId, ClubSheetSortKey.POSITION, true);
+        assertThat(response.syncedMemberCount()).isEqualTo(0);
+        assertThat(response.sheetUrl())
+            .isEqualTo("https://docs.google.com/spreadsheets/d/" + spreadsheetId + "/edit");
+    }
+
+    @Test
+    @DisplayName("updateSheetId는 null memberListMapping 분석 결과 시 NullPointerException이 발생한다")
+    void updateSheetIdThrowsNpeWhenMemberListMappingIsNull() throws JsonProcessingException {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 2;
+        String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/test-sheet-id/edit";
+        Club club = ClubFixture.create(UniversityFixture.create());
+        ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
+        SheetHeaderMapper.SheetAnalysisResult analysisResult = new SheetHeaderMapper.SheetAnalysisResult(
+            null,
+            null,
+            null
+        );
+
+        given(clubRepository.getById(clubId)).willReturn(club);
+        given(sheetHeaderMapper.analyzeAllSheets("test-sheet-id")).willReturn(analysisResult);
+
+        // when & then
+        assertThatThrownBy(() -> clubMemberSheetService.updateSheetId(clubId, requesterId, request))
+            .isInstanceOf(NullPointerException.class);
+    }
 }
