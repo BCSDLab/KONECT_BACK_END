@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,14 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopResponse;
 import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
+import gg.agit.konect.domain.studytime.event.StudyTimeAccumulatedEvent;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
-import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
 import gg.agit.konect.domain.studytime.model.StudyTimeSummary;
-import gg.agit.konect.domain.studytime.model.StudyTimeTotal;
 import gg.agit.konect.domain.studytime.model.StudyTimer;
 import gg.agit.konect.domain.studytime.repository.StudyTimeDailyRepository;
-import gg.agit.konect.domain.studytime.repository.StudyTimeMonthlyRepository;
-import gg.agit.konect.domain.studytime.repository.StudyTimeTotalRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimerRepository;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
@@ -39,10 +37,9 @@ public class StudyTimerService {
     private final StudyTimeQueryService studyTimeQueryService;
     private final StudyTimerRepository studyTimerRepository;
     private final StudyTimeDailyRepository studyTimeDailyRepository;
-    private final StudyTimeMonthlyRepository studyTimeMonthlyRepository;
-    private final StudyTimeTotalRepository studyTimeTotalRepository;
     private final UserRepository userRepository;
     private final EntityManager entityManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void start(Integer userId) {
@@ -74,7 +71,8 @@ public class StudyTimerService {
 
         deleteTimerIfElapsedTimeInvalid(studyTimer, serverSeconds, clientSeconds);
 
-        accumulateStudyTime(studyTimer.getUser(), lastSyncedAt, endedAt);
+        accumulateDailySeconds(studyTimer.getUser(), lastSyncedAt, endedAt);
+        eventPublisher.publishEvent(StudyTimeAccumulatedEvent.of(userId));
         studyTimerRepository.delete(studyTimer);
         StudyTimeSummary summary = buildSummary(userId, serverSeconds);
 
@@ -94,18 +92,13 @@ public class StudyTimerService {
 
         deleteTimerIfElapsedTimeInvalid(studyTimer, serverSeconds, clientSeconds);
 
-        accumulateStudyTime(studyTimer.getUser(), lastSyncedAt, syncedAt);
+        accumulateDailySeconds(studyTimer.getUser(), lastSyncedAt, syncedAt);
+        eventPublisher.publishEvent(StudyTimeAccumulatedEvent.of(userId));
         studyTimer.updateStartedAt(syncedAt);
     }
 
-    private void accumulateStudyTime(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
-        long sessionSeconds = accumulateDailyAndMonthlySeconds(user, startedAt, endedAt);
-        updateTotalSecondsIfNeeded(user, sessionSeconds);
-    }
-
-    private long accumulateDailyAndMonthlySeconds(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
+    private void accumulateDailySeconds(User user, LocalDateTime startedAt, LocalDateTime endedAt) {
         LocalDateTime cursor = startedAt;
-        long sessionSeconds = 0L;
         LocalDate endDate = endedAt.toLocalDate();
 
         while (cursor.isBefore(endedAt)) {
@@ -117,29 +110,24 @@ public class StudyTimerService {
                 segmentEnd = endedAt;
             }
 
-            sessionSeconds += accumulateDailyAndMonthlySegment(user, cursor, segmentEnd);
+            accumulateDailySegment(user, cursor, segmentEnd);
             cursor = segmentEnd;
         }
-
-        return sessionSeconds;
     }
 
-    private long accumulateDailyAndMonthlySegment(User user, LocalDateTime segmentStart, LocalDateTime segmentEnd) {
+    private void accumulateDailySegment(User user, LocalDateTime segmentStart, LocalDateTime segmentEnd) {
         if (!segmentStart.isBefore(segmentEnd)) {
-            return 0L;
+            return;
         }
 
         long seconds = Duration.between(segmentStart, segmentEnd).getSeconds();
 
         if (seconds <= 0) {
-            return 0L;
+            return;
         }
 
         LocalDate date = segmentStart.toLocalDate();
         addDailySegment(user, date, seconds);
-        addMonthlySegment(user, date, seconds);
-
-        return seconds;
     }
 
     private void addDailySegment(User user, LocalDate date, long seconds) {
@@ -149,31 +137,6 @@ public class StudyTimerService {
 
         daily.addSeconds(seconds);
         studyTimeDailyRepository.save(daily);
-    }
-
-    private void addMonthlySegment(User user, LocalDate date, long seconds) {
-        LocalDate month = date.withDayOfMonth(1);
-
-        StudyTimeMonthly monthly = studyTimeMonthlyRepository
-            .findByUserIdAndStudyMonth(user.getId(), month)
-            .orElseGet(() -> StudyTimeMonthly.of(user, month, 0L));
-
-        monthly.addSeconds(seconds);
-        studyTimeMonthlyRepository.save(monthly);
-    }
-
-    private void updateTotalSecondsIfNeeded(User user, long sessionSeconds) {
-        if (sessionSeconds > 0) {
-            addTotalSeconds(user, sessionSeconds);
-        }
-    }
-
-    private void addTotalSeconds(User user, long seconds) {
-        StudyTimeTotal total = studyTimeTotalRepository.findByUserId(user.getId())
-            .orElseGet(() -> StudyTimeTotal.of(user, 0L));
-
-        total.addSeconds(seconds);
-        studyTimeTotalRepository.save(total);
     }
 
     private StudyTimeSummary buildSummary(Integer userId, long sessionSeconds) {

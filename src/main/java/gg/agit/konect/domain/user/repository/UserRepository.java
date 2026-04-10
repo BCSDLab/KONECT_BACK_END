@@ -55,6 +55,18 @@ public interface UserRepository extends Repository<User, Integer> {
         @Param("studentNumbers") Set<String> studentNumbers
     );
 
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.university.id = :universityId
+        AND u.studentNumber LIKE CONCAT(:studentNumberYear, '%')
+        AND u.deletedAt IS NULL
+        """)
+    List<User> findAllByUniversityIdAndStudentNumberStartingWith(
+        @Param("universityId") Integer universityId,
+        @Param("studentNumberYear") String studentNumberYear
+    );
+
     User save(User user);
 
     @Query("""
