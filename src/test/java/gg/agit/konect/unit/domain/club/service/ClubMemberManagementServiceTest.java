@@ -5,6 +5,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CHANGE_OWN_POSIT
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_DELETE_CLUB_PRESIDENT;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_MANAGE_HIGHER_POSITION;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_REMOVE_NON_MEMBER;
+import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_REMOVE_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_MEMBER_POSITION_CHANGE;
 import static gg.agit.konect.global.code.ApiResponseCode.ILLEGAL_ARGUMENT;
 import static gg.agit.konect.global.code.ApiResponseCode.MANAGER_LIMIT_EXCEEDED;
@@ -26,6 +27,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddRequest;
 import gg.agit.konect.domain.club.dto.ClubPreMemberAddResponse;
+import gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddRequest;
 import gg.agit.konect.domain.club.dto.MemberPositionChangeRequest;
 import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
@@ -471,6 +473,189 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         // then
         verify(clubMemberRepository).delete(target);
         verify(chatRoomMembershipService).removeClubMember(clubId, targetUserId);
+    }
+
+    @Test
+    @DisplayName("changeVicePresident는 같은 부회장 재지정 시 아무 변화 없음")
+    void changeVicePresidentHandlesSameVicePresident() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 100;
+        Integer currentVpId = 200;
+        Club club = createClub();
+        User presidentUser = UserFixture.createUserWithId(requesterId, "회장", UserRole.USER);
+        User currentVpUser = UserFixture.createUserWithId(currentVpId, "부회장", UserRole.USER);
+        ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
+        ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
+        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(currentVpId);
+
+        when(clubRepository.getById(clubId)).thenReturn(club);
+        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(List.of(currentVp));
+        when(clubMemberRepository.getByClubIdAndUserId(clubId, currentVpId)).thenReturn(currentVp);
+
+        // when
+        List<ClubMember> result = clubMemberManagementService.changeVicePresident(clubId, requesterId, request);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(currentVp.getClubPosition()).isEqualTo(ClubPosition.VICE_PRESIDENT);
+    }
+
+    @Test
+    @DisplayName("changeVicePresident는 기존 VP 강등 후 새 VP 지정")
+    void changeVicePresidentDemotesOldVpAndAppointsNewVp() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 100;
+        Integer currentVpId = 200;
+        Integer newVpId = 300;
+        Club club = createClub();
+        User presidentUser = UserFixture.createUserWithId(requesterId, "회장", UserRole.USER);
+        User currentVpUser = UserFixture.createUserWithId(currentVpId, "현부회장", UserRole.USER);
+        User newVpUser = UserFixture.createUserWithId(newVpId, "신부회장", UserRole.USER);
+        ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
+        ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
+        ClubMember newVp = ClubMemberFixture.createMember(club, newVpUser);
+        gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(newVpId);
+
+        when(clubRepository.getById(clubId)).thenReturn(club);
+        when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(List.of(currentVp));
+        when(clubMemberRepository.getByClubIdAndUserId(clubId, newVpId)).thenReturn(newVp);
+
+        // when
+        List<ClubMember> result = clubMemberManagementService.changeVicePresident(clubId, requesterId, request);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(currentVp.getClubPosition()).isEqualTo(ClubPosition.MEMBER);
+        assertThat(newVp.getClubPosition()).isEqualTo(ClubPosition.VICE_PRESIDENT);
+    }
+
+    @Test
+    @DisplayName("transferPresident는 이전 후 기존 회장이 MEMBER로 변경됨")
+    void transferPresidentChangesOldPresidentToMember() {
+        // given
+        Integer clubId = 1;
+        Integer currentPresidentId = 100;
+        Integer newPresidentId = 200;
+        Club club = createClub();
+        User currentPresidentUser = UserFixture.createUserWithId(currentPresidentId, "현회장", UserRole.USER);
+        User newPresidentUser = UserFixture.createUserWithId(newPresidentId, "신회장", UserRole.USER);
+        ClubMember currentPresident = ClubMemberFixture.createPresident(club, currentPresidentUser);
+        ClubMember newPresident = ClubMemberFixture.createManager(club, newPresidentUser);
+        gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(newPresidentId);
+
+        when(clubRepository.getById(clubId)).thenReturn(club);
+        when(clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId)).thenReturn(currentPresident);
+        when(clubMemberRepository.getByClubIdAndUserId(clubId, newPresidentId)).thenReturn(newPresident);
+
+        // when
+        List<ClubMember> result = clubMemberManagementService.transferPresident(clubId, currentPresidentId, request);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(currentPresident.getClubPosition()).isEqualTo(ClubPosition.MEMBER);
+        assertThat(newPresident.getClubPosition()).isEqualTo(ClubPosition.PRESIDENT);
+    }
+
+    @Test
+    @DisplayName("removeMember는 자기 자신 제거 시도를 거부한다")
+    void removeMemberRejectsSelfRemoval() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 100;
+        Club club = createClub();
+
+        when(clubRepository.getById(clubId)).thenReturn(club);
+
+        // when & then
+        assertErrorCode(
+            () -> clubMemberManagementService.removeMember(clubId, requesterId, requesterId),
+            CANNOT_REMOVE_SELF
+        );
+    }
+
+    @Test
+    @DisplayName("changeMemberPosition은 VP에서 VP로 변경 시도 시 validatePositionLimit 통과")
+    void changeMemberPositionAllowsVpToVpChange() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 100;
+        Integer targetUserId = 200;
+        Club club = createClub();
+        User admin = UserFixture.createUserWithId(requesterId, "관리자", UserRole.ADMIN);
+        ClubMember targetMember = ClubMemberFixture.createVicePresident(club,
+            UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
+
+        when(clubRepository.getById(clubId)).thenReturn(club);
+        when(userRepository.getById(requesterId)).thenReturn(admin);
+        when(clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId)).thenReturn(targetMember);
+
+        // when
+        ClubMember result = clubMemberManagementService.changeMemberPosition(
+            clubId,
+            targetUserId,
+            requesterId,
+            new MemberPositionChangeRequest(ClubPosition.VICE_PRESIDENT)
+        );
+
+        // then
+        assertThat(result.getClubPosition()).isEqualTo(ClubPosition.VICE_PRESIDENT);
+    }
+
+    @Test
+    @DisplayName("addPreMembersBatch는 기존 멤버가 포함된 경우 스킽한다")
+    void addPreMembersBatchSkipsExistingMembers() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 10;
+        Club club = createClub();
+        ClubPreMemberBatchAddRequest request = new ClubPreMemberBatchAddRequest(List.of(
+            new ClubPreMemberAddRequest("20240001", "홍길동", ClubPosition.MEMBER),
+            new ClubPreMemberAddRequest("20240002", "김철수", ClubPosition.MANAGER)
+        ));
+        User existingUser = UserFixture.createUserWithId(UniversityFixture.create(), 1, "홍길동", "20240001", UserRole.USER);
+
+        when(clubRepository.getById(clubId)).thenReturn(club);
+        when(userRepository.findAllByUniversityIdAndStudentNumber(club.getUniversity().getId(), "20240001"))
+            .thenReturn(List.of(existingUser));
+        when(clubMemberRepository.existsByClubIdAndUserId(clubId, existingUser.getId())).thenReturn(true);
+        when(userRepository.findAllByUniversityIdAndStudentNumber(club.getUniversity().getId(), "20240002"))
+            .thenReturn(List.of());
+
+        // when
+        gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddResponse response =
+            clubMemberManagementService.addPreMembersBatch(clubId, requesterId, request);
+
+        // then
+        assertThat(response.results()).hasSize(2);
+        assertThat(response.results().get(0).success()).isFalse();
+        assertThat(response.results().get(0).errorCode()).isEqualTo("ALREADY_CLUB_MEMBER");
+    }
+
+    @Test
+    @DisplayName("removeMember는 관리자가 관리자 제거 시도를 거부한다")
+    void removeMemberRejectsManagerRemovingManager() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 100;
+        Integer targetUserId = 200;
+        Club club = createClub();
+        User requesterUser = UserFixture.createUserWithId(requesterId, "요청자", UserRole.USER);
+        User targetUser = UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER);
+        ClubMember requester = ClubMemberFixture.createManager(club, requesterUser);
+        ClubMember target = ClubMemberFixture.createManager(club, targetUser);
+
+        when(clubRepository.getById(clubId)).thenReturn(club);
+        when(userRepository.getById(requesterId)).thenReturn(requesterUser);
+        when(clubMemberRepository.getByClubIdAndUserId(clubId, requesterId)).thenReturn(requester);
+        when(clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId)).thenReturn(target);
+
+        // when & then
+        assertErrorCode(
+            () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
+            CANNOT_MANAGE_HIGHER_POSITION
+        );
     }
 
     private Club createClub() {
