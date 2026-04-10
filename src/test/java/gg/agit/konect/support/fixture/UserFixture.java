@@ -22,6 +22,23 @@ public class UserFixture {
             .build();
     }
 
+    public static User createUserWithId(University university, Integer id, String name, UserRole role) {
+        return User.builder()
+            .id(id)
+            .university(university)
+            .email("user" + id + "@koreatech.ac.kr")
+            .name(name)
+            .studentNumber("2024" + String.format("%04d", id))
+            .role(role)
+            .isMarketingAgreement(true)
+            .imageUrl("https://example.com/profile.png")
+            .build();
+    }
+
+    public static User createUserWithId(Integer id, String name, UserRole role) {
+        return createUserWithId(UniversityFixture.create(), id, name, role);
+    }
+
     public static User createAdmin(University university) {
         return User.builder()
             .university(university)

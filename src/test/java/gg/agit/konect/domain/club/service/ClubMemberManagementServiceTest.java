@@ -36,6 +36,7 @@ import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.ClubMemberFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
+import gg.agit.konect.support.fixture.UserFixture;
 
 class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
@@ -90,8 +91,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Integer requesterId = 100;
         Integer targetUserId = 200;
         Club club = createClub();
-        User admin = createUser(requesterId, "관리자", UserRole.ADMIN);
-        ClubMember targetMember = ClubMemberFixture.createMember(club, createUser(targetUserId, "대상", UserRole.USER));
+        User admin = UserFixture.createUserWithId(requesterId, "관리자", UserRole.ADMIN);
+        ClubMember targetMember = ClubMemberFixture.createMember(club, UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(userRepository.getById(requesterId)).thenReturn(admin);
@@ -128,8 +129,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
             )
         )
             .thenReturn(List.of(
-                createUser(1, request.name(), UserRole.USER),
-                createUser(2, request.name(), UserRole.USER)
+                UserFixture.createUserWithId(1, request.name(), UserRole.USER),
+                UserFixture.createUserWithId(2, request.name(), UserRole.USER)
             ));
 
         // when & then
@@ -147,7 +148,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Integer requesterId = 10;
         Club club = createClub();
         ClubPreMemberAddRequest request = new ClubPreMemberAddRequest("20240001", "홍길동", ClubPosition.MANAGER);
-        User matchedUser = createUser(1, request.name(), UserRole.USER);
+        User matchedUser = UserFixture.createUserWithId(1, request.name(), UserRole.USER);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(
@@ -180,19 +181,6 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ReflectionTestUtils.setField(club, "id", 1);
 
         return club;
-    }
-
-    private User createUser(Integer id, String name, UserRole role) {
-        return User.builder()
-            .id(id)
-            .university(UniversityFixture.create())
-            .email("user" + id + "@koreatech.ac.kr")
-            .name(name)
-            .studentNumber("2024" + String.format("%04d", id))
-            .role(role)
-            .isMarketingAgreement(true)
-            .imageUrl("https://example.com/profile.png")
-            .build();
     }
 
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
