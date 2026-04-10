@@ -1,4 +1,4 @@
-package gg.agit.konect.global.auth.web;
+package gg.agit.konect.unit.global.auth.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,6 +12,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import jakarta.servlet.http.Cookie;
+
+import gg.agit.konect.global.auth.web.AuthCookieService;
 
 class AuthCookieServiceTest {
 
