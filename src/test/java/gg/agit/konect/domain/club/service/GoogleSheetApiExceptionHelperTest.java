@@ -15,6 +15,8 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpResponseException;
 
+import gg.agit.konect.domain.club.service.GoogleSheetApiExceptionHelper;
+
 class GoogleSheetApiExceptionHelperTest {
 
     @Test

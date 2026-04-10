@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.club.service;
+package gg.agit.konect.unit.domain.club.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -17,6 +17,10 @@ import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.domain.club.service.ClubMemberSheetService;
+import gg.agit.konect.domain.club.service.ClubPermissionValidator;
+import gg.agit.konect.domain.club.service.SheetHeaderMapper;
+import gg.agit.konect.domain.club.service.SheetSyncExecutor;
 import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;

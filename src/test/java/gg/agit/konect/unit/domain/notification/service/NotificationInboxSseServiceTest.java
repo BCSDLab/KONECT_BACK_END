@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.notification.service;
+package gg.agit.konect.unit.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import gg.agit.konect.domain.notification.service.NotificationInboxSseService;
 import gg.agit.konect.support.ServiceTestSupport;
 
 class NotificationInboxSseServiceTest extends ServiceTestSupport {

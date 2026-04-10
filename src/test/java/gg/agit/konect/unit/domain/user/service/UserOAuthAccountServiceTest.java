@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.user.service;
+package gg.agit.konect.unit.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,6 +28,7 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.service.UserOAuthAccountService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;

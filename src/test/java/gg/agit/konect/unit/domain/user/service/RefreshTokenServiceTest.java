@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.user.service;
+package gg.agit.konect.unit.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,6 +17,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.global.auth.jwt.JwtProperties;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;

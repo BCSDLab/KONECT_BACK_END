@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.club.service;
+package gg.agit.konect.unit.domain.club.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +24,8 @@ import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.domain.club.service.ClubMemberManagementService;
+import gg.agit.konect.domain.club.service.ClubPermissionValidator;
 import gg.agit.konect.domain.university.enums.Campus;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.repository.UserRepository;

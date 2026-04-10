@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.user.service;
+package gg.agit.konect.unit.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -20,6 +20,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.global.auth.util.SecureTokenGenerator;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;

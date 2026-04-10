@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.notification.service;
+package gg.agit.konect.unit.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,6 +20,8 @@ import gg.agit.konect.domain.notification.dto.NotificationInboxResponse;
 import gg.agit.konect.domain.notification.enums.NotificationInboxType;
 import gg.agit.konect.domain.notification.model.NotificationInbox;
 import gg.agit.konect.domain.notification.repository.NotificationInboxRepository;
+import gg.agit.konect.domain.notification.service.NotificationInboxService;
+import gg.agit.konect.domain.notification.service.NotificationInboxSseService;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
