@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -122,6 +125,136 @@ class NotificationInboxServiceTest extends ServiceTestSupport {
         org.assertj.core.api.Assertions.assertThat(result).isEmpty();
         verify(userRepository, never()).findAllByIdIn(any());
         verify(notificationInboxRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("save는 단일 알림을 생성한다")
+    void saveCreatesSingleNotification() {
+        // given
+        University university = UniversityFixture.create();
+        User user = createUser(university, 1, "유저1", "2021136001");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "제목",
+            "본문",
+            "/clubs/1"
+        );
+        given(userRepository.getById(1)).willReturn(user);
+        given(notificationInboxRepository.save(any(NotificationInbox.class))).willReturn(inbox);
+
+        // when
+        NotificationInbox result = notificationInboxService.save(
+            1,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "제목",
+            "본문",
+            "/clubs/1"
+        );
+
+        // then
+        verify(notificationInboxRepository).save(any(NotificationInbox.class));
+        org.assertj.core.api.Assertions.assertThat(result).isNotNull();
+    }
+
+    @Test
+    @DisplayName("sendSse는 SSE 알림을 발송한다")
+    void sendSseSendsNotification() {
+        // given
+        University university = UniversityFixture.create();
+        User user = createUser(university, 1, "유저1", "2021136001");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "제목",
+            "본문",
+            "/clubs/1"
+        );
+        NotificationInboxResponse response = NotificationInboxResponse.from(inbox);
+        doNothing().when(notificationInboxSseService).send(eq(1), any(NotificationInboxResponse.class));
+
+        // when
+        assertThatCode(() -> notificationInboxService.sendSse(1, response))
+            .doesNotThrowAnyException();
+
+        // then
+        verify(notificationInboxSseService).send(eq(1), any(NotificationInboxResponse.class));
+    }
+
+    @Test
+    @DisplayName("getMyInboxes는 빈 결과를 반환한다")
+    void getMyInboxesReturnsEmptyResult() {
+        // given
+        org.springframework.data.domain.Page<NotificationInbox> emptyPage = org.springframework.data.domain.Page.empty();
+        given(notificationInboxRepository.findAllByUserIdAndTypeNotInOrderByCreatedAtDescIdDesc(
+            eq(1),
+            any(Set.class),
+            any(org.springframework.data.domain.PageRequest.class)
+        )).willReturn(emptyPage);
+
+        // when
+        gg.agit.konect.domain.notification.dto.NotificationInboxesResponse result =
+            notificationInboxService.getMyInboxes(1, 1);
+
+        // then
+        org.assertj.core.api.Assertions.assertThat(result.notifications()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getUnreadCount는 카운트 0을 반환한다")
+    void getUnreadCountReturnsZero() {
+        // given
+        given(notificationInboxRepository.countByUserIdAndIsReadFalseAndTypeNotIn(
+            eq(1),
+            any(Set.class)
+        )).willReturn(0L);
+
+        // when
+        gg.agit.konect.domain.notification.dto.NotificationInboxUnreadCountResponse result =
+            notificationInboxService.getUnreadCount(1);
+
+        // then
+        org.assertj.core.api.Assertions.assertThat(result.unreadCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("markAsRead는 정상 동작한다")
+    void markAsReadWorksNormally() {
+        // given
+        University university = UniversityFixture.create();
+        User user = createUser(university, 1, "유저1", "2021136001");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "제목",
+            "본문",
+            "/clubs/1"
+        );
+        given(notificationInboxRepository.getByIdAndUserId(1, 1)).willReturn(inbox);
+
+        // when
+        assertThatCode(() -> notificationInboxService.markAsRead(1, 1))
+            .doesNotThrowAnyException();
+
+        // then
+        org.assertj.core.api.Assertions.assertThat(inbox.getIsRead()).isTrue();
+    }
+
+    @Test
+    @DisplayName("markAllAsRead는 알림이 없는 경우에도 에러 없이 동작한다")
+    void markAllAsReadWorksWithNoNotifications() {
+        // given
+        doNothing().when(notificationInboxRepository).markAllAsReadByUserIdAndTypeNotIn(
+            eq(1),
+            any(Set.class)
+        );
+
+        // when
+        assertThatCode(() -> notificationInboxService.markAllAsRead(1))
+            .doesNotThrowAnyException();
+
+        // then
+        verify(notificationInboxRepository).markAllAsReadByUserIdAndTypeNotIn(eq(1), any(Set.class));
     }
 
     private User createUser(University university, Integer id, String name, String studentNumber) {
