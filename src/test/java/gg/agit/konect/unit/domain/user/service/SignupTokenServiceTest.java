@@ -215,6 +215,69 @@ class SignupTokenServiceTest extends ServiceTestSupport {
         assertInvalidSignupToken(() -> signupTokenService.consumeOrThrow("token"));
     }
 
+    @Test
+    @DisplayName("deserialize는 이메일에 파이프 문자가 포함된 경우 파트 분리 오류로 거부한다")
+    void deserializeRejectsPipeCharacterInEmail() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("test|email@gmail.com|GOOGLE|provider-id|name");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("deserialize는 이름에 파이프 문자가 포함된 경우 5개 파트로 인식하여 거부한다")
+    void deserializeRejectsPipeCharacterInName() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("email@gmail.com|GOOGLE|provider-id|김|철수");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("issue는 4파라미터 오버로드로 name을 포함한 토큰을 발급한다")
+    void issueWithFourParametersIncludesNameInClaims() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(secureTokenGenerator.generate()).willReturn("signup-token");
+
+        // when
+        String token = signupTokenService.issue(
+            "user@koreatech.ac.kr",
+            Provider.GOOGLE,
+            "provider-123",
+            "홍길동"
+        );
+
+        // then
+        assertThat(token).isEqualTo("signup-token");
+        verify(valueOperations).set(
+            eq("auth:signup:signup-token"),
+            eq("user@koreatech.ac.kr|GOOGLE|provider-123|홍길동"),
+            eq(Duration.ofMinutes(10))
+        );
+    }
+
+    @Test
+    @DisplayName("consumeOrThrow는 4파라미터 issue로 생성된 토큰에서 name을 복원한다")
+    void consumeOrThrowRestoresNameFromFourParameterIssue() {
+        // given
+        given(redis.execute(any(DefaultRedisScript.class), eq(List.of("auth:signup:signup-token"))))
+            .willReturn("user@koreatech.ac.kr|GOOGLE|provider-123|홍길동");
+
+        // when
+        SignupTokenService.SignupClaims claims = signupTokenService.consumeOrThrow("signup-token");
+
+        // then
+        assertThat(claims.email()).isEqualTo("user@koreatech.ac.kr");
+        assertThat(claims.provider()).isEqualTo(Provider.GOOGLE);
+        assertThat(claims.providerId()).isEqualTo("provider-123");
+        assertThat(claims.name()).isEqualTo("홍길동");
+    }
+
     private void assertInvalidSignupToken(ThrowingCallable callable) {
         assertThatThrownBy(callable::call)
             .isInstanceOf(CustomException.class)
