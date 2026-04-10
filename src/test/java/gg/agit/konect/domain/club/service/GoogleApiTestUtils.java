@@ -9,7 +9,8 @@ import com.google.api.client.http.HttpResponseException;
 
 public final class GoogleApiTestUtils {
 
-    private GoogleApiTestUtils() {}
+    private GoogleApiTestUtils() {
+    }
 
     public static GoogleJsonResponseException googleException(int statusCode, String reason) {
         GoogleJsonError.ErrorInfo errorInfo = new GoogleJsonError.ErrorInfo();
