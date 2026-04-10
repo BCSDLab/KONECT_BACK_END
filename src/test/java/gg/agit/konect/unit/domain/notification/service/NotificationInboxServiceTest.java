@@ -1,6 +1,8 @@
 package gg.agit.konect.unit.domain.notification.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -255,6 +257,56 @@ class NotificationInboxServiceTest extends ServiceTestSupport {
 
         // then
         verify(notificationInboxRepository).markAllAsReadByUserIdAndTypeNotIn(eq(1), any(Set.class));
+    }
+
+    @Test
+    @DisplayName("saveAll은 일부 사용자만 존재하면 존재하는 사용자에게만 알림을 생성한다")
+    void saveAllCreatesNotificationsOnlyForExistingUsers() {
+        // given
+        University university = UniversityFixture.create();
+        User user1 = createUser(university, 1, "유저1", "2021136001");
+        User user3 = createUser(university, 3, "유저3", "2021136003");
+        given(userRepository.findAllByIdIn(List.of(1, 2, 3))).willReturn(List.of(user1, user3));
+        given(notificationInboxRepository.saveAll(any())).willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        List<NotificationInbox> result = notificationInboxService.saveAll(
+            List.of(1, 2, 3),
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "제목",
+            "본문",
+            "/clubs/1"
+        );
+
+        // then
+        verify(notificationInboxRepository).saveAll(any());
+        org.assertj.core.api.Assertions.assertThat(result).hasSize(2);
+        org.assertj.core.api.Assertions.assertThat(result)
+            .extracting(inbox -> inbox.getUser().getId())
+            .containsExactly(1, 3);
+    }
+
+    @Test
+    @DisplayName("markAsRead는 다른 사용자의 알림에 대해 예외를 발생시킨다")
+    void markAsReadThrowsExceptionForOtherUsersNotification() {
+        // given
+        University university = UniversityFixture.create();
+        User user1 = createUser(university, 1, "유저1", "2021136001");
+        User user2 = createUser(university, 2, "유저2", "2021136002");
+        NotificationInbox inbox = NotificationInbox.of(
+            user1,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "제목",
+            "본문",
+            "/clubs/1"
+        );
+        given(notificationInboxRepository.getByIdAndUserId(1, 2)).willThrow(
+            new org.springframework.dao.EmptyResultDataAccessException(1)
+        );
+
+        // when & then
+        assertThatThrownBy(() -> notificationInboxService.markAsRead(2, 1))
+            .isInstanceOf(org.springframework.dao.EmptyResultDataAccessException.class);
     }
 
     private User createUser(University university, Integer id, String name, String studentNumber) {
