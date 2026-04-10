@@ -1,6 +1,7 @@
 package gg.agit.konect.unit.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import gg.agit.konect.domain.notification.dto.NotificationInboxResponse;
 import gg.agit.konect.domain.notification.service.NotificationInboxSseService;
 import gg.agit.konect.support.ServiceTestSupport;
 
@@ -30,6 +32,58 @@ class NotificationInboxSseServiceTest extends ServiceTestSupport {
         Map<Integer, SseEmitter> emitters = emitters();
         assertThat(emitters).hasSize(1);
         assertThat(emitters.get(1)).isSameAs(secondEmitter);
+    }
+
+    @Test
+    @DisplayName("send는 null userId에 대해 NullPointerException을 발생시킨다")
+    void sendThrowsExceptionForNullUserId() {
+        // given
+        NotificationInboxResponse response = createMockNotificationResponse();
+
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> notificationInboxSseService.send(null, response))
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("send는 emitter가 없는 경우(구독하지 않은 사용자) 에러 없이 처리한다")
+    void sendHandlesNonSubscribedUser() {
+        // given
+        NotificationInboxResponse response = createMockNotificationResponse();
+
+        // when & then
+        assertThatCode(() -> notificationInboxSseService.send(999, response))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("subscribe는 기존 emitter를 교체한다")
+    void subscribeReplacesExistingEmitter() throws Exception {
+        // given
+        SseEmitter firstEmitter = notificationInboxSseService.subscribe(1);
+        Map<Integer, SseEmitter> emittersBefore = emitters();
+
+        // when
+        SseEmitter secondEmitter = notificationInboxSseService.subscribe(1);
+        Map<Integer, SseEmitter> emittersAfter = emitters();
+
+        // then
+        assertThat(emittersBefore).hasSize(1);
+        assertThat(emittersAfter).hasSize(1);
+        assertThat(emittersAfter.get(1)).isNotSameAs(firstEmitter);
+        assertThat(emittersAfter.get(1)).isSameAs(secondEmitter);
+    }
+
+    private NotificationInboxResponse createMockNotificationResponse() {
+        return new NotificationInboxResponse(
+            1,
+            gg.agit.konect.domain.notification.enums.NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "title",
+            "body",
+            "path",
+            false,
+            null
+        );
     }
 
     @SuppressWarnings("unchecked")
