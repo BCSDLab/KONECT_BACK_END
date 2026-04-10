@@ -93,4 +93,62 @@ class UserActivityServiceTest extends ServiceTestSupport {
         verify(userRepository).findById(3);
         verifyNoMoreInteractions(userRepository);
     }
+
+    @Test
+    @DisplayName("updateLastLoginAt은 userId가 0(영)이면 정상 처리된다")
+    void updateLastLoginAtHandlesZeroUserId() {
+        // given
+        User user = UserFixture.createUserWithId(0, "2021136000");
+        given(userRepository.getById(0)).willReturn(user);
+
+        // when
+        userActivityService.updateLastLoginAt(0);
+
+        // then
+        assertThat(user.getLastLoginAt()).isNotNull();
+        assertThat(user.getLastActivityAt()).isEqualTo(user.getLastLoginAt());
+    }
+
+    @Test
+    @DisplayName("updateLastLoginAt은 음수 userId가 있어도 정상 처리된다")
+    void updateLastLoginAtHandlesNegativeUserId() {
+        // given
+        User user = UserFixture.createUserWithId(-1, "2021136001");
+        given(userRepository.getById(-1)).willReturn(user);
+
+        // when
+        userActivityService.updateLastLoginAt(-1);
+
+        // then
+        assertThat(user.getLastLoginAt()).isNotNull();
+        assertThat(user.getLastActivityAt()).isEqualTo(user.getLastLoginAt());
+    }
+
+    @Test
+    @DisplayName("updateLastActivityAt은 userId가 0(영)이면 정상 처리된다")
+    void updateLastActivityAtHandlesZeroUserId() {
+        // given
+        User user = UserFixture.createUserWithId(0, "2021136000");
+        given(userRepository.findById(0)).willReturn(Optional.of(user));
+
+        // when
+        userActivityService.updateLastActivityAt(0);
+
+        // then
+        assertThat(user.getLastActivityAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("updateLastActivityAt은 음수 userId가 있어도 정상 처리된다")
+    void updateLastActivityAtHandlesNegativeUserId() {
+        // given
+        User user = UserFixture.createUserWithId(-1, "2021136001");
+        given(userRepository.findById(-1)).willReturn(Optional.of(user));
+
+        // when
+        userActivityService.updateLastActivityAt(-1);
+
+        // then
+        assertThat(user.getLastActivityAt()).isNotNull();
+    }
 }
