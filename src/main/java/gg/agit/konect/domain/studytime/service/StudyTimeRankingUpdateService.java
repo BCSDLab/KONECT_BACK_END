@@ -112,7 +112,10 @@ public class StudyTimeRankingUpdateService {
             Integer nextTargetId = maxTargetId + 1;
 
             studyTimeRankingRepository.save(
-                StudyTimeRanking.of(rankingType, university, nextTargetId, studentNumberYear, dailySeconds, monthlySeconds)
+                StudyTimeRanking.of(
+                    rankingType, university, nextTargetId,
+                    studentNumberYear, dailySeconds, monthlySeconds
+                )
             );
         } else {
             ranking.get().updateSeconds(dailySeconds, monthlySeconds);

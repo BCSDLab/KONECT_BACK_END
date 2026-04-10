@@ -3,6 +3,7 @@ package gg.agit.konect.domain.studytime.listener;
 import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -17,7 +18,7 @@ public class StudyTimeRankingUpdateListener {
     private final StudyTimeRankingUpdateService studyTimeRankingUpdateService;
 
     @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleStudyTimeAccumulated(StudyTimeAccumulatedEvent event) {
         studyTimeRankingUpdateService.updateRankingsForUser(event.userId());
     }
