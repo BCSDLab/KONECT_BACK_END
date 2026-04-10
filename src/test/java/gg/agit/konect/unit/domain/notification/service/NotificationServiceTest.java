@@ -502,7 +502,7 @@ class NotificationServiceTest extends ServiceTestSupport {
     @DisplayName("buildPreview는 null 메시지에 대해 빈 문자열을 반환한다")
     void buildPreviewReturnsEmptyForNullMessage() {
         // given
-        User user = createUser(3, "2021136003");
+        createUser(3, "2021136003");
         given(chatPresenceService.isUserInChatRoom(7, 3)).willReturn(false);
         given(
             notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
@@ -530,7 +530,7 @@ class NotificationServiceTest extends ServiceTestSupport {
     @DisplayName("buildPreview는 빈 메시지에 대해 빈 문자열을 반환한다")
     void buildPreviewReturnsEmptyForEmptyMessage() {
         // given
-        User user = createUser(3, "2021136003");
+        createUser(3, "2021136003");
         given(chatPresenceService.isUserInChatRoom(7, 3)).willReturn(false);
         given(
             notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
@@ -559,7 +559,7 @@ class NotificationServiceTest extends ServiceTestSupport {
     void buildPreviewDoesNotTruncateExactLengthMessage() {
         // given
         String exactLengthMessage = "😀".repeat(30);
-        User user = createUser(3, "2021136003");
+        createUser(3, "2021136003");
         given(chatPresenceService.isUserInChatRoom(7, 3)).willReturn(false);
         given(
             notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(

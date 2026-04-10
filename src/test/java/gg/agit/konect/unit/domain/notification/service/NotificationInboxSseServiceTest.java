@@ -112,7 +112,7 @@ class NotificationInboxSseServiceTest extends ServiceTestSupport {
     @DisplayName("send는 IOException 발생 시 emitter를 제거한다")
     void sendRemovesEmitterOnIOException() {
         // given
-        SseEmitter failingEmitter = notificationInboxSseService.subscribe(1);
+        notificationInboxSseService.subscribe(1);
         NotificationInboxResponse response = createMockNotificationResponse();
 
         // when

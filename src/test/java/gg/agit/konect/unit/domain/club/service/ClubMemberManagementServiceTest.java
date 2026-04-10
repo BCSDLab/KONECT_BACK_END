@@ -359,7 +359,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Integer requesterId = 100;
         Club club = createClub();
         User presidentUser = UserFixture.createUserWithId(requesterId, "회장", UserRole.USER);
-        ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
+        ClubMemberFixture.createPresident(club, presidentUser);
         gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
             null);
 
@@ -490,7 +490,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Club club = createClub();
         User presidentUser = UserFixture.createUserWithId(requesterId, "회장", UserRole.USER);
         User currentVpUser = UserFixture.createUserWithId(currentVpId, "부회장", UserRole.USER);
-        ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
+        ClubMemberFixture.createPresident(club, presidentUser);
         ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
         gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
             currentVpId);
