@@ -18,7 +18,6 @@ import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.domain.user.service.UserActivityService;
 import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.UserFixture;
-import gg.agit.konect.support.fixture.UserFixture;
 
 class UserActivityServiceTest extends ServiceTestSupport {
 
@@ -67,7 +66,7 @@ class UserActivityServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(user.getLastLoginAt()).isEqualTo(loginAt);
-        assertThat(user.getLastActivityAt()).isAfterOrEqualTo(loginAt);
+        assertThat(user.getLastActivityAt()).isAfter(loginAt);
     }
 
     @Test
