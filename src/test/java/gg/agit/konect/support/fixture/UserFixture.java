@@ -39,6 +39,19 @@ public class UserFixture {
         return createUserWithId(UniversityFixture.create(), id, name, role);
     }
 
+    public static User createUserWithId(Integer id, String studentNumber) {
+        return User.builder()
+            .id(id)
+            .university(UniversityFixture.create())
+            .email(studentNumber + "@koreatech.ac.kr")
+            .name("테스트유저" + id)
+            .studentNumber(studentNumber)
+            .role(UserRole.USER)
+            .isMarketingAgreement(true)
+            .imageUrl("https://example.com/profile.png")
+            .build();
+    }
+
     public static User createAdmin(University university) {
         return User.builder()
             .university(university)

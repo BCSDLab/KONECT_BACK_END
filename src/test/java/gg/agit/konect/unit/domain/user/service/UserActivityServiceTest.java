@@ -13,13 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import gg.agit.konect.domain.university.model.University;
-import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.domain.user.service.UserActivityService;
 import gg.agit.konect.support.ServiceTestSupport;
-import gg.agit.konect.support.fixture.UniversityFixture;
+import gg.agit.konect.support.fixture.UserFixture;
+import gg.agit.konect.support.fixture.UserFixture;
 
 class UserActivityServiceTest extends ServiceTestSupport {
 
@@ -43,7 +42,7 @@ class UserActivityServiceTest extends ServiceTestSupport {
     @DisplayName("updateLastLoginAt은 마지막 로그인/활동 시각을 함께 갱신한다")
     void updateLastLoginAtUpdatesLoginAndActivityTimestamp() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userRepository.getById(1)).willReturn(user);
 
         // when
@@ -58,7 +57,7 @@ class UserActivityServiceTest extends ServiceTestSupport {
     @DisplayName("updateLastActivityAt은 사용자가 존재할 때만 마지막 활동 시각을 갱신한다")
     void updateLastActivityAtUpdatesExistingUserOnly() {
         // given
-        User user = createUser(2, "2021136002");
+        User user = UserFixture.createUserWithId(2, "2021136002");
         LocalDateTime loginAt = LocalDateTime.of(2026, 4, 1, 9, 0);
         user.updateLastLoginAt(loginAt);
         given(userRepository.findById(2)).willReturn(Optional.of(user));
@@ -84,19 +83,5 @@ class UserActivityServiceTest extends ServiceTestSupport {
         // then
         verify(userRepository).findById(3);
         verify(userRepository, never()).findById(null);
-    }
-
-    private User createUser(Integer id, String studentNumber) {
-        University university = UniversityFixture.create();
-        return User.builder()
-            .id(id)
-            .university(university)
-            .email(studentNumber + "@koreatech.ac.kr")
-            .name("테스트유저" + id)
-            .studentNumber(studentNumber)
-            .role(UserRole.USER)
-            .isMarketingAgreement(true)
-            .imageUrl("https://example.com/profile.png")
-            .build();
     }
 }
