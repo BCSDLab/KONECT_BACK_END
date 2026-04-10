@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDateTime;
@@ -521,6 +522,240 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("Stage profile에서 탈퇴 계정은 복구하지 않고 삭제된다")
+    void stageProfileDeletesWithdrawnAccountWithoutRestore() {
+        // given
+        User currentUser = createUser(1, "2021136001");
+        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
+        UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
+            withdrawnUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "old@konect.test",
+            null
+        );
+        given(environment.acceptsProfiles(any(Profiles.class))).willReturn(true);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.of(withdrawnAccount));
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "new@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("new@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            currentUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "new@konect.test",
+            null
+        );
+
+        // then
+        verify(userOAuthAccountRepository).delete(withdrawnAccount);
+        verify(userOAuthAccountRepository).flush();
+        verify(userRepository, never()).save(withdrawnUser);
+    }
+
+    @Test
+    @DisplayName("providerId가 NULL인 기존 계정에 새 providerId 연동 시 다른 사용자가 사용 중이면 충돌 예외 발생")
+    void linkOAuthAccountRejectsWhenNewProviderIdAlreadyLinkedToDifferentUser() {
+        // given
+        User currentUser = createUser(1, "2021136001");
+        User otherUser = createUser(2, "2022136002");
+        given(userRepository.getById(1)).willReturn(currentUser);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "new-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "new-provider-id"))
+            .willReturn(Optional.of(otherUser));
+
+        // when & then
+        assertCustomException(
+            ApiResponseCode.OAUTH_ACCOUNT_ALREADY_LINKED,
+            () -> userOAuthAccountService.linkOAuthAccount(
+                1,
+                Provider.GOOGLE,
+                "new-provider-id",
+                "current@konect.test",
+                null
+            )
+        );
+        verify(userOAuthAccountRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("복구 기간 정확히 7일 경계값에서는 복구 불가능")
+    void restoreWindowBoundaryAtExactlySevenDaysCannotRestore() {
+        // given
+        User currentUser = createUser(1, "2021136001");
+        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(7));
+        UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
+            withdrawnUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "old@konect.test",
+            null
+        );
+        given(environment.acceptsProfiles(any(Profiles.class))).willReturn(false);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.of(withdrawnAccount));
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "new@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("new@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            currentUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "new@konect.test",
+            null
+        );
+
+        // then - 정확히 7일 경과 시 isAfter()가 false를 반환하므로 삭제됨
+        verify(userOAuthAccountRepository).delete(withdrawnAccount);
+        verify(userOAuthAccountRepository).flush();
+        verify(userRepository, never()).save(withdrawnUser);
+    }
+
+    @Test
+    @DisplayName("providerId와 oauthEmail이 서로 다른 탈퇴 사용자인 경우 모두 정리된다")
+    void linkOAuthAccountCleansUpBothWithdrawnUsersFromProviderIdAndOauthEmail() {
+        // given
+        User currentUser = createUser(1, "2021136001");
+        User withdrawnUserByProviderId = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(10));
+        User withdrawnUserByOauthEmail = createWithdrawnUser(3, "2020136003", LocalDateTime.now().minusDays(10));
+
+        UserOAuthAccount accountByProviderId = UserOAuthAccount.of(
+            withdrawnUserByProviderId,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "old1@konect.test",
+            null
+        );
+
+        UserOAuthAccount accountByOauthEmail = UserOAuthAccount.of(
+            withdrawnUserByOauthEmail,
+            Provider.GOOGLE,
+            "other-provider-id",
+            "old2@konect.test",
+            null
+        );
+
+        given(environment.acceptsProfiles(any(Profiles.class))).willReturn(false);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.of(accountByProviderId));
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "old2@konect.test"))
+            .willReturn(Optional.of(accountByOauthEmail));
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("old2@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.empty());
+
+        // when
+        userOAuthAccountService.linkPrimaryOAuthAccount(
+            currentUser,
+            Provider.GOOGLE,
+            "google-provider-id",
+            "old2@konect.test",
+            null
+        );
+
+        // then
+        verify(userOAuthAccountRepository).delete(accountByProviderId);
+        verify(userOAuthAccountRepository).delete(accountByOauthEmail);
+        verify(userOAuthAccountRepository, times(2)).flush();
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("기존 계정의 providerId 업데이트 시 다른 providerId로 충돌하면 예외 발생")
+    void linkOAuthAccountRejectsProviderIdUpdateWhenConflict() {
+        // given
+        User user = createUser(1, "2021136001");
+        UserOAuthAccount existingAccount = UserOAuthAccount.of(
+            user,
+            Provider.GOOGLE,
+            "old-provider-id",
+            "google@konect.test",
+            null
+        );
+        given(userRepository.getById(1)).willReturn(user);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "new-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "new-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "google@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("google@konect.test", Provider.GOOGLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.GOOGLE))
+            .willReturn(Optional.of(existingAccount));
+
+        // when & then
+        assertCustomException(
+            ApiResponseCode.OAUTH_PROVIDER_ALREADY_LINKED,
+            () -> userOAuthAccountService.linkOAuthAccount(
+                1,
+                Provider.GOOGLE,
+                "new-provider-id",
+                "google@konect.test",
+                null
+            )
+        );
+        verify(userOAuthAccountRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Apple provider는 appleRefreshToken 업데이트를 호출한다")
+    void linkOAuthAccountUpdatesAppleRefreshTokenForAppleProvider() {
+        // given
+        User user = createUser(1, "2021136001");
+        UserOAuthAccount existingAccount = UserOAuthAccount.of(
+            user,
+            Provider.APPLE,
+            "apple-provider-id",
+            "apple@konect.test",
+            "old-refresh-token"
+        );
+        given(userRepository.getById(1)).willReturn(user);
+        given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.APPLE, "apple-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.APPLE, "apple-provider-id"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.APPLE, "apple@konect.test"))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("apple@konect.test", Provider.APPLE))
+            .willReturn(Optional.empty());
+        given(userOAuthAccountRepository.findByUserIdAndProvider(1, Provider.APPLE))
+            .willReturn(Optional.of(existingAccount));
+
+        // when
+        userOAuthAccountService.linkOAuthAccount(
+            1,
+            Provider.APPLE,
+            "apple-provider-id",
+            "apple@konect.test",
+            "new-refresh-token"
+        );
+
+        // then
+        assertThat(existingAccount.getAppleRefreshToken()).isEqualTo("new-refresh-token");
+        verify(userOAuthAccountRepository).save(existingAccount);
     }
 
     private User createUser(Integer id, String studentNumber) {
