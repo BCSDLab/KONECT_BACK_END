@@ -635,8 +635,10 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     void linkOAuthAccountCleansUpBothWithdrawnUsersFromProviderIdAndOauthEmail() {
         // given
         User currentUser = UserFixture.createUserWithId(1, "2021136001");
-        User withdrawnUserByProviderId = UserFixture.createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(10));
-        User withdrawnUserByOauthEmail = UserFixture.createWithdrawnUser(3, "2020136003", LocalDateTime.now().minusDays(10));
+        User withdrawnUserByProviderId = UserFixture.createWithdrawnUser(2, "2020136002",
+            LocalDateTime.now().minusDays(10));
+        User withdrawnUserByOauthEmail = UserFixture.createWithdrawnUser(3, "2020136003",
+            LocalDateTime.now().minusDays(10));
 
         UserOAuthAccount accountByProviderId = UserOAuthAccount.of(
             withdrawnUserByProviderId,
