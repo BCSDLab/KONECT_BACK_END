@@ -4,6 +4,8 @@ import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 
+import java.time.LocalDateTime;
+
 public class UserFixture {
 
     public static User createUser(University university) {
@@ -22,6 +24,28 @@ public class UserFixture {
             .build();
     }
 
+    public static User createUserWithId(University university, Integer id, String name, String studentNumber,
+        UserRole role) {
+        return User.builder()
+            .id(id)
+            .university(university)
+            .email(studentNumber + "@koreatech.ac.kr")
+            .name(name)
+            .studentNumber(studentNumber)
+            .role(role)
+            .isMarketingAgreement(true)
+            .imageUrl("https://example.com/profile.png")
+            .build();
+    }
+
+    public static User createUserWithId(Integer id, String name, UserRole role) {
+        return createUserWithId(UniversityFixture.create(), id, name, "2024" + String.format("%04d", id), role);
+    }
+
+    public static User createUserWithId(Integer id, String studentNumber) {
+        return createUserWithId(UniversityFixture.create(), id, "테스트유저" + id, studentNumber, UserRole.USER);
+    }
+
     public static User createAdmin(University university) {
         return User.builder()
             .university(university)
@@ -32,5 +56,11 @@ public class UserFixture {
             .isMarketingAgreement(true)
             .imageUrl("https://example.com/admin.png")
             .build();
+    }
+
+    public static User createWithdrawnUser(Integer id, String studentNumber, LocalDateTime deletedAt) {
+        User user = createUserWithId(id, studentNumber);
+        user.withdraw(deletedAt);
+        return user;
     }
 }

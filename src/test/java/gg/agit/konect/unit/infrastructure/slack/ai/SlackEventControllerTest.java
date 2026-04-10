@@ -1,4 +1,4 @@
-package gg.agit.konect.infrastructure.slack.ai;
+package gg.agit.konect.unit.infrastructure.slack.ai;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -21,6 +21,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import gg.agit.konect.infrastructure.slack.ai.SlackAIService;
+import gg.agit.konect.infrastructure.slack.ai.SlackEventController;
 import gg.agit.konect.infrastructure.slack.config.SlackSignatureVerifier;
 import gg.agit.konect.support.ControllerTestSupport;
 

@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.club.service;
+package gg.agit.konect.unit.domain.club.service;
 
 import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.googleException;
 import static gg.agit.konect.domain.club.service.GoogleApiTestUtils.httpResponseException;
@@ -30,6 +30,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UserOAuthAccountRepository;
+import gg.agit.konect.domain.club.service.GoogleSheetPermissionService;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.infrastructure.googlesheets.GoogleSheetsConfig;
