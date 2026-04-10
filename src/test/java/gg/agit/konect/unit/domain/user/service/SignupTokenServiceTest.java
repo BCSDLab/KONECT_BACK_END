@@ -131,6 +131,90 @@ class SignupTokenServiceTest extends ServiceTestSupport {
         verify(redis, never()).execute(any(DefaultRedisScript.class), any());
     }
 
+    @Test
+    @DisplayName("issue는 빈 이메일 문자열을 거부한다")
+    void issueRejectsEmptyEmail() {
+        assertThatThrownBy(() -> signupTokenService.issue("", Provider.GOOGLE, "provider-1"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("email and provider are required");
+    }
+
+    @Test
+    @DisplayName("deserialize는 빈 파트를 포함한 직렬화된 데이터를 거부한다")
+    void deserializeRejectsEmptyParts() {
+        // "email|||" → split 결과: [email, "", "", ""] → provider가 빈 문자열이므로 거부
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("email|||");
+
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("deserialize는 4개 초과 파트를 거부한다")
+    void deserializeRejectsMoreThanFourParts() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("a|b|c|d|e");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("deserialize는 빈 이메일 필드를 거부한다")
+    void deserializeRejectsEmptyEmailField() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("|GOOGLE|provider-1|name");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("deserialize는 빈 프로바이더 필드를 거부한다")
+    void deserializeRejectsEmptyProviderField() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("email||provider-1|name");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("deserialize는 유효하지 않은 Provider enum 값을 거부한다")
+    void deserializeRejectsInvalidProviderValue() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("email|INVALID_PROVIDER|provider-1|name");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("readOrThrow는 Redis가 빈 문자열을 반환하면 INVALID_SIGNUP_TOKEN을 던진다")
+    void readOrThrowRejectsEmptyStringFromRedis() {
+        // given
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.get("auth:signup:token")).willReturn("");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.readOrThrow("token"));
+    }
+
+    @Test
+    @DisplayName("consumeOrThrow는 Redis가 빈 문자열을 반환하면 INVALID_SIGNUP_TOKEN을 던진다")
+    void consumeOrThrowRejectsEmptyStringFromRedis() {
+        // given
+        given(redis.execute(any(DefaultRedisScript.class), eq(List.of("auth:signup:token"))))
+            .willReturn("");
+
+        // when & then
+        assertInvalidSignupToken(() -> signupTokenService.consumeOrThrow("token"));
+    }
+
     private void assertInvalidSignupToken(ThrowingCallable callable) {
         assertThatThrownBy(callable::call)
             .isInstanceOf(CustomException.class)
