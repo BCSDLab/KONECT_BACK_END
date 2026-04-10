@@ -256,6 +256,10 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
         verify(userOAuthAccountRepository).flush();
     }
 
+    private User createUser(Integer id, String studentNumber) {
+        return UserFixture.createUserWithId(id, studentNumber);
+    }
+
     private User createWithdrawnUser(Integer id, String studentNumber, LocalDateTime deletedAt) {
         User user = UserFixture.createUserWithId(id, studentNumber);
         user.withdraw(deletedAt);
