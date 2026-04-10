@@ -41,11 +41,9 @@ class AuthCookieServiceTest {
         assertThat(setCookie)
             .contains("refresh_token=refresh-token")
             .contains("Max-Age=300")
-            .contains("Domain=konect.test")
-            .contains("Path=/")
             .contains("Secure")
-            .contains("HttpOnly")
             .contains("SameSite=None");
+        assertCommonCookieAttributes(setCookie);
     }
 
     @Test
@@ -78,12 +76,11 @@ class AuthCookieServiceTest {
         authCookieService.clearSignupToken(request, response);
 
         // then
-        assertThat(response.getHeader("Set-Cookie"))
+        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(setCookie)
             .contains("signup_token=")
-            .contains("Max-Age=0")
-            .contains("Domain=konect.test")
-            .contains("Path=/")
-            .contains("HttpOnly");
+            .contains("Max-Age=0");
+        assertCommonCookieAttributes(setCookie);
     }
 
     @Test
@@ -101,5 +98,12 @@ class AuthCookieServiceTest {
             .isEqualTo("refresh-value");
         assertThat(authCookieService.getCookieValue(request, AuthCookieService.SIGNUP_TOKEN_COOKIE)).isNull();
         assertThat(authCookieService.getCookieValue(new MockHttpServletRequest(), "missing")).isNull();
+    }
+
+    private void assertCommonCookieAttributes(String setCookie) {
+        assertThat(setCookie)
+            .contains("Domain=konect.test")
+            .contains("Path=/")
+            .contains("HttpOnly");
     }
 }
