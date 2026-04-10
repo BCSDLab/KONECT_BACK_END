@@ -17,6 +17,7 @@ import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.Permission;
 import com.google.api.services.drive.model.PermissionList;
 
+import gg.agit.konect.domain.club.service.GoogleDrivePermissionHelper;
 import gg.agit.konect.support.ServiceTestSupport;
 
 class GoogleDrivePermissionHelperTest extends ServiceTestSupport {

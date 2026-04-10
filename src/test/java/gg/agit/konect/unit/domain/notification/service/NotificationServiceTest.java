@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.notification.service;
+package gg.agit.konect.unit.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -31,10 +31,13 @@ import gg.agit.konect.domain.notification.model.NotificationDeviceToken;
 import gg.agit.konect.domain.notification.model.NotificationInbox;
 import gg.agit.konect.domain.notification.repository.NotificationDeviceTokenRepository;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
+import gg.agit.konect.domain.notification.service.NotificationInboxService;
+import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
+import gg.agit.konect.domain.notification.service.ExpoPushClient;
 import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.UniversityFixture;
 

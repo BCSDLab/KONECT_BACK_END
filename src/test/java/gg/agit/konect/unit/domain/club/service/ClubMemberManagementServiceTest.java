@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.club.service;
+package gg.agit.konect.unit.domain.club.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.AMBIGUOUS_USER_MATCH;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_CHANGE_OWN_POSITION;
@@ -26,6 +26,8 @@ import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.domain.club.service.ClubMemberManagementService;
+import gg.agit.konect.domain.club.service.ClubPermissionValidator;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;

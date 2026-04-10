@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.user.service;
+package gg.agit.konect.unit.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -17,6 +17,7 @@ import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.domain.user.service.UserActivityService;
 import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.UniversityFixture;
 
