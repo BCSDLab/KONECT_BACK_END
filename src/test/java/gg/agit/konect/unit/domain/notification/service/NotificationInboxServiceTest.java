@@ -289,7 +289,7 @@ class NotificationInboxServiceTest extends ServiceTestSupport {
     void markAsReadThrowsExceptionForOtherUsersNotification() {
         // given
         University university = UniversityFixture.create();
-        User user1 = createUser(university, 1, "유저1", "2021136001");
+        createUser(university, 1, "유저1", "2021136001");
         createUser(university, 2, "유저2", "2021136002");
         given(notificationInboxRepository.getByIdAndUserId(1, 2)).willThrow(
             new org.springframework.dao.EmptyResultDataAccessException(1)
