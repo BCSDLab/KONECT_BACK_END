@@ -1,4 +1,4 @@
-package gg.agit.konect.infrastructure.slack.listener;
+package gg.agit.konect.unit.infrastructure.slack.listener;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import gg.agit.konect.domain.club.event.SheetSyncFailedEvent;
+import gg.agit.konect.infrastructure.slack.listener.SheetSyncSlackListener;
 import gg.agit.konect.infrastructure.slack.service.SlackNotificationService;
 import gg.agit.konect.support.ServiceTestSupport;
 

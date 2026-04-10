@@ -17,10 +17,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
@@ -50,6 +53,16 @@ import gg.agit.konect.support.fixture.UserFixture;
 class ChatApiTest extends IntegrationTestSupport {
 
     private static final int SYSTEM_ADMIN_ID = 1;
+    private static final String CHAT_TEST_DATA_CLEANUP_SQL = """
+        DELETE FROM notification_mute_setting;
+        DELETE FROM chat_message;
+        DELETE FROM chat_room_member;
+        DELETE FROM chat_room;
+        DELETE FROM club_member;
+        DELETE FROM club;
+        DELETE FROM users;
+        DELETE FROM university;
+        """;
 
     @Autowired
     private ChatRoomRepository chatRoomRepository;
@@ -62,6 +75,9 @@ class ChatApiTest extends IntegrationTestSupport {
 
     @Autowired
     private NotificationMuteSettingRepository notificationMuteSettingRepository;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @MockitoBean
     private ChatPresenceService chatPresenceService;
@@ -76,28 +92,32 @@ class ChatApiTest extends IntegrationTestSupport {
     private University university;
 
     @BeforeEach
-    void setUp() {
-        university = persist(UniversityFixture.create());
-        // System Admin을 먼저 생성 - 문의 채팅방용
-        adminUser = persist(UserFixture.createAdmin(university));
-        // SYSTEM_ADMIN_ID가 아니면 SQL로 해당 ID 사용자를 추가 생성
-        if (adminUser.getId() != SYSTEM_ADMIN_ID) {
-            entityManager.createNativeQuery("""
-                    INSERT INTO users (id, email, name, student_number, role, is_marketing_agreement, image_url, university_id, created_at, updated_at)
-                    SELECT ?, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?)
-                    """
-                ).setParameter(1, SYSTEM_ADMIN_ID)
-                .setParameter(2, university.getId())
-                .setParameter(3, SYSTEM_ADMIN_ID)
-                .executeUpdate();
-            entityManager.flush();
-        }
-        normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
-        clearPersistenceContext();
+    public void setUp() {
+        transactionTemplate.execute(status -> {
+            university = persist(UniversityFixture.create());
+            // System Admin을 먼저 생성 - 문의 채팅방용
+            adminUser = persist(UserFixture.createAdmin(university));
+            // 일부 테스트는 NOT_SUPPORTED로 실행되므로, 공통 픽스처는 명시적 트랜잭션 안에서 만든다.
+            if (adminUser.getId() != SYSTEM_ADMIN_ID) {
+                entityManager.createNativeQuery("""
+                        INSERT INTO users (id, email, name, student_number, role, is_marketing_agreement, image_url, university_id, created_at, updated_at)
+                        SELECT ?, 'system@koreatech.ac.kr', '시스템관리자', '2021000001', 'ADMIN', true, 'https://example.com/system-admin.png', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?)
+                        """
+                    ).setParameter(1, SYSTEM_ADMIN_ID)
+                    .setParameter(2, university.getId())
+                    .setParameter(3, SYSTEM_ADMIN_ID)
+                    .executeUpdate();
+                entityManager.flush();
+            }
+            normalUser = persist(UserFixture.createUser(university, "일반유저", "2021136001"));
+            clearPersistenceContext();
+            return null;
+        });
     }
 
-    private ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
+    @Transactional
+    public ChatRoom createDirectChatRoom(User firstUser, User secondUser) {
         ChatRoom chatRoom = persist(ChatRoom.directOf());
         LocalDateTime joinedAt = chatRoom.getCreatedAt();
         ChatRoom managedChatRoom = entityManager.getReference(ChatRoom.class, chatRoom.getId());
@@ -368,8 +388,12 @@ class ChatApiTest extends IntegrationTestSupport {
 
         @Test
         @DisplayName("어드민이 나간 문의 채팅방에 사용자가 새 메시지를 보내 어드민 목록에 다시 노출된다")
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @Transactional(propagation = Propagation.REQUIRES_NEW)
+        @Sql(
+            statements = CHAT_TEST_DATA_CLEANUP_SQL,
+            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        )
         void adminLeftInquiryRoomReappearsWhenUserSendsNewMessage() throws Exception {
             // given - 문의 채팅방 생성 (일반 사용자 -> system admin)
             mockLoginUser(normalUser.getId());
@@ -833,18 +857,29 @@ class ChatApiTest extends IntegrationTestSupport {
 
     @Nested
     @DisplayName("DELETE /chats/rooms/{chatRoomId} - 채팅방 나가기")
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     class LeaveChatRoom {
 
         @BeforeEach
         void setUpLeaveFixture() {
-            targetUser = createUser("상대유저", "2021136002");
-            clearPersistenceContext();
+            transactionTemplate.execute(status -> {
+                targetUser = createUser("상대유저", "2021136002");
+                clearPersistenceContext();
+                return null;
+            });
         }
 
         @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
         @DisplayName("1:1 채팅방을 나가면 목록에서 숨겨지고 새 메시지부터 다시 보인다")
         void leaveDirectChatRoomAndShowOnlyNewMessages() throws Exception {
-            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            // 트랜잭션 내에서 테스트 데이터 생성 (NOT_SUPPORTED 테스트는 트랜잭션 없이 실행됨)
+            ChatRoom[] chatRoomHolder = new ChatRoom[1];
+            transactionTemplate.execute(status -> {
+                chatRoomHolder[0] = createDirectChatRoom(normalUser, targetUser);
+                return null;
+            });
+            ChatRoom chatRoom = chatRoomHolder[0];
 
             mockLoginUser(normalUser.getId());
             performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("첫 메시지"))
@@ -853,11 +888,14 @@ class ChatApiTest extends IntegrationTestSupport {
             performDelete("/chats/rooms/" + chatRoom.getId())
                 .andExpect(status().isNoContent());
 
-            clearPersistenceContext();
-            ChatRoomMember leftMember = chatRoomMemberRepository
-                .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
-                .orElseThrow();
-            assertThat(leftMember.hasLeft()).isTrue();
+            transactionTemplate.execute(status -> {
+                clearPersistenceContext();
+                ChatRoomMember leftMember = chatRoomMemberRepository
+                    .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
+                    .orElseThrow();
+                assertThat(leftMember.hasLeft()).isTrue();
+                return null;
+            });
 
             mockLoginUser(normalUser.getId());
             performGet("/chats/rooms")
@@ -903,6 +941,10 @@ class ChatApiTest extends IntegrationTestSupport {
 
             performDelete("/chats/rooms/" + chatRoom.getId())
                 .andExpect(status().isNoContent());
+
+            // 트랜잭션 커밋
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
 
             performPost("/chats/rooms", new ChatRoomCreateRequest(targetUser.getId()))
                 .andExpect(status().isOk())
@@ -1006,8 +1048,12 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("참여하지 않은 사용자가 조회하면 403을 반환한다")
+        @Sql(
+            statements = CHAT_TEST_DATA_CLEANUP_SQL,
+            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        )
         void getMessagesForbidden() throws Exception {
             // given
             ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
@@ -1619,8 +1665,12 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
         @DisplayName("강퇴된 멤버는 메시지를 조회할 수 없다")
+        @Sql(
+            statements = CHAT_TEST_DATA_CLEANUP_SQL,
+            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        )
         void kickedMemberCannotGetMessages() throws Exception {
             // given
             Integer roomId = groupRoom.getId();
@@ -1732,6 +1782,267 @@ class ChatApiTest extends IntegrationTestSupport {
             performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + anotherMember.getId())
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_KICK"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /chats/rooms/{chatRoomId} - 메시지 조회 페이지네이션 엣지 케이스")
+    @Sql(
+        statements = CHAT_TEST_DATA_CLEANUP_SQL,
+        config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+    )
+    class GetMessagesPaginationEdgeCases {
+
+        private ChatRoom directRoom;
+        private User chatPartner;
+
+        @BeforeEach
+        void setUpPaginationFixture() {
+            chatPartner = createUser("채팅상대", "2021136006");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("빈 채팅방의 메시지를 조회하면 빈 목록을 반환한다")
+        void getMessagesFromEmptyRoomReturnsEmptyList() throws Exception {
+            // given - 메시지가 없는 새로 생성된 방
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(normalUser.getId());
+
+            // when & then
+            performGet("/chats/rooms/" + directRoom.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages").isArray())
+                .andExpect(jsonPath("$.messages").isEmpty())
+                .andExpect(jsonPath("$.totalCount").value(0))
+                .andExpect(jsonPath("$.currentPage").value(1))
+                .andExpect(jsonPath("$.totalPage").value(0));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 페이지를 조회하면 빈 목록을 반환한다")
+        void getMessagesFromNonExistentPageReturnsEmptyList() throws Exception {
+            // given - 메시지 5개 생성
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            for (int i = 1; i <= 5; i++) {
+                persistChatMessage(directRoom, chatPartner, "메시지 " + i);
+            }
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(normalUser.getId());
+
+            // when & then - 100페이지 조회 (존재하지 않음)
+            performGet("/chats/rooms/" + directRoom.getId() + "?page=100&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages").isArray())
+                .andExpect(jsonPath("$.messages").isEmpty())
+                .andExpect(jsonPath("$.currentPage").value(100))
+                .andExpect(jsonPath("$.totalPage").value(1));
+        }
+
+        @Test
+        @DisplayName("마지막 페이지는 부분 결과를 반환할 수 있다")
+        void getMessagesLastPageReturnsPartialResults() throws Exception {
+            // given - 메시지 25개 생성
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            for (int i = 1; i <= 25; i++) {
+                persistChatMessage(directRoom, chatPartner, "메시지 " + i);
+            }
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(normalUser.getId());
+
+            // when & then - limit=10, page=3 (21-25번 메시지, 5개만 반환)
+            performGet("/chats/rooms/" + directRoom.getId() + "?page=3&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages").isArray())
+                .andExpect(jsonPath("$.messages").value(org.hamcrest.Matchers.hasSize(5)))
+                .andExpect(jsonPath("$.currentPage").value(3))
+                .andExpect(jsonPath("$.totalPage").value(3));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /chats/rooms/{chatRoomId}/messages - 메시지 전송 권한 및 엣지 케이스")
+    @Sql(
+        statements = CHAT_TEST_DATA_CLEANUP_SQL,
+        config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+    )
+    class SendMessageEdgeCases {
+
+        private ChatRoom groupRoom;
+        private User roomOwner;
+        private User roomMember;
+        private User nonMember;
+
+        @BeforeEach
+        void setUpSendMessageEdgeFixture() {
+            roomOwner = createUser("방장", "2021136007");
+            roomMember = createUser("방멤버", "2021136008");
+            nonMember = createUser("비멤버", "2021136009");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("정확히 1000자 메시지는 전송 성공한다")
+        void sendMessageExactly1000CharsSuccess() throws Exception {
+            // given
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            String exactly1000Chars = "a".repeat(1000);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(roomMember.getId());
+
+            // when & then
+            performPost("/chats/rooms/" + groupRoom.getId() + "/messages",
+                new ChatMessageSendRequest(exactly1000Chars))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value(exactly1000Chars));
+        }
+
+        @Test
+        @DisplayName("채팅방 멤버가 아닌 사용자는 메시지를 전송할 수 없다")
+        void sendMessageByNonMemberReturnsForbidden() throws Exception {
+            // given
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(nonMember.getId());
+
+            // when & then
+            performPost("/chats/rooms/" + groupRoom.getId() + "/messages",
+                new ChatMessageSendRequest("Unauthorized message"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("강퇴된 멤버는 메시지를 전송할 수 없다")
+        void sendMessageByKickedMemberReturnsForbidden() throws Exception {
+            // given - 방장이 멤버를 강퇴
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(roomOwner.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + roomMember.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then - 강퇴된 멤버가 메시지 전송 시도
+            mockLoginUser(roomMember.getId());
+            performPost("/chats/rooms/" + groupRoom.getId() + "/messages",
+                new ChatMessageSendRequest("Kicked member message"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /chats/rooms/{chatRoomId}/mute - 채팅방 뮤트 권한 케이스")
+    @Sql(
+        statements = CHAT_TEST_DATA_CLEANUP_SQL,
+        config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+    )
+    class ToggleMutePermissionCases {
+
+        private ChatRoom groupRoom;
+        private User roomOwner;
+        private User roomMember;
+        private User nonMember;
+
+        @BeforeEach
+        void setUpMutePermissionFixture() {
+            roomOwner = createUser("방장", "2021136010");
+            roomMember = createUser("방멤버", "2021136011");
+            nonMember = createUser("비멤버", "2021136012");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("채팅방 멤버가 아닌 사용자는 뮤트 설정을 변경할 수 없다")
+        void toggleMuteByNonMemberReturnsForbidden() throws Exception {
+            // given
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(nonMember.getId());
+
+            // when & then
+            performPost("/chats/rooms/" + groupRoom.getId() + "/mute")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("강퇴된 멤버는 뮤트 설정을 변경할 수 없다")
+        void toggleMuteByKickedMemberReturnsForbidden() throws Exception {
+            // given - 방장이 멤버를 강퇴
+            groupRoom = createGroupChatRoomWithOwner(roomOwner, roomMember);
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            mockLoginUser(roomOwner.getId());
+            performDelete("/chats/rooms/" + groupRoom.getId() + "/members/" + roomMember.getId())
+                .andExpect(status().isNoContent());
+
+            // when & then - 강퇴된 멤버가 뮤트 토글 시도
+            mockLoginUser(roomMember.getId());
+            performPost("/chats/rooms/" + groupRoom.getId() + "/mute")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /chats/rooms/search - 채팅 검색 엣지 케이스")
+    class SearchChatsEdgeCases {
+
+        private ChatRoom directRoom;
+        private User chatPartner;
+
+        @BeforeEach
+        void setUpSearchEdgeFixture() {
+            chatPartner = createUser("검색상대", "2021136013");
+            directRoom = createDirectChatRoom(normalUser, chatPartner);
+            persistChatMessage(directRoom, chatPartner, "검색 가능한 메시지");
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("검색 결과가 없으면 빈 목록을 반환한다")
+        void searchChatsWithNoMatchesReturnsEmpty() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then - 존재하지 않는 키워드로 검색
+            performGet("/chats/rooms/search?keyword=존재하지않는키워드12345&page=1&limit=20")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.rooms").isArray())
+                .andExpect(jsonPath("$.roomMatches.rooms").isEmpty())
+                .andExpect(jsonPath("$.messageMatches.messages").isArray())
+                .andExpect(jsonPath("$.messageMatches.messages").isEmpty());
+        }
+
+        @Test
+        @DisplayName("한 글자 키워드로 검색해도 200을 반환한다")
+        void searchChatsWithSingleCharacterKeywordReturnsOk() throws Exception {
+            // given
+            mockLoginUser(normalUser.getId());
+
+            // when & then - 1글자 키워드로 검색
+            performGet("/chats/rooms/search?keyword=a&page=1&limit=20")
+                .andExpect(status().isOk());
         }
     }
 }

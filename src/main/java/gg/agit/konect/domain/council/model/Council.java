@@ -102,6 +102,8 @@ public class Council extends BaseEntity {
         String introduce,
         String location,
         String personalColor,
+        String phoneNumber,
+        String email,
         String instagramUserName,
         String operatingHour
     ) {
@@ -110,6 +112,8 @@ public class Council extends BaseEntity {
         this.introduce = introduce;
         this.location = location;
         this.personalColor = personalColor;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
         this.instagramUserName = instagramUserName;
         this.operatingHour = operatingHour;
     }

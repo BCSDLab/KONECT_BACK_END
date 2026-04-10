@@ -43,11 +43,10 @@ public class ClubSheetMigrationController implements ClubSheetMigrationApi {
     @Override
     public ResponseEntity<SheetImportPreviewResponse> previewPreMembers(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody SheetImportRequest request,
         @UserId Integer requesterId
     ) {
         SheetImportPreviewResponse response = sheetImportService.previewPreMembersFromSheet(
-            clubId, requesterId, request.spreadsheetUrl()
+            clubId, requesterId
         );
         return ResponseEntity.ok(response);
     }

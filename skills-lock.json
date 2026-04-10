@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "gh-address-comments": {
+      "source": "smithery.ai",
+      "sourceType": "well-known",
+      "computedHash": "39acf09da5896afde2b61b22f4354a72dbed6633da9e8a578eacec4899b0ecfb"
+    }
+  }
+}

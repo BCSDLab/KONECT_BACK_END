@@ -106,6 +106,10 @@ tasks.named('test') {
 	useJUnitPlatform()
 
 	maxParallelForks = Math.min(Runtime.runtime.availableProcessors(), 4)
+	reports {
+		// CI는 JUnit XML만으로 충분하므로 HTML 리포트 생성 비용은 줄인다.
+		html.required = !System.getenv().containsKey('CI')
+	}
 }
 
 checkstyle {
