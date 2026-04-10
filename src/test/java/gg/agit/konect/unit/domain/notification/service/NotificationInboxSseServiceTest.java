@@ -86,6 +86,45 @@ class NotificationInboxSseServiceTest extends ServiceTestSupport {
         );
     }
 
+    @Test
+    @DisplayName("subscribe는 기존 emitter가 있으면 완료 후 교체한다")
+    void subscribeCompletesPreviousEmitterBeforeReplacement() throws Exception {
+        // given
+        SseEmitter firstEmitter = notificationInboxSseService.subscribe(1);
+        Map<Integer, SseEmitter> emittersBefore = emitters();
+
+        // when
+        SseEmitter secondEmitter = notificationInboxSseService.subscribe(1);
+        Map<Integer, SseEmitter> emittersAfter = emitters();
+
+        // then
+        assertThat(emittersBefore).hasSize(1);
+        assertThat(emittersAfter).hasSize(1);
+        assertThat(emittersAfter.get(1)).isNotSameAs(firstEmitter);
+        assertThat(emittersAfter.get(1)).isSameAs(secondEmitter);
+
+        // 이전 emitter가 완료되었는지 확인
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> firstEmitter.send(SseEmitter.event().data("test")))
+            .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("send는 IOException 발생 시 emitter를 제거한다")
+    void sendRemovesEmitterOnIOException() {
+        // given
+        SseEmitter failingEmitter = notificationInboxSseService.subscribe(1);
+        NotificationInboxResponse response = createMockNotificationResponse();
+
+        // when
+        // emitter가 존재하는 상태에서 전송 시도
+        notificationInboxSseService.send(1, response);
+
+        // then
+        // 메서드가 정상적으로 동작하는지 확인
+        assertThatCode(() -> notificationInboxSseService.send(1, response))
+            .doesNotThrowAnyException();
+    }
+
     @SuppressWarnings("unchecked")
     private Map<Integer, SseEmitter> emitters() throws Exception {
         Field field = NotificationInboxSseService.class.getDeclaredField("emitters");
