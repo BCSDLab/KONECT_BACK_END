@@ -583,6 +583,189 @@ class NotificationServiceTest extends ServiceTestSupport {
         );
     }
 
+    @Test
+    @DisplayName("getMyToken은 토큰이 없는 사용자에 대해 예외를 발생시킨다")
+    void getMyTokenThrowsExceptionWhenNoTokenExists() {
+        // given
+        org.springframework.dao.EmptyResultDataAccessException exception =
+            new org.springframework.dao.EmptyResultDataAccessException(1);
+        given(notificationDeviceTokenRepository.getByUserId(999)).willThrow(exception);
+
+        // when & then
+        assertThatThrownBy(() -> notificationService.getMyToken(999))
+            .isInstanceOf(org.springframework.dao.EmptyResultDataAccessException.class);
+    }
+
+    @Test
+    @DisplayName("sendChatNotification은 chatPresenceService 예외 발생 시 정상 종료한다")
+    void sendChatNotificationHandlesChatPresenceException() {
+        // given
+        given(chatPresenceService.isUserInChatRoom(7, 3))
+            .willThrow(new RuntimeException("Presence service unavailable"));
+
+        // when & then
+        assertThatCode(() -> notificationService.sendChatNotification(3, 7, "보낸이", "메시지"))
+            .doesNotThrowAnyException();
+
+        // 예외가 삼켜졌으므로 추가 작업은 수행되지 않음
+        verify(notificationDeviceTokenRepository, never()).findTokensByUserId(any());
+        verify(expoPushClient, never()).sendNotification(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("sendGroupChatNotification은 중복 수신자가 있어도 정상 동작한다")
+    void sendGroupChatNotificationHandlesDuplicateRecipients() {
+        // given
+        given(chatPresenceService.findUsersInChatRoom(10, List.of(2, 3, 2, 3)))
+            .willReturn(Set.of());
+        given(notificationMuteSettingRepository.findMutedUserIdsByTargetTypeAndTargetIdAndUserIds(
+            NotificationTargetType.CHAT_ROOM,
+            10,
+            List.of(2, 3, 2, 3)
+        )).willReturn(Set.of());
+        given(notificationDeviceTokenRepository.findTokensByUserIds(List.of(2, 3, 2, 3)))
+            .willReturn(List.of("ExpoPushToken[token-2]", "ExpoPushToken[token-3]"));
+
+        // when
+        notificationService.sendGroupChatNotification(
+            10,
+            1,
+            "KONECT",
+            "홍길동",
+            "메시지",
+            List.of(1, 2, 3, 2, 3) // 중복 ID 포함
+        );
+
+        // then
+        verify(expoPushClient).sendBatchNotifications(any());
+    }
+
+    @Test
+    @DisplayName("sendClubApplicationSubmittedNotification은 inbox 저장과 SSE 전송을 검증한다")
+    void sendClubApplicationSubmittedNotificationVerifiesInboxAndSse() {
+        // given
+        User user = createUser(3, "2021136003");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_SUBMITTED,
+            "KONECT",
+            "홍길동님이 동아리 가입을 신청했어요.",
+            "mypage/manager/7/applications/1"
+        );
+        given(notificationInboxService.save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_SUBMITTED,
+            "KONECT",
+            "홍길동님이 동아리 가입을 신청했어요.",
+            "mypage/manager/7/applications/1"
+        )).willReturn(inbox);
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        notificationService.sendClubApplicationSubmittedNotification(3, 1, 7, "KONECT", "홍길동");
+
+        // then
+        verify(notificationInboxService).save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_SUBMITTED,
+            "KONECT",
+            "홍길동님이 동아리 가입을 신청했어요.",
+            "mypage/manager/7/applications/1"
+        );
+        ArgumentCaptor<NotificationInboxResponse> responseCaptor =
+            ArgumentCaptor.forClass(NotificationInboxResponse.class);
+        verify(notificationInboxService).sendSse(eq(3), responseCaptor.capture());
+        NotificationInboxResponse response = responseCaptor.getValue();
+        assertThat(response.type()).isEqualTo(NotificationInboxType.CLUB_APPLICATION_SUBMITTED);
+        assertThat(response.title()).isEqualTo("KONECT");
+        assertThat(response.body()).isEqualTo("홍길동님이 동아리 가입을 신청했어요.");
+        assertThat(response.path()).isEqualTo("mypage/manager/7/applications/1");
+    }
+
+    @Test
+    @DisplayName("sendClubApplicationApprovedNotification은 inbox 저장과 SSE 전송을 검증한다")
+    void sendClubApplicationApprovedNotificationVerifiesInboxAndSse() {
+        // given
+        User user = createUser(3, "2021136003");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "KONECT",
+            "동아리 지원이 승인되었어요.",
+            "clubs/7"
+        );
+        given(notificationInboxService.save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "KONECT",
+            "동아리 지원이 승인되었어요.",
+            "clubs/7"
+        )).willReturn(inbox);
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        notificationService.sendClubApplicationApprovedNotification(3, 7, "KONECT");
+
+        // then
+        verify(notificationInboxService).save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "KONECT",
+            "동아리 지원이 승인되었어요.",
+            "clubs/7"
+        );
+        ArgumentCaptor<NotificationInboxResponse> responseCaptor =
+            ArgumentCaptor.forClass(NotificationInboxResponse.class);
+        verify(notificationInboxService).sendSse(eq(3), responseCaptor.capture());
+        NotificationInboxResponse response = responseCaptor.getValue();
+        assertThat(response.type()).isEqualTo(NotificationInboxType.CLUB_APPLICATION_APPROVED);
+        assertThat(response.title()).isEqualTo("KONECT");
+        assertThat(response.body()).isEqualTo("동아리 지원이 승인되었어요.");
+        assertThat(response.path()).isEqualTo("clubs/7");
+    }
+
+    @Test
+    @DisplayName("sendClubApplicationRejectedNotification은 inbox 저장과 SSE 전송을 검증한다")
+    void sendClubApplicationRejectedNotificationVerifiesInboxAndSse() {
+        // given
+        User user = createUser(3, "2021136003");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_REJECTED,
+            "KONECT",
+            "동아리 지원이 거절되었어요.",
+            "clubs/7"
+        );
+        given(notificationInboxService.save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_REJECTED,
+            "KONECT",
+            "동아리 지원이 거절되었어요.",
+            "clubs/7"
+        )).willReturn(inbox);
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of(VALID_TOKEN));
+
+        // when
+        notificationService.sendClubApplicationRejectedNotification(3, 7, "KONECT");
+
+        // then
+        verify(notificationInboxService).save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_REJECTED,
+            "KONECT",
+            "동아리 지원이 거절되었어요.",
+            "clubs/7"
+        );
+        ArgumentCaptor<NotificationInboxResponse> responseCaptor =
+            ArgumentCaptor.forClass(NotificationInboxResponse.class);
+        verify(notificationInboxService).sendSse(eq(3), responseCaptor.capture());
+        NotificationInboxResponse response = responseCaptor.getValue();
+        assertThat(response.type()).isEqualTo(NotificationInboxType.CLUB_APPLICATION_REJECTED);
+        assertThat(response.title()).isEqualTo("KONECT");
+        assertThat(response.body()).isEqualTo("동아리 지원이 거절되었어요.");
+        assertThat(response.path()).isEqualTo("clubs/7");
+    }
+
     private User createUser(Integer id, String studentNumber) {
         return User.builder()
             .id(id)
