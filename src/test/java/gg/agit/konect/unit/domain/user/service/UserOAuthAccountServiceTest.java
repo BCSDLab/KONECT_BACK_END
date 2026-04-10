@@ -20,7 +20,6 @@ import org.mockito.Mock;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 
-import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.dto.OAuthLinkStatusResponse;
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.model.User;
