@@ -58,11 +58,13 @@ class AuthCookieServiceTest {
         authCookieService.setRefreshToken(request, response, "refresh-token", Duration.ofSeconds(30));
 
         // then
-        assertThat(response.getHeader("Set-Cookie"))
+        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(setCookie)
             .contains("refresh_token=refresh-token")
             .contains("Max-Age=30")
             .contains("Secure")
             .contains("SameSite=None");
+        assertCommonCookieAttributes(setCookie);
     }
 
     @Test
