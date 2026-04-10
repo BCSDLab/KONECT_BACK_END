@@ -14,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
@@ -120,7 +121,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubPreMemberAddRequest request = new ClubPreMemberAddRequest("20240001", "홍길동", ClubPosition.MEMBER);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
-        when(userRepository.findAllByUniversityIdAndStudentNumber(club.getUniversity().getId(), request.studentNumber()))
+        when(
+            userRepository.findAllByUniversityIdAndStudentNumber(
+                club.getUniversity().getId(),
+                request.studentNumber()
+            )
+        )
             .thenReturn(List.of(
                 createUser(1, request.name(), UserRole.USER),
                 createUser(2, request.name(), UserRole.USER)
@@ -144,7 +150,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         User matchedUser = createUser(1, request.name(), UserRole.USER);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
-        when(userRepository.findAllByUniversityIdAndStudentNumber(club.getUniversity().getId(), request.studentNumber()))
+        when(
+            userRepository.findAllByUniversityIdAndStudentNumber(
+                club.getUniversity().getId(),
+                request.studentNumber()
+            )
+        )
             .thenReturn(List.of(matchedUser));
         when(clubMemberRepository.existsByClubIdAndUserId(clubId, matchedUser.getId())).thenReturn(false);
         when(clubMemberRepository.save(org.mockito.ArgumentMatchers.any(ClubMember.class)))
@@ -162,7 +173,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
     }
 
     private Club createClub() {
-        return ClubFixture.create(UniversityFixture.create());
+        var university = UniversityFixture.create();
+        ReflectionTestUtils.setField(university, "id", 1);
+
+        Club club = ClubFixture.create(university);
+        ReflectionTestUtils.setField(club, "id", 1);
+        return club;
     }
 
     private User createUser(Integer id, String name, UserRole role) {
