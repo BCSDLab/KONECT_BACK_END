@@ -27,10 +27,7 @@ public class UniversityFixture {
     }
 
     public static University createWithId(Integer id, String koreanName, Campus campus) {
-        University university = University.builder()
-            .koreanName(koreanName)
-            .campus(campus)
-            .build();
+        University university = create(koreanName, campus);
         ReflectionTestUtils.setField(university, "id", id);
         return university;
     }
