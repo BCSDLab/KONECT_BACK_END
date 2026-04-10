@@ -22,7 +22,8 @@ public class UserFixture {
             .build();
     }
 
-    public static User createUserWithId(University university, Integer id, String name, String studentNumber, UserRole role) {
+    public static User createUserWithId(University university, Integer id, String name, String studentNumber,
+        UserRole role) {
         return User.builder()
             .id(id)
             .university(university)
