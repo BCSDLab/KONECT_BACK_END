@@ -22,13 +22,13 @@ public class UserFixture {
             .build();
     }
 
-    public static User createUserWithId(University university, Integer id, String name, UserRole role) {
+    public static User createUserWithId(University university, Integer id, String name, String studentNumber, UserRole role) {
         return User.builder()
             .id(id)
             .university(university)
-            .email("user" + id + "@koreatech.ac.kr")
+            .email(studentNumber + "@koreatech.ac.kr")
             .name(name)
-            .studentNumber("2024" + String.format("%04d", id))
+            .studentNumber(studentNumber)
             .role(role)
             .isMarketingAgreement(true)
             .imageUrl("https://example.com/profile.png")
@@ -36,11 +36,11 @@ public class UserFixture {
     }
 
     public static User createUserWithId(Integer id, String name, UserRole role) {
-        return createUserWithId(UniversityFixture.create(), id, name, role);
+        return createUserWithId(UniversityFixture.create(), id, name, "2024" + String.format("%04d", id), role);
     }
 
     public static User createUserWithId(Integer id, String studentNumber) {
-        return createUserWithId(UniversityFixture.create(), id, "테스트유저" + id, UserRole.USER);
+        return createUserWithId(UniversityFixture.create(), id, "테스트유저" + id, studentNumber, UserRole.USER);
     }
 
     public static User createAdmin(University university) {
