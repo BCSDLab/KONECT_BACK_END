@@ -19,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.dto.OAuthLinkStatusResponse;
@@ -135,7 +136,6 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
             null
         );
         given(userRepository.getById(1)).willReturn(user);
-        given(environment.acceptsProfiles(any())).willReturn(false);
         given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.APPLE, "apple-provider-id"))
             .willReturn(Optional.empty());
         given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.APPLE, "apple-provider-id"))
@@ -176,7 +176,6 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
             null
         );
         given(userRepository.getById(1)).willReturn(user);
-        given(environment.acceptsProfiles(any())).willReturn(false);
         given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "new-provider-id"))
             .willReturn(Optional.empty());
         given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "new-provider-id"))
@@ -215,7 +214,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
             "old@konect.test",
             null
         );
-        given(environment.acceptsProfiles(any())).willReturn(false);
+        given(environment.acceptsProfiles(any(Profiles.class))).willReturn(false);
         given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "expired-provider-id"))
             .willReturn(Optional.of(withdrawnAccount));
         given(userOAuthAccountRepository.findUserByProviderAndProviderId(Provider.GOOGLE, "expired-provider-id"))
