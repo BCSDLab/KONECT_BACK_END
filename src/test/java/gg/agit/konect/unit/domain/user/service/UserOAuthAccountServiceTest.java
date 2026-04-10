@@ -76,7 +76,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkOAuthAccount는 providerId가 비어 있으면 예외를 던진다")
     void linkOAuthAccountRejectsBlankProviderId() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userRepository.getById(1)).willReturn(user);
 
         // when & then
@@ -97,7 +97,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkPrimaryOAuthAccount는 providerId가 없어도 이메일 기준으로 새 계정을 생성한다")
     void linkPrimaryOAuthAccountAllowsBlankProviderId() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "google@konect.test"))
             .willReturn(Optional.empty());
         given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("google@konect.test", Provider.GOOGLE))
@@ -126,7 +126,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkOAuthAccount는 비어 있던 providerId와 Apple refresh token을 기존 계정에 채운다")
     void linkOAuthAccountUpdatesExistingAccountWhenProviderIdWasMissing() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         UserOAuthAccount existingAccount = UserOAuthAccount.of(
             user,
             Provider.APPLE,
@@ -166,7 +166,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkOAuthAccount는 이미 다른 providerId가 있으면 충돌 예외를 던진다")
     void linkOAuthAccountRejectsConflictingProviderIdOnExistingAccount() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         UserOAuthAccount existingAccount = UserOAuthAccount.of(
             user,
             Provider.GOOGLE,
@@ -204,8 +204,8 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkPrimaryOAuthAccount는 복구 기간이 지난 탈퇴 계정을 정리하고 새 계정을 저장한다")
     void linkPrimaryOAuthAccountDeletesExpiredWithdrawnAccountBeforeSavingReplacement() {
         // given
-        User currentUser = createUser(1, "2021136001");
-        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(10));
+        User currentUser = UserFixture.createUserWithId(1, "2021136001");
+        User withdrawnUser = UserFixture.createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(10));
         UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
             withdrawnUser,
             Provider.GOOGLE,
@@ -283,7 +283,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkPrimaryOAuthAccount는 providerId가 null이고 requireProviderId=false인 경우 성공한다")
     void linkPrimaryOAuthAccountAllowsNullProviderIdWhenNotRequired() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userOAuthAccountRepository.findAccountByProviderAndOauthEmail(Provider.GOOGLE, "google@konect.test"))
             .willReturn(Optional.empty());
         given(userOAuthAccountRepository.findUserByOauthEmailAndProvider("google@konect.test", Provider.GOOGLE))
@@ -313,7 +313,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkOAuthAccount는 providerId와 oauthEmail 모두 제공된 경우 성공한다")
     void linkOAuthAccountAcceptsBothProviderIdAndOauthEmail() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userRepository.getById(1)).willReturn(user);
         given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
             .willReturn(Optional.empty());
@@ -346,7 +346,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkOAuthAccount는 providerId와 oauthEmail 모두 누락된 경우 예외를 던진다")
     void linkOAuthAccountRejectsWhenBothProviderIdAndOauthEmailMissing() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userRepository.getById(1)).willReturn(user);
 
         // when & then
@@ -367,7 +367,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("linkOAuthAccount는 oauthEmail이 빈 문자열인 경우에도 성공한다")
     void linkOAuthAccountAcceptsEmptyOauthEmail() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         given(userRepository.getById(1)).willReturn(user);
         given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "google-provider-id"))
             .willReturn(Optional.empty());
@@ -396,7 +396,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("restoreOrCleanupWithdrawnByLinkedProvider는 계정이 있지만 사용자가 탈퇴하지 않은 경우 아무것도 하지 않는다")
     void restoreOrCleanupWithdrawnByLinkedProviderDoesNothingWhenUserNotWithdrawn() {
         // given
-        User activeUser = createUser(1, "2021136001");
+        User activeUser = UserFixture.createUserWithId(1, "2021136001");
         UserOAuthAccount existingAccount = UserOAuthAccount.of(
             activeUser,
             Provider.GOOGLE,
@@ -435,8 +435,8 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("restoreOrCleanupWithdrawnByLinkedProvider는 복구 기간 내인 경우 사용자를 복구한다")
     void restoreOrCleanupWithdrawnByLinkedProviderRestoresUserWithinWindow() {
         // given
-        User currentUser = createUser(1, "2021136001");
-        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
+        User currentUser = UserFixture.createUserWithId(1, "2021136001");
+        User withdrawnUser = UserFixture.createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
         UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
             withdrawnUser,
             Provider.GOOGLE,
@@ -475,8 +475,8 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("restoreOrCleanupWithdrawnByOauthEmail는 복구 기간 내인 경우 사용자를 복구한다")
     void restoreOrCleanupWithdrawnByOauthEmailRestoresUserWithinWindow() {
         // given
-        User currentUser = createUser(1, "2021136001");
-        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
+        User currentUser = UserFixture.createUserWithId(1, "2021136001");
+        User withdrawnUser = UserFixture.createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
         UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
             withdrawnUser,
             Provider.GOOGLE,
@@ -528,8 +528,8 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("Stage profile에서 탈퇴 계정은 복구하지 않고 삭제된다")
     void stageProfileDeletesWithdrawnAccountWithoutRestore() {
         // given
-        User currentUser = createUser(1, "2021136001");
-        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
+        User currentUser = UserFixture.createUserWithId(1, "2021136001");
+        User withdrawnUser = UserFixture.createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(3));
         UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
             withdrawnUser,
             Provider.GOOGLE,
@@ -568,8 +568,8 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("providerId가 NULL인 기존 계정에 새 providerId 연동 시 다른 사용자가 사용 중이면 충돌 예외 발생")
     void linkOAuthAccountRejectsWhenNewProviderIdAlreadyLinkedToDifferentUser() {
         // given
-        User currentUser = createUser(1, "2021136001");
-        User otherUser = createUser(2, "2022136002");
+        User currentUser = UserFixture.createUserWithId(1, "2021136001");
+        User otherUser = UserFixture.createUserWithId(2, "2022136002");
         given(userRepository.getById(1)).willReturn(currentUser);
         given(userOAuthAccountRepository.findAccountByProviderAndProviderId(Provider.GOOGLE, "new-provider-id"))
             .willReturn(Optional.empty());
@@ -594,8 +594,8 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("복구 기간 정확히 7일 경계값에서는 복구 불가능")
     void restoreWindowBoundaryAtExactlySevenDaysCannotRestore() {
         // given
-        User currentUser = createUser(1, "2021136001");
-        User withdrawnUser = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(7));
+        User currentUser = UserFixture.createUserWithId(1, "2021136001");
+        User withdrawnUser = UserFixture.createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(7));
         UserOAuthAccount withdrawnAccount = UserOAuthAccount.of(
             withdrawnUser,
             Provider.GOOGLE,
@@ -634,9 +634,9 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("providerId와 oauthEmail이 서로 다른 탈퇴 사용자인 경우 모두 정리된다")
     void linkOAuthAccountCleansUpBothWithdrawnUsersFromProviderIdAndOauthEmail() {
         // given
-        User currentUser = createUser(1, "2021136001");
-        User withdrawnUserByProviderId = createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(10));
-        User withdrawnUserByOauthEmail = createWithdrawnUser(3, "2020136003", LocalDateTime.now().minusDays(10));
+        User currentUser = UserFixture.createUserWithId(1, "2021136001");
+        User withdrawnUserByProviderId = UserFixture.createWithdrawnUser(2, "2020136002", LocalDateTime.now().minusDays(10));
+        User withdrawnUserByOauthEmail = UserFixture.createWithdrawnUser(3, "2020136003", LocalDateTime.now().minusDays(10));
 
         UserOAuthAccount accountByProviderId = UserOAuthAccount.of(
             withdrawnUserByProviderId,
@@ -686,7 +686,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("기존 계정의 providerId 업데이트 시 다른 providerId로 충돌하면 예외 발생")
     void linkOAuthAccountRejectsProviderIdUpdateWhenConflict() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         UserOAuthAccount existingAccount = UserOAuthAccount.of(
             user,
             Provider.GOOGLE,
@@ -724,7 +724,7 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     @DisplayName("Apple provider는 appleRefreshToken 업데이트를 호출한다")
     void linkOAuthAccountUpdatesAppleRefreshTokenForAppleProvider() {
         // given
-        User user = createUser(1, "2021136001");
+        User user = UserFixture.createUserWithId(1, "2021136001");
         UserOAuthAccount existingAccount = UserOAuthAccount.of(
             user,
             Provider.APPLE,
@@ -756,16 +756,6 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
         // then
         assertThat(existingAccount.getAppleRefreshToken()).isEqualTo("new-refresh-token");
         verify(userOAuthAccountRepository).save(existingAccount);
-    }
-
-    private User createUser(Integer id, String studentNumber) {
-        return UserFixture.createUserWithId(id, studentNumber);
-    }
-
-    private User createWithdrawnUser(Integer id, String studentNumber, LocalDateTime deletedAt) {
-        User user = UserFixture.createUserWithId(id, studentNumber);
-        user.withdraw(deletedAt);
-        return user;
     }
 
     private void assertCustomException(ApiResponseCode expectedErrorCode, ThrowingCallable callable) {

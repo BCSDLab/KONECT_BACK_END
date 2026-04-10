@@ -4,6 +4,8 @@ import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 
+import java.time.LocalDateTime;
+
 public class UserFixture {
 
     public static User createUser(University university) {
@@ -54,5 +56,11 @@ public class UserFixture {
             .isMarketingAgreement(true)
             .imageUrl("https://example.com/admin.png")
             .build();
+    }
+
+    public static User createWithdrawnUser(Integer id, String studentNumber, LocalDateTime deletedAt) {
+        User user = createUserWithId(id, studentNumber);
+        user.withdraw(deletedAt);
+        return user;
     }
 }
