@@ -125,6 +125,144 @@ class RefreshTokenServiceTest extends ServiceTestSupport {
             .hasMessage("app.jwt.secret must be at least 32 bytes");
     }
 
+    @Test
+    @DisplayName("issue는 userId가 0이어도 토큰을 발급한다")
+    void issueAcceptsZeroUserId() {
+        // when
+        String token = refreshTokenService.issue(0);
+
+        // then
+        assertThat(refreshTokenService.extractUserId(token)).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("extractUserId는 빈 문자열을 거부한다")
+    void extractUserIdRejectsEmptyString() {
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(""));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 null을 거부한다")
+    void extractUserIdRejectsNull() {
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(null));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 탭/개행 문자열을 거부한다")
+    void extractUserIdRejectsTabNewlineString() {
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId("\t\n"));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 잘린/손상된 토큰을 거부한다")
+    void extractUserIdRejectsMalformedToken() {
+        // given
+        String validToken = refreshTokenService.issue(123);
+        String truncatedToken = validToken.substring(0, validToken.length() / 2);
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(truncatedToken));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 token_type 클레임이 누락된 토큰을 거부한다")
+    void extractUserIdRejectsMissingTokenTypeClaim() throws JOSEException {
+        // given
+        String token = createTokenWithoutClaim(Integer.valueOf(11), VALID_ISSUER, Instant.now().plusSeconds(60), VALID_SECRET, "token_type");
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 token_type 클레임이 비문자열 타입이면 거부한다")
+    void extractUserIdRejectsNonStringTokenTypeClaim() throws JOSEException {
+        // given
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+            .issuer(VALID_ISSUER)
+            .issueTime(Date.from(Instant.now().minusSeconds(10)))
+            .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+            .jwtID(UUID.randomUUID().toString())
+            .claim("id", 11)
+            .claim("token_type", 123) // 숫자 타입
+            .build();
+
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(VALID_SECRET));
+        String token = jwt.serialize();
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 id 클레임이 누락된 토큰을 거부한다")
+    void extractUserIdRejectsMissingIdClaim() throws JOSEException {
+        // given
+        String token = createTokenWithoutClaim(Integer.valueOf(11), VALID_ISSUER, Instant.now().plusSeconds(60), VALID_SECRET, "id");
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 id 클레임이 비숫자 타입이면 거부한다")
+    void extractUserIdRejectsNonNumericIdClaim() throws JOSEException {
+        // given
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+            .issuer(VALID_ISSUER)
+            .issueTime(Date.from(Instant.now().minusSeconds(10)))
+            .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+            .jwtID(UUID.randomUUID().toString())
+            .claim("id", "not-a-number") // 문자열 타입
+            .claim("token_type", "refresh")
+            .build();
+
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(VALID_SECRET));
+        String token = jwt.serialize();
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 issuer 클레임이 null이면 거부한다")
+    void extractUserIdRejectsNullIssuerClaim() throws JOSEException {
+        // given
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+            .issuer((String) null) // null issuer
+            .issueTime(Date.from(Instant.now().minusSeconds(10)))
+            .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+            .jwtID(UUID.randomUUID().toString())
+            .claim("id", 11)
+            .claim("token_type", "refresh")
+            .build();
+
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(VALID_SECRET));
+        String token = jwt.serialize();
+
+        // when & then
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
+    }
+
+    @Test
+    @DisplayName("extractUserId는 만료 시간이 현재 시간과 정확히 일치하는 경계를 테스트한다")
+    void extractUserIdHandlesExpirationTimeBoundary() throws JOSEException, InterruptedException {
+        // given - 현재 시간에서 1초 후에 만료되는 토큰 생성
+        Instant expirationTime = Instant.now().plusSeconds(1);
+        String token = createToken(11, VALID_ISSUER, "refresh", expirationTime, VALID_SECRET);
+
+        // when - 즉시 검증하면 통과해야 함
+        Integer userId = refreshTokenService.extractUserId(token);
+        assertThat(userId).isEqualTo(11);
+
+        // when - 2초 대기 후 만료된 토큰을 검증하면 실패해야 함
+        Thread.sleep(2000);
+        assertInvalidRefreshToken(() -> refreshTokenService.extractUserId(token));
+    }
+
     private String createToken(Integer userId, String issuer, String tokenType, Instant expiresAt, String secret)
         throws JOSEException {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
@@ -137,6 +275,26 @@ class RefreshTokenServiceTest extends ServiceTestSupport {
             .build();
 
         SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(secret));
+        return jwt.serialize();
+    }
+
+    private String createTokenWithoutClaim(Integer userId, String issuer, Instant expiresAt, String secret, String claimToOmit)
+        throws JOSEException {
+        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
+            .issuer(issuer)
+            .issueTime(Date.from(Instant.now().minusSeconds(10)))
+            .expirationTime(Date.from(expiresAt))
+            .jwtID(UUID.randomUUID().toString());
+
+        if (!"id".equals(claimToOmit)) {
+            builder.claim("id", userId);
+        }
+        if (!"token_type".equals(claimToOmit)) {
+            builder.claim("token_type", "refresh");
+        }
+
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), builder.build());
         jwt.sign(new MACSigner(secret));
         return jwt.serialize();
     }
