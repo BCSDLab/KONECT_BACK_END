@@ -16,12 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
 import gg.agit.konect.domain.studytime.model.StudyTimeDaily;
-import gg.agit.konect.domain.studytime.model.StudyTimeMonthly;
-import gg.agit.konect.domain.studytime.model.StudyTimeTotal;
 import gg.agit.konect.domain.studytime.model.StudyTimer;
 import gg.agit.konect.domain.studytime.repository.StudyTimeDailyRepository;
-import gg.agit.konect.domain.studytime.repository.StudyTimeMonthlyRepository;
-import gg.agit.konect.domain.studytime.repository.StudyTimeTotalRepository;
 import gg.agit.konect.domain.studytime.repository.StudyTimerRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
@@ -38,12 +34,6 @@ class StudyTimeApiTest extends IntegrationTestSupport {
 
     @Autowired
     private StudyTimeDailyRepository studyTimeDailyRepository;
-
-    @Autowired
-    private StudyTimeMonthlyRepository studyTimeMonthlyRepository;
-
-    @Autowired
-    private StudyTimeTotalRepository studyTimeTotalRepository;
 
     private University university;
     private User user;
@@ -201,17 +191,15 @@ class StudyTimeApiTest extends IntegrationTestSupport {
             StudyTimeDaily daily = studyTimeDailyRepository
                 .findByUserIdAndStudyDate(user.getId(), LocalDate.now())
                 .orElse(null);
-            StudyTimeMonthly monthly = studyTimeMonthlyRepository
-                .findByUserIdAndStudyMonth(user.getId(), LocalDate.now().withDayOfMonth(1))
-                .orElse(null);
-            StudyTimeTotal total = studyTimeTotalRepository.findByUserId(user.getId()).orElse(null);
 
             assertThat(daily).isNotNull();
             assertThat(daily.getTotalSeconds()).isGreaterThanOrEqualTo(5L);
-            assertThat(monthly).isNotNull();
-            assertThat(monthly.getTotalSeconds()).isGreaterThanOrEqualTo(5L);
-            assertThat(total).isNotNull();
-            assertThat(total.getTotalSeconds()).isGreaterThanOrEqualTo(5L);
+
+            performGet("/studytimes/summary")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.todayStudyTime").value(daily.getTotalSeconds()))
+                .andExpect(jsonPath("$.monthlyStudyTime").value(daily.getTotalSeconds()))
+                .andExpect(jsonPath("$.totalStudyTime").value(daily.getTotalSeconds()));
         }
     }
 
