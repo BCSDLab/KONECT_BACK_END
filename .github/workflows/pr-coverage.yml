@@ -42,22 +42,22 @@ jobs:
       - name: Get changed Java files
         id: changed-files
         run: |
-          # 변경된 Java 소스 파일 목록 추출
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'src/main/java/*.java' | sed 's|src/main/java/||' | sed 's|/|.|g' | sed 's|.java||')
-          
-          echo "Changed files (package format):"
-          echo "$CHANGED_FILES"
-          
-          # GitHub Actions output에 저장
+          set -euo pipefail
+
+          CHANGED_MAIN_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^src/main/java/.*\.java$' || true)
+          CHANGED_MAIN_CLASSES=$(printf '%s\n' "$CHANGED_MAIN_FILES" | sed '/^$/d' | sed 's|src/main/java/||' | sed 's|/|.|g' | sed 's|\.java$||')
+
+          echo "Changed main Java files (package format):"
+          echo "$CHANGED_MAIN_CLASSES"
+
           {
             echo 'CHANGED_FILES<<EOF'
-            echo "$CHANGED_FILES"
+            echo "$CHANGED_MAIN_CLASSES"
             echo 'EOF'
-          } >> $GITHUB_ENV
-          
-          # 파일 개수 계산
-          FILE_COUNT=$(echo "$CHANGED_FILES" | grep -c '.' || echo "0")
-          echo "FILE_COUNT=$FILE_COUNT" >> $GITHUB_ENV
+          } >> "$GITHUB_ENV"
+
+          FILE_COUNT=$(printf '%s\n' "$CHANGED_MAIN_CLASSES" | sed '/^$/d' | wc -l | tr -d ' ')
+          echo "FILE_COUNT=$FILE_COUNT" >> "$GITHUB_ENV"
           echo "Changed file count: $FILE_COUNT"
 
       - name: Run tests with JaCoCo
@@ -68,167 +68,159 @@ jobs:
         id: parse-coverage
         run: |
           python3 << 'PYEOF'
-          import xml.etree.ElementTree as ET
           import os
           import re
-          
-          # JaCoCo XML 리포트 파싱
+          import xml.etree.ElementTree as ET
+
+          def write_outputs(overall_coverage, total_lines, covered_lines, body_type, coverage_table):
+              with open(os.getenv('GITHUB_OUTPUT'), 'a') as f:
+                  f.write(f"overall_coverage={overall_coverage}\n")
+                  f.write(f"total_lines={total_lines}\n")
+                  f.write(f"covered_lines={covered_lines}\n")
+                  f.write(f"body_type={body_type}\n")
+                  f.write("coverage_table<<TABLEEOF\n")
+                  f.write(coverage_table)
+                  f.write("\nTABLEEOF\n")
+
           report_path = 'build/reports/jacoco/test/jacocoTestReport.xml'
+          changed_raw = os.getenv('CHANGED_FILES', '').strip()
+
+          if not changed_raw:
+              write_outputs('N/A', 0, 0, 'no-main-changes', '변경된 main Java 소스 파일이 없어 커버리지를 계산하지 않았습니다.')
+              raise SystemExit(0)
+
           if not os.path.exists(report_path):
-              print(f"Error: Report not found at {report_path}")
-              exit(1)
-          
+              raise SystemExit(f"Error: Report not found at {report_path}")
+
           tree = ET.parse(report_path)
           root = tree.getroot()
-          
-          # 변경된 파일 목록 (패키지.클래스 형식)
-          changed_raw = os.getenv('CHANGED_FILES', '').strip()
-          if not changed_raw:
-              print("No changed Java files detected")
-              exit(0)
-          
           changed_classes = [c.strip() for c in changed_raw.split('\n') if c.strip()]
-          print(f"Changed classes: {changed_classes}")
-          
-          # 커버리지 데이터 추출
+
           results = []
           overall_covered = 0
           overall_missed = 0
-          
+
           for package in root.findall('.//package'):
               pkg_name = package.get('name', '').replace('/', '.')
-              
+
               for srcfile in package.findall('.//sourcefile'):
                   filename = srcfile.get('name', '')
                   full_class = f"{pkg_name}.{filename.replace('.java', '')}"
-                  
-                  # 변경된 클래스만 필터링
+
                   if not any(re.search(re.escape(c) + r'($|\\$)', full_class) for c in changed_classes):
                       continue
-                  
-                  # 라인 커버리지 계산
+
                   counter = srcfile.find('counter[@type="LINE"]')
-                  if counter is not None:
-                      missed = int(counter.get('missed', 0))
-                      covered = int(counter.get('covered', 0))
-                      total = missed + covered
-                      
-                      if total > 0:
-                          ratio = (covered / total) * 100
-                          results.append({
-                              'class': full_class,
-                              'covered': covered,
-                              'missed': missed,
-                              'total': total,
-                              'ratio': ratio
-                          })
-                          overall_covered += covered
-                          overall_missed += missed
-          
-          # 결과 정렬 (커버리지 낮은 순)
+                  if counter is None:
+                      continue
+
+                  missed = int(counter.get('missed', 0))
+                  covered = int(counter.get('covered', 0))
+                  total = missed + covered
+                  if total == 0:
+                      continue
+
+                  ratio = (covered / total) * 100
+                  results.append({
+                      'class': full_class,
+                      'covered': covered,
+                      'total': total,
+                      'ratio': ratio,
+                  })
+                  overall_covered += covered
+                  overall_missed += missed
+
+          if not results:
+              write_outputs('0.0', 0, 0, 'no-coverage-data', '변경된 main Java 소스 파일에 대한 JaCoCo 데이터가 없습니다.')
+              raise SystemExit(0)
+
           results.sort(key=lambda x: x['ratio'])
-          
-          # 출력
-          if results:
-              total_lines = overall_covered + overall_missed
-              overall_ratio = (overall_covered / total_lines) * 100 if total_lines > 0 else 0
-              
-              print("\n=== Changed Files Coverage ===")
-              for r in results:
-                  status = "✅" if r['ratio'] >= 70 else ("⚠️" if r['ratio'] >= 50 else "❌")
-                  print(f"{status} {r['class']}: {r['ratio']:.1f}% ({r['covered']}/{r['total']})")
-              
-              print(f"\n=== Overall ===")
-              print(f"Coverage: {overall_ratio:.1f}%")
-              print(f"Lines: {overall_covered}/{total_lines}")
-              
-              # GitHub Actions output
-              with open(os.getenv('GITHUB_OUTPUT'), 'a') as f:
-                  f.write(f"overall_coverage={overall_ratio:.1f}\n")
-                  f.write(f"total_lines={total_lines}\n")
-                  f.write(f"covered_lines={overall_covered}\n")
-              
-              # Markdown 테이블 생성 (PR 코멘트용)
-              table = "| Class | Coverage | Lines | Status |\n"
-              table += "|-------|----------|-------|--------|\n"
-              for r in results:
-                  status = "✅" if r['ratio'] >= 70 else ("⚠️" if r['ratio'] >= 50 else "❌")
-                  class_name = r['class'].split('.')[-1]
-                  pkg = '.'.join(r['class'].split('.')[:-1])
-                  table += f"| `{class_name}`<br><sub>{pkg}</sub> | **{r['ratio']:.1f}%** | {r['covered']}/{r['total']} | {status} |\n"
-              
-              with open(os.getenv('GITHUB_OUTPUT'), 'a') as f:
-                  f.write("coverage_table<<TABLEEOF\n")
-                  f.write(table)
-                  f.write("TABLEEOF\n")
-          else:
-              print("No coverage data found for changed files")
-              with open(os.getenv('GITHUB_OUTPUT'), 'a') as f:
-                  f.write("overall_coverage=N/A\n")
-                  f.write("total_lines=0\n")
-                  f.write("covered_lines=0\n")
-                  f.write("coverage_table=No coverage data available\\n")
+          total_lines = overall_covered + overall_missed
+          overall_ratio = (overall_covered / total_lines) * 100 if total_lines > 0 else 0
+
+          table_lines = [
+              '| Class | Coverage | Lines | Status |',
+              '|-------|----------|-------|--------|',
+          ]
+          for result in results:
+              status = '✅' if result['ratio'] >= 70 else ('⚠️' if result['ratio'] >= 50 else '❌')
+              class_name = result['class'].split('.')[-1]
+              pkg = '.'.join(result['class'].split('.')[:-1])
+              table_lines.append(
+                  f"| {class_name}<br><sub>{pkg}</sub> | **{result['ratio']:.1f}%** | {result['covered']}/{result['total']} | {status} |"
+              )
+
+          write_outputs(f"{overall_ratio:.1f}", total_lines, overall_covered, 'coverage', '\n'.join(table_lines))
           PYEOF
 
       - name: Comment PR with coverage results
         uses: actions/github-script@v7
+        env:
+          OVERALL_COVERAGE: ${{ steps.parse-coverage.outputs.overall_coverage }}
+          TOTAL_LINES: ${{ steps.parse-coverage.outputs.total_lines }}
+          COVERED_LINES: ${{ steps.parse-coverage.outputs.covered_lines }}
+          BODY_TYPE: ${{ steps.parse-coverage.outputs.body_type }}
+          COVERAGE_TABLE: ${{ steps.parse-coverage.outputs.coverage_table }}
+          FILE_COUNT: ${{ env.FILE_COUNT }}
         with:
           script: |
-            const coverage = '${{ steps.parse-coverage.outputs.overall_coverage }}';
-            const totalLines = '${{ steps.parse-coverage.outputs.total_lines }}';
-            const coveredLines = '${{ steps.parse-coverage.outputs.covered_lines }}';
-            const table = `${{ steps.parse-coverage.outputs.coverage_table }}`;
-            
+            const coverage = process.env.OVERALL_COVERAGE;
+            const totalLines = process.env.TOTAL_LINES;
+            const coveredLines = process.env.COVERED_LINES;
+            const bodyType = process.env.BODY_TYPE;
+            const table = process.env.COVERAGE_TABLE || '';
+            const fileCount = process.env.FILE_COUNT || '0';
+
             let body = '## 🧪 JaCoCo Coverage Report (Changed Files)\n\n';
-            
-            if (coverage === 'N/A') {
-              body += '> 이 PR에서 변경된 Java 소스 파일이 없습니다.\n';
+
+            if (bodyType === 'no-main-changes') {
+              body += '> 이 PR에서 변경된 main Java 소스 파일이 없습니다.\n';
+            } else if (bodyType === 'no-coverage-data') {
+              body += '> 변경된 main Java 소스 파일에 대한 JaCoCo 데이터가 없습니다.\n';
             } else {
               const ratio = parseFloat(coverage);
               const status = ratio >= 70 ? '✅' : (ratio >= 50 ? '⚠️' : '❌');
-              
+
               body += `### Summary\n`;
               body += `- **Overall Coverage:** ${coverage}% ${status}\n`;
               body += `- **Covered Lines:** ${coveredLines} / ${totalLines}\n`;
-              body += `- **Changed Files:** ${{ env.FILE_COUNT }}\n\n`;
-              
+              body += `- **Changed Files:** ${fileCount}\n\n`;
               body += `### Coverage by File\n`;
-              body += table + '\n\n';
-              
+              body += `${table}\n\n`;
+
               if (ratio < 50) {
                 body += '> ❌ **알림:** 커버리지가 50% 미만입니다. 테스트를 추가해주세요.\n';
               } else if (ratio < 70) {
                 body += '> ⚠️ **알림:** 커버리지가 70% 미만입니다. 테스트 추가를 권장합니다.\n';
               }
-              
+
               body += `\n[📊 View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
             }
-            
-            // 기존 코멘트 찾기
+
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
+
             const existingComment = comments.find(c =>
               c.user.login === 'github-actions[bot]' &&
               c.body.includes('JaCoCo Coverage Report')
             );
-            
+
             if (existingComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existingComment.id,
-                body: body,
+                body,
               });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: body,
+                body,
               });
             }
 
