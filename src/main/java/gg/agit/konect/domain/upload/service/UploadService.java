@@ -3,6 +3,7 @@ package gg.agit.konect.domain.upload.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -140,7 +141,7 @@ public class UploadService {
         if (contentType == null || contentType.isBlank()) {
             return null;
         }
-        return contentType.trim().toLowerCase();
+        return contentType.trim().toLowerCase(Locale.ROOT);
     }
 
     private String getExtension(String contentType) {

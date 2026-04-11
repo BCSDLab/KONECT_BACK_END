@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -711,6 +712,23 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.key()).endsWith(".png");
+    }
+
+    @Test
+    @DisplayName("uploadImage는 터키어 기본 로케일에서도 대문자 content-type을 정규화하여 허용한다")
+    void uploadImageAcceptsUppercaseContentTypeInTurkishLocale() {
+        Locale defaultLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr"));
+
+        try {
+            MultipartFile file = mockFile("image.png", "IMAGE/PNG", 10L);
+
+            ImageUploadResponse response = uploadService.uploadImage(file, UploadTarget.CLUB);
+
+            assertThat(response.key()).endsWith(".png");
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
     }
 
     @Test
