@@ -167,6 +167,10 @@ public class UploadService {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
 
+        if (trimmed.isEmpty()) {
+            throw CustomException.of(ApiResponseCode.ILLEGAL_STATE, "storage.cdn.base-url 설정이 필요합니다.");
+        }
+
         return trimmed;
     }
 

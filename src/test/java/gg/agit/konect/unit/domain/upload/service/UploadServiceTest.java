@@ -541,6 +541,26 @@ class UploadServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("uploadImage는 CDN URL이 슬래시만 있으면 ILLEGAL_STATE로 실패한다")
+    void uploadImageFailsWhenCdnBaseUrlContainsOnlySlashes() {
+        // given
+        UploadService service = new UploadService(
+            s3Client,
+            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
+            new StorageCdnProperties("////")
+        );
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "logo.png",
+            "image/png",
+            "png-data".getBytes(StandardCharsets.UTF_8)
+        );
+
+        // when & then
+        assertCustomException(() -> service.uploadImage(file, UploadTarget.CLUB), ApiResponseCode.ILLEGAL_STATE);
+    }
+
+    @Test
     @DisplayName("uploadImage는 bucket 설정이 비어 있으면 ILLEGAL_STATE로 실패한다")
     void uploadImageFailsWhenBucketMissing() {
         // given
