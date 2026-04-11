@@ -43,7 +43,7 @@ public class UploadService {
         validateS3Configuration();
         validateFile(file);
 
-        String contentType = file.getContentType();
+        String contentType = normalizeContentType(file.getContentType());
         String extension = getExtension(contentType);
         String key = buildKey(extension, target);
 
@@ -96,11 +96,10 @@ public class UploadService {
             throw CustomException.of(ApiResponseCode.PAYLOAD_TOO_LARGE);
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || contentType.isBlank() || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+        String contentType = normalizeContentType(file.getContentType());
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
             throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
         }
-
     }
 
     private String buildKey(String extension, UploadTarget target) {
@@ -137,8 +136,18 @@ public class UploadService {
         return normalized;
     }
 
+    private String normalizeContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return null;
+        }
+        return contentType.trim().toLowerCase();
+    }
+
     private String getExtension(String contentType) {
-        return switch (contentType.toLowerCase()) {
+        if (contentType == null) {
+            return "bin";
+        }
+        return switch (contentType) {
             case "image/png" -> "png";
             case "image/jpg", "image/jpeg" -> "jpg";
             case "image/webp" -> "webp";
@@ -153,8 +162,8 @@ public class UploadService {
 
         String trimmed = baseUrl.trim();
 
-        if (trimmed.endsWith("/")) {
-            return trimmed.substring(0, trimmed.length() - 1);
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
 
         return trimmed;
