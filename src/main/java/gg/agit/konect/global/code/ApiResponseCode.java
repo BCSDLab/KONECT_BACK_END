@@ -19,7 +19,7 @@ public enum ApiResponseCode {
     FAILED_EXTRACT_EMAIL(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 이메일 정보를 가져올 수 없습니다."),
     FAILED_EXTRACT_PROVIDER_ID(HttpStatus.BAD_REQUEST, "OAuth 로그인 과정에서 제공자 식별자를 가져올 수 없습니다."),
     INVALID_GOOGLE_DRIVE_AUTH(HttpStatus.BAD_REQUEST,
-        "Google Drive 인증이 만료되었거나 올바르지 않습니다. Drive 권한을 다시 연결해 주세요."),
+            "Google Drive 인증이 만료되었거나 올바르지 않습니다. Drive 권한을 다시 연결해 주세요."),
     CANNOT_CREATE_CHAT_ROOM_WITH_SELF(HttpStatus.BAD_REQUEST, "자기 자신과는 채팅방을 만들 수 없습니다."),
     CANNOT_LEAVE_GROUP_CHAT_ROOM(HttpStatus.BAD_REQUEST, "동아리 채팅방은 나갈 수 없습니다."),
     CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "자기 자신을 강퇴할 수 없습니다."),
@@ -50,7 +50,7 @@ public enum ApiResponseCode {
     FEE_PAYMENT_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "회비 납부가 필요한 동아리입니다. 납부 증빙 사진을 첨부해주세요."),
     AMBIGUOUS_USER_MATCH(HttpStatus.BAD_REQUEST, "동일한 정보로 식별되는 사용자가 2명 이상입니다. 관리자에게 문의해주세요."),
     CLUB_SHEET_ANALYSIS_REQUIRED(HttpStatus.BAD_REQUEST,
-        "구글 시트 파일에서 동아리 부원을 가져오기 전에 먼저 AI 분석 및 등록이 완료되어야 합니다."),
+            "구글 시트 파일에서 동아리 부원을 가져오기 전에 먼저 AI 분석 및 등록이 완료되어야 합니다."),
 
     // 401 Unauthorized
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "올바르지 않은 인증 정보 입니다."),
@@ -76,7 +76,7 @@ public enum ApiResponseCode {
     FORBIDDEN_POSITION_NAME_CHANGE(HttpStatus.FORBIDDEN, "해당 직책의 이름은 변경할 수 없습니다."),
     FORBIDDEN_ROLE_ACCESS(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     FORBIDDEN_GOOGLE_SHEET_ACCESS(HttpStatus.FORBIDDEN,
-        "구글 스프레드시트 접근 권한이 없습니다. 서비스 계정을 공유하거나 Google Drive 권한을 연결한 뒤 다시 시도해 주세요."),
+            "구글 스프레드시트 접근 권한이 없습니다. 서비스 계정을 공유하거나 Google Drive 권한을 연결한 뒤 다시 시도해 주세요."),
     FORBIDDEN_ORIGIN_ACCESS(HttpStatus.FORBIDDEN, "허용되지 않은 Origin 입니다."),
     FORBIDDEN_CHAT_ROOM_KICK(HttpStatus.FORBIDDEN, "채팅방 방장만 멤버를 강퇴할 수 있습니다."),
 
