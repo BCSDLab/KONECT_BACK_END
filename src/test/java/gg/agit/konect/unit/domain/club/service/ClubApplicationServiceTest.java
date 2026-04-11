@@ -4,6 +4,9 @@ import static gg.agit.konect.global.code.ApiResponseCode.ALREADY_APPLIED_CLUB;
 import static gg.agit.konect.global.code.ApiResponseCode.ALREADY_CLUB_MEMBER;
 import static gg.agit.konect.global.code.ApiResponseCode.DUPLICATE_CLUB_APPLY_QUESTION;
 import static gg.agit.konect.global.code.ApiResponseCode.FEE_PAYMENT_IMAGE_REQUIRED;
+import static gg.agit.konect.global.code.ApiResponseCode.INVALID_REQUEST_BODY;
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_APPLY_QUESTION;
+import static gg.agit.konect.global.code.ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,8 +33,12 @@ import gg.agit.konect.domain.bank.repository.BankRepository;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.club.dto.ClubApplicationAnswersResponse;
 import gg.agit.konect.domain.club.dto.ClubApplicationCondition;
+import gg.agit.konect.domain.club.dto.ClubApplicationsResponse;
+import gg.agit.konect.domain.club.dto.ClubAppliedClubsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyQuestionsReplaceRequest;
+import gg.agit.konect.domain.club.dto.ClubApplyQuestionsResponse;
 import gg.agit.konect.domain.club.dto.ClubApplyRequest;
+import gg.agit.konect.domain.club.dto.ClubFeeInfoReplaceRequest;
 import gg.agit.konect.domain.club.dto.ClubFeeInfoResponse;
 import gg.agit.konect.domain.club.dto.ClubMemberApplicationAnswersResponse;
 import gg.agit.konect.domain.club.enums.ClubApplyStatus;
@@ -43,6 +50,7 @@ import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.model.ClubApplyAnswer;
 import gg.agit.konect.domain.club.model.ClubApplyQuestion;
 import gg.agit.konect.domain.club.model.ClubMember;
+import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.club.repository.ClubApplyAnswerRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyQueryRepository;
 import gg.agit.konect.domain.club.repository.ClubApplyQuestionRepository;
@@ -394,6 +402,772 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         assertThat(secondResponse.answers())
             .extracting(ClubApplicationAnswersResponse.ClubApplicationAnswerResponse::question)
             .containsExactly("공통 질문", "신규 질문");
+    }
+
+    @Test
+    @DisplayName("applyClub은 필수 질문에 답변이 누락되면 실패한다")
+    void applyClubRejectsMissingRequiredAnswer() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApplyQuestion requiredQuestion = createQuestion(club, 100, "지원 동기", true, 1, at(2026, 4, 1, 12, 0));
+        ClubApplyRequest request = new ClubApplyRequest(List.of(), null);
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(requiredQuestion));
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), REQUIRED_CLUB_APPLY_ANSWER_MISSING);
+        verify(clubApplyRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("applyClub은 존재하지 않는 질문 ID에 답변하면 실패한다")
+    void applyClubRejectsAnswerToNonExistentQuestion() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApplyRequest request = new ClubApplyRequest(
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(999, "답변")),
+            null
+        );
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), NOT_FOUND_CLUB_APPLY_QUESTION);
+        verify(clubApplyRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("applyClub은 답변에 중복 질문 ID가 있으면 실패한다")
+    void applyClubRejectsDuplicateAnswerQuestionIds() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApplyRequest request = new ClubApplyRequest(
+            List.of(
+                new ClubApplyRequest.InnerClubQuestionAnswer(100, "첫 답변"),
+                new ClubApplyRequest.InnerClubQuestionAnswer(100, "중복 답변")
+            ),
+            null
+        );
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), DUPLICATE_CLUB_APPLY_QUESTION);
+        verify(clubApplyRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("applyClub은 운영진이 없으면 제출 이벤트를 발행하지 않는다")
+    void applyClubDoesNotPublishEventWhenNoManagers() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApply savedApply = ClubApply.of(club, user, null);
+        setId(savedApply, 300);
+        ClubApplyRequest request = new ClubApplyRequest(List.of(), null);
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
+        given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of());
+
+        // when
+        clubApplicationService.applyClub(1, 10, request);
+
+        // then
+        verify(applicationEventPublisher, never()).publishEvent(any());
+        verify(clubApplyAnswerRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("applyClub은 회비 불필요 동아리에서 이미지 없이도 성공한다")
+    void applyClubSucceedsWithoutFeeImage() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApply savedApply = ClubApply.of(club, user, null);
+        setId(savedApply, 300);
+        ClubApplyRequest request = new ClubApplyRequest(List.of(), null);
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
+        given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of());
+
+        // when
+        ClubFeeInfoResponse response = clubApplicationService.applyClub(1, 10, request);
+
+        // then
+        assertThat(response.bankId()).isNull();
+        assertThat(response.bankName()).isNull();
+        assertThat(response.amount()).isNull();
+    }
+
+    @Test
+    @DisplayName("applyClub은 선택 질문에 빈 답변을 허용한다")
+    void applyClubAllowsEmptyAnswerForOptionalQuestion() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApplyQuestion optionalQuestion = createQuestion(club, 100, "관심 분야", false, 1, at(2026, 4, 1, 12, 0));
+        ClubApply savedApply = ClubApply.of(club, user, null);
+        setId(savedApply, 300);
+        ClubApplyRequest request = new ClubApplyRequest(
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "")),
+            null
+        );
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(optionalQuestion));
+        given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of());
+
+        // when
+        clubApplicationService.applyClub(1, 10, request);
+
+        // then
+        verify(clubApplyAnswerRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("replaceApplyQuestions는 존재하지 않는 질문 ID를 거부한다")
+    void replaceApplyQuestionsRejectsNonExistentQuestionId() {
+        // given
+        Club club = createClub(1);
+        ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(999, "수정된 질문", true)
+        ));
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.replaceApplyQuestions(1, 99, request), NOT_FOUND_CLUB_APPLY_QUESTION);
+        verify(clubApplyQuestionRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("replaceApplyQuestions는 모든 질문이 새로 생성되는 경우 정상 동작한다")
+    void replaceApplyQuestionsCreatesAllNewQuestions() {
+        // given
+        Club club = createClub(1);
+        ClubApplyQuestion newQuestion1 = createQuestion(club, 10, "새 질문 1", true, 1, at(2026, 4, 2, 10, 0));
+        ClubApplyQuestion newQuestion2 = createQuestion(club, 11, "새 질문 2", false, 2, at(2026, 4, 2, 10, 0));
+        ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문 1", true),
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문 2", false)
+        ));
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
+            .willReturn(List.of())
+            .willReturn(List.of(newQuestion1, newQuestion2));
+
+        // when
+        ClubApplyQuestionsResponse response = clubApplicationService.replaceApplyQuestions(1, 99, request);
+
+        // then
+        verify(clubApplyQuestionRepository).saveAll(argThat(list -> ((List<?>) list).size() == 2));
+        assertThat(response.questions()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("replaceApplyQuestions는 빈 질문 목록이면 기존 질문을 모두 soft delete한다")
+    void replaceApplyQuestionsSoftDeletesAllWhenEmptyRequest() {
+        // given
+        Club club = createClub(1);
+        ClubApplyQuestion existingQ1 = createQuestion(club, 1, "질문 1", true, 1, at(2026, 4, 1, 10, 0));
+        ClubApplyQuestion existingQ2 = createQuestion(club, 2, "질문 2", false, 2, at(2026, 4, 1, 10, 0));
+        ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of());
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
+            .willReturn(List.of(existingQ1, existingQ2))
+            .willReturn(List.of());
+
+        // when
+        ClubApplyQuestionsResponse response = clubApplicationService.replaceApplyQuestions(1, 99, request);
+
+        // then
+        assertThat(existingQ1.getDeletedAt()).isNotNull();
+        assertThat(existingQ2.getDeletedAt()).isNotNull();
+        verify(clubApplyQuestionRepository, never()).saveAll(any());
+        assertThat(response.questions()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getClubApplicationAnswers는 특정 지원서의 답변을 질문과 함께 반환한다")
+    void getClubApplicationAnswersReturnsAnswersWithQuestions() {
+        // given
+        Club club = createClub(1);
+        User applicant = createUser(10, "2021136001", "지원자");
+        LocalDateTime appliedAt = at(2026, 4, 2, 10, 0);
+        ClubApply clubApply = createApprovedApply(club, applicant, 100, appliedAt);
+        ClubApplyQuestion question = createQuestion(club, 200, "지원 동기", true, 1, at(2026, 4, 1, 9, 0));
+        ClubApplyAnswer answer = ClubApplyAnswer.of(clubApply, question, "성장하고 싶습니다.");
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(clubApply);
+        given(clubApplyAnswerRepository.findAllByApplyIdWithQuestion(100)).willReturn(List.of(answer));
+        given(clubApplyQuestionRepository.findAllVisibleAtApplyTime(1, appliedAt)).willReturn(List.of(question));
+
+        // when
+        ClubApplicationAnswersResponse response = clubApplicationService.getClubApplicationAnswers(1, 100, 99);
+
+        // then
+        verify(clubPermissionValidator).validateManagerAccess(1, 99);
+        assertThat(response.applicationId()).isEqualTo(100);
+        assertThat(response.answers()).hasSize(1);
+        assertThat(response.answers().get(0).question()).isEqualTo("지원 동기");
+        assertThat(response.answers().get(0).answer()).isEqualTo("성장하고 싶습니다.");
+    }
+
+    @Test
+    @DisplayName("getApplyQuestions는 삭제되지 않은 질문 목록을 반환한다")
+    void getApplyQuestionsReturnsActiveQuestions() {
+        // given
+        Club club = createClub(1);
+        ClubApplyQuestion q1 = createQuestion(club, 1, "지원 동기", true, 1, at(2026, 4, 1, 10, 0));
+        ClubApplyQuestion q2 = createQuestion(club, 2, "관심 분야", false, 2, at(2026, 4, 1, 10, 0));
+
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(q1, q2));
+
+        // when
+        ClubApplyQuestionsResponse response = clubApplicationService.getApplyQuestions(1, 99);
+
+        // then
+        assertThat(response.questions()).hasSize(2);
+        assertThat(response.questions().get(0).question()).isEqualTo("지원 동기");
+        assertThat(response.questions().get(1).isRequired()).isFalse();
+    }
+
+    @Test
+    @DisplayName("getAppliedClubs는 사용자의 대기 중인 지원 목록을 반환한다")
+    void getAppliedClubsReturnsPendingApplications() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApply apply = ClubApply.of(club, user, null);
+        setId(apply, 100);
+
+        given(clubApplyRepository.findAllPendingByUserIdWithClub(10)).willReturn(List.of(apply));
+
+        // when
+        ClubAppliedClubsResponse response = clubApplicationService.getAppliedClubs(10);
+
+        // then
+        assertThat(response.appliedClubs()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("getAppliedClubs는 대기 중인 지원이 없으면 빈 목록을 반환한다")
+    void getAppliedClubsReturnsEmptyWhenNoPendingApplications() {
+        // given
+        given(clubApplyRepository.findAllPendingByUserIdWithClub(10)).willReturn(List.of());
+
+        // when
+        ClubAppliedClubsResponse response = clubApplicationService.getAppliedClubs(10);
+
+        // then
+        assertThat(response.appliedClubs()).isEmpty();
+    }
+
+    // ========== US-001: applyClub validation boundary cases ==========
+
+    @Test
+    @DisplayName("applyClub은 필수 질문에 공백만 있는 답변을 거부한다")
+    void applyClubRejectsWhitespaceOnlyRequiredAnswer() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApplyQuestion requiredQuestion = createQuestion(club, 100, "지원 동기", true, 1, at(2026, 4, 1, 12, 0));
+        ClubApplyRequest request = new ClubApplyRequest(
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "   ")),
+            null
+        );
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(requiredQuestion));
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), REQUIRED_CLUB_APPLY_ANSWER_MISSING);
+        verify(clubApplyRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("applyClub은 필수 질문에 null 답변을 거부한다")
+    void applyClubRejectsNullAnswerForRequiredQuestion() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        ClubApplyQuestion requiredQuestion = createQuestion(club, 100, "지원 동기", true, 1, at(2026, 4, 1, 12, 0));
+        ClubApplyRequest request = new ClubApplyRequest(
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, null)),
+            null
+        );
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(user);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(requiredQuestion));
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), REQUIRED_CLUB_APPLY_ANSWER_MISSING);
+        verify(clubApplyRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("applyClub은 여러 운영진의 ID를 모두 제출 이벤트에 포함한다")
+    void applyClubPublishesEventWithMultipleManagers() {
+        // given
+        Club club = createClub(1);
+        User applicant = createUser(10, "2021136001", "지원자");
+        User manager1 = createUser(20, "2021136002", "운영진1");
+        User manager2 = createUser(21, "2021136003", "운영진2");
+        ClubMember member1 = ClubMemberFixture.createManager(club, manager1);
+        ClubMember member2 = ClubMemberFixture.createManager(club, manager2);
+        ClubApply savedApply = ClubApply.of(club, applicant, null);
+        setId(savedApply, 300);
+        ClubApplyRequest request = new ClubApplyRequest(List.of(), null);
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(userRepository.getById(10)).willReturn(applicant);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
+        given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of(member1, member2));
+
+        // when
+        clubApplicationService.applyClub(1, 10, request);
+
+        // then
+        verify(applicationEventPublisher).publishEvent(ClubApplicationSubmittedEvent.of(
+            List.of(20, 21),
+            300,
+            1,
+            club.getName(),
+            applicant.getName()
+        ));
+    }
+
+    // ========== US-002: Approve/reject logical state transitions ==========
+
+    @Test
+    @DisplayName("approveClubApplication은 이미 승인된 지원서를 재승인하면 ALREADY_CLUB_MEMBER을 던진다")
+    void approveClubApplicationRejectsDoubleApproval() {
+        // given - first approval already happened (member exists)
+        Club club = createClub(1);
+        User applicant = createUser(10, "2021136001", "지원자");
+        ClubApply approvedApply = ClubApply.of(club, applicant, null);
+        approvedApply.approve();
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(approvedApply);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(true);
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.approveClubApplication(1, 100, 99), ALREADY_CLUB_MEMBER);
+        verify(clubMemberRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("approveClubApplication은 거절된 지원서를 승인할 수 있다")
+    void approveClubApplicationSucceedsAfterRejection() {
+        // given
+        Club club = createClub(1);
+        User applicant = createUser(10, "2021136001", "지원자");
+        ClubApply rejectedApply = ClubApply.of(club, applicant, null);
+        rejectedApply.reject();
+        ClubMember savedMember = ClubMemberFixture.createMember(club, applicant);
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(rejectedApply);
+        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
+        given(clubMemberRepository.save(any(ClubMember.class))).willReturn(savedMember);
+
+        // when
+        clubApplicationService.approveClubApplication(1, 100, 99);
+
+        // then
+        assertThat(rejectedApply.getStatus()).isEqualTo(ClubApplyStatus.APPROVED);
+        verify(chatRoomMembershipService).addClubMember(savedMember);
+        verify(applicationEventPublisher).publishEvent(ClubApplicationApprovedEvent.of(10, 1, club.getName()));
+    }
+
+    @Test
+    @DisplayName("rejectClubApplication은 이미 승인된 지원서도 거절 상태로 변경한다")
+    void rejectClubApplicationChangesStatusAfterApproval() {
+        // given - application was already approved, member already in club
+        Club club = createClub(1);
+        User applicant = createUser(10, "2021136001", "지원자");
+        ClubApply approvedApply = ClubApply.of(club, applicant, null);
+        approvedApply.approve();
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(approvedApply);
+
+        // when
+        clubApplicationService.rejectClubApplication(1, 100, 99);
+
+        // then
+        assertThat(approvedApply.getStatus()).isEqualTo(ClubApplyStatus.REJECTED);
+        verify(applicationEventPublisher).publishEvent(ClubApplicationRejectedEvent.of(10, 1, club.getName()));
+    }
+
+    // ========== US-003: replaceApplyQuestions edge cases ==========
+
+    @Test
+    @DisplayName("replaceApplyQuestions는 isRequired가 null이면 기본값 true로 질문을 생성한다")
+    void replaceApplyQuestionsDefaultsIsRequiredToTrue() {
+        // given
+        Club club = createClub(1);
+        ClubApplyQuestion createdQuestion = createQuestion(club, 10, "새 질문", true, 1, at(2026, 4, 2, 10, 0));
+        ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문", null)
+        ));
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
+            .willReturn(List.of())
+            .willReturn(List.of(createdQuestion));
+
+        // when
+        clubApplicationService.replaceApplyQuestions(1, 99, request);
+
+        // then
+        verify(clubApplyQuestionRepository).saveAll(argThat(list -> {
+            List<ClubApplyQuestion> questions = (List<ClubApplyQuestion>) list;
+            return questions.size() == 1 && questions.get(0).getIsRequired().equals(true);
+        }));
+    }
+
+    @Test
+    @DisplayName("replaceApplyQuestions는 내용이 동일하면 displayOrder만 변경하고 soft delete하지 않는다")
+    void replaceApplyQuestionsOnlyChangesDisplayOrderWhenContentSame() {
+        // given
+        Club club = createClub(1);
+        ClubApplyQuestion question = createQuestion(club, 1, "지원 동기", true, 2, at(2026, 4, 1, 10, 0));
+        // Same content, only repositioning to display order 1
+        ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기", true)
+        ));
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
+            .willReturn(List.of(question))
+            .willReturn(List.of(question));
+
+        // when
+        clubApplicationService.replaceApplyQuestions(1, 99, request);
+
+        // then
+        assertThat(question.getDisplayOrder()).isEqualTo(1);
+        assertThat(question.getDeletedAt()).isNull();
+        verify(clubApplyQuestionRepository, never()).saveAll(any());
+    }
+
+    // ========== US-004: Question visibility boundary tests ==========
+
+    @Test
+    @DisplayName("createdAt이 appliedAt과 정확히 같은 질문도 가입 시점에 보이는 것으로 처리된다")
+    void questionCreatedAtEqualToAppliedAtIsVisible() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        LocalDateTime appliedAt = at(2026, 4, 2, 10, 0);
+        ClubApply apply = createApprovedApply(club, user, 100, appliedAt);
+        Page<ClubApply> page = new PageImpl<>(List.of(apply));
+        ClubApplicationCondition condition = new ClubApplicationCondition(1, 10, null, null);
+
+        ClubApplyQuestion question = createQuestion(club, 1, "질문", true, 1, appliedAt);
+        ClubApplyAnswer answer = ClubApplyAnswer.of(apply, question, "답변");
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
+        given(clubApplyAnswerRepository.findAllByApplyIdsWithQuestion(List.of(100))).willReturn(List.of(answer));
+        given(clubApplyQuestionRepository.findAllCandidatesVisibleBetweenApplyTimes(1, appliedAt, appliedAt))
+            .willReturn(List.of(question));
+
+        // when
+        ClubMemberApplicationAnswersResponse response =
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+
+        // then
+        assertThat(response.applications()).hasSize(1);
+        assertThat(response.applications().get(0).answers()).hasSize(1);
+        assertThat(response.applications().get(0).answers().get(0).question()).isEqualTo("질문");
+    }
+
+    @Test
+    @DisplayName("deletedAt이 appliedAt과 정확히 같은 질문은 가입 시점에 보이지 않는다")
+    void questionDeletedAtEqualToAppliedAtIsNotVisible() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        LocalDateTime appliedAt = at(2026, 4, 2, 10, 0);
+        ClubApply apply = createApprovedApply(club, user, 100, appliedAt);
+        Page<ClubApply> page = new PageImpl<>(List.of(apply));
+        ClubApplicationCondition condition = new ClubApplicationCondition(1, 10, null, null);
+
+        ClubApplyQuestion question = createQuestion(club, 1, "삭제된 질문", true, 1, at(2026, 4, 1, 9, 0));
+        question.softDelete(appliedAt);
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
+        given(clubApplyAnswerRepository.findAllByApplyIdsWithQuestion(List.of(100))).willReturn(List.of());
+        given(clubApplyQuestionRepository.findAllCandidatesVisibleBetweenApplyTimes(1, appliedAt, appliedAt))
+            .willReturn(List.of(question));
+
+        // when
+        ClubMemberApplicationAnswersResponse response =
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+
+        // then - isAfter returns false for equal timestamps, so question is filtered out
+        assertThat(response.applications()).hasSize(1);
+        assertThat(response.applications().get(0).answers()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getApprovedMemberApplicationAnswersList는 지원서가 하나뿐이어도 정상 동작한다")
+    void getApprovedMemberApplicationAnswersListWithSingleApplication() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "지원자");
+        LocalDateTime appliedAt = at(2026, 4, 2, 10, 0);
+        ClubApply apply = createApprovedApply(club, user, 100, appliedAt);
+        Page<ClubApply> page = new PageImpl<>(List.of(apply));
+        ClubApplicationCondition condition = new ClubApplicationCondition(1, 10, null, null);
+
+        ClubApplyQuestion question = createQuestion(club, 1, "질문", true, 1, at(2026, 4, 1, 9, 0));
+        ClubApplyAnswer answer = ClubApplyAnswer.of(apply, question, "답변");
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
+        given(clubApplyAnswerRepository.findAllByApplyIdsWithQuestion(List.of(100))).willReturn(List.of(answer));
+        given(clubApplyQuestionRepository.findAllCandidatesVisibleBetweenApplyTimes(1, appliedAt, appliedAt))
+            .willReturn(List.of(question));
+
+        // when
+        ClubMemberApplicationAnswersResponse response =
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+
+        // then - minAppliedAt == maxAppliedAt
+        assertThat(response.applications()).hasSize(1);
+        assertThat(response.applications().get(0).applicationId()).isEqualTo(100);
+    }
+
+    // ========== US-005: Untested service method coverage ==========
+
+    @Test
+    @DisplayName("getApprovedMemberApplicationAnswers는 특정 회원의 최신 승인 지원서를 반환한다")
+    void getApprovedMemberApplicationAnswersReturnsLatestApproved() {
+        // given
+        Club club = createClub(1);
+        User targetUser = createUser(10, "2021136001", "회원");
+        ClubMember targetMember = ClubMemberFixture.createMember(club, targetUser);
+        LocalDateTime appliedAt = at(2026, 4, 2, 10, 0);
+        ClubApply clubApply = createApprovedApply(club, targetUser, 100, appliedAt);
+        ClubApplyQuestion question = createQuestion(club, 200, "지원 동기", true, 1, at(2026, 4, 1, 9, 0));
+        ClubApplyAnswer answer = ClubApplyAnswer.of(clubApply, question, "성장하고 싶습니다.");
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubMemberRepository.getByClubIdAndUserId(1, 10)).willReturn(targetMember);
+        given(clubApplyRepository.getLatestApprovedByClubIdAndUserId(1, 10)).willReturn(clubApply);
+        given(clubApplyAnswerRepository.findAllByApplyIdWithQuestion(100)).willReturn(List.of(answer));
+        given(clubApplyQuestionRepository.findAllVisibleAtApplyTime(1, appliedAt)).willReturn(List.of(question));
+
+        // when
+        ClubApplicationAnswersResponse response =
+            clubApplicationService.getApprovedMemberApplicationAnswers(1, 10, 99);
+
+        // then
+        verify(clubPermissionValidator).validateManagerAccess(1, 99);
+        assertThat(response.applicationId()).isEqualTo(100);
+        assertThat(response.answers()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("getClubApplications은 상시 모집 동아리의 전체 지원서를 조회한다")
+    void getClubApplicationsWithAlwaysRecruiting() {
+        // given
+        Club club = createClub(1);
+        ClubRecruitment recruitment = ClubRecruitment.of(null, null, true, "상시 모집", club);
+        ClubApplicationCondition condition = new ClubApplicationCondition(1, 10, null, null);
+        Page<ClubApply> page = new PageImpl<>(List.of());
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubRecruitmentRepository.getByClubId(1)).willReturn(recruitment);
+        given(clubApplyQueryRepository.findAllByClubId(1, condition)).willReturn(page);
+
+        // when
+        ClubApplicationsResponse response = clubApplicationService.getClubApplications(1, 99, condition);
+
+        // then
+        verify(clubPermissionValidator).validateManagerAccess(1, 99);
+        verify(clubApplyQueryRepository).findAllByClubId(1, condition);
+        verify(clubApplyQueryRepository, never()).findAllByClubIdAndCreatedAtBetween(any(), any(), any(), any());
+        assertThat(response.applications()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getClubApplications은 기간 모집 동아리의 기간 내 지원서만 조회한다")
+    void getClubApplicationsWithPeriodBasedRecruitment() {
+        // given
+        Club club = createClub(1);
+        LocalDateTime startAt = at(2026, 4, 1, 0, 0);
+        LocalDateTime endAt = at(2026, 4, 30, 23, 59);
+        ClubRecruitment recruitment = ClubRecruitment.of(startAt, endAt, false, "4월 모집", club);
+        ClubApplicationCondition condition = new ClubApplicationCondition(1, 10, null, null);
+        Page<ClubApply> page = new PageImpl<>(List.of());
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubRecruitmentRepository.getByClubId(1)).willReturn(recruitment);
+        given(clubApplyQueryRepository.findAllByClubIdAndCreatedAtBetween(1, startAt, endAt, condition)).willReturn(page);
+
+        // when
+        ClubApplicationsResponse response = clubApplicationService.getClubApplications(1, 99, condition);
+
+        // then
+        verify(clubApplyQueryRepository).findAllByClubIdAndCreatedAtBetween(1, startAt, endAt, condition);
+        verify(clubApplyQueryRepository, never()).findAllByClubId(any(), any());
+        assertThat(response.applications()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getApprovedMemberApplications은 승인된 회원 지원서를 페이지네이션하여 반환한다")
+    void getApprovedMemberApplicationsReturnsPagedResults() {
+        // given
+        Club club = createClub(1);
+        User user = createUser(10, "2021136001", "회원");
+        ClubApply apply = createApprovedApply(club, user, 100, at(2026, 4, 2, 10, 0));
+        ClubApplicationCondition condition = new ClubApplicationCondition(1, 10, null, null);
+        Page<ClubApply> page = new PageImpl<>(List.of(apply));
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
+
+        // when
+        ClubApplicationsResponse response =
+            clubApplicationService.getApprovedMemberApplications(1, 99, condition);
+
+        // then
+        verify(clubPermissionValidator).validateManagerAccess(1, 99);
+        assertThat(response.applications()).hasSize(1);
+        assertThat(response.totalCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("getFeeInfo는 동아리 회비 정보를 반환한다")
+    void getFeeInfoReturnsClubFeeInfo() {
+        // given
+        Club club = createClubWithFeeInfo(1, "국민은행");
+        Bank bank = org.mockito.Mockito.mock(Bank.class);
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(bankRepository.getByName("국민은행")).willReturn(bank);
+        given(bank.getId()).willReturn(7);
+
+        // when
+        ClubFeeInfoResponse response = clubApplicationService.getFeeInfo(1);
+
+        // then
+        assertThat(response.bankId()).isEqualTo(7);
+        assertThat(response.bankName()).isEqualTo("국민은행");
+        assertThat(response.accountNumber()).isEqualTo("123-456-7890");
+        assertThat(response.accountHolder()).isEqualTo("BCSD");
+    }
+
+    @Test
+    @DisplayName("getFeeInfo는 회비 은행 정보가 없으면 bankRepository를 호출하지 않고 null을 반환한다")
+    void getFeeInfoReturnsNullBankWhenNoFeeInfo() {
+        // given
+        Club club = createClub(1);
+
+        given(clubRepository.getById(1)).willReturn(club);
+
+        // when
+        ClubFeeInfoResponse response = clubApplicationService.getFeeInfo(1);
+
+        // then
+        assertThat(response.bankId()).isNull();
+        assertThat(response.bankName()).isNull();
+        verify(bankRepository, never()).getByName(any());
+    }
+
+    @Test
+    @DisplayName("replaceFeeInfo는 동아리 회비 정보를 업데이트하고 응답을 반환한다")
+    void replaceFeeInfoUpdatesClubFeeInfo() {
+        // given
+        Club club = createClub(1);
+        User managerUser = createUser(99, "2021136000", "운영진");
+        Bank newBank = org.mockito.Mockito.mock(Bank.class);
+        ClubFeeInfoReplaceRequest request = new ClubFeeInfoReplaceRequest("5만원", 3, "987-654-3210", "BCSD");
+
+        given(userRepository.getById(99)).willReturn(managerUser);
+        given(clubRepository.getById(1)).willReturn(club);
+        given(bankRepository.getById(3)).willReturn(newBank);
+        given(newBank.getName()).willReturn("신한은행");
+
+        // when
+        ClubFeeInfoResponse response = clubApplicationService.replaceFeeInfo(1, 99, request);
+
+        // then
+        verify(clubPermissionValidator).validateManagerAccess(1, 99);
+        assertThat(response.amount()).isEqualTo("5만원");
+        assertThat(response.bankId()).isEqualTo(3);
+        assertThat(response.bankName()).isEqualTo("신한은행");
+        assertThat(response.accountNumber()).isEqualTo("987-654-3210");
+        assertThat(response.accountHolder()).isEqualTo("BCSD");
+    }
+
+    @Test
+    @DisplayName("replaceFeeInfo는 회비 정보가 일부만 입력되면 INVALID_REQUEST_BODY를 던진다")
+    void replaceFeeInfoRejectsPartialFeeInfo() {
+        // given
+        Club club = createClub(1);
+        User managerUser = createUser(99, "2021136000", "운영진");
+        Bank bank = org.mockito.Mockito.mock(Bank.class);
+        ClubFeeInfoReplaceRequest request = new ClubFeeInfoReplaceRequest("5만원", 3, null, null);
+
+        given(userRepository.getById(99)).willReturn(managerUser);
+        given(clubRepository.getById(1)).willReturn(club);
+        given(bankRepository.getById(3)).willReturn(bank);
+        given(bank.getName()).willReturn("신한은행");
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.replaceFeeInfo(1, 99, request), INVALID_REQUEST_BODY);
     }
 
     private Club createClub(Integer clubId) {
