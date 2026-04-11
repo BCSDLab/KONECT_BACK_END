@@ -353,8 +353,8 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("toggleMute는 기존 setting이 있으면 토글하고 없으면 muted=true 로 저장한다")
-    void toggleMuteTogglesExistingSettingOrCreatesNewOne() {
+    @DisplayName("toggleMute는 기존 setting이 false면 true로 토글한다")
+    void toggleMuteTogglesFromUnmutedToMuted() {
         // given
         Integer userId = 10;
         Integer roomId = 1;
@@ -367,16 +367,65 @@ class ChatServiceTest extends ServiceTestSupport {
         given(userRepository.getById(userId)).willReturn(user);
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)).willReturn(Optional.of(member));
         given(notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(NotificationTargetType.CHAT_ROOM, roomId, userId))
-            .willReturn(Optional.of(setting), Optional.empty());
+            .willReturn(Optional.of(setting));
 
         // when
-        ChatMuteResponse toggled = chatService.toggleMute(userId, roomId);
-        ChatMuteResponse created = chatService.toggleMute(userId, roomId);
+        ChatMuteResponse response = chatService.toggleMute(userId, roomId);
 
         // then
-        assertThat(toggled.isMuted()).isTrue();
-        assertThat(created.isMuted()).isTrue();
-        verify(notificationMuteSettingRepository, times(2)).save(any(NotificationMuteSetting.class));
+        assertThat(response.isMuted()).isTrue();
+        assertThat(setting.getIsMuted()).isTrue();
+        verify(notificationMuteSettingRepository).save(setting);
+    }
+
+    @Test
+    @DisplayName("toggleMute는 기존 setting이 true면 false로 토글한다 (unmute)")
+    void toggleMuteTogglesFromMutedToUnmuted() {
+        // given
+        Integer userId = 10;
+        Integer roomId = 1;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom room = createRoom(roomId, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member = createRoomMember(room, user, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+        NotificationMuteSetting setting = NotificationMuteSetting.of(NotificationTargetType.CHAT_ROOM, roomId, user, true);
+
+        given(chatRoomRepository.findById(roomId)).willReturn(Optional.of(room));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)).willReturn(Optional.of(member));
+        given(notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(NotificationTargetType.CHAT_ROOM, roomId, userId))
+            .willReturn(Optional.of(setting));
+
+        // when
+        ChatMuteResponse response = chatService.toggleMute(userId, roomId);
+
+        // then
+        assertThat(response.isMuted()).isFalse();
+        assertThat(setting.getIsMuted()).isFalse();
+        verify(notificationMuteSettingRepository).save(setting);
+    }
+
+    @Test
+    @DisplayName("toggleMute는 기존 setting이 없으면 muted=true로 저장한다")
+    void toggleMuteCreatesNewMutedSettingWhenNoneExists() {
+        // given
+        Integer userId = 10;
+        Integer roomId = 1;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom room = createRoom(roomId, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member = createRoomMember(room, user, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(roomId)).willReturn(Optional.of(room));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)).willReturn(Optional.of(member));
+        given(notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(NotificationTargetType.CHAT_ROOM, roomId, userId))
+            .willReturn(Optional.empty());
+
+        // when
+        ChatMuteResponse response = chatService.toggleMute(userId, roomId);
+
+        // then
+        assertThat(response.isMuted()).isTrue();
+        verify(notificationMuteSettingRepository).save(any(NotificationMuteSetting.class));
     }
 
     @Test
@@ -833,6 +882,49 @@ class ChatServiceTest extends ServiceTestSupport {
             eq(clubRoom.getId()), eq(senderId), eq("BCSD"), eq("보낸이"), eq("hello"),
             any(List.class)
         );
+    }
+
+    @Test
+    @DisplayName("sendMessage는 admin이 system admin room에 보내면 멤버십 체크를 건너뛰고 lastReadAt 업데이트도 하지 않는다")
+    void sendMessageAdminBypassesMembershipInSystemAdminRoom() {
+        // given
+        Integer adminId = 99;
+        Integer targetUserId = 20;
+        User admin = createUser(adminId, "관리자", UserRole.ADMIN);
+        User systemAdmin = createUser(SYSTEM_ADMIN_ID, "시스템관리자", UserRole.ADMIN);
+        User targetUser = createUser(targetUserId, "사용자", UserRole.USER);
+        ChatRoom systemAdminRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember systemAdminMember = createRoomMember(systemAdminRoom, systemAdmin, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember targetMember = createRoomMember(systemAdminRoom, targetUser, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, systemAdminRoom, admin, "문의",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
+        given(userRepository.getById(adminId)).willReturn(admin);
+        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(systemAdminRoom.getId())))
+            .willReturn(List.of(
+                new Object[]{systemAdminRoom.getId(), SYSTEM_ADMIN_ID, systemAdminRoom.getCreatedAt()},
+                new Object[]{systemAdminRoom.getId(), targetUserId, systemAdminRoom.getCreatedAt()}
+            ));
+        given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
+            .willReturn(List.of(systemAdminMember, targetMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+
+        // when
+        ChatMessageDetailResponse response = chatService.sendMessage(adminId, systemAdminRoom.getId(),
+            new ChatMessageSendRequest("문의"));
+
+        // then
+        assertThat(response.content()).isEqualTo("문의");
+        assertThat(response.isMine()).isTrue();
+        // 멤버십 조회를 건너뛰어야 한다
+        verify(chatRoomMemberRepository, never()).findByChatRoomIdAndUserId(systemAdminRoom.getId(), adminId);
+        // admin은 lastReadAt 업데이트를 하지 않는다
+        verify(chatRoomMemberRepository, never()).updateLastReadAtIfOlder(eq(systemAdminRoom.getId()), eq(adminId), any(LocalDateTime.class));
+        // 비관리자에게 알림이 전송되어야 한다
+        verify(notificationService).sendChatNotification(eq(targetUserId), eq(systemAdminRoom.getId()), eq("관리자"), eq("문의"));
     }
 
     // ===== toggleMute additional =====
