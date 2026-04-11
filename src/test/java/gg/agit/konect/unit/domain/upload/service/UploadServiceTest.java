@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.mock.web.MockMultipartFile;
@@ -32,6 +34,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
+@Execution(ExecutionMode.SAME_THREAD)
 class UploadServiceTest extends ServiceTestSupport {
 
     private static final Pattern CLUB_KEY_PATTERN = Pattern.compile(
