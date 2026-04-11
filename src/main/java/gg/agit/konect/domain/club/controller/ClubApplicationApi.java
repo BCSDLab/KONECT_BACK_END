@@ -160,6 +160,7 @@ public interface ClubApplicationApi {
 
         ## 에러
         - ALREADY_CLUB_MEMBER (409): 이미 동아리 회원입니다.
+        - ALREADY_PROCESSED_CLUB_APPLY (409): 이미 처리된 동아리 가입 신청입니다.
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
@@ -174,8 +175,9 @@ public interface ClubApplicationApi {
     @Operation(summary = "동아리 가입 신청을 거절한다.", description = """
         동아리 운영진 권한부터 가입 신청을 거절할 수 있습니다.
         거절 시 상태를 REJECTED로 변경합니다.
-        
+
         ## 에러
+        - ALREADY_PROCESSED_CLUB_APPLY (409): 이미 처리된 동아리 가입 신청입니다.
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
