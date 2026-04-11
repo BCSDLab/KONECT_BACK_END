@@ -29,10 +29,10 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public class UploadService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-        "image/png",
-        "image/jpg",
-        "image/jpeg",
-        "image/webp"
+            "image/png",
+            "image/jpg",
+            "image/jpeg",
+            "image/webp"
     );
 
     private final S3Client s3Client;
@@ -48,10 +48,10 @@ public class UploadService {
         String key = buildKey(extension, target);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-            .bucket(s3StorageProperties.bucket())
-            .key(key)
-            .contentType(contentType)
-            .build();
+                .bucket(s3StorageProperties.bucket())
+                .key(key)
+                .contentType(contentType)
+                .build();
 
         try (InputStream inputStream = file.getInputStream()) {
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, file.getSize()));
@@ -60,23 +60,23 @@ public class UploadService {
             String awsErrorMessage = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
 
             log.error(
-                "S3 업로드 실패. bucket: {}, key: {}, statusCode: {}, errorCode: {}, requestId: {}, message: {}",
-                s3StorageProperties.bucket(),
-                key,
-                e.statusCode(),
-                awsErrorCode,
-                e.requestId(),
-                awsErrorMessage,
-                e
+                    "S3 업로드 실패. bucket: {}, key: {}, statusCode: {}, errorCode: {}, requestId: {}, message: {}",
+                    s3StorageProperties.bucket(),
+                    key,
+                    e.statusCode(),
+                    awsErrorCode,
+                    e.requestId(),
+                    awsErrorMessage,
+                    e
             );
             throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
         } catch (SdkClientException | IOException e) {
             log.error(
-                "S3 업로드 클라이언트 오류(네트워크/자격증명/설정). bucket: {}, key: {}, message: {}",
-                s3StorageProperties.bucket(),
-                key,
-                e.getMessage(),
-                e
+                    "S3 업로드 클라이언트 오류(네트워크/자격증명/설정). bucket: {}, key: {}, message: {}",
+                    s3StorageProperties.bucket(),
+                    key,
+                    e.getMessage(),
+                    e
             );
             throw CustomException.of(ApiResponseCode.FAILED_UPLOAD_FILE);
         }
@@ -91,8 +91,8 @@ public class UploadService {
         }
 
         if (s3StorageProperties.maxUploadBytes() != null
-            && s3StorageProperties.maxUploadBytes() > 0
-            && file.getSize() > s3StorageProperties.maxUploadBytes()) {
+                && s3StorageProperties.maxUploadBytes() > 0
+                && file.getSize() > s3StorageProperties.maxUploadBytes()) {
             throw CustomException.of(ApiResponseCode.PAYLOAD_TOO_LARGE);
         }
 
@@ -107,10 +107,10 @@ public class UploadService {
         String targetPath = target != null ? target.name().toLowerCase() : "";
         LocalDate today = LocalDate.now();
         String datePath = String.format(
-            "%04d-%02d-%02d",
-            today.getYear(),
-            today.getMonthValue(),
-            today.getDayOfMonth()
+                "%04d-%02d-%02d",
+                today.getYear(),
+                today.getMonthValue(),
+                today.getDayOfMonth()
         );
         String uuid = UUID.randomUUID().toString();
 
