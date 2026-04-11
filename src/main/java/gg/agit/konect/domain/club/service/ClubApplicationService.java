@@ -2,6 +2,7 @@ package gg.agit.konect.domain.club.service;
 
 import static gg.agit.konect.domain.club.enums.ClubPosition.MEMBER;
 
+import gg.agit.konect.domain.club.enums.ClubApplyStatus;
 import gg.agit.konect.domain.club.enums.ClubPosition;
 
 import static gg.agit.konect.global.code.ApiResponseCode.*;
@@ -231,7 +232,12 @@ public class ClubApplicationService {
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
-        ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        ClubApply clubApply = clubApplyRepository.getByIdAndClubIdForUpdate(applicationId, clubId);
+
+        if (clubApply.getStatus() != ClubApplyStatus.PENDING) {
+            throw CustomException.of(ALREADY_PROCESSED_CLUB_APPLY);
+        }
+
         User applicant = clubApply.getUser();
 
         if (clubMemberRepository.existsByClubIdAndUserId(clubId, applicant.getId())) {
@@ -261,7 +267,12 @@ public class ClubApplicationService {
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
-        ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        ClubApply clubApply = clubApplyRepository.getByIdAndClubIdForUpdate(applicationId, clubId);
+
+        if (clubApply.getStatus() != ClubApplyStatus.PENDING) {
+            throw CustomException.of(ALREADY_PROCESSED_CLUB_APPLY);
+        }
+
         User applicant = clubApply.getUser();
         clubApply.reject();
 

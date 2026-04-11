@@ -34,7 +34,7 @@ public interface ClubApplicationApi {
         동아리 가입 신청서를 제출합니다.
         설문 질문이 없는 경우 answers는 빈 배열을 전달합니다.
         모집 공고에서 회비 납부가 필요한 경우(isFeeRequired=true), feePaymentImageUrl은 필수입니다.
-
+        
         ## 에러
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
@@ -82,7 +82,7 @@ public interface ClubApplicationApi {
         - 정렬 기준: APPLIED_AT(신청 일시), STUDENT_NUMBER(학번), NAME(이름)
         - 정렬 방향: ASC(오름차순), DESC(내림차순)
         - 기본 정렬: 신청 일시 오래된 순 (APPLIED_AT ASC)
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -102,7 +102,7 @@ public interface ClubApplicationApi {
     @Operation(summary = "승인된 회원의 동아리 지원 답변을 조회한다.", description = """
         - 동아리 관리자만 해당 동아리의 승인된 회원 지원 답변을 조회할 수 있습니다.
         - 사용자 ID(userId) 기준으로 해당 사용자의 지원서를 찾아 문항/답변을 반환합니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -122,7 +122,7 @@ public interface ClubApplicationApi {
         - 정렬 기준: APPLIED_AT(신청 일시), STUDENT_NUMBER(학번), NAME(이름)
         - 정렬 방향: ASC(오름차순), DESC(내림차순)
         - 기본 정렬: 신청 일시 오래된 순 (APPLIED_AT ASC)
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -141,7 +141,7 @@ public interface ClubApplicationApi {
 
     @Operation(summary = "동아리 지원 답변을 조회한다.", description = """
         - 동아리 관리자만 해당 동아리의 지원 답변을 조회할 수 있습니다.
-
+        
         ## 에러
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
@@ -157,9 +157,10 @@ public interface ClubApplicationApi {
     @Operation(summary = "동아리 가입 신청을 승인한다.", description = """
         동아리 운영진 권한부터 가입 신청을 승인할 수 있습니다.
         승인 시 지원자는 일반회원으로 등록되며, 지원 내역은 보관됩니다.
-
+        
         ## 에러
         - ALREADY_CLUB_MEMBER (409): 이미 동아리 회원입니다.
+        - ALREADY_PROCESSED_CLUB_APPLY (409): 이미 처리된 동아리 가입 신청입니다.
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
@@ -176,6 +177,7 @@ public interface ClubApplicationApi {
         거절 시 상태를 REJECTED로 변경합니다.
         
         ## 에러
+        - ALREADY_PROCESSED_CLUB_APPLY (409): 이미 처리된 동아리 가입 신청입니다.
         - FORBIDDEN_CLUB_MANAGER_ACCESS (403): 동아리 매니저 권한이 없습니다.
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         - NOT_FOUND_CLUB_APPLY (404): 동아리 지원 내역을 찾을 수 없습니다.
@@ -216,7 +218,7 @@ public interface ClubApplicationApi {
 
     @Operation(summary = "동아리 회비 정보를 조회한다.", description = """
         동아리의 회비 계좌 정보를 조회합니다.
-
+        
         ## 에러
         - NOT_FOUND_CLUB (404): 동아리를 찾을 수 없습니다.
         """)
