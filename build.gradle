@@ -3,6 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.5.8'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'checkstyle'
+	id 'jacoco'
 }
 
 group = 'gg.agit'
@@ -110,6 +111,47 @@ tasks.named('test') {
 		// CI는 JUnit XML만으로 충분하므로 HTML 리포트 생성 비용은 줄인다.
 		html.required = !System.getenv().containsKey('CI')
 	}
+}
+
+// JaCoCo 커버리지 리포트 설정
+jacocoTestReport {
+	dependsOn test
+
+	reports {
+		xml.required = true
+		html.required = true
+	}
+
+	// 커버리지에서 제외할 클래스 설정
+	afterEvaluate {
+		classDirectories.setFrom(
+			fileTree(layout.buildDirectory.dir("classes/java/main")) {
+				exclude([
+					// DTO, Request, Response
+					"**/*Dto.class",
+					"**/*DTO.class",
+					"**/*Request*.class",
+					"**/*Response*.class",
+					// Entity
+					"**/domain/**/entity/*.class",
+					"**/entity/*.class",
+					// Configuration
+					"**/config/*.class",
+					"**/*Config.class",
+					// Exception
+					"**/exception/*.class",
+					"**/*Exception.class",
+					// 기타
+					"**/Application.class",  // Spring Boot 메인 클래스
+					"**/*\$*.class",          // 내부 클래스
+				])
+			}
+		)
+	}
+}
+
+tasks.named('check') {
+	dependsOn jacocoTestReport
 }
 
 checkstyle {
