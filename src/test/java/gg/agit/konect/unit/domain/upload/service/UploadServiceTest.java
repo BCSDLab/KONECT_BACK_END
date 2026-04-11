@@ -34,7 +34,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 class UploadServiceTest extends ServiceTestSupport {
 
     private static final Pattern CLUB_KEY_PATTERN = Pattern.compile(
-        "(?:[\\w-]+/)*club/\\d{4}-\\d{2}-\\d{2}-[0-9a-f\\-]{36}\\.png"
+            "(?:[\\w-]+/)*club/\\d{4}-\\d{2}-\\d{2}-[0-9a-f\\-]{36}\\.png"
     );
 
     @Mock
@@ -45,9 +45,9 @@ class UploadServiceTest extends ServiceTestSupport {
     @BeforeEach
     void setUp() {
         uploadService = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test/")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test/")
         );
     }
 
@@ -56,10 +56,10 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageUploadsPngAndReturnsKeyAndCdnUrl() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -82,15 +82,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageBuildsKeyWithoutPrefixWhenPrefixBlank() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", " ", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", " ", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "bank.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "bank.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -105,15 +105,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageNormalizesPrefixWithLeadingSlash() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "/assets", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "/assets", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "user.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "user.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -128,8 +128,8 @@ class UploadServiceTest extends ServiceTestSupport {
     @DisplayName("uploadImage는 null 파일을 거부한다")
     void uploadImageRejectsNullFile() {
         assertCustomException(
-            () -> uploadService.uploadImage(null, UploadTarget.CLUB),
-            ApiResponseCode.INVALID_REQUEST_BODY
+                () -> uploadService.uploadImage(null, UploadTarget.CLUB),
+                ApiResponseCode.INVALID_REQUEST_BODY
         );
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
@@ -142,8 +142,8 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.INVALID_REQUEST_BODY
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.INVALID_REQUEST_BODY
         );
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
@@ -156,8 +156,8 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.INVALID_FILE_CONTENT_TYPE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.INVALID_FILE_CONTENT_TYPE
         );
     }
 
@@ -169,8 +169,8 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.INVALID_FILE_CONTENT_TYPE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.INVALID_FILE_CONTENT_TYPE
         );
     }
 
@@ -182,8 +182,8 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.PAYLOAD_TOO_LARGE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.PAYLOAD_TOO_LARGE
         );
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
@@ -193,18 +193,18 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageConvertsS3Exception() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
-            .thenThrow(S3Exception.builder().message("s3 failed").build());
+                .thenThrow(S3Exception.builder().message("s3 failed").build());
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.FAILED_UPLOAD_FILE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.FAILED_UPLOAD_FILE
         );
     }
 
@@ -213,18 +213,18 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageConvertsSdkClientException() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
-            .thenThrow(SdkClientException.create("client failed"));
+                .thenThrow(SdkClientException.create("client failed"));
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.FAILED_UPLOAD_FILE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.FAILED_UPLOAD_FILE
         );
     }
 
@@ -240,8 +240,8 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.FAILED_UPLOAD_FILE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.FAILED_UPLOAD_FILE
         );
     }
 
@@ -250,10 +250,10 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageBuildsKeyWithoutTargetWhenTargetNull() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -261,7 +261,7 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.key()).matches(
-            "konect/\\d{4}-\\d{2}-\\d{2}-[0-9a-f\\-]{36}\\.png"
+                "konect/\\d{4}-\\d{2}-\\d{2}-[0-9a-f\\-]{36}\\.png"
         );
         assertThat(response.key()).doesNotContain("//");
     }
@@ -271,10 +271,10 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageConvertsJpegToJpgExtension() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "photo.jpeg",
-            "image/jpeg",
-            "jpeg-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "photo.jpeg",
+                "image/jpeg",
+                "jpeg-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -290,10 +290,10 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageConvertsJpgToJpgExtension() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "photo.jpg",
-            "image/jpg",
-            "jpg-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "photo.jpg",
+                "image/jpg",
+                "jpg-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -308,10 +308,10 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageConvertsWebpToWebpExtension() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "photo.webp",
-            "image/webp",
-            "webp-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "photo.webp",
+                "image/webp",
+                "webp-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -326,10 +326,10 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageAcceptsFileAtExactMaxSize() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            new byte[5_000]
+                "file",
+                "logo.png",
+                "image/png",
+                new byte[5_000]
         );
 
         // when
@@ -352,8 +352,8 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.INVALID_FILE_CONTENT_TYPE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.INVALID_FILE_CONTENT_TYPE
         );
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
@@ -363,15 +363,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageSkipsSizeCheckWhenMaxUploadBytesNull() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", null),
-            new StorageCdnProperties("https://cdn.konect.test/")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", null),
+                new StorageCdnProperties("https://cdn.konect.test/")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "big.png",
-            "image/png",
-            new byte[1_000_000]
+                "file",
+                "big.png",
+                "image/png",
+                new byte[1_000_000]
         );
 
         // when
@@ -387,15 +387,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageSkipsSizeCheckWhenMaxUploadBytesZero() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 0L),
-            new StorageCdnProperties("https://cdn.konect.test/")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 0L),
+                new StorageCdnProperties("https://cdn.konect.test/")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "big.png",
-            "image/png",
-            new byte[1_000_000]
+                "file",
+                "big.png",
+                "image/png",
+                new byte[1_000_000]
         );
 
         // when
@@ -411,15 +411,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageWorksWithCdnUrlWithoutTrailingSlash() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -435,15 +435,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageHandlesPrefixWithExistingTrailingSlash() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect/", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test/")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect/", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test/")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -459,15 +459,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageHandlesPrefixWithBothLeadingAndTrailingSlash() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "/assets/", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test/")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "/assets/", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test/")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -484,18 +484,18 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageConvertsS3ExceptionWithNullErrorDetails() {
         // given
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
-            .thenThrow(S3Exception.builder().message("s3 failed").statusCode(500).build());
+                .thenThrow(S3Exception.builder().message("s3 failed").statusCode(500).build());
 
         // when & then
         assertCustomException(
-            () -> uploadService.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.FAILED_UPLOAD_FILE
+                () -> uploadService.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.FAILED_UPLOAD_FILE
         );
     }
 
@@ -504,15 +504,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageFailsWhenCdnBaseUrlMissing() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties(" ")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties(" ")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when & then
@@ -524,15 +524,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageFailsWhenCdnBaseUrlNull() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties(null)
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties(null)
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when & then
@@ -544,15 +544,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageFailsWhenBucketMissing() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties(" ", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties(" ", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when & then
@@ -564,15 +564,15 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageFailsWhenRegionMissing() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", " ", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties("konect-bucket", " ", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "logo.png",
-            "image/png",
-            "png-data".getBytes(StandardCharsets.UTF_8)
+                "file",
+                "logo.png",
+                "image/png",
+                "png-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when & then
@@ -584,19 +584,19 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageFailsWhenBucketNull() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties(null, "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties(null, "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file", "logo.png", "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file", "logo.png", "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when & then
         assertCustomException(
-            () -> service.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.ILLEGAL_STATE
+                () -> service.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.ILLEGAL_STATE
         );
     }
 
@@ -605,19 +605,19 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageFailsWhenRegionNull() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", null, "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties("konect-bucket", null, "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file", "logo.png", "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file", "logo.png", "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when & then
         assertCustomException(
-            () -> service.uploadImage(file, UploadTarget.CLUB),
-            ApiResponseCode.ILLEGAL_STATE
+                () -> service.uploadImage(file, UploadTarget.CLUB),
+                ApiResponseCode.ILLEGAL_STATE
         );
     }
 
@@ -626,13 +626,13 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageSkipsSizeCheckWhenMaxUploadBytesNegative() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", -1L),
-            new StorageCdnProperties("https://cdn.konect.test/")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", -1L),
+                new StorageCdnProperties("https://cdn.konect.test/")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file", "big.png", "image/png",
-            new byte[1_000_000]
+                "file", "big.png", "image/png",
+                new byte[1_000_000]
         );
 
         // when
@@ -647,13 +647,13 @@ class UploadServiceTest extends ServiceTestSupport {
     @DisplayName("uploadImage는 CDN baseUrl에 double trailing slash가 있어도 fileUrl에 double slash가 없다")
     void uploadImageRemovesAllTrailingSlashesFromCdnBaseUrl() {
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test//")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test//")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file", "logo.png", "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file", "logo.png", "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -718,13 +718,13 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageConstructsFileUrlAsBaseUrlSlashKey() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties("konect-bucket", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file", "logo.png", "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file", "logo.png", "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -732,7 +732,7 @@ class UploadServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.fileUrl())
-            .isEqualTo("https://cdn.konect.test/" + response.key());
+                .isEqualTo("https://cdn.konect.test/" + response.key());
         assertThat(response.fileUrl()).doesNotMatch(".*://.*//.*");
     }
 
@@ -741,8 +741,8 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImagePassesNormalizedContentTypeToPutObjectRequest() {
         // given — content-type이 정규화(trim + lowercase)되어 S3에 전달됨
         MockMultipartFile file = new MockMultipartFile(
-            "file", "photo.jpg", "IMAGE/JPEG",
-            "jpeg-data".getBytes(StandardCharsets.UTF_8)
+                "file", "photo.jpg", "IMAGE/JPEG",
+                "jpeg-data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -760,7 +760,7 @@ class UploadServiceTest extends ServiceTestSupport {
         // given
         byte[] content = new byte[1234];
         MockMultipartFile file = new MockMultipartFile(
-            "file", "logo.png", "image/png", content
+                "file", "logo.png", "image/png", content
         );
 
         // when
@@ -777,13 +777,13 @@ class UploadServiceTest extends ServiceTestSupport {
     void uploadImageUsesConfiguredBucketInPutObjectRequest() {
         // given
         UploadService service = new UploadService(
-            s3Client,
-            new S3StorageProperties("my-custom-bucket", "ap-northeast-2", "konect", 5_000L),
-            new StorageCdnProperties("https://cdn.konect.test")
+                s3Client,
+                new S3StorageProperties("my-custom-bucket", "ap-northeast-2", "konect", 5_000L),
+                new StorageCdnProperties("https://cdn.konect.test")
         );
         MockMultipartFile file = new MockMultipartFile(
-            "file", "logo.png", "image/png",
-            "data".getBytes(StandardCharsets.UTF_8)
+                "file", "logo.png", "image/png",
+                "data".getBytes(StandardCharsets.UTF_8)
         );
 
         // when
@@ -797,17 +797,17 @@ class UploadServiceTest extends ServiceTestSupport {
 
     private MultipartFile mockFile(String filename, String contentType, long size) {
         return new MockMultipartFile(
-            "file",
-            filename,
-            contentType,
-            new byte[Math.toIntExact(size)]
+                "file",
+                filename,
+                contentType,
+                new byte[Math.toIntExact(size)]
         );
     }
 
     private void assertCustomException(ThrowingCallable callable, ApiResponseCode expectedCode) {
         assertThatThrownBy(callable::call)
-            .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(expectedCode));
+                .isInstanceOf(CustomException.class)
+                .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(expectedCode));
     }
 
     @FunctionalInterface
