@@ -172,8 +172,8 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubMember manager = ClubMemberFixture.createManager(club, managerUser);
         ClubApplyQuestion question = createQuestion(club, 100, "지원 동기", true, 1, at(2026, 4, 1, 12, 0));
         ClubApplyRequest request = new ClubApplyRequest(
-                List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "백엔드를 공부하고 싶습니다.")),
-                "https://example.com/payment.png"
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "백엔드를 공부하고 싶습니다.")),
+            "https://example.com/payment.png"
         );
         Bank bank = org.mockito.Mockito.mock(Bank.class);
         ClubApply savedApply = ClubApply.of(club, applicant, request.feePaymentImageUrl());
@@ -185,8 +185,9 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(question));
         given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
-        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
-                .willReturn(List.of(manager));
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1,
+            gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of(manager));
         given(bankRepository.getByName("국민은행")).willReturn(bank);
         given(bank.getId()).willReturn(7);
 
@@ -195,17 +196,17 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
         // then
         verify(clubApplyAnswerRepository).saveAll(argThat(answers -> {
-            List<ClubApplyAnswer> savedAnswers = (List<ClubApplyAnswer>) answers;
+            List<ClubApplyAnswer> savedAnswers = (List<ClubApplyAnswer>)answers;
             return savedAnswers.size() == 1
-                    && savedAnswers.get(0).getQuestion().getId().equals(100)
-                    && savedAnswers.get(0).getAnswer().equals("백엔드를 공부하고 싶습니다.");
+                && savedAnswers.get(0).getQuestion().getId().equals(100)
+                && savedAnswers.get(0).getAnswer().equals("백엔드를 공부하고 싶습니다.");
         }));
         verify(applicationEventPublisher).publishEvent(ClubApplicationSubmittedEvent.of(
-                List.of(20),
-                300,
-                1,
-                club.getName(),
-                applicant.getName()
+            List.of(20),
+            300,
+            1,
+            club.getName(),
+            applicant.getName()
         ));
         assertThat(response.bankId()).isEqualTo(7);
         assertThat(response.bankName()).isEqualTo("국민은행");
@@ -285,17 +286,17 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubApplyQuestion removedQuestion = createQuestion(club, 3, "자기소개", true, 3, at(2026, 4, 1, 10, 0));
         ClubApplyQuestion createdQuestion = createQuestion(club, 4, "새 질문", true, 2, at(2026, 4, 2, 10, 0));
         ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기", true),
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(2, "관심 기술", false),
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문", true)
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기", true),
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(2, "관심 기술", false),
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문", true)
         ));
         List<ClubApplyQuestion> existingQuestions = List.of(unchangedQuestion, changedQuestion, removedQuestion);
         ArgumentCaptor<List<ClubApplyQuestion>> questionsCaptor = ArgumentCaptor.forClass(List.class);
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
-                .willReturn(existingQuestions)
-                .willReturn(List.of(unchangedQuestion, createdQuestion));
+            .willReturn(existingQuestions)
+            .willReturn(List.of(unchangedQuestion, createdQuestion));
 
         // when
         var response = clubApplicationService.replaceApplyQuestions(1, 99, request);
@@ -306,8 +307,8 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         List<ClubApplyQuestion> createdQuestions = questionsCaptor.getValue();
         assertThat(createdQuestions).hasSize(2);
         assertThat(createdQuestions)
-                .extracting(ClubApplyQuestion::getQuestion)
-                .containsExactly("관심 기술", "새 질문");
+            .extracting(ClubApplyQuestion::getQuestion)
+            .containsExactly("관심 기술", "새 질문");
         assertThat(unchangedQuestion.getDisplayOrder()).isEqualTo(1);
         assertThat(changedQuestion.getDeletedAt()).isNotNull();
         assertThat(removedQuestion.getDeletedAt()).isNotNull();
@@ -321,15 +322,17 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         Club club = createClub(1);
         ClubApplyQuestion existingQuestion = createQuestion(club, 1, "지원 동기", true, 1, at(2026, 4, 1, 10, 0));
         ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기", true),
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기 수정", true)
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기", true),
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기 수정", true)
         ));
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(existingQuestion));
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(
+            List.of(existingQuestion));
 
         // when & then
-        assertErrorCode(() -> clubApplicationService.replaceApplyQuestions(1, 99, request), DUPLICATE_CLUB_APPLY_QUESTION);
+        assertErrorCode(() -> clubApplicationService.replaceApplyQuestions(1, 99, request),
+            DUPLICATE_CLUB_APPLY_QUESTION);
         verify(clubApplyQuestionRepository, never()).saveAll(any());
     }
 
@@ -344,7 +347,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
         // when
         ClubMemberApplicationAnswersResponse response =
-                clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
 
         // then
         assertThat(response.applications()).isEmpty();
@@ -381,13 +384,13 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
         given(clubApplyAnswerRepository.findAllByApplyIdsWithQuestion(List.of(100, 200)))
-                .willReturn(List.of(firstAnswer1, firstAnswer2, secondAnswer1, secondAnswer2));
+            .willReturn(List.of(firstAnswer1, firstAnswer2, secondAnswer1, secondAnswer2));
         given(clubApplyQuestionRepository.findAllCandidatesVisibleBetweenApplyTimes(1, firstAppliedAt, secondAppliedAt))
-                .willReturn(List.of(oldQuestion, deletedQuestion, newQuestion));
+            .willReturn(List.of(oldQuestion, deletedQuestion, newQuestion));
 
         // when
         ClubMemberApplicationAnswersResponse response =
-                clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
 
         // then
         assertThat(response.applications()).hasSize(2);
@@ -395,14 +398,14 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubApplicationAnswersResponse firstResponse = response.applications().get(0);
         assertThat(firstResponse.applicationId()).isEqualTo(100);
         assertThat(firstResponse.answers())
-                .extracting(ClubApplicationAnswersResponse.ClubApplicationAnswerResponse::question)
-                .containsExactly("공통 질문", "이전 질문");
+            .extracting(ClubApplicationAnswersResponse.ClubApplicationAnswerResponse::question)
+            .containsExactly("공통 질문", "이전 질문");
 
         ClubApplicationAnswersResponse secondResponse = response.applications().get(1);
         assertThat(secondResponse.applicationId()).isEqualTo(200);
         assertThat(secondResponse.answers())
-                .extracting(ClubApplicationAnswersResponse.ClubApplicationAnswerResponse::question)
-                .containsExactly("공통 질문", "신규 질문");
+            .extracting(ClubApplicationAnswersResponse.ClubApplicationAnswerResponse::question)
+            .containsExactly("공통 질문", "신규 질문");
     }
 
     @Test
@@ -418,7 +421,8 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(userRepository.getById(10)).willReturn(user);
         given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
-        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(requiredQuestion));
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(
+            List.of(requiredQuestion));
 
         // when & then
         assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), REQUIRED_CLUB_APPLY_ANSWER_MISSING);
@@ -432,8 +436,8 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         Club club = createClub(1);
         User user = createUser(10, "2021136001", "지원자");
         ClubApplyRequest request = new ClubApplyRequest(
-                List.of(new ClubApplyRequest.InnerClubQuestionAnswer(999, "답변")),
-                null
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(999, "답변")),
+            null
         );
 
         given(clubRepository.getById(1)).willReturn(club);
@@ -454,11 +458,11 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         Club club = createClub(1);
         User user = createUser(10, "2021136001", "지원자");
         ClubApplyRequest request = new ClubApplyRequest(
-                List.of(
-                        new ClubApplyRequest.InnerClubQuestionAnswer(100, "첫 답변"),
-                        new ClubApplyRequest.InnerClubQuestionAnswer(100, "중복 답변")
-                ),
-                null
+            List.of(
+                new ClubApplyRequest.InnerClubQuestionAnswer(100, "첫 답변"),
+                new ClubApplyRequest.InnerClubQuestionAnswer(100, "중복 답변")
+            ),
+            null
         );
 
         given(clubRepository.getById(1)).willReturn(club);
@@ -487,8 +491,9 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
         given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
-        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
-                .willReturn(List.of());
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1,
+            gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of());
 
         // when
         clubApplicationService.applyClub(1, 10, request);
@@ -514,8 +519,9 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
         given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
-        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
-                .willReturn(List.of());
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1,
+            gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of());
 
         // when
         ClubFeeInfoResponse response = clubApplicationService.applyClub(1, 10, request);
@@ -536,18 +542,20 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubApply savedApply = ClubApply.of(club, user, null);
         setId(savedApply, 300);
         ClubApplyRequest request = new ClubApplyRequest(
-                List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "")),
-                null
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "")),
+            null
         );
 
         given(clubRepository.getById(1)).willReturn(club);
         given(userRepository.getById(10)).willReturn(user);
         given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
-        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(optionalQuestion));
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(
+            List.of(optionalQuestion));
         given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
-        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
-                .willReturn(List.of());
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1,
+            gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of());
 
         // when
         clubApplicationService.applyClub(1, 10, request);
@@ -562,14 +570,15 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         // given
         Club club = createClub(1);
         ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(999, "수정된 질문", true)
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(999, "수정된 질문", true)
         ));
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
 
         // when & then
-        assertErrorCode(() -> clubApplicationService.replaceApplyQuestions(1, 99, request), NOT_FOUND_CLUB_APPLY_QUESTION);
+        assertErrorCode(() -> clubApplicationService.replaceApplyQuestions(1, 99, request),
+            NOT_FOUND_CLUB_APPLY_QUESTION);
         verify(clubApplyQuestionRepository, never()).saveAll(any());
     }
 
@@ -581,20 +590,20 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubApplyQuestion newQuestion1 = createQuestion(club, 10, "새 질문 1", true, 1, at(2026, 4, 2, 10, 0));
         ClubApplyQuestion newQuestion2 = createQuestion(club, 11, "새 질문 2", false, 2, at(2026, 4, 2, 10, 0));
         ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문 1", true),
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문 2", false)
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문 1", true),
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문 2", false)
         ));
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
-                .willReturn(List.of())
-                .willReturn(List.of(newQuestion1, newQuestion2));
+            .willReturn(List.of())
+            .willReturn(List.of(newQuestion1, newQuestion2));
 
         // when
         ClubApplyQuestionsResponse response = clubApplicationService.replaceApplyQuestions(1, 99, request);
 
         // then
-        verify(clubApplyQuestionRepository).saveAll(argThat(list -> ((List<?>) list).size() == 2));
+        verify(clubApplyQuestionRepository).saveAll(argThat(list -> ((List<?>)list).size() == 2));
         assertThat(response.questions()).hasSize(2);
     }
 
@@ -609,8 +618,8 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
-                .willReturn(List.of(existingQ1, existingQ2))
-                .willReturn(List.of());
+            .willReturn(List.of(existingQ1, existingQ2))
+            .willReturn(List.of());
 
         // when
         ClubApplyQuestionsResponse response = clubApplicationService.replaceApplyQuestions(1, 99, request);
@@ -709,15 +718,16 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         User user = createUser(10, "2021136001", "지원자");
         ClubApplyQuestion requiredQuestion = createQuestion(club, 100, "지원 동기", true, 1, at(2026, 4, 1, 12, 0));
         ClubApplyRequest request = new ClubApplyRequest(
-                List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "   ")),
-                null
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, "   ")),
+            null
         );
 
         given(clubRepository.getById(1)).willReturn(club);
         given(userRepository.getById(10)).willReturn(user);
         given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
-        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(requiredQuestion));
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(
+            List.of(requiredQuestion));
 
         // when & then
         assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), REQUIRED_CLUB_APPLY_ANSWER_MISSING);
@@ -732,15 +742,16 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         User user = createUser(10, "2021136001", "지원자");
         ClubApplyQuestion requiredQuestion = createQuestion(club, 100, "지원 동기", true, 1, at(2026, 4, 1, 12, 0));
         ClubApplyRequest request = new ClubApplyRequest(
-                List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, null)),
-                null
+            List.of(new ClubApplyRequest.InnerClubQuestionAnswer(100, null)),
+            null
         );
 
         given(clubRepository.getById(1)).willReturn(club);
         given(userRepository.getById(10)).willReturn(user);
         given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
-        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of(requiredQuestion));
+        given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(
+            List.of(requiredQuestion));
 
         // when & then
         assertErrorCode(() -> clubApplicationService.applyClub(1, 10, request), REQUIRED_CLUB_APPLY_ANSWER_MISSING);
@@ -767,19 +778,20 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubApplyRepository.existsPendingByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1)).willReturn(List.of());
         given(clubApplyRepository.save(any(ClubApply.class))).willReturn(savedApply);
-        given(clubMemberRepository.findAllByClubIdAndPositionIn(1, gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
-                .willReturn(List.of(member1, member2));
+        given(clubMemberRepository.findAllByClubIdAndPositionIn(1,
+            gg.agit.konect.domain.club.enums.ClubPosition.MANAGERS))
+            .willReturn(List.of(member1, member2));
 
         // when
         clubApplicationService.applyClub(1, 10, request);
 
         // then
         verify(applicationEventPublisher).publishEvent(ClubApplicationSubmittedEvent.of(
-                List.of(20, 21),
-                300,
-                1,
-                club.getName(),
-                applicant.getName()
+            List.of(20, 21),
+            300,
+            1,
+            club.getName(),
+            applicant.getName()
         ));
     }
 
@@ -861,20 +873,20 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         Club club = createClub(1);
         ClubApplyQuestion createdQuestion = createQuestion(club, 10, "새 질문", true, 1, at(2026, 4, 2, 10, 0));
         ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문", null)
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(null, "새 질문", null)
         ));
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
-                .willReturn(List.of())
-                .willReturn(List.of(createdQuestion));
+            .willReturn(List.of())
+            .willReturn(List.of(createdQuestion));
 
         // when
         clubApplicationService.replaceApplyQuestions(1, 99, request);
 
         // then
         verify(clubApplyQuestionRepository).saveAll(argThat(list -> {
-            List<ClubApplyQuestion> questions = (List<ClubApplyQuestion>) list;
+            List<ClubApplyQuestion> questions = (List<ClubApplyQuestion>)list;
             return questions.size() == 1 && questions.get(0).getIsRequired().equals(true);
         }));
     }
@@ -887,13 +899,13 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubApplyQuestion question = createQuestion(club, 1, "지원 동기", true, 2, at(2026, 4, 1, 10, 0));
         // Same content, only repositioning to display order 1
         ClubApplyQuestionsReplaceRequest request = new ClubApplyQuestionsReplaceRequest(List.of(
-                new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기", true)
+            new ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest(1, "지원 동기", true)
         ));
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(1))
-                .willReturn(List.of(question))
-                .willReturn(List.of(question));
+            .willReturn(List.of(question))
+            .willReturn(List.of(question));
 
         // when
         clubApplicationService.replaceApplyQuestions(1, 99, request);
@@ -924,11 +936,11 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
         given(clubApplyAnswerRepository.findAllByApplyIdsWithQuestion(List.of(100))).willReturn(List.of(answer));
         given(clubApplyQuestionRepository.findAllCandidatesVisibleBetweenApplyTimes(1, appliedAt, appliedAt))
-                .willReturn(List.of(question));
+            .willReturn(List.of(question));
 
         // when
         ClubMemberApplicationAnswersResponse response =
-                clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
 
         // then
         assertThat(response.applications()).hasSize(1);
@@ -954,11 +966,11 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
         given(clubApplyAnswerRepository.findAllByApplyIdsWithQuestion(List.of(100))).willReturn(List.of());
         given(clubApplyQuestionRepository.findAllCandidatesVisibleBetweenApplyTimes(1, appliedAt, appliedAt))
-                .willReturn(List.of(question));
+            .willReturn(List.of(question));
 
         // when
         ClubMemberApplicationAnswersResponse response =
-                clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
 
         // then - isAfter returns false for equal timestamps, so question is filtered out
         assertThat(response.applications()).hasSize(1);
@@ -983,11 +995,11 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(1, condition)).willReturn(page);
         given(clubApplyAnswerRepository.findAllByApplyIdsWithQuestion(List.of(100))).willReturn(List.of(answer));
         given(clubApplyQuestionRepository.findAllCandidatesVisibleBetweenApplyTimes(1, appliedAt, appliedAt))
-                .willReturn(List.of(question));
+            .willReturn(List.of(question));
 
         // when
         ClubMemberApplicationAnswersResponse response =
-                clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
+            clubApplicationService.getApprovedMemberApplicationAnswersList(1, 99, condition);
 
         // then - minAppliedAt == maxAppliedAt
         assertThat(response.applications()).hasSize(1);
@@ -1016,7 +1028,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
         // when
         ClubApplicationAnswersResponse response =
-                clubApplicationService.getApprovedMemberApplicationAnswers(1, 10, 99);
+            clubApplicationService.getApprovedMemberApplicationAnswers(1, 10, 99);
 
         // then
         verify(clubPermissionValidator).validateManagerAccess(1, 99);
@@ -1060,7 +1072,8 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubRecruitmentRepository.getByClubId(1)).willReturn(recruitment);
-        given(clubApplyQueryRepository.findAllByClubIdAndCreatedAtBetween(1, startAt, endAt, condition)).willReturn(page);
+        given(clubApplyQueryRepository.findAllByClubIdAndCreatedAtBetween(1, startAt, endAt, condition)).willReturn(
+            page);
 
         // when
         ClubApplicationsResponse response = clubApplicationService.getClubApplications(1, 99, condition);
@@ -1086,7 +1099,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
         // when
         ClubApplicationsResponse response =
-                clubApplicationService.getApprovedMemberApplications(1, 99, condition);
+            clubApplicationService.getApprovedMemberApplications(1, 99, condition);
 
         // then
         verify(clubPermissionValidator).validateManagerAccess(1, 99);
@@ -1194,21 +1207,21 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
     private User createUser(Integer id, String studentNumber, String name) {
         return UserFixture.createUserWithId(
-                UniversityFixture.createWithId(1),
-                id,
-                name,
-                studentNumber,
-                gg.agit.konect.domain.user.enums.UserRole.USER
+            UniversityFixture.createWithId(1),
+            id,
+            name,
+            studentNumber,
+            gg.agit.konect.domain.user.enums.UserRole.USER
         );
     }
 
     private ClubApplyQuestion createQuestion(
-            Club club,
-            Integer id,
-            String question,
-            boolean isRequired,
-            int displayOrder,
-            LocalDateTime createdAt
+        Club club,
+        Integer id,
+        String question,
+        boolean isRequired,
+        int displayOrder,
+        LocalDateTime createdAt
     ) {
         ClubApplyQuestion applyQuestion = ClubApplyQuestion.of(club, question, isRequired, displayOrder);
         setId(applyQuestion, id);
@@ -1239,8 +1252,8 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
         assertThatThrownBy(callable::call)
-                .isInstanceOf(CustomException.class)
-                .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(errorCode));
+            .isInstanceOf(CustomException.class)
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(errorCode));
     }
 
     @FunctionalInterface

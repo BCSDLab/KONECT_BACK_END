@@ -79,9 +79,9 @@ public class ClubApplicationService {
     }
 
     public ClubApplicationsResponse getClubApplications(
-            Integer clubId,
-            Integer userId,
-            ClubApplicationCondition condition
+        Integer clubId,
+        Integer userId,
+        ClubApplicationCondition condition
     ) {
         clubRepository.getById(clubId);
 
@@ -94,26 +94,26 @@ public class ClubApplicationService {
     }
 
     public ClubApplicationsResponse getApprovedMemberApplications(
-            Integer clubId,
-            Integer userId,
-            ClubApplicationCondition condition
+        Integer clubId,
+        Integer userId,
+        ClubApplicationCondition condition
     ) {
         clubRepository.getById(clubId);
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
         Page<ClubApply> clubAppliesPage = clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(
-                clubId,
-                condition
+            clubId,
+            condition
         );
 
         return ClubApplicationsResponse.from(clubAppliesPage);
     }
 
     public ClubApplicationAnswersResponse getApprovedMemberApplicationAnswers(
-            Integer clubId,
-            Integer targetUserId,
-            Integer requesterId
+        Integer clubId,
+        Integer targetUserId,
+        Integer requesterId
     ) {
         clubRepository.getById(clubId);
 
@@ -126,16 +126,16 @@ public class ClubApplicationService {
     }
 
     public ClubMemberApplicationAnswersResponse getApprovedMemberApplicationAnswersList(
-            Integer clubId,
-            Integer requesterId,
-            ClubApplicationCondition condition
+        Integer clubId,
+        Integer requesterId,
+        ClubApplicationCondition condition
     ) {
         clubRepository.getById(clubId);
 
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         Page<ClubApply> approvedApplicationsPage =
-                clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(clubId, condition);
+            clubApplyQueryRepository.findApprovedMemberApplicationsByClubId(clubId, condition);
         List<ClubApply> approvedApplications = approvedApplicationsPage.getContent();
 
         if (approvedApplications.isEmpty()) {
@@ -143,49 +143,49 @@ public class ClubApplicationService {
         }
 
         List<Integer> applyIds = approvedApplications.stream()
-                .map(ClubApply::getId)
-                .toList();
+            .map(ClubApply::getId)
+            .toList();
         List<LocalDateTime> appliedAts = approvedApplications.stream()
-                .map(ClubApply::getCreatedAt)
-                .distinct()
-                .toList();
+            .map(ClubApply::getCreatedAt)
+            .distinct()
+            .toList();
 
         LocalDateTime minAppliedAt = appliedAts.stream()
-                .min(LocalDateTime::compareTo)
-                .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
+            .min(LocalDateTime::compareTo)
+            .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
         LocalDateTime maxAppliedAt = appliedAts.stream()
-                .max(LocalDateTime::compareTo)
-                .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
+            .max(LocalDateTime::compareTo)
+            .orElseThrow(() -> new IllegalStateException("지원서 신청 시점이 비어 있습니다."));
 
         Map<Integer, List<ClubApplyAnswer>> answersByApplyId = clubApplyAnswerRepository
-                .findAllByApplyIdsWithQuestion(applyIds)
-                .stream()
-                .collect(Collectors.groupingBy(answer -> answer.getApply().getId()));
+            .findAllByApplyIdsWithQuestion(applyIds)
+            .stream()
+            .collect(Collectors.groupingBy(answer -> answer.getApply().getId()));
         List<ClubApplyQuestion> questionCandidates = clubApplyQuestionRepository
-                .findAllCandidatesVisibleBetweenApplyTimes(clubId, minAppliedAt, maxAppliedAt);
+            .findAllCandidatesVisibleBetweenApplyTimes(clubId, minAppliedAt, maxAppliedAt);
         Map<LocalDateTime, List<ClubApplyQuestion>> questionsByAppliedAt = appliedAts.stream()
-                .collect(Collectors.toMap(
-                        appliedAt -> appliedAt,
-                        appliedAt -> questionCandidates.stream()
-                                .filter(question -> isVisibleAtApplyTime(question, appliedAt))
-                                .toList()
-                ));
+            .collect(Collectors.toMap(
+                appliedAt -> appliedAt,
+                appliedAt -> questionCandidates.stream()
+                    .filter(question -> isVisibleAtApplyTime(question, appliedAt))
+                    .toList()
+            ));
 
         List<ClubApplicationAnswersResponse> responses = approvedApplications.stream()
-                .map(application -> toClubApplicationAnswersResponse(
-                        application,
-                        questionsByAppliedAt.getOrDefault(application.getCreatedAt(), List.of()),
-                        answersByApplyId.getOrDefault(application.getId(), List.of())
-                ))
-                .toList();
+            .map(application -> toClubApplicationAnswersResponse(
+                application,
+                questionsByAppliedAt.getOrDefault(application.getCreatedAt(), List.of()),
+                answersByApplyId.getOrDefault(application.getId(), List.of())
+            ))
+            .toList();
 
         return ClubMemberApplicationAnswersResponse.from(approvedApplicationsPage, responses);
     }
 
     public ClubApplicationAnswersResponse getClubApplicationAnswers(
-            Integer clubId,
-            Integer applicationId,
-            Integer userId
+        Integer clubId,
+        Integer applicationId,
+        Integer userId
     ) {
         clubRepository.getById(clubId);
 
@@ -201,20 +201,20 @@ public class ClubApplicationService {
     }
 
     private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(
-            Integer clubId,
-            ClubApply clubApply,
-            List<ClubApplyAnswer> answers
+        Integer clubId,
+        ClubApply clubApply,
+        List<ClubApplyAnswer> answers
     ) {
         List<ClubApplyQuestion> questions =
-                clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
+            clubApplyQuestionRepository.findAllVisibleAtApplyTime(clubId, clubApply.getCreatedAt());
 
         return toClubApplicationAnswersResponse(clubApply, questions, answers);
     }
 
     private ClubApplicationAnswersResponse toClubApplicationAnswersResponse(
-            ClubApply clubApply,
-            List<ClubApplyQuestion> questions,
-            List<ClubApplyAnswer> answers
+        ClubApply clubApply,
+        List<ClubApplyQuestion> questions,
+        List<ClubApplyAnswer> answers
     ) {
         return ClubApplicationAnswersResponse.of(clubApply, questions, answers);
     }
@@ -223,7 +223,7 @@ public class ClubApplicationService {
         LocalDateTime createdAt = question.getCreatedAt();
         LocalDateTime deletedAt = question.getDeletedAt();
         return (createdAt.isBefore(appliedAt) || createdAt.isEqual(appliedAt))
-                && (deletedAt == null || deletedAt.isAfter(appliedAt));
+            && (deletedAt == null || deletedAt.isAfter(appliedAt));
     }
 
     @Transactional
@@ -245,19 +245,19 @@ public class ClubApplicationService {
         }
 
         ClubMember newMember = ClubMember.builder()
-                .club(club)
-                .user(applicant)
-                .clubPosition(MEMBER)
-                .build();
+            .club(club)
+            .user(applicant)
+            .clubPosition(MEMBER)
+            .build();
 
         ClubMember savedMember = clubMemberRepository.save(newMember);
         chatRoomMembershipService.addClubMember(savedMember);
         clubApply.approve();
 
         applicationEventPublisher.publishEvent(ClubApplicationApprovedEvent.of(
-                applicant.getId(),
-                clubId,
-                club.getName()
+            applicant.getId(),
+            clubId,
+            club.getName()
         ));
     }
 
@@ -277,9 +277,9 @@ public class ClubApplicationService {
         clubApply.reject();
 
         applicationEventPublisher.publishEvent(ClubApplicationRejectedEvent.of(
-                applicant.getId(),
-                clubId,
-                club.getName()
+            applicant.getId(),
+            clubId,
+            club.getName()
         ));
     }
 
@@ -299,11 +299,11 @@ public class ClubApplicationService {
         validateFeePaymentImage(club, request.feePaymentImageUrl());
 
         List<ClubApplyQuestion> questions =
-                clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
         ClubApplyQuestionAnswers answers = ClubApplyQuestionAnswers.of(questions, request.toAnswerMap());
 
         ClubApply apply = clubApplyRepository.save(
-                ClubApply.of(club, user, request.feePaymentImageUrl())
+            ClubApply.of(club, user, request.feePaymentImageUrl())
         );
 
         List<ClubApplyAnswer> applyAnswers = answers.toEntities(apply);
@@ -313,18 +313,18 @@ public class ClubApplicationService {
         }
 
         List<Integer> managerIds = clubMemberRepository
-                .findAllByClubIdAndPositionIn(clubId, ClubPosition.MANAGERS)
-                .stream()
-                .map(manager -> manager.getUser().getId())
-                .toList();
+            .findAllByClubIdAndPositionIn(clubId, ClubPosition.MANAGERS)
+            .stream()
+            .map(manager -> manager.getUser().getId())
+            .toList();
 
         if (!managerIds.isEmpty()) {
             applicationEventPublisher.publishEvent(ClubApplicationSubmittedEvent.of(
-                    managerIds,
-                    apply.getId(),
-                    clubId,
-                    club.getName(),
-                    user.getName()
+                managerIds,
+                apply.getId(),
+                clubId,
+                club.getName(),
+                user.getName()
             ));
         }
 
@@ -334,23 +334,23 @@ public class ClubApplicationService {
 
     private void validateFeePaymentImage(Club club, String feePaymentImageUrl) {
         if (Boolean.TRUE.equals(club.getIsFeeRequired())
-                && !StringUtils.hasText(feePaymentImageUrl)) {
+            && !StringUtils.hasText(feePaymentImageUrl)) {
             throw CustomException.of(FEE_PAYMENT_IMAGE_REQUIRED);
         }
     }
 
     public ClubApplyQuestionsResponse getApplyQuestions(Integer clubId, Integer userId) {
         List<ClubApplyQuestion> questions =
-                clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
     }
 
     @Transactional
     public ClubApplyQuestionsResponse replaceApplyQuestions(
-            Integer clubId,
-            Integer userId,
-            ClubApplyQuestionsReplaceRequest request
+        Integer clubId,
+        Integer userId,
+        ClubApplyQuestionsReplaceRequest request
     ) {
         Club club = clubRepository.getById(clubId);
 
@@ -362,17 +362,17 @@ public class ClubApplicationService {
         List<ClubApplyQuestion> questionsToSoftDelete = new ArrayList<>();
 
         List<ClubApplyQuestion> existingQuestions =
-                clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
         Map<Integer, ClubApplyQuestion> existingQuestionMap = existingQuestions.stream()
-                .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
+            .collect(Collectors.toMap(ClubApplyQuestion::getId, question -> question));
 
         prepareQuestions(
-                club,
-                existingQuestionMap,
-                questionRequests,
-                requestedQuestionIds,
-                questionsToCreate,
-                questionsToSoftDelete
+            club,
+            existingQuestionMap,
+            questionRequests,
+            requestedQuestionIds,
+            questionsToCreate,
+            questionsToSoftDelete
         );
 
         deleteQuestions(existingQuestions, requestedQuestionIds, questionsToSoftDelete);
@@ -385,18 +385,18 @@ public class ClubApplicationService {
         }
 
         List<ClubApplyQuestion> questions =
-                clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
+            clubApplyQuestionRepository.findAllByClubIdOrderByDisplayOrderAsc(clubId);
 
         return ClubApplyQuestionsResponse.from(questions);
     }
 
     private void prepareQuestions(
-            Club club,
-            Map<Integer, ClubApplyQuestion> existingQuestionMap,
-            List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests,
-            Set<Integer> requestedQuestionIds,
-            List<ClubApplyQuestion> questionsToCreate,
-            List<ClubApplyQuestion> questionsToSoftDelete
+        Club club,
+        Map<Integer, ClubApplyQuestion> existingQuestionMap,
+        List<ClubApplyQuestionsReplaceRequest.ApplyQuestionRequest> questionRequests,
+        Set<Integer> requestedQuestionIds,
+        List<ClubApplyQuestion> questionsToCreate,
+        List<ClubApplyQuestion> questionsToSoftDelete
     ) {
         for (int index = 0; index < questionRequests.size(); index++) {
             int displayOrder = index + 1;
@@ -405,10 +405,10 @@ public class ClubApplicationService {
 
             if (questionId == null) {
                 questionsToCreate.add(ClubApplyQuestion.of(
-                        club,
-                        questionRequest.question(),
-                        questionRequest.isRequiredOrDefault(),
-                        displayOrder)
+                    club,
+                    questionRequest.question(),
+                    questionRequest.isRequiredOrDefault(),
+                    displayOrder)
                 );
                 continue;
             }
@@ -436,13 +436,13 @@ public class ClubApplicationService {
     }
 
     private void deleteQuestions(
-            List<ClubApplyQuestion> existingQuestions,
-            Set<Integer> requestedQuestionIds,
-            List<ClubApplyQuestion> questionsToSoftDelete
+        List<ClubApplyQuestion> existingQuestions,
+        Set<Integer> requestedQuestionIds,
+        List<ClubApplyQuestion> questionsToSoftDelete
     ) {
         List<ClubApplyQuestion> questionsToDelete = existingQuestions.stream()
-                .filter(question -> !requestedQuestionIds.contains(question.getId()))
-                .toList();
+            .filter(question -> !requestedQuestionIds.contains(question.getId()))
+            .toList();
 
         if (!questionsToDelete.isEmpty()) {
             questionsToSoftDelete.addAll(questionsToDelete);
@@ -450,19 +450,19 @@ public class ClubApplicationService {
     }
 
     private Page<ClubApply> findApplicationsByRecruitmentPeriod(
-            Integer clubId,
-            ClubRecruitment recruitment,
-            ClubApplicationCondition condition
+        Integer clubId,
+        ClubRecruitment recruitment,
+        ClubApplicationCondition condition
     ) {
         if (recruitment.getIsAlwaysRecruiting()) {
             return clubApplyQueryRepository.findAllByClubId(clubId, condition);
         }
 
         return clubApplyQueryRepository.findAllByClubIdAndCreatedAtBetween(
-                clubId,
-                recruitment.getStartAt(),
-                recruitment.getEndAt(),
-                condition
+            clubId,
+            recruitment.getStartAt(),
+            recruitment.getEndAt(),
+            condition
         );
     }
 
@@ -489,10 +489,10 @@ public class ClubApplicationService {
         String bankName = bankRepository.getById(request.bankId()).getName();
 
         club.replaceFeeInfo(
-                request.amount(),
-                bankName,
-                request.accountNumber(),
-                request.accountHolder()
+            request.amount(),
+            bankName,
+            request.accountNumber(),
+            request.accountHolder()
         );
 
         return ClubFeeInfoResponse.of(club, request.bankId(), bankName);
