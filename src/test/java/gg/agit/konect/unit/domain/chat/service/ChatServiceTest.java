@@ -136,8 +136,7 @@ class ChatServiceTest extends ServiceTestSupport {
         ChatRoom room = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
         ChatRoomMember requesterMember = createRoomMember(room, currentUser, false,
             LocalDateTime.of(2026, 4, 11, 10, 0));
-        ReflectionTestUtils.setField(requesterMember, "leftAt", LocalDateTime.of(2026, 4, 11, 11, 0));
-        ReflectionTestUtils.setField(requesterMember, "visibleMessageFrom", LocalDateTime.of(2026, 4, 11, 11, 0));
+        markMemberLeft(requesterMember, LocalDateTime.of(2026, 4, 11, 11, 0));
         ChatRoomMember targetMember = createRoomMember(room, targetUser, false,
             LocalDateTime.of(2026, 4, 11, 10, 0));
 
@@ -854,8 +853,7 @@ class ChatServiceTest extends ServiceTestSupport {
         ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
         ChatRoomMember leftMember = createRoomMember(groupRoom, sender, false,
             LocalDateTime.of(2026, 4, 11, 10, 0));
-        ReflectionTestUtils.setField(leftMember, "leftAt", LocalDateTime.of(2026, 4, 11, 12, 0));
-        ReflectionTestUtils.setField(leftMember, "visibleMessageFrom", LocalDateTime.of(2026, 4, 11, 12, 0));
+        markMemberLeft(leftMember, LocalDateTime.of(2026, 4, 11, 12, 0));
 
         given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
         given(userRepository.getById(senderId)).willReturn(sender);
@@ -1085,6 +1083,10 @@ class ChatServiceTest extends ServiceTestSupport {
         return message;
     }
 
+    private void markMemberLeft(ChatRoomMember member, LocalDateTime leftAt) {
+        ReflectionTestUtils.setField(member, "leftAt", leftAt);
+        ReflectionTestUtils.setField(member, "visibleMessageFrom", leftAt);
+    }
 
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
         assertThatThrownBy(callable)
