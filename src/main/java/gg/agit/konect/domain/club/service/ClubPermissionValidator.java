@@ -48,7 +48,13 @@ public class ClubPermissionValidator {
     }
 
     public void validateManagerAccess(Integer clubId, Integer userId) {
-        if (isAdmin(userId)) {
+        validateManagerAccess(clubId, userRepository.getById(userId));
+    }
+
+    public void validateManagerAccess(Integer clubId, User user) {
+        Integer userId = user.getId();
+
+        if (user.isAdmin()) {
             return ;
         }
 

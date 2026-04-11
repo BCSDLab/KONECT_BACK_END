@@ -173,7 +173,7 @@ public class Club extends BaseEntity {
         this.introduce = introduce;
     }
 
-    public void updateBasicInfo(String name, ClubCategory clubCategory) { // 어드민 계정으로만 사용 가능
+    public void updateBasicInfo(String name, ClubCategory clubCategory) {
         this.name = name;
         this.clubCategory = clubCategory;
     }

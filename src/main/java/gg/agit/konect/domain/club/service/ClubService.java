@@ -162,10 +162,10 @@ public class ClubService {
 
     @Transactional
     public void updateBasicInfo(Integer clubId, Integer userId, ClubBasicInfoUpdateRequest request) {
-        userRepository.getById(userId);
+        User user = userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
 
-        clubPermissionValidator.validateManagerAccess(clubId, userId);
+        clubPermissionValidator.validateManagerAccess(clubId, user);
 
         club.updateBasicInfo(request.name(), request.clubCategory());
     }

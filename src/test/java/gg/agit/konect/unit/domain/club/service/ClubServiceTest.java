@@ -576,11 +576,12 @@ class ClubServiceTest extends ServiceTestSupport {
         given(userRepository.getById(userId)).willReturn(user);
         given(clubRepository.getById(clubId)).willReturn(
             ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD"));
-        willThrow(CustomException.class).given(clubPermissionValidator).validateManagerAccess(clubId, userId);
+        willThrow(CustomException.of(FORBIDDEN_ROLE_ACCESS))
+            .given(clubPermissionValidator)
+            .validateManagerAccess(clubId, userId);
 
         // when & then
-        assertThatThrownBy(() -> clubService.updateInfo(clubId, userId, request))
-            .isInstanceOf(CustomException.class);
+        assertErrorCode(() -> clubService.updateInfo(clubId, userId, request), FORBIDDEN_ROLE_ACCESS);
     }
 
     @Test
@@ -600,7 +601,7 @@ class ClubServiceTest extends ServiceTestSupport {
         clubService.updateBasicInfo(clubId, userId, request);
 
         // then
-        verify(clubPermissionValidator).validateManagerAccess(clubId, userId);
+        verify(clubPermissionValidator).validateManagerAccess(clubId, user);
         assertThat(club.getName()).isEqualTo("새 이름");
         assertThat(club.getClubCategory()).isEqualTo(ClubCategory.SPORTS);
     }
@@ -617,11 +618,15 @@ class ClubServiceTest extends ServiceTestSupport {
         given(userRepository.getById(userId)).willReturn(user);
         given(clubRepository.getById(clubId)).willReturn(
             ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD"));
-        willThrow(CustomException.class).given(clubPermissionValidator).validateManagerAccess(clubId, userId);
+        willThrow(CustomException.of(ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS))
+            .given(clubPermissionValidator)
+            .validateManagerAccess(clubId, user);
 
         // when & then
-        assertThatThrownBy(() -> clubService.updateBasicInfo(clubId, userId, request))
-            .isInstanceOf(CustomException.class);
+        assertErrorCode(
+            () -> clubService.updateBasicInfo(clubId, userId, request),
+            ApiResponseCode.FORBIDDEN_CLUB_MANAGER_ACCESS
+        );
     }
 
     @Test
@@ -677,7 +682,7 @@ class ClubServiceTest extends ServiceTestSupport {
         MyManagedClubResponse response = clubService.getManagedClubDetail(clubId, adminId);
 
         // then
-        verify(clubPermissionValidator, never()).validateManagerAccess(any(), any());
+        verify(clubPermissionValidator, never()).validateManagerAccess(any(Integer.class), any(Integer.class));
         assertThat(response.clubId()).isEqualTo(clubId);
         assertThat(response.position()).isEqualTo(ClubPosition.PRESIDENT.getDescription());
         assertThat(response.name()).isEqualTo(admin.getName());
@@ -777,11 +782,12 @@ class ClubServiceTest extends ServiceTestSupport {
 
         given(clubRepository.getById(clubId)).willReturn(club);
         given(userRepository.getById(userId)).willReturn(user);
-        willThrow(CustomException.class).given(clubPermissionValidator).validateManagerAccess(clubId, userId);
+        willThrow(CustomException.of(FORBIDDEN_ROLE_ACCESS))
+            .given(clubPermissionValidator)
+            .validateManagerAccess(clubId, userId);
 
         // when & then
-        assertThatThrownBy(() -> clubService.getManagedClubDetail(clubId, userId))
-            .isInstanceOf(CustomException.class);
+        assertErrorCode(() -> clubService.getManagedClubDetail(clubId, userId), FORBIDDEN_ROLE_ACCESS);
         verify(clubMemberRepository, never()).getByClubIdAndUserId(any(), any());
     }
 
