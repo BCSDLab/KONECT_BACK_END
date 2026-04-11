@@ -638,9 +638,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         Club club = createClub(1);
         User applicant = createUser(10, "2021136001", "지원자");
         LocalDateTime appliedAt = at(2026, 4, 2, 10, 0);
-        ClubApply clubApply = ClubApply.of(club, applicant, null);
-        setId(clubApply, 100);
-        setCreatedAt(clubApply, appliedAt);
+        ClubApply clubApply = createPendingApply(club, applicant, 100, appliedAt);
         ClubApplyQuestion question = createQuestion(club, 200, "지원 동기", true, 1, at(2026, 4, 1, 9, 0));
         ClubApplyAnswer answer = ClubApplyAnswer.of(clubApply, question, "성장하고 싶습니다.");
 
@@ -1231,10 +1229,15 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         return applyQuestion;
     }
 
-    private ClubApply createApprovedApply(Club club, User user, Integer id, LocalDateTime createdAt) {
+    private ClubApply createPendingApply(Club club, User user, Integer id, LocalDateTime createdAt) {
         ClubApply apply = ClubApply.of(club, user, null);
         setId(apply, id);
         setCreatedAt(apply, createdAt);
+        return apply;
+    }
+
+    private ClubApply createApprovedApply(Club club, User user, Integer id, LocalDateTime createdAt) {
+        ClubApply apply = createPendingApply(club, user, id, createdAt);
         apply.approve();
         return apply;
     }
