@@ -35,9 +35,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import gg.agit.konect.domain.chat.dto.ChatMessageDetailResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
+import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.model.ChatMessage;
@@ -471,6 +474,456 @@ class ChatServiceTest extends ServiceTestSupport {
             () -> chatService.getMessages(userId, groupRoom.getId(), 1, 20),
             FORBIDDEN_CHAT_ROOM_ACCESS
         );
+    }
+
+    // ===== createOrGetChatRoom additional =====
+
+    @Test
+    @DisplayName("createOrGetChatRoom은 기존 방이 없으면 새 direct room을 생성한다")
+    void createOrGetChatRoomCreatesNewDirectRoomWhenNoneExists() {
+        // given
+        Integer currentUserId = 10;
+        Integer targetUserId = 20;
+        User currentUser = createUser(currentUserId, "요청자", UserRole.USER);
+        User targetUser = createUser(targetUserId, "상대", UserRole.USER);
+        ChatRoom newRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(userRepository.getById(currentUserId)).willReturn(currentUser);
+        given(userRepository.getById(targetUserId)).willReturn(targetUser);
+        given(chatRoomRepository.findByTwoUsers(currentUserId, targetUserId, ChatType.DIRECT))
+            .willReturn(Optional.empty());
+        given(chatRoomRepository.save(any(ChatRoom.class))).willReturn(newRoom);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(newRoom.getId(), currentUserId))
+            .willReturn(Optional.empty());
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(newRoom.getId(), targetUserId))
+            .willReturn(Optional.empty());
+
+        // when
+        ChatRoomResponse response = chatService.createOrGetChatRoom(currentUserId, new ChatRoomCreateRequest(targetUserId));
+
+        // then
+        assertThat(response.chatRoomId()).isEqualTo(newRoom.getId());
+        verify(chatRoomRepository).save(any(ChatRoom.class));
+        verify(chatRoomMemberRepository, times(2)).save(any(ChatRoomMember.class));
+    }
+
+    @Test
+    @DisplayName("createOrGetChatRoom은 admin이 admin과 채팅할 때 일반 direct 경로를 사용한다")
+    void createOrGetChatRoomTreatsAdminToAdminAsNormalDirect() {
+        // given
+        Integer adminId1 = 99;
+        Integer adminId2 = 98;
+        User admin1 = createUser(adminId1, "관리자1", UserRole.ADMIN);
+        User admin2 = createUser(adminId2, "관리자2", UserRole.ADMIN);
+        ChatRoom room = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member1 = createRoomMember(room, admin1, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member2 = createRoomMember(room, admin2, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(userRepository.getById(adminId1)).willReturn(admin1);
+        given(userRepository.getById(adminId2)).willReturn(admin2);
+        given(chatRoomRepository.findByTwoUsers(adminId1, adminId2, ChatType.DIRECT))
+            .willReturn(Optional.of(room));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), adminId1))
+            .willReturn(Optional.of(member1));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), adminId2))
+            .willReturn(Optional.of(member2));
+
+        // when
+        ChatRoomResponse response = chatService.createOrGetChatRoom(adminId1, new ChatRoomCreateRequest(adminId2));
+
+        // then
+        assertThat(response.chatRoomId()).isEqualTo(room.getId());
+        verify(chatRoomRepository, never()).findByTwoUsers(eq(SYSTEM_ADMIN_ID), any(), any());
+    }
+
+    // ===== createOrGetAdminChatRoom =====
+
+    @Test
+    @DisplayName("createOrGetAdminChatRoom은 admin이 없으면 NOT_FOUND_USER를 던진다")
+    void createOrGetAdminChatRoomThrowsWhenNoAdminExists() {
+        // given
+        given(userRepository.findFirstByRoleAndDeletedAtIsNullOrderByIdAsc(UserRole.ADMIN))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.createOrGetAdminChatRoom(10), NOT_FOUND_USER);
+    }
+
+    // ===== leaveChatRoom additional =====
+
+    @Test
+    @DisplayName("leaveChatRoom은 존재하지 않는 방에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void leaveChatRoomThrowsWhenRoomNotFound() {
+        // given
+        given(chatRoomRepository.findById(999)).willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.leaveChatRoom(10, 999), NOT_FOUND_CHAT_ROOM);
+    }
+
+    @Test
+    @DisplayName("leaveChatRoom은 멤버가 아닌 사용자에 대해 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    void leaveChatRoomThrowsWhenNotMember() {
+        // given
+        Integer userId = 10;
+        ChatRoom directRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(directRoom.getId(), userId))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.leaveChatRoom(userId, directRoom.getId()), FORBIDDEN_CHAT_ROOM_ACCESS);
+    }
+
+    // ===== kickMember additional =====
+
+    @Test
+    @DisplayName("kickMember은 존재하지 않는 방에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void kickMemberThrowsWhenRoomNotFound() {
+        // given
+        given(chatRoomRepository.findById(999)).willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.kickMember(10, 999, 20), NOT_FOUND_CHAT_ROOM);
+    }
+
+    @Test
+    @DisplayName("kickMember은 club group room에서도 거부한다")
+    void kickMemberRejectsClubGroupRoom() {
+        // given
+        ChatRoom clubRoom = createRoom(1, ChatType.CLUB_GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        given(chatRoomRepository.findById(clubRoom.getId())).willReturn(Optional.of(clubRoom));
+
+        // when & then
+        assertErrorCode(() -> chatService.kickMember(10, clubRoom.getId(), 20), CANNOT_KICK_IN_NON_GROUP_ROOM);
+    }
+
+    @Test
+    @DisplayName("kickMember은 요청자가 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    void kickMemberThrowsWhenRequesterNotMember() {
+        // given
+        Integer requesterId = 10;
+        Integer targetId = 20;
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), requesterId))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.kickMember(requesterId, groupRoom.getId(), targetId), FORBIDDEN_CHAT_ROOM_ACCESS);
+    }
+
+    @Test
+    @DisplayName("kickMember은 target이 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    void kickMemberThrowsWhenTargetNotMember() {
+        // given
+        Integer requesterId = 10;
+        Integer targetId = 20;
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember owner = createRoomMember(groupRoom, createUser(requesterId, "방장", UserRole.USER), true,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), requesterId))
+            .willReturn(Optional.of(owner));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), targetId))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.kickMember(requesterId, groupRoom.getId(), targetId), FORBIDDEN_CHAT_ROOM_ACCESS);
+    }
+
+    // ===== getMessages additional =====
+
+    @Test
+    @DisplayName("getMessages는 존재하지 않는 방에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void getMessagesThrowsWhenRoomNotFound() {
+        // given
+        given(chatRoomRepository.findById(999)).willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.getMessages(10, 999, 1, 20), NOT_FOUND_CHAT_ROOM);
+    }
+
+    @Test
+    @DisplayName("getMessages는 admin이 system admin 방을 조회할 때 전용 경로를 사용한다")
+    void getMessagesReturnsAdminSystemRoomMessages() {
+        // given
+        Integer adminId = 99;
+        User admin = createUser(adminId, "관리자", UserRole.ADMIN);
+        User systemAdmin = createUser(SYSTEM_ADMIN_ID, "시스템관리자", UserRole.ADMIN);
+        User targetUser = createUser(20, "사용자", UserRole.USER);
+        ChatRoom systemAdminRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember systemAdminMember = createRoomMember(systemAdminRoom, systemAdmin, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember targetMember = createRoomMember(systemAdminRoom, targetUser, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage message = createMessage(100, systemAdminRoom, admin, "문의",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
+        given(userRepository.getById(adminId)).willReturn(admin);
+        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(systemAdminRoom.getId())))
+            .willReturn(List.of(
+                new Object[]{systemAdminRoom.getId(), SYSTEM_ADMIN_ID, systemAdminRoom.getCreatedAt()},
+                new Object[]{systemAdminRoom.getId(), 20, systemAdminRoom.getCreatedAt()}
+            ));
+        given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
+            .willReturn(List.of(systemAdminMember, targetMember));
+        given(chatMessageRepository.findByChatRoomId(eq(systemAdminRoom.getId()), nullable(LocalDateTime.class), eq(PageRequest.of(0, 20))))
+            .willReturn(new PageImpl<>(List.of(message), PageRequest.of(0, 20), 1));
+
+        // when
+        ChatMessagePageResponse response = chatService.getMessages(adminId, systemAdminRoom.getId(), 1, 20);
+
+        // then
+        assertThat(response.messages()).hasSize(1);
+        verify(chatRoomMembershipService).updateLastReadAt(eq(systemAdminRoom.getId()), eq(SYSTEM_ADMIN_ID), any(LocalDateTime.class));
+        verify(chatPresenceService).recordPresence(systemAdminRoom.getId(), adminId);
+    }
+
+    // ===== sendMessage =====
+
+    @Test
+    @DisplayName("sendMessage는 존재하지 않는 방에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void sendMessageThrowsWhenRoomNotFound() {
+        // given
+        given(chatRoomRepository.findById(999)).willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.sendMessage(10, 999, new ChatMessageSendRequest("hi")), NOT_FOUND_CHAT_ROOM);
+    }
+
+    @Test
+    @DisplayName("sendMessage는 direct room에서 메시지를 저장하고 알림을 보낸다")
+    void sendMessageInDirectRoomSavesMessageAndSendsNotification() {
+        // given
+        Integer senderId = 10;
+        Integer receiverId = 20;
+        User sender = createUser(senderId, "보낸이", UserRole.USER);
+        User receiver = createUser(receiverId, "받는이", UserRole.USER);
+        ChatRoom directRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember senderMember = createRoomMember(directRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember receiverMember = createRoomMember(directRoom, receiver, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, directRoom, sender, "hello",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
+        given(userRepository.getById(senderId)).willReturn(sender);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(directRoom.getId(), senderId))
+            .willReturn(Optional.of(senderMember));
+        given(chatRoomMemberRepository.findByChatRoomId(directRoom.getId()))
+            .willReturn(List.of(senderMember, receiverMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(directRoom.getId()), eq(senderId), any(LocalDateTime.class)))
+            .willReturn(1);
+
+        // when
+        ChatMessageDetailResponse response = chatService.sendMessage(senderId, directRoom.getId(),
+            new ChatMessageSendRequest("hello"));
+
+        // then
+        assertThat(response.messageId()).isEqualTo(savedMessage.getId());
+        assertThat(response.content()).isEqualTo("hello");
+        assertThat(response.senderId()).isEqualTo(senderId);
+        assertThat(response.isMine()).isTrue();
+        verify(chatMessageRepository).save(any(ChatMessage.class));
+        verify(notificationService).sendChatNotification(eq(receiverId), eq(directRoom.getId()), eq("보낸이"), eq("hello"));
+    }
+
+    @Test
+    @DisplayName("sendMessage는 group room에서 메시지를 저장하고 그룹 알림을 보낸다")
+    void sendMessageInGroupRoomSavesMessageAndSendsGroupNotification() {
+        // given
+        Integer senderId = 10;
+        User sender = createUser(senderId, "보낸이", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember senderMember = createRoomMember(groupRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, groupRoom, sender, "hello",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(senderId)).willReturn(sender);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), senderId))
+            .willReturn(Optional.of(senderMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(groupRoom.getId()), eq(senderId), any(LocalDateTime.class)))
+            .willReturn(1);
+        given(chatRoomMemberRepository.findByChatRoomId(groupRoom.getId()))
+            .willReturn(List.of(senderMember));
+
+        // when
+        ChatMessageDetailResponse response = chatService.sendMessage(senderId, groupRoom.getId(),
+            new ChatMessageSendRequest("hello"));
+
+        // then
+        assertThat(response.messageId()).isEqualTo(savedMessage.getId());
+        assertThat(response.content()).isEqualTo("hello");
+        assertThat(response.isMine()).isTrue();
+        verify(notificationService).sendGroupChatNotification(
+            eq(groupRoom.getId()), eq(senderId), eq("그룹 채팅"), eq("보낸이"), eq("hello"),
+            any(List.class)
+        );
+    }
+
+    @Test
+    @DisplayName("sendMessage는 group room에서 나간 멤버가 보내면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    void sendMessageInGroupRoomRejectsLeftMember() {
+        // given
+        Integer senderId = 10;
+        User sender = createUser(senderId, "보낸이", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember leftMember = createRoomMember(groupRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        leftMember.leaveDirectRoom(LocalDateTime.of(2026, 4, 11, 12, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(senderId)).willReturn(sender);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), senderId))
+            .willReturn(Optional.of(leftMember));
+
+        // when & then
+        assertErrorCode(
+            () -> chatService.sendMessage(senderId, groupRoom.getId(), new ChatMessageSendRequest("hello")),
+            FORBIDDEN_CHAT_ROOM_ACCESS
+        );
+        verify(chatMessageRepository, never()).save(any(ChatMessage.class));
+    }
+
+    @Test
+    @DisplayName("sendMessage는 club room에서 메시지를 저장하고 그룹 알림을 보낸다")
+    void sendMessageInClubRoomSavesMessageAndSendsGroupNotification() {
+        // given
+        Integer senderId = 10;
+        User sender = createUser(senderId, "보낸이", UserRole.USER);
+        Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), 77, "BCSD");
+        ChatRoom clubRoom = ChatRoom.clubGroupOf(club);
+        ReflectionTestUtils.setField(clubRoom, "id", 1);
+        ReflectionTestUtils.setField(clubRoom, "createdAt", LocalDateTime.of(2026, 4, 11, 10, 0));
+        ClubMember clubMember = ClubMemberFixture.createMember(club, sender);
+        ReflectionTestUtils.setField(clubMember, "createdAt", LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember senderRoomMember = createRoomMember(clubRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, clubRoom, sender, "hello",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(clubRoom.getId())).willReturn(Optional.of(clubRoom));
+        given(clubMemberRepository.getByClubIdAndUserId(club.getId(), senderId)).willReturn(clubMember);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(clubRoom.getId(), senderId))
+            .willReturn(Optional.of(senderRoomMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(clubRoom.getId()), eq(senderId), any(LocalDateTime.class)))
+            .willReturn(1);
+        given(chatRoomMemberRepository.findByChatRoomId(clubRoom.getId()))
+            .willReturn(List.of(senderRoomMember));
+
+        // when
+        ChatMessageDetailResponse response = chatService.sendMessage(senderId, clubRoom.getId(),
+            new ChatMessageSendRequest("hello"));
+
+        // then
+        assertThat(response.messageId()).isEqualTo(savedMessage.getId());
+        assertThat(response.content()).isEqualTo("hello");
+        verify(notificationService).sendGroupChatNotification(
+            eq(clubRoom.getId()), eq(senderId), eq("BCSD"), eq("보낸이"), eq("hello"),
+            any(List.class)
+        );
+    }
+
+    // ===== toggleMute additional =====
+
+    @Test
+    @DisplayName("toggleMute는 존재하지 않는 방에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void toggleMuteThrowsWhenRoomNotFound() {
+        // given
+        given(chatRoomRepository.findById(999)).willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.toggleMute(10, 999), NOT_FOUND_CHAT_ROOM);
+    }
+
+    @Test
+    @DisplayName("toggleMute는 group room에서 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    void toggleMuteRejectsNonMemberInGroupRoom() {
+        // given
+        Integer userId = 10;
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(userId)).willReturn(createUser(userId, "사용자", UserRole.USER));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(() -> chatService.toggleMute(userId, groupRoom.getId()), FORBIDDEN_CHAT_ROOM_ACCESS);
+    }
+
+    // ===== updateChatRoomName =====
+
+    @Test
+    @DisplayName("updateChatRoomName은 멤버의 custom room name을 업데이트한다")
+    void updateChatRoomNameUpdatesCustomNameForMember() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member = createRoomMember(groupRoom, user, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId))
+            .willReturn(Optional.of(member));
+
+        // when
+        chatService.updateChatRoomName(userId, groupRoom.getId(), new ChatRoomNameUpdateRequest("내 채팅방"));
+
+        // then
+        assertThat(member.getCustomRoomName()).isEqualTo("내 채팅방");
+    }
+
+    @Test
+    @DisplayName("updateChatRoomName은 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    void updateChatRoomNameRejectsNonMember() {
+        // given
+        Integer userId = 10;
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(
+            () -> chatService.updateChatRoomName(userId, groupRoom.getId(), new ChatRoomNameUpdateRequest("이름")),
+            FORBIDDEN_CHAT_ROOM_ACCESS
+        );
+    }
+
+    @Test
+    @DisplayName("updateChatRoomName은 null이나 빈 이름을 null로 정규화한다")
+    void updateChatRoomNameNormalizesNullName() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member = createRoomMember(groupRoom, user, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        member.updateCustomRoomName("기존 이름");
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId))
+            .willReturn(Optional.of(member));
+
+        // when
+        chatService.updateChatRoomName(userId, groupRoom.getId(), new ChatRoomNameUpdateRequest(null));
+
+        // then
+        assertThat(member.getCustomRoomName()).isNull();
     }
 
     private User createUser(Integer id, String name, UserRole role) {
