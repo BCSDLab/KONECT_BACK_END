@@ -119,6 +119,7 @@ public enum ApiResponseCode {
     ALREADY_CLUB_MEMBER(HttpStatus.CONFLICT, "이미 동아리 회원입니다."),
     ALREADY_CLUB_PRE_MEMBER(HttpStatus.CONFLICT, "이미 동아리에 사전 등록된 회원입니다."),
     DUPLICATE_CLUB_APPLY_QUESTION(HttpStatus.CONFLICT, "중복된 가입 문항이 포함되어 있습니다."),
+    ALREADY_PROCESSED_CLUB_APPLY(HttpStatus.CONFLICT, "이미 처리된 동아리 가입 신청입니다."),
     VICE_PRESIDENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "부회장은 이미 존재합니다."),
     ALREADY_RUNNING_STUDY_TIMER(HttpStatus.CONFLICT, "이미 실행 중인 스터디 타이머가 있습니다."),
     ALREADY_EXIST_CLUB_RECRUITMENT(HttpStatus.CONFLICT, "이미 동아리 모집 공고가 존재합니다."),

@@ -4,6 +4,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.ALREADY_APPLIED_CLUB;
 import static gg.agit.konect.global.code.ApiResponseCode.ALREADY_CLUB_MEMBER;
 import static gg.agit.konect.global.code.ApiResponseCode.DUPLICATE_CLUB_APPLY_QUESTION;
 import static gg.agit.konect.global.code.ApiResponseCode.FEE_PAYMENT_IMAGE_REQUIRED;
+import static gg.agit.konect.global.code.ApiResponseCode.ALREADY_PROCESSED_CLUB_APPLY;
 import static gg.agit.konect.global.code.ApiResponseCode.INVALID_REQUEST_BODY;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_APPLY_QUESTION;
 import static gg.agit.konect.global.code.ApiResponseCode.REQUIRED_CLUB_APPLY_ANSWER_MISSING;
@@ -785,9 +786,9 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
     // ========== US-002: Approve/reject logical state transitions ==========
 
     @Test
-    @DisplayName("approveClubApplication은 이미 승인된 지원서를 재승인하면 ALREADY_CLUB_MEMBER을 던진다")
-    void approveClubApplicationRejectsDoubleApproval() {
-        // given - first approval already happened (member exists)
+    @DisplayName("approveClubApplication은 이미 승인된 지원서를 재승인하면 ALREADY_PROCESSED_CLUB_APPLY를 던진다")
+    void approveClubApplicationRejectsAlreadyApproved() {
+        // given
         Club club = createClub(1);
         User applicant = createUser(10, "2021136001", "지원자");
         ClubApply approvedApply = ClubApply.of(club, applicant, null);
@@ -795,41 +796,33 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(approvedApply);
-        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(true);
 
         // when & then
-        assertErrorCode(() -> clubApplicationService.approveClubApplication(1, 100, 99), ALREADY_CLUB_MEMBER);
+        assertErrorCode(() -> clubApplicationService.approveClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
         verify(clubMemberRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("approveClubApplication은 거절된 지원서를 승인할 수 있다")
-    void approveClubApplicationSucceedsAfterRejection() {
+    @DisplayName("approveClubApplication은 이미 거절된 지원서를 승인하면 ALREADY_PROCESSED_CLUB_APPLY를 던진다")
+    void approveClubApplicationRejectsAlreadyRejected() {
         // given
         Club club = createClub(1);
         User applicant = createUser(10, "2021136001", "지원자");
         ClubApply rejectedApply = ClubApply.of(club, applicant, null);
         rejectedApply.reject();
-        ClubMember savedMember = ClubMemberFixture.createMember(club, applicant);
 
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(rejectedApply);
-        given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
-        given(clubMemberRepository.save(any(ClubMember.class))).willReturn(savedMember);
 
-        // when
-        clubApplicationService.approveClubApplication(1, 100, 99);
-
-        // then
-        assertThat(rejectedApply.getStatus()).isEqualTo(ClubApplyStatus.APPROVED);
-        verify(chatRoomMembershipService).addClubMember(savedMember);
-        verify(applicationEventPublisher).publishEvent(ClubApplicationApprovedEvent.of(10, 1, club.getName()));
+        // when & then
+        assertErrorCode(() -> clubApplicationService.approveClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
+        verify(clubMemberRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("rejectClubApplication은 이미 승인된 지원서도 거절 상태로 변경한다")
-    void rejectClubApplicationChangesStatusAfterApproval() {
-        // given - application was already approved, member already in club
+    @DisplayName("rejectClubApplication은 이미 승인된 지원서를 거절하면 ALREADY_PROCESSED_CLUB_APPLY를 던진다")
+    void rejectClubApplicationRejectsAlreadyApproved() {
+        // given
         Club club = createClub(1);
         User applicant = createUser(10, "2021136001", "지원자");
         ClubApply approvedApply = ClubApply.of(club, applicant, null);
@@ -838,12 +831,25 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         given(clubRepository.getById(1)).willReturn(club);
         given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(approvedApply);
 
-        // when
-        clubApplicationService.rejectClubApplication(1, 100, 99);
+        // when & then
+        assertErrorCode(() -> clubApplicationService.rejectClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
+        assertThat(approvedApply.getStatus()).isEqualTo(ClubApplyStatus.APPROVED);
+    }
 
-        // then
-        assertThat(approvedApply.getStatus()).isEqualTo(ClubApplyStatus.REJECTED);
-        verify(applicationEventPublisher).publishEvent(ClubApplicationRejectedEvent.of(10, 1, club.getName()));
+    @Test
+    @DisplayName("rejectClubApplication은 이미 거절된 지원서를 재거절하면 ALREADY_PROCESSED_CLUB_APPLY를 던진다")
+    void rejectClubApplicationRejectsAlreadyRejected() {
+        // given
+        Club club = createClub(1);
+        User applicant = createUser(10, "2021136001", "지원자");
+        ClubApply rejectedApply = ClubApply.of(club, applicant, null);
+        rejectedApply.reject();
+
+        given(clubRepository.getById(1)).willReturn(club);
+        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(rejectedApply);
+
+        // when & then
+        assertErrorCode(() -> clubApplicationService.rejectClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
     }
 
     // ========== US-003: replaceApplyQuestions edge cases ==========
