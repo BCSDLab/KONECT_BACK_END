@@ -104,13 +104,13 @@ class ClubServiceTest extends ServiceTestSupport {
         User admin = UserFixture.createUserWithId(adminUserId, "관리자", UserRole.ADMIN);
         User presidentUser = UserFixture.createUserWithId(presidentUserId, "회장", UserRole.USER);
         ClubCreateRequest request = new ClubCreateRequest(
-                presidentUserId,
-                "KONECT",
-                "테스트 동아리",
-                "상세 소개",
-                "https://example.com/club.png",
-                "학생회관 101호",
-                ClubCategory.ACADEMIC
+            presidentUserId,
+            "KONECT",
+            "테스트 동아리",
+            "상세 소개",
+            "https://example.com/club.png",
+            "학생회관 101호",
+            ClubCategory.ACADEMIC
         );
         Club savedClub = request.toEntity(presidentUser.getUniversity());
         ReflectionTestUtils.setField(savedClub, "id", 100);
@@ -130,20 +130,21 @@ class ClubServiceTest extends ServiceTestSupport {
         // then
         verify(chatRoomRepository).save(any(ChatRoom.class));
         verify(clubMemberRepository).save(argThat(clubMember ->
-                clubMember.getClub().equals(savedClub)
-                        && clubMember.getUser().equals(presidentUser)
-                        && clubMember.getClubPosition() == ClubPosition.PRESIDENT
+            clubMember.getClub().equals(savedClub)
+                && clubMember.getUser().equals(presidentUser)
+                && clubMember.getClubPosition() == ClubPosition.PRESIDENT
         ));
         verify(chatRoomMembershipService).addClubMember(savedPresident);
 
         ArgumentCaptor<List<ClubApplyQuestion>> questionCaptor = ArgumentCaptor.forClass(List.class);
         verify(clubApplyQuestionRepository).saveAll(questionCaptor.capture());
         assertThat(questionCaptor.getValue())
-                .extracting(ClubApplyQuestion::getQuestion, ClubApplyQuestion::getIsRequired, ClubApplyQuestion::getDisplayOrder)
-                .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("본인의 전화번호를 입력해주세요.", true, 1),
-                        org.assertj.core.groups.Tuple.tuple("지원 동기", false, 2)
-                );
+            .extracting(ClubApplyQuestion::getQuestion, ClubApplyQuestion::getIsRequired,
+                ClubApplyQuestion::getDisplayOrder)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple("본인의 전화번호를 입력해주세요.", true, 1),
+                org.assertj.core.groups.Tuple.tuple("지원 동기", false, 2)
+            );
 
         assertThat(response.id()).isEqualTo(savedClub.getId());
         assertThat(response.presidentUserId()).isEqualTo(presidentUserId);
@@ -159,13 +160,13 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer userId = 1;
         User user = UserFixture.createUserWithId(userId, "일반 사용자", UserRole.USER);
         ClubCreateRequest request = new ClubCreateRequest(
-                2,
-                "KONECT",
-                "테스트 동아리",
-                "상세 소개",
-                "https://example.com/club.png",
-                "학생회관 101호",
-                ClubCategory.ACADEMIC
+            2,
+            "KONECT",
+            "테스트 동아리",
+            "상세 소개",
+            "https://example.com/club.png",
+            "학생회관 101호",
+            ClubCategory.ACADEMIC
         );
         given(userRepository.getById(userId)).willReturn(user);
 
@@ -179,41 +180,42 @@ class ClubServiceTest extends ServiceTestSupport {
     void getClubsReturnsOnlyPendingAppliedNonMemberClubs() {
         // given
         Integer userId = 10;
-        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010", UserRole.USER);
+        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010",
+            UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, "", false);
         ClubSummaryInfo appliedOnlyClub = new ClubSummaryInfo(
-                101,
-                "대기 동아리",
-                "https://example.com/club-1.png",
-                "학술",
-                "설명",
-                RecruitmentStatus.ONGOING,
-                false,
-                null
+            101,
+            "대기 동아리",
+            "https://example.com/club-1.png",
+            "학술",
+            "설명",
+            RecruitmentStatus.ONGOING,
+            false,
+            null
         );
         ClubSummaryInfo joinedClub = new ClubSummaryInfo(
-                102,
-                "가입 동아리",
-                "https://example.com/club-2.png",
-                "학술",
-                "설명",
-                RecruitmentStatus.ONGOING,
-                false,
-                null
+            102,
+            "가입 동아리",
+            "https://example.com/club-2.png",
+            "학술",
+            "설명",
+            RecruitmentStatus.ONGOING,
+            false,
+            null
         );
         Page<ClubSummaryInfo> page = new PageImpl<>(
-                List.of(appliedOnlyClub, joinedClub),
-                PageRequest.of(0, 10),
-                2
+            List.of(appliedOnlyClub, joinedClub),
+            PageRequest.of(0, 10),
+            2
         );
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubQueryRepository.findAllByFilter(PageRequest.of(0, 10), "", false, user.getUniversity().getId()))
-                .willReturn(page);
+            .willReturn(page);
         given(clubApplyRepository.findClubIdsByUserIdAndClubIdIn(userId, List.of(101, 102)))
-                .willReturn(List.of(101, 102));
+            .willReturn(List.of(101, 102));
         given(clubMemberRepository.findClubIdsByUserIdAndClubIdIn(userId, List.of(101, 102)))
-                .willReturn(List.of(102));
+            .willReturn(List.of(102));
 
         // when
         ClubsResponse response = clubService.getClubs(condition, userId);
@@ -221,11 +223,11 @@ class ClubServiceTest extends ServiceTestSupport {
         // then
         assertThat(response.currentCount()).isEqualTo(2);
         assertThat(response.clubs())
-                .extracting(ClubsResponse.InnerClubResponse::id, ClubsResponse.InnerClubResponse::isPendingApproval)
-                .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(101, true),
-                        org.assertj.core.groups.Tuple.tuple(102, false)
-                );
+            .extracting(ClubsResponse.InnerClubResponse::id, ClubsResponse.InnerClubResponse::isPendingApproval)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple(101, true),
+                org.assertj.core.groups.Tuple.tuple(102, false)
+            );
     }
 
     @Test
@@ -233,13 +235,14 @@ class ClubServiceTest extends ServiceTestSupport {
     void getClubsReturnsEmptyPendingWhenNoClubExists() {
         // given
         Integer userId = 10;
-        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010", UserRole.USER);
+        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010",
+            UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, null, null);
         Page<ClubSummaryInfo> emptyPage = Page.empty(PageRequest.of(0, 10));
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubQueryRepository.findAllByFilter(PageRequest.of(0, 10), "", false, user.getUniversity().getId()))
-                .willReturn(emptyPage);
+            .willReturn(emptyPage);
 
         // when
         ClubsResponse response = clubService.getClubs(condition, userId);
@@ -292,7 +295,7 @@ class ClubServiceTest extends ServiceTestSupport {
         given(userRepository.getById(managerId)).willReturn(manager);
         given(clubRepository.findAll()).willReturn(List.of(allClub));
         given(clubMemberRepository.findAllByUserIdAndClubPositions(managerId, ClubPosition.MANAGERS))
-                .willReturn(List.of(managerMember));
+            .willReturn(List.of(managerMember));
 
         // when
         ClubMembershipsResponse adminResponse = clubService.getManagedClubs(adminId);
@@ -300,14 +303,14 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(adminResponse.joinedClubs())
-                .extracting(ClubMembershipsResponse.InnerJoinedClubResponse::id)
-                .containsExactly(allClub.getId());
+            .extracting(ClubMembershipsResponse.InnerJoinedClubResponse::id)
+            .containsExactly(allClub.getId());
         assertThat(managerResponse.joinedClubs())
-                .extracting(ClubMembershipsResponse.InnerJoinedClubResponse::id,
-                        ClubMembershipsResponse.InnerJoinedClubResponse::position)
-                .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(managedClub.getId(), ClubPosition.MANAGER.getDescription())
-                );
+            .extracting(ClubMembershipsResponse.InnerJoinedClubResponse::id,
+                ClubMembershipsResponse.InnerJoinedClubResponse::position)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple(managedClub.getId(), ClubPosition.MANAGER.getDescription())
+            );
     }
 
     @Test
@@ -349,7 +352,8 @@ class ClubServiceTest extends ServiceTestSupport {
 
         given(userRepository.getById(admin.getId())).willReturn(admin);
         given(userRepository.getById(managerUser.getId())).willReturn(managerUser);
-        given(clubMemberRepository.findByClubIdAndUserId(clubId, managerUser.getId())).willReturn(java.util.Optional.of(managerMember));
+        given(clubMemberRepository.findByClubIdAndUserId(clubId, managerUser.getId())).willReturn(
+            java.util.Optional.of(managerMember));
         given(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.MEMBER)).willReturn(List.of(member));
 
         // when
@@ -358,11 +362,11 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(adminResponse.clubMembers())
-                .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
-                .containsExactly(memberUser.getStudentNumber());
+            .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
+            .containsExactly(memberUser.getStudentNumber());
         assertThat(managerResponse.clubMembers())
-                .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
-                .containsExactly(memberUser.getStudentNumber());
+            .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
+            .containsExactly(memberUser.getStudentNumber());
     }
 
     @Test
@@ -373,16 +377,20 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer memberUserId = 10;
         Integer outsiderUserId = 20;
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
-        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "일반 회원", "20241234", UserRole.USER);
-        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "조회 대상", "20249876", UserRole.USER);
+        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "일반 회원",
+            "20241234", UserRole.USER);
+        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "조회 대상", "20249876",
+            UserRole.USER);
         User outsider = UserFixture.createUserWithId(outsiderUserId, "외부인", UserRole.USER);
         ClubMember requesterMember = ClubMemberFixture.createMember(club, memberUser);
         ClubMember targetMember = ClubMemberFixture.createMember(club, targetUser);
 
         given(userRepository.getById(memberUserId)).willReturn(memberUser);
         given(userRepository.getById(outsiderUserId)).willReturn(outsider);
-        given(clubMemberRepository.findByClubIdAndUserId(clubId, memberUserId)).willReturn(java.util.Optional.of(requesterMember));
-        given(clubMemberRepository.findByClubIdAndUserId(clubId, outsiderUserId)).willReturn(java.util.Optional.empty());
+        given(clubMemberRepository.findByClubIdAndUserId(clubId, memberUserId)).willReturn(
+            java.util.Optional.of(requesterMember));
+        given(clubMemberRepository.findByClubIdAndUserId(clubId, outsiderUserId)).willReturn(
+            java.util.Optional.empty());
         given(clubMemberRepository.findAllByClubId(clubId)).willReturn(List.of(targetMember));
 
         // when
@@ -390,12 +398,12 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.clubMembers())
-                .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
-                .containsExactly("*****876");
+            .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
+            .containsExactly("*****876");
 
         assertErrorCode(
-                () -> clubService.getClubMembers(clubId, outsiderUserId, null),
-                FORBIDDEN_CLUB_MEMBER_ACCESS
+            () -> clubService.getClubMembers(clubId, outsiderUserId, null),
+            FORBIDDEN_CLUB_MEMBER_ACCESS
         );
     }
 
@@ -450,27 +458,28 @@ class ClubServiceTest extends ServiceTestSupport {
     void getClubsReturnsNoPendingWhenUserHasNoApplications() {
         // given
         Integer userId = 10;
-        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010", UserRole.USER);
+        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010",
+            UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, "", false);
         ClubSummaryInfo club = new ClubSummaryInfo(
-                101, "동아리", "https://example.com/club.png", "학술", "설명",
-                RecruitmentStatus.ONGOING, false, null
+            101, "동아리", "https://example.com/club.png", "학술", "설명",
+            RecruitmentStatus.ONGOING, false, null
         );
         Page<ClubSummaryInfo> page = new PageImpl<>(List.of(club), PageRequest.of(0, 10), 1);
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubQueryRepository.findAllByFilter(PageRequest.of(0, 10), "", false, user.getUniversity().getId()))
-                .willReturn(page);
+            .willReturn(page);
         given(clubApplyRepository.findClubIdsByUserIdAndClubIdIn(userId, List.of(101)))
-                .willReturn(Collections.emptyList());
+            .willReturn(Collections.emptyList());
 
         // when
         ClubsResponse response = clubService.getClubs(condition, userId);
 
         // then
         assertThat(response.clubs())
-                .extracting(ClubsResponse.InnerClubResponse::isPendingApproval)
-                .containsExactly(false);
+            .extracting(ClubsResponse.InnerClubResponse::isPendingApproval)
+            .containsExactly(false);
         verify(clubMemberRepository, never()).findClubIdsByUserIdAndClubIdIn(any(), any());
     }
 
@@ -480,14 +489,15 @@ class ClubServiceTest extends ServiceTestSupport {
         // given
         Integer clubId = 1;
         User vicePresidentUser = UserFixture.createUserWithId(2, "부회장", UserRole.USER);
-        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 3, "회원", "20249876", UserRole.USER);
+        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 3, "회원", "20249876",
+            UserRole.USER);
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
         ClubMember vicePresident = ClubMemberFixture.createVicePresident(club, vicePresidentUser);
         ClubMember targetMember = ClubMemberFixture.createMember(club, targetUser);
 
         given(userRepository.getById(vicePresidentUser.getId())).willReturn(vicePresidentUser);
         given(clubMemberRepository.findByClubIdAndUserId(clubId, vicePresidentUser.getId()))
-                .willReturn(java.util.Optional.of(vicePresident));
+            .willReturn(java.util.Optional.of(vicePresident));
         given(clubMemberRepository.findAllByClubId(clubId)).willReturn(List.of(targetMember));
 
         // when
@@ -495,8 +505,8 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.clubMembers())
-                .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
-                .containsExactly(targetUser.getStudentNumber());
+            .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
+            .containsExactly(targetUser.getStudentNumber());
     }
 
     @Test
@@ -506,17 +516,19 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer clubId = 1;
         Integer memberUserId = 10;
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
-        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "일반 회원", "20241234", UserRole.USER);
-        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "조회 대상", "20249876", UserRole.USER);
+        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "일반 회원",
+            "20241234", UserRole.USER);
+        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "조회 대상", "20249876",
+            UserRole.USER);
         ClubMember requesterMember = ClubMemberFixture.createMember(club, memberUser);
         ClubMember targetMember = ClubMemberFixture.createMember(club, targetUser);
         ClubMemberCondition condition = new ClubMemberCondition(ClubPosition.MEMBER);
 
         given(userRepository.getById(memberUserId)).willReturn(memberUser);
         given(clubMemberRepository.findByClubIdAndUserId(clubId, memberUserId))
-                .willReturn(java.util.Optional.of(requesterMember));
+            .willReturn(java.util.Optional.of(requesterMember));
         given(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.MEMBER))
-                .willReturn(List.of(targetMember));
+            .willReturn(List.of(targetMember));
 
         // when
         ClubMembersResponse response = clubService.getClubMembers(clubId, memberUserId, condition);
@@ -524,8 +536,8 @@ class ClubServiceTest extends ServiceTestSupport {
         // then
         verify(clubMemberRepository).findAllByClubIdAndPosition(clubId, ClubPosition.MEMBER);
         assertThat(response.clubMembers())
-                .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
-                .containsExactly("*****876");
+            .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
+            .containsExactly("*****876");
     }
 
     @Test
@@ -562,12 +574,13 @@ class ClubServiceTest extends ServiceTestSupport {
         ClubUpdateRequest request = new ClubUpdateRequest("새 소개", "https://new.png", "신공 201호", "새 상세 소개");
 
         given(userRepository.getById(userId)).willReturn(user);
-        given(clubRepository.getById(clubId)).willReturn(ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD"));
+        given(clubRepository.getById(clubId)).willReturn(
+            ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD"));
         willThrow(CustomException.class).given(clubPermissionValidator).validateManagerAccess(clubId, userId);
 
         // when & then
         assertThatThrownBy(() -> clubService.updateInfo(clubId, userId, request))
-                .isInstanceOf(CustomException.class);
+            .isInstanceOf(CustomException.class);
     }
 
     @Test
@@ -602,12 +615,13 @@ class ClubServiceTest extends ServiceTestSupport {
         ClubBasicInfoUpdateRequest request = new ClubBasicInfoUpdateRequest("새 이름", ClubCategory.SPORTS);
 
         given(userRepository.getById(userId)).willReturn(user);
-        given(clubRepository.getById(clubId)).willReturn(ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD"));
+        given(clubRepository.getById(clubId)).willReturn(
+            ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD"));
         willThrow(CustomException.class).given(clubPermissionValidator).validateManagerAccess(clubId, userId);
 
         // when & then
         assertThatThrownBy(() -> clubService.updateBasicInfo(clubId, userId, request))
-                .isInstanceOf(CustomException.class);
+            .isInstanceOf(CustomException.class);
     }
 
     @Test
@@ -629,8 +643,8 @@ class ClubServiceTest extends ServiceTestSupport {
         // then
         assertThat(response.joinedClubs()).hasSize(2);
         assertThat(response.joinedClubs())
-                .extracting(ClubMembershipsResponse.InnerJoinedClubResponse::id)
-                .containsExactly(100, 200);
+            .extracting(ClubMembershipsResponse.InnerJoinedClubResponse::id)
+            .containsExactly(100, 200);
     }
 
     @Test
@@ -678,7 +692,7 @@ class ClubServiceTest extends ServiceTestSupport {
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubMemberRepository.findAllByUserIdAndClubPositions(userId, ClubPosition.MANAGERS))
-                .willReturn(Collections.emptyList());
+            .willReturn(Collections.emptyList());
 
         // when
         ClubMembershipsResponse response = clubService.getManagedClubs(userId);
@@ -702,8 +716,8 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubService.getClubDetail(clubId, userId),
-                ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT
+            () -> clubService.getClubDetail(clubId, userId),
+            ApiResponseCode.NOT_FOUND_CLUB_PRESIDENT
         );
     }
 
@@ -715,7 +729,8 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer userId = 10;
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
         User user = UserFixture.createUserWithId(userId, "운영진", UserRole.USER);
-        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 20, "회원", "20249876", UserRole.USER);
+        User targetUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 20, "회원", "20249876",
+            UserRole.USER);
         ClubMember requester = ClubMemberFixture.createManager(club, user);
         ClubMember targetMember = ClubMemberFixture.createMember(club, targetUser);
         ClubMemberCondition condition = new ClubMemberCondition(null);
@@ -766,7 +781,7 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // when & then
         assertThatThrownBy(() -> clubService.getManagedClubDetail(clubId, userId))
-                .isInstanceOf(CustomException.class);
+            .isInstanceOf(CustomException.class);
         verify(clubMemberRepository, never()).getByClubIdAndUserId(any(), any());
     }
 
@@ -775,26 +790,27 @@ class ClubServiceTest extends ServiceTestSupport {
     void getClubsSkipsNullIdClubSummariesInPendingCalculation() {
         // given
         Integer userId = 10;
-        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010", UserRole.USER);
+        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010",
+            UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, "", false);
         ClubSummaryInfo nullIdClub = new ClubSummaryInfo(
-                null, "null id 동아리", "https://example.com/null.png", "학술", "설명",
-                RecruitmentStatus.ONGOING, false, null
+            null, "null id 동아리", "https://example.com/null.png", "학술", "설명",
+            RecruitmentStatus.ONGOING, false, null
         );
         ClubSummaryInfo validClub = new ClubSummaryInfo(
-                200, "정상 동아리", "https://example.com/valid.png", "학술", "설명",
-                RecruitmentStatus.ONGOING, false, null
+            200, "정상 동아리", "https://example.com/valid.png", "학술", "설명",
+            RecruitmentStatus.ONGOING, false, null
         );
         Page<ClubSummaryInfo> page = new PageImpl<>(List.of(nullIdClub, validClub), PageRequest.of(0, 10), 2);
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubQueryRepository.findAllByFilter(PageRequest.of(0, 10), "", false, user.getUniversity().getId()))
-                .willReturn(page);
+            .willReturn(page);
         // null id는 필터링되므로 clubIds에는 200만 남는다
         given(clubApplyRepository.findClubIdsByUserIdAndClubIdIn(userId, List.of(200)))
-                .willReturn(List.of(200));
+            .willReturn(List.of(200));
         given(clubMemberRepository.findClubIdsByUserIdAndClubIdIn(userId, List.of(200)))
-                .willReturn(Collections.emptyList());
+            .willReturn(Collections.emptyList());
 
         // when
         ClubsResponse response = clubService.getClubs(condition, userId);
@@ -803,11 +819,11 @@ class ClubServiceTest extends ServiceTestSupport {
         // null id 클럽은 pending 계산에서 제외되었으므로 repository에는 [200]만 전달됨
         verify(clubApplyRepository).findClubIdsByUserIdAndClubIdIn(userId, List.of(200));
         assertThat(response.clubs())
-                .extracting(ClubsResponse.InnerClubResponse::id, ClubsResponse.InnerClubResponse::isPendingApproval)
-                .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(null, false),
-                        org.assertj.core.groups.Tuple.tuple(200, true)
-                );
+            .extracting(ClubsResponse.InnerClubResponse::id, ClubsResponse.InnerClubResponse::isPendingApproval)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple(null, false),
+                org.assertj.core.groups.Tuple.tuple(200, true)
+            );
     }
 
     @Test
@@ -817,14 +833,16 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer clubId = 1;
         Integer memberUserId = 10;
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
-        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "회원", "20241234", UserRole.USER);
-        User shortIdUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "짧은학번", "123", UserRole.USER);
+        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "회원",
+            "20241234", UserRole.USER);
+        User shortIdUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "짧은학번", "123",
+            UserRole.USER);
         ClubMember requester = ClubMemberFixture.createMember(club, memberUser);
         ClubMember shortIdMember = ClubMemberFixture.createMember(club, shortIdUser);
 
         given(userRepository.getById(memberUserId)).willReturn(memberUser);
         given(clubMemberRepository.findByClubIdAndUserId(clubId, memberUserId))
-                .willReturn(java.util.Optional.of(requester));
+            .willReturn(java.util.Optional.of(requester));
         given(clubMemberRepository.findAllByClubId(clubId)).willReturn(List.of(requester, shortIdMember));
 
         // when
@@ -832,8 +850,8 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.clubMembers())
-                .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
-                .containsExactly("*****234", "123");
+            .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
+            .containsExactly("*****234", "123");
     }
 
     @Test
@@ -843,14 +861,16 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer clubId = 1;
         Integer memberUserId = 10;
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
-        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "회원", "20241234", UserRole.USER);
-        User nullStudentNumberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "학번없음", null, UserRole.USER);
+        User memberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), memberUserId, "회원",
+            "20241234", UserRole.USER);
+        User nullStudentNumberUser = UserFixture.createUserWithId(UniversityFixture.createWithId(1), 30, "학번없음", null,
+            UserRole.USER);
         ClubMember requester = ClubMemberFixture.createMember(club, memberUser);
         ClubMember nullStudentNumberMember = ClubMemberFixture.createMember(club, nullStudentNumberUser);
 
         given(userRepository.getById(memberUserId)).willReturn(memberUser);
         given(clubMemberRepository.findByClubIdAndUserId(clubId, memberUserId))
-                .willReturn(java.util.Optional.of(requester));
+            .willReturn(java.util.Optional.of(requester));
         given(clubMemberRepository.findAllByClubId(clubId)).willReturn(List.of(requester, nullStudentNumberMember));
 
         // when
@@ -858,8 +878,8 @@ class ClubServiceTest extends ServiceTestSupport {
 
         // then
         assertThat(response.clubMembers())
-                .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
-                .containsExactly("*****234", null);
+            .extracting(ClubMembersResponse.InnerClubMember::studentNumber)
+            .containsExactly("*****234", null);
     }
 
     @Test
@@ -867,39 +887,40 @@ class ClubServiceTest extends ServiceTestSupport {
     void getClubsReturnsEmptyPendingWhenAllAppliedClubsAreAlsoJoined() {
         // given
         Integer userId = 10;
-        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010", UserRole.USER);
+        User user = UserFixture.createUserWithId(UniversityFixture.createWithId(1), userId, "사용자", "20240010",
+            UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, "", false);
         ClubSummaryInfo club1 = new ClubSummaryInfo(
-                101, "동아리1", "https://example.com/1.png", "학술", "설명",
-                RecruitmentStatus.ONGOING, false, null
+            101, "동아리1", "https://example.com/1.png", "학술", "설명",
+            RecruitmentStatus.ONGOING, false, null
         );
         ClubSummaryInfo club2 = new ClubSummaryInfo(
-                102, "동아리2", "https://example.com/2.png", "학술", "설명",
-                RecruitmentStatus.ONGOING, false, null
+            102, "동아리2", "https://example.com/2.png", "학술", "설명",
+            RecruitmentStatus.ONGOING, false, null
         );
         Page<ClubSummaryInfo> page = new PageImpl<>(List.of(club1, club2), PageRequest.of(0, 10), 2);
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubQueryRepository.findAllByFilter(PageRequest.of(0, 10), "", false, user.getUniversity().getId()))
-                .willReturn(page);
+            .willReturn(page);
         // 두 클럽 모두에 지원했고, 두 클럽 모두 가입 상태
         given(clubApplyRepository.findClubIdsByUserIdAndClubIdIn(userId, List.of(101, 102)))
-                .willReturn(List.of(101, 102));
+            .willReturn(List.of(101, 102));
         given(clubMemberRepository.findClubIdsByUserIdAndClubIdIn(userId, List.of(101, 102)))
-                .willReturn(List.of(101, 102));
+            .willReturn(List.of(101, 102));
 
         // when
         ClubsResponse response = clubService.getClubs(condition, userId);
 
         // then
         assertThat(response.clubs())
-                .extracting(ClubsResponse.InnerClubResponse::isPendingApproval)
-                .containsExactly(false, false);
+            .extracting(ClubsResponse.InnerClubResponse::isPendingApproval)
+            .containsExactly(false, false);
     }
 
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
         assertThatThrownBy(callable)
-                .isInstanceOf(CustomException.class)
-                .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(errorCode));
+            .isInstanceOf(CustomException.class)
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(errorCode));
     }
 }
