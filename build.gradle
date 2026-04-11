@@ -143,7 +143,6 @@ jacocoTestReport {
 					"**/*Exception.class",
 					// 기타
 					"**/Application.class",  // Spring Boot 메인 클래스
-					"**/*\$*.class",          // 내부 클래스
 				])
 			}
 		)
