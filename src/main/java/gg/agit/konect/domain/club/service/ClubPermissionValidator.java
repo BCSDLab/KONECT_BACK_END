@@ -23,7 +23,7 @@ public class ClubPermissionValidator {
 
     public void validatePresidentAccess(Integer clubId, Integer userId) {
         if (isAdmin(userId)) {
-            return ;
+            return;
         }
 
         if (!hasAccess(clubId, userId, PRESIDENT_ONLY)) {
@@ -39,7 +39,7 @@ public class ClubPermissionValidator {
         Integer userId = user.getId();
 
         if (user.isAdmin()) {
-            return ;
+            return;
         }
 
         if (!hasAccess(clubId, userId, LEADERS)) {
@@ -55,7 +55,7 @@ public class ClubPermissionValidator {
         Integer userId = user.getId();
 
         if (user.isAdmin()) {
-            return ;
+            return;
         }
 
         if (!hasAccess(clubId, userId, MANAGERS)) {
