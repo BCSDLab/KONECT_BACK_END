@@ -4,9 +4,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 import gg.agit.konect.domain.club.model.ClubApply;
 import gg.agit.konect.domain.club.enums.ClubApplyStatus;
@@ -55,6 +58,24 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
 
     default ClubApply getByIdAndClubId(Integer id, Integer clubId) {
         return findByIdAndClubId(id, clubId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
+    }
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT clubApply
+        FROM ClubApply clubApply
+        JOIN FETCH clubApply.user user
+        WHERE clubApply.id = :id
+          AND clubApply.club.id = :clubId
+        """)
+    Optional<ClubApply> findByIdAndClubIdForUpdate(
+        @Param("id") Integer id,
+        @Param("clubId") Integer clubId
+    );
+
+    default ClubApply getByIdAndClubIdForUpdate(Integer id, Integer clubId) {
+        return findByIdAndClubIdForUpdate(id, clubId)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB_APPLY));
     }
 

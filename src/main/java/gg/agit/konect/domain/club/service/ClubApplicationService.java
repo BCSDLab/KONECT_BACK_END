@@ -232,7 +232,7 @@ public class ClubApplicationService {
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
-        ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        ClubApply clubApply = clubApplyRepository.getByIdAndClubIdForUpdate(applicationId, clubId);
 
         if (clubApply.getStatus() != ClubApplyStatus.PENDING) {
             throw CustomException.of(ALREADY_PROCESSED_CLUB_APPLY);
@@ -267,7 +267,7 @@ public class ClubApplicationService {
 
         clubPermissionValidator.validateManagerAccess(clubId, userId);
 
-        ClubApply clubApply = clubApplyRepository.getByIdAndClubId(applicationId, clubId);
+        ClubApply clubApply = clubApplyRepository.getByIdAndClubIdForUpdate(applicationId, clubId);
 
         if (clubApply.getStatus() != ClubApplyStatus.PENDING) {
             throw CustomException.of(ALREADY_PROCESSED_CLUB_APPLY);

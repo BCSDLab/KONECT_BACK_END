@@ -223,7 +223,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubMember savedMember = ClubMemberFixture.createMember(club, applicant);
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(clubApply);
+        given(clubApplyRepository.getByIdAndClubIdForUpdate(100, 1)).willReturn(clubApply);
         given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(false);
         given(clubMemberRepository.save(any(ClubMember.class))).willReturn(savedMember);
 
@@ -246,7 +246,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubApply clubApply = ClubApply.of(club, applicant, null);
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(clubApply);
+        given(clubApplyRepository.getByIdAndClubIdForUpdate(100, 1)).willReturn(clubApply);
         given(clubMemberRepository.existsByClubIdAndUserId(1, 10)).willReturn(true);
 
         // when & then
@@ -265,7 +265,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         ClubApply clubApply = ClubApply.of(club, applicant, null);
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(clubApply);
+        given(clubApplyRepository.getByIdAndClubIdForUpdate(100, 1)).willReturn(clubApply);
 
         // when
         clubApplicationService.rejectClubApplication(1, 100, 99);
@@ -807,7 +807,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         approvedApply.approve();
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(approvedApply);
+        given(clubApplyRepository.getByIdAndClubIdForUpdate(100, 1)).willReturn(approvedApply);
 
         // when & then
         assertErrorCode(() -> clubApplicationService.approveClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
@@ -824,7 +824,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         rejectedApply.reject();
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(rejectedApply);
+        given(clubApplyRepository.getByIdAndClubIdForUpdate(100, 1)).willReturn(rejectedApply);
 
         // when & then
         assertErrorCode(() -> clubApplicationService.approveClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
@@ -841,7 +841,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         approvedApply.approve();
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(approvedApply);
+        given(clubApplyRepository.getByIdAndClubIdForUpdate(100, 1)).willReturn(approvedApply);
 
         // when & then
         assertErrorCode(() -> clubApplicationService.rejectClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
@@ -858,7 +858,7 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         rejectedApply.reject();
 
         given(clubRepository.getById(1)).willReturn(club);
-        given(clubApplyRepository.getByIdAndClubId(100, 1)).willReturn(rejectedApply);
+        given(clubApplyRepository.getByIdAndClubIdForUpdate(100, 1)).willReturn(rejectedApply);
 
         // when & then
         assertErrorCode(() -> clubApplicationService.rejectClubApplication(1, 100, 99), ALREADY_PROCESSED_CLUB_APPLY);
