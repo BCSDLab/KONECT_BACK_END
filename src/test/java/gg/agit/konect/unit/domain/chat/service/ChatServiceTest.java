@@ -197,6 +197,7 @@ class ChatServiceTest extends ServiceTestSupport {
         verify(chatRoomMemberRepository, never()).findByChatRoomIdAndUserId(room.getId(), adminUserId);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     @DisplayName("createGroupChatRoom은 초대 대상을 dedup 하고 자기 자신을 제외한 뒤 owner/member를 저장한다")
     void createGroupChatRoomDeduplicatesInviteesAndSavesMembers() {
@@ -296,37 +297,72 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("kickMember는 비그룹방, self kick, 방장 아님, owner target을 각각 거부한다")
-    void kickMemberRejectsInvalidRequests() {
+    @DisplayName("kickMember는 비그룹방에서 멤버 강퇴를 거부한다")
+    void kickMemberRejectsNonGroupRoom() {
         // given
         Integer requesterId = 10;
         Integer targetId = 20;
         ChatRoom directRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
-        ChatRoom groupRoom = createRoom(2, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
-        ChatRoomMember nonOwnerRequester = createRoomMember(groupRoom, createUser(requesterId, "요청자", UserRole.USER),
-            false,
-            LocalDateTime.of(2026, 4, 11, 10, 0));
-        ChatRoomMember ownerTarget = createRoomMember(groupRoom, createUser(targetId, "방장", UserRole.USER), true,
-            LocalDateTime.of(2026, 4, 11, 10, 0));
 
         given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
-        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
-        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), requesterId))
-            .willReturn(Optional.of(nonOwnerRequester));
-        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), targetId))
-            .willReturn(Optional.of(ownerTarget));
 
         // when & then
         assertErrorCode(() -> chatService.kickMember(requesterId, directRoom.getId(), targetId),
             CANNOT_KICK_IN_NON_GROUP_ROOM);
+    }
+
+    @Test
+    @DisplayName("kickMember는 자기 자신을 강퇴할 수 없다")
+    void kickMemberRejectsSelfKick() {
+        // given
+        Integer requesterId = 10;
+        ChatRoom groupRoom = createRoom(2, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+
+        // when & then
         assertErrorCode(() -> chatService.kickMember(requesterId, groupRoom.getId(), requesterId), CANNOT_KICK_SELF);
+    }
+
+    @Test
+    @DisplayName("kickMember는 방장이 아닌 요청자의 강퇴를 거부한다")
+    void kickMemberRejectsNonOwnerRequester() {
+        // given
+        Integer requesterId = 10;
+        Integer targetId = 20;
+        ChatRoom groupRoom = createRoom(2, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember nonOwnerRequester = createRoomMember(groupRoom, createUser(requesterId, "요청자", UserRole.USER),
+            false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), requesterId))
+            .willReturn(Optional.of(nonOwnerRequester));
+
+        // when & then
         assertErrorCode(() -> chatService.kickMember(requesterId, groupRoom.getId(), targetId),
             FORBIDDEN_CHAT_ROOM_KICK);
+    }
 
+    @Test
+    @DisplayName("kickMember는 방장을 강퇴할 수 없다")
+    void kickMemberRejectsOwnerTarget() {
+        // given
+        Integer requesterId = 10;
+        Integer targetId = 20;
+        ChatRoom groupRoom = createRoom(2, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
         ChatRoomMember ownerRequester = createRoomMember(groupRoom, createUser(requesterId, "방장", UserRole.USER), true,
             LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember ownerTarget = createRoomMember(groupRoom, createUser(targetId, "대상 방장", UserRole.USER), true,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), requesterId))
             .willReturn(Optional.of(ownerRequester));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), targetId))
+            .willReturn(Optional.of(ownerTarget));
+
+        // when & then
         assertErrorCode(() -> chatService.kickMember(requesterId, groupRoom.getId(), targetId), CANNOT_KICK_ROOM_OWNER);
     }
 
@@ -1055,6 +1091,7 @@ class ChatServiceTest extends ServiceTestSupport {
             case DIRECT -> ChatRoom.directOf();
             case GROUP -> ChatRoom.groupOf();
             case CLUB_GROUP -> ChatRoom.clubGroupOf(ClubFixture.createWithId(UniversityFixture.createWithId(1), 77));
+            default -> throw new IllegalArgumentException("Unsupported ChatType: " + type);
         };
         ReflectionTestUtils.setField(room, "id", id);
         ReflectionTestUtils.setField(room, "createdAt", createdAt);
