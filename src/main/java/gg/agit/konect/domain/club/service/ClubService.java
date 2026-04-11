@@ -63,7 +63,7 @@ public class ClubService {
         User user = userRepository.getById(userId);
         PageRequest pageable = PageRequest.of(condition.page() - 1, condition.limit());
         Page<ClubSummaryInfo> clubSummaryInfoPage = clubQueryRepository.findAllByFilter(
-            pageable, condition.query(), condition.isRecruiting(), user.getUniversity().getId()
+                pageable, condition.query(), condition.isRecruiting(), user.getUniversity().getId()
         );
 
         Set<Integer> pendingApprovalClubIds = findPendingApprovalClubIds(clubSummaryInfoPage, userId);
@@ -72,9 +72,9 @@ public class ClubService {
 
     private Set<Integer> findPendingApprovalClubIds(Page<ClubSummaryInfo> clubSummaryInfoPage, Integer userId) {
         List<Integer> clubIds = clubSummaryInfoPage.getContent().stream()
-            .map(ClubSummaryInfo::id)
-            .filter(Objects::nonNull)
-            .toList();
+                .map(ClubSummaryInfo::id)
+                .filter(Objects::nonNull)
+                .toList();
 
         if (clubIds.isEmpty()) {
             return Set.of();
@@ -121,10 +121,10 @@ public class ClubService {
         chatRoomRepository.save(ChatRoom.clubGroupOf(savedClub));
 
         ClubMember president = ClubMember.builder()
-            .club(savedClub)
-            .user(presidentUser)
-            .clubPosition(PRESIDENT)
-            .build();
+                .club(savedClub)
+                .user(presidentUser)
+                .clubPosition(PRESIDENT)
+                .build();
 
         ClubMember savedPresident = clubMemberRepository.save(president);
         chatRoomMembershipService.addClubMember(savedPresident);
@@ -136,16 +136,16 @@ public class ClubService {
 
     private void createDefaultApplyQuestions(Club club) {
         ClubApplyQuestion phoneQuestion = ClubApplyQuestion.of(
-            club,
-            "본인의 전화번호를 입력해주세요.",
-            true,
-            1
+                club,
+                "본인의 전화번호를 입력해주세요.",
+                true,
+                1
         );
         ClubApplyQuestion motivationQuestion = ClubApplyQuestion.of(
-            club,
-            "지원 동기",
-            false,
-            2
+                club,
+                "지원 동기",
+                false,
+                2
         );
         clubApplyQuestionRepository.saveAll(List.of(phoneQuestion, motivationQuestion));
     }
@@ -183,8 +183,8 @@ public class ClubService {
         }
 
         List<ClubMember> clubMembers = clubMemberRepository.findAllByUserIdAndClubPositions(
-            userId,
-            MANAGERS
+                userId,
+                MANAGERS
         );
         return ClubMembershipsResponse.from(clubMembers);
     }
@@ -208,7 +208,7 @@ public class ClubService {
 
         if (!user.isAdmin()) {
             ClubMember requesterClubMember = clubMemberRepository.findByClubIdAndUserId(clubId, userId)
-                .orElseThrow(() -> CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS));
+                    .orElseThrow(() -> CustomException.of(FORBIDDEN_CLUB_MEMBER_ACCESS));
             canViewUnmaskedStudentNumber = MANAGERS.contains(requesterClubMember.getClubPosition());
         }
 
@@ -220,8 +220,8 @@ public class ClubService {
         }
 
         return canViewUnmaskedStudentNumber
-            ? ClubMembersResponse.fromUnmasked(clubMembers)
-            : ClubMembersResponse.fromMasked(clubMembers);
+                ? ClubMembersResponse.fromUnmasked(clubMembers)
+                : ClubMembersResponse.fromMasked(clubMembers);
     }
 
 }
