@@ -331,7 +331,7 @@ class ClubServiceTest extends ServiceTestSupport {
         MyManagedClubResponse response = clubService.getManagedClubDetail(clubId, userId);
 
         // then
-        verify(clubPermissionValidator).validateManagerAccess(clubId, userId);
+        verify(clubPermissionValidator).validateManagerAccess(clubId, user);
         assertThat(response.clubId()).isEqualTo(clubId);
         assertThat(response.name()).isEqualTo(user.getName());
         assertThat(response.position()).isEqualTo(ClubPosition.MANAGER.getDescription());
@@ -784,7 +784,7 @@ class ClubServiceTest extends ServiceTestSupport {
         given(userRepository.getById(userId)).willReturn(user);
         willThrow(CustomException.of(FORBIDDEN_ROLE_ACCESS))
             .given(clubPermissionValidator)
-            .validateManagerAccess(clubId, userId);
+            .validateManagerAccess(clubId, user);
 
         // when & then
         assertErrorCode(() -> clubService.getManagedClubDetail(clubId, userId), FORBIDDEN_ROLE_ACCESS);
