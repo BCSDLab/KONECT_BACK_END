@@ -638,7 +638,9 @@ class ClubApplicationServiceTest extends ServiceTestSupport {
         Club club = createClub(1);
         User applicant = createUser(10, "2021136001", "지원자");
         LocalDateTime appliedAt = at(2026, 4, 2, 10, 0);
-        ClubApply clubApply = createApprovedApply(club, applicant, 100, appliedAt);
+        ClubApply clubApply = ClubApply.of(club, applicant, null);
+        setId(clubApply, 100);
+        setCreatedAt(clubApply, appliedAt);
         ClubApplyQuestion question = createQuestion(club, 200, "지원 동기", true, 1, at(2026, 4, 1, 9, 0));
         ClubApplyAnswer answer = ClubApplyAnswer.of(clubApply, question, "성장하고 싶습니다.");
 
