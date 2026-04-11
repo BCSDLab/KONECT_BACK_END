@@ -571,13 +571,13 @@ class ClubServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("updateBasicInfo는 동아리 이름과 분과를 수정한다")
-    void updateBasicInfoUpdatesNameAndCategory() {
+    @DisplayName("updateBasicInfo는 매니저가 동아리 이름과 분과를 수정한다")
+    void updateBasicInfoUpdatesNameAndCategoryForManager() {
         // given
         Integer clubId = 1;
         Integer userId = 10;
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
-        User user = UserFixture.createUserWithId(userId, "관리자", UserRole.USER);
+        User user = UserFixture.createUserWithId(userId, "매니저", UserRole.USER);
         ClubBasicInfoUpdateRequest request = new ClubBasicInfoUpdateRequest("새 이름", ClubCategory.SPORTS);
 
         given(userRepository.getById(userId)).willReturn(user);
@@ -587,8 +587,27 @@ class ClubServiceTest extends ServiceTestSupport {
         clubService.updateBasicInfo(clubId, userId, request);
 
         // then
+        verify(clubPermissionValidator).validateManagerAccess(clubId, userId);
         assertThat(club.getName()).isEqualTo("새 이름");
         assertThat(club.getClubCategory()).isEqualTo(ClubCategory.SPORTS);
+    }
+
+    @Test
+    @DisplayName("updateBasicInfo는 매니저 권한이 없으면 예외를 던진다")
+    void updateBasicInfoRejectsNonManagerAccess() {
+        // given
+        Integer clubId = 1;
+        Integer userId = 10;
+        User user = UserFixture.createUserWithId(userId, "일반 회원", UserRole.USER);
+        ClubBasicInfoUpdateRequest request = new ClubBasicInfoUpdateRequest("새 이름", ClubCategory.SPORTS);
+
+        given(userRepository.getById(userId)).willReturn(user);
+        given(clubRepository.getById(clubId)).willReturn(ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD"));
+        willThrow(CustomException.class).given(clubPermissionValidator).validateManagerAccess(clubId, userId);
+
+        // when & then
+        assertThatThrownBy(() -> clubService.updateBasicInfo(clubId, userId, request))
+            .isInstanceOf(CustomException.class);
     }
 
     @Test

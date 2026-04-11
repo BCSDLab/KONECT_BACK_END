@@ -165,10 +165,7 @@ public class ClubService {
         userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
 
-        // TODO: 어드민 권한 체크 로직 추가 필요 (현재는 미구현)
-        // if (!isAdmin(userId)) {
-        //     throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
-        // }
+        clubPermissionValidator.validateManagerAccess(clubId, userId);
 
         club.updateBasicInfo(request.name(), request.clubCategory());
     }
