@@ -116,7 +116,6 @@ class ChatServiceTest extends ServiceTestSupport {
         Integer userId = 10;
         User user = createUser(userId, "요청자", UserRole.USER);
         given(userRepository.getById(userId)).willReturn(user);
-        given(userRepository.getById(userId)).willReturn(user);
 
         // when & then
         assertErrorCode(
@@ -168,7 +167,7 @@ class ChatServiceTest extends ServiceTestSupport {
     void createOrGetChatRoomUsesSystemAdminRoomForAdminToUser() {
         // given
         Integer adminUserId = 99;
-        Integer targetUserId = 20;
+        int targetUserId = 20;
         User adminUser = createUser(adminUserId, "관리자", UserRole.ADMIN);
         User targetUser = createUser(targetUserId, "일반 사용자", UserRole.USER);
         User systemAdmin = createUser(SYSTEM_ADMIN_ID, "시스템관리자", UserRole.ADMIN);
@@ -647,7 +646,7 @@ class ChatServiceTest extends ServiceTestSupport {
     // ===== kickMember additional =====
 
     @Test
-    @DisplayName("kickMember은 존재하지 않는 방에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    @DisplayName("kickMember는 존재하지 않는 방에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
     void kickMemberThrowsWhenRoomNotFound() {
         // given
         given(chatRoomRepository.findById(999)).willReturn(Optional.empty());
@@ -657,7 +656,7 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("kickMember은 club group room에서도 거부한다")
+    @DisplayName("kickMember는 club group room에서도 거부한다")
     void kickMemberRejectsClubGroupRoom() {
         // given
         ChatRoom clubRoom = createRoom(1, ChatType.CLUB_GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
@@ -668,7 +667,7 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("kickMember은 요청자가 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    @DisplayName("kickMember는 요청자가 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
     void kickMemberThrowsWhenRequesterNotMember() {
         // given
         Integer requesterId = 10;
@@ -685,7 +684,7 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("kickMember은 target이 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    @DisplayName("kickMember는 target이 멤버가 아니면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
     void kickMemberThrowsWhenTargetNotMember() {
         // given
         Integer requesterId = 10;
@@ -847,7 +846,7 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("sendMessage는 group room에서 나간 멤버가 보내면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
+    @DisplayName("sendMessage는 group room 멤버의 hasLeft 상태면 FORBIDDEN_CHAT_ROOM_ACCESS를 던진다")
     void sendMessageInGroupRoomRejectsLeftMember() {
         // given
         Integer senderId = 10;
@@ -855,7 +854,8 @@ class ChatServiceTest extends ServiceTestSupport {
         ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
         ChatRoomMember leftMember = createRoomMember(groupRoom, sender, false,
             LocalDateTime.of(2026, 4, 11, 10, 0));
-        leftMember.leaveDirectRoom(LocalDateTime.of(2026, 4, 11, 12, 0));
+        ReflectionTestUtils.setField(leftMember, "leftAt", LocalDateTime.of(2026, 4, 11, 12, 0));
+        ReflectionTestUtils.setField(leftMember, "visibleMessageFrom", LocalDateTime.of(2026, 4, 11, 12, 0));
 
         given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
         given(userRepository.getById(senderId)).willReturn(sender);
@@ -1085,10 +1085,6 @@ class ChatServiceTest extends ServiceTestSupport {
         return message;
     }
 
-    private void setCreatedAt(Object target, LocalDateTime createdAt) {
-        ReflectionTestUtils.setField(target, "createdAt", createdAt);
-        ReflectionTestUtils.setField(target, "updatedAt", createdAt);
-    }
 
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
         assertThatThrownBy(callable)
