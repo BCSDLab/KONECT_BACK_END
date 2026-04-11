@@ -65,7 +65,6 @@ public interface ClubApplyRepository extends Repository<ClubApply, Integer> {
     @Query("""
         SELECT clubApply
         FROM ClubApply clubApply
-        JOIN FETCH clubApply.user user
         WHERE clubApply.id = :id
           AND clubApply.club.id = :clubId
         """)
