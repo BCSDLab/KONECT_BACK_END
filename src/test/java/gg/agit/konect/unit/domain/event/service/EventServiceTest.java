@@ -22,6 +22,7 @@ import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.enums.EventBoothMapItemStatus;
 import gg.agit.konect.domain.event.enums.EventContentType;
 import gg.agit.konect.domain.event.enums.EventProgressStatus;
+import gg.agit.konect.domain.event.enums.EventStatus;
 import gg.agit.konect.domain.event.model.Event;
 import gg.agit.konect.domain.event.model.EventBooth;
 import gg.agit.konect.domain.event.model.EventBoothMap;
@@ -205,7 +206,7 @@ class EventServiceTest extends ServiceTestSupport {
         ReflectionTestUtils.setField(event, "notice", notice);
         ReflectionTestUtils.setField(event, "startAt", LocalDateTime.of(2026, 4, 12, 10, 0));
         ReflectionTestUtils.setField(event, "endAt", LocalDateTime.of(2026, 4, 12, 22, 0));
-        ReflectionTestUtils.setField(event, "status", "PUBLISHED");
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
         return event;
     }
 

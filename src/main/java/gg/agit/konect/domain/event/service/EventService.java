@@ -76,21 +76,15 @@ public class EventService {
             .filter(program -> type == EventProgramType.ALL || program.getType() == type)
             .toList();
 
-        int fromIndex = Math.max((page - 1) * limit, 0);
-        int toIndex = Math.min(fromIndex + limit, filteredPrograms.size());
-        List<EventProgramSummaryResponse> programs = fromIndex >= filteredPrograms.size()
-            ? List.of()
-            : filteredPrograms.subList(fromIndex, toIndex).stream()
-                .map(this::toEventProgramSummaryResponse)
-                .toList();
-
-        int totalCount = filteredPrograms.size();
-        int totalPage = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / limit);
+        PagedResult<EventProgram> pagedPrograms = paginate(filteredPrograms, page, limit);
+        List<EventProgramSummaryResponse> programs = pagedPrograms.items().stream()
+            .map(this::toEventProgramSummaryResponse)
+            .toList();
 
         return new EventProgramsResponse(
-            (long) totalCount,
+            (long) pagedPrograms.totalCount(),
             programs.size(),
-            totalPage,
+            pagedPrograms.totalPage(),
             page,
             type,
             programs
@@ -105,21 +99,15 @@ public class EventService {
             .filter(booth -> keyword == null || keyword.isBlank() || booth.getName().contains(keyword))
             .toList();
 
-        int fromIndex = Math.max((page - 1) * limit, 0);
-        int toIndex = Math.min(fromIndex + limit, filteredBooths.size());
-        List<EventBoothSummaryResponse> booths = fromIndex >= filteredBooths.size()
-            ? List.of()
-            : filteredBooths.subList(fromIndex, toIndex).stream()
-                .map(this::toEventBoothSummaryResponse)
-                .toList();
-
-        int totalCount = filteredBooths.size();
-        int totalPage = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / limit);
+        PagedResult<EventBooth> pagedBooths = paginate(filteredBooths, page, limit);
+        List<EventBoothSummaryResponse> booths = pagedBooths.items().stream()
+            .map(this::toEventBoothSummaryResponse)
+            .toList();
 
         return new EventBoothsResponse(
-            (long) totalCount,
+            (long) pagedBooths.totalCount(),
             booths.size(),
-            totalPage,
+            pagedBooths.totalPage(),
             page,
             booths
         );
@@ -153,21 +141,15 @@ public class EventService {
         getEvent(eventId);
 
         List<EventMiniEvent> miniEvents = eventMiniEventRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(eventId);
-        int fromIndex = Math.max((page - 1) * limit, 0);
-        int toIndex = Math.min(fromIndex + limit, miniEvents.size());
-        List<EventMiniEventSummaryResponse> miniEventResponses = fromIndex >= miniEvents.size()
-            ? List.of()
-            : miniEvents.subList(fromIndex, toIndex).stream()
-                .map(this::toEventMiniEventSummaryResponse)
-                .toList();
-
-        int totalCount = miniEvents.size();
-        int totalPage = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / limit);
+        PagedResult<EventMiniEvent> pagedMiniEvents = paginate(miniEvents, page, limit);
+        List<EventMiniEventSummaryResponse> miniEventResponses = pagedMiniEvents.items().stream()
+            .map(this::toEventMiniEventSummaryResponse)
+            .toList();
 
         return new EventMiniEventsResponse(
-            (long) totalCount,
+            (long) pagedMiniEvents.totalCount(),
             miniEventResponses.size(),
-            totalPage,
+            pagedMiniEvents.totalPage(),
             page,
             miniEventResponses
         );
@@ -181,21 +163,15 @@ public class EventService {
             .filter(content -> category == null || category.isBlank() || content.getType().name().equalsIgnoreCase(category))
             .toList();
 
-        int fromIndex = Math.max((page - 1) * limit, 0);
-        int toIndex = Math.min(fromIndex + limit, filteredContents.size());
-        List<EventContentSummaryResponse> contents = fromIndex >= filteredContents.size()
-            ? List.of()
-            : filteredContents.subList(fromIndex, toIndex).stream()
-                .map(this::toEventContentSummaryResponse)
-                .toList();
-
-        int totalCount = filteredContents.size();
-        int totalPage = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / limit);
+        PagedResult<EventContent> pagedContents = paginate(filteredContents, page, limit);
+        List<EventContentSummaryResponse> contents = pagedContents.items().stream()
+            .map(this::toEventContentSummaryResponse)
+            .toList();
 
         return new EventContentsResponse(
-            (long) totalCount,
+            (long) pagedContents.totalCount(),
             contents.size(),
-            totalPage,
+            pagedContents.totalPage(),
             page,
             contents
         );
@@ -204,6 +180,15 @@ public class EventService {
     private Event getEvent(Integer eventId) {
         return eventRepository.findById(eventId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
+    }
+
+    private <T> PagedResult<T> paginate(List<T> items, Integer page, Integer limit) {
+        int totalCount = items.size();
+        int fromIndex = Math.max((page - 1) * limit, 0);
+        int toIndex = Math.min(fromIndex + limit, totalCount);
+        List<T> pagedItems = fromIndex >= totalCount ? List.of() : items.subList(fromIndex, toIndex);
+        int totalPage = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / limit);
+        return new PagedResult<>(pagedItems, totalCount, totalPage);
     }
 
     private EventProgramSummaryResponse toEventProgramSummaryResponse(EventProgram program) {
@@ -266,5 +251,8 @@ public class EventService {
             content.getSummary(),
             content.getPublishedAt()
         );
+    }
+
+    private record PagedResult<T>(List<T> items, int totalCount, int totalPage) {
     }
 }
