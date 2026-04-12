@@ -1,7 +1,7 @@
 name: PR Coverage Check
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [develop, main]
     paths:
       - 'src/main/java/**/*.java'
@@ -209,11 +209,14 @@ jobs:
               body += `\n[📊 View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
             }
 
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              }
+            );
 
             const existingComment = comments.find(c =>
               c.user.login === 'github-actions[bot]' &&
