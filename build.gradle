@@ -130,8 +130,8 @@ jacocoTestReport {
 					// DTO (dto 패키지 내부만 제외)
 					"**/dto/*.class",
 					// Entity
-					"**/domain/**/entity/*.class",
-					"**/entity/*.class",
+					"**/domain/**/model/*.class",
+					"**/model/*.class",
 					// Configuration
 					"**/config/*.class",
 					"**/*Config.class",
