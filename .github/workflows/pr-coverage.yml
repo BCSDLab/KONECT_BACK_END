@@ -62,11 +62,16 @@ jobs:
           echo "Changed file count: $FILE_COUNT"
 
       - name: Run tests with JaCoCo
+        id: run-tests
         run: |
           ./gradlew test jacocoTestReport --no-daemon --build-cache
 
       - name: Parse coverage for changed files
         id: parse-coverage
+        if: always()
+        env:
+          CHANGED_FILES_OUTCOME: ${{ steps.changed-files.outcome }}
+          RUN_TESTS_OUTCOME: ${{ steps.run-tests.outcome }}
         run: |
           python3 << 'PYEOF'
           import os
@@ -86,12 +91,24 @@ jobs:
           report_path = 'build/reports/jacoco/test/jacocoTestReport.xml'
           changed_raw = os.getenv('CHANGED_FILES', '').strip()
 
+          # 선행 스텝 실패 여부를 먼저 확인하여 실제 원인을 명확히 전달
+          changed_files_outcome = os.getenv('CHANGED_FILES_OUTCOME', '')
+          run_tests_outcome = os.getenv('RUN_TESTS_OUTCOME', '')
+
+          if changed_files_outcome != 'success':
+              write_outputs('N/A', 0, 0, 'workflow-error', '변경 파일 목록을 계산하지 못했습니다.')
+              raise SystemExit(1)
+          if run_tests_outcome != 'success':
+              write_outputs('N/A', 0, 0, 'workflow-error', '테스트 실행에 실패했습니다.')
+              raise SystemExit(1)
+
           if not changed_raw:
               write_outputs('N/A', 0, 0, 'no-main-changes', '변경된 main Java 소스 파일이 없어 커버리지를 계산하지 않았습니다.')
               raise SystemExit(0)
 
           if not os.path.exists(report_path):
-              raise SystemExit(f"Error: Report not found at {report_path}")
+              write_outputs('N/A', 0, 0, 'no-report', 'JaCoCo 리포트 파일이 생성되지 않았습니다. 테스트 실행을 확인해주세요.')
+              raise SystemExit(1)
 
           tree = ET.parse(report_path)
           root = tree.getroot()
@@ -167,6 +184,7 @@ jobs:
           echo "✅ 커버리지 ${OVERALL_COVERAGE}% 가 임계값을 충족합니다."
 
       - name: Comment PR with coverage results
+        if: always()
         uses: actions/github-script@v7
         env:
           OVERALL_COVERAGE: ${{ steps.parse-coverage.outputs.overall_coverage }}
@@ -190,6 +208,12 @@ jobs:
               body += '> 이 PR에서 변경된 main Java 소스 파일이 없습니다.\n';
             } else if (bodyType === 'no-coverage-data') {
               body += '> 변경된 main Java 소스 파일에 대한 JaCoCo 데이터가 없습니다.\n';
+            } else if (bodyType === 'workflow-error') {
+              body += '> 워크플로우 실행 중 오류가 발생했습니다. 로그를 확인해주세요.\n';
+            } else if (bodyType === 'no-report') {
+              body += '> JaCoCo 리포트 파일이 생성되지 않았습니다. 테스트 실행을 확인해주세요.\n';
+            } else if (!bodyType) {
+              body += '> 이전 스텝에서 오류가 발생해 커버리지를 계산하지 못했습니다.\n';
             } else {
               const ratio = parseFloat(coverage);
               const status = ratio >= 70 ? '✅' : (ratio >= 50 ? '⚠️' : '❌');
@@ -206,9 +230,9 @@ jobs:
               } else if (ratio < 70) {
                 body += '> ⚠️ **알림:** 커버리지가 70% 미만입니다. 테스트 추가를 권장합니다.\n';
               }
-
-              body += `\n[📊 View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
             }
+
+            body += `\n[📊 View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
 
             const comments = await github.paginate(
               github.rest.issues.listComments,
