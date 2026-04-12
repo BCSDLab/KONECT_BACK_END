@@ -153,6 +153,18 @@ jobs:
           write_outputs(f"{overall_ratio:.1f}", total_lines, overall_covered, 'coverage', '\n'.join(table_lines))
           PYEOF
 
+      - name: Fail if coverage below threshold
+        if: steps.parse-coverage.outputs.body_type == 'coverage'
+        env:
+          OVERALL_COVERAGE: ${{ steps.parse-coverage.outputs.overall_coverage }}
+        run: |
+          COVERAGE_VAL=$(echo "$OVERALL_COVERAGE" | cut -d'.' -f1)
+          if [ "$COVERAGE_VAL" -lt 50 ]; then
+            echo "❌ 커버리지 ${OVERALL_COVERAGE}% 가 50% 임계값 미만입니다."
+            exit 1
+          fi
+          echo "✅ 커버리지 ${OVERALL_COVERAGE}% 가 임계값을 충족합니다."
+
       - name: Comment PR with coverage results
         uses: actions/github-script@v7
         env:
