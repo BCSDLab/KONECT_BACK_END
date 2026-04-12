@@ -107,7 +107,7 @@ jobs:
                   filename = srcfile.get('name', '')
                   full_class = f"{pkg_name}.{filename.replace('.java', '')}"
 
-                  if not any(re.search(re.escape(c) + r'($|\\$)', full_class) for c in changed_classes):
+                  if not any(re.search(re.escape(c) + r'($|\$)', full_class) for c in changed_classes):
                       continue
 
                   counter = srcfile.find('counter[@type="LINE"]')
