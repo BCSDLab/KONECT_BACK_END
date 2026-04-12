@@ -106,6 +106,7 @@ class SignupTokenServiceTest extends ServiceTestSupport {
         assertThat(claims.provider()).isEqualTo(Provider.KAKAO);
         assertThat(claims.providerId()).isEqualTo("provider-1");
         assertThat(claims.name()).isEqualTo("코넥트");
+        verify(valueOperations).getAndDelete(eq("auth:signup:signup-token"));
     }
 
     @Test
