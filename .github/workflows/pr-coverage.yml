@@ -67,6 +67,7 @@ jobs:
 
       - name: Parse coverage for changed files
         id: parse-coverage
+        if: always()
         run: |
           python3 << 'PYEOF'
           import os
@@ -91,7 +92,8 @@ jobs:
               raise SystemExit(0)
 
           if not os.path.exists(report_path):
-              raise SystemExit(f"Error: Report not found at {report_path}")
+              write_outputs('N/A', 0, 0, 'no-report', 'JaCoCo 리포트 파일이 생성되지 않았습니다. 테스트 실행을 확인해주세요.')
+              raise SystemExit(1)
 
           tree = ET.parse(report_path)
           root = tree.getroot()
@@ -167,6 +169,7 @@ jobs:
           echo "✅ 커버리지 ${OVERALL_COVERAGE}% 가 임계값을 충족합니다."
 
       - name: Comment PR with coverage results
+        if: always()
         uses: actions/github-script@v7
         env:
           OVERALL_COVERAGE: ${{ steps.parse-coverage.outputs.overall_coverage }}
@@ -190,6 +193,10 @@ jobs:
               body += '> 이 PR에서 변경된 main Java 소스 파일이 없습니다.\n';
             } else if (bodyType === 'no-coverage-data') {
               body += '> 변경된 main Java 소스 파일에 대한 JaCoCo 데이터가 없습니다.\n';
+            } else if (bodyType === 'no-report') {
+              body += '> JaCoCo 리포트 파일이 생성되지 않았습니다. 테스트 실행을 확인해주세요.\n';
+            } else if (!bodyType) {
+              body += '> 이전 스텝에서 오류가 발생해 커버리지를 계산하지 못했습니다.\n';
             } else {
               const ratio = parseFloat(coverage);
               const status = ratio >= 70 ? '✅' : (ratio >= 50 ? '⚠️' : '❌');
