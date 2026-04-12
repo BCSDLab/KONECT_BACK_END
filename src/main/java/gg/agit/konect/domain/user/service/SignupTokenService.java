@@ -1,10 +1,8 @@
 package gg.agit.konect.domain.user.service;
 
 import java.time.Duration;
-import java.util.List;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -25,14 +23,6 @@ public class SignupTokenService {
     private static final int INDEX_NAME = 3;
     private static final int EXPECTED_PARTS_WITHOUT_NAME = 3;
     private static final int EXPECTED_PARTS_WITH_NAME = 4;
-
-    private static final DefaultRedisScript<String> GET_DEL_SCRIPT =
-        new DefaultRedisScript<>(
-            "local v = redis.call('GET', KEYS[1]); " +
-                "if v then redis.call('DEL', KEYS[1]); end; " +
-                "return v;",
-            String.class
-        );
 
     private final StringRedisTemplate redis;
     private final SecureTokenGenerator secureTokenGenerator;
@@ -76,7 +66,7 @@ public class SignupTokenService {
             throw CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN);
         }
 
-        String value = redis.execute(GET_DEL_SCRIPT, List.of(key(token)));
+        String value = redis.opsForValue().getAndDelete(key(token));
         SignupClaims claims = deserialize(value);
         if (claims == null) {
             throw CustomException.of(ApiResponseCode.INVALID_SIGNUP_TOKEN);
