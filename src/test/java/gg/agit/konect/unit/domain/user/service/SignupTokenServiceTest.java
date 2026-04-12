@@ -2,14 +2,12 @@ package gg.agit.konect.unit.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.time.Duration;
-import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.service.SignupTokenService;
@@ -97,7 +94,8 @@ class SignupTokenServiceTest extends ServiceTestSupport {
     @DisplayName("consumeOrThrow는 토큰을 한 번만 읽고 삭제한다")
     void consumeOrThrowReadsAndDeletesTokenAtomically() {
         // given
-        given(redis.execute(any(DefaultRedisScript.class), eq(List.of("auth:signup:signup-token"))))
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.getAndDelete("auth:signup:signup-token"))
             .willReturn("user@koreatech.ac.kr|KAKAO|provider-1|코넥트");
 
         // when
@@ -108,7 +106,7 @@ class SignupTokenServiceTest extends ServiceTestSupport {
         assertThat(claims.provider()).isEqualTo(Provider.KAKAO);
         assertThat(claims.providerId()).isEqualTo("provider-1");
         assertThat(claims.name()).isEqualTo("코넥트");
-        verify(redis, never()).opsForValue();
+        verify(valueOperations).getAndDelete(eq("auth:signup:signup-token"));
     }
 
     @Test
@@ -128,7 +126,7 @@ class SignupTokenServiceTest extends ServiceTestSupport {
     void consumeOrThrowRejectsBlankTokenWithoutRedisLookup() {
         // when & then
         assertInvalidSignupToken(() -> signupTokenService.consumeOrThrow(" "));
-        verify(redis, never()).execute(any(DefaultRedisScript.class), any());
+        verifyNoInteractions(redis);
     }
 
     @Test
@@ -208,7 +206,8 @@ class SignupTokenServiceTest extends ServiceTestSupport {
     @DisplayName("consumeOrThrow는 Redis가 빈 문자열을 반환하면 INVALID_SIGNUP_TOKEN을 던진다")
     void consumeOrThrowRejectsEmptyStringFromRedis() {
         // given
-        given(redis.execute(any(DefaultRedisScript.class), eq(List.of("auth:signup:token"))))
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.getAndDelete("auth:signup:token"))
             .willReturn("");
 
         // when & then
@@ -265,7 +264,8 @@ class SignupTokenServiceTest extends ServiceTestSupport {
     @DisplayName("consumeOrThrow는 4파라미터 issue로 생성된 토큰에서 name을 복원한다")
     void consumeOrThrowRestoresNameFromFourParameterIssue() {
         // given
-        given(redis.execute(any(DefaultRedisScript.class), eq(List.of("auth:signup:signup-token"))))
+        given(redis.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.getAndDelete("auth:signup:signup-token"))
             .willReturn("user@koreatech.ac.kr|GOOGLE|provider-123|홍길동");
 
         // when
