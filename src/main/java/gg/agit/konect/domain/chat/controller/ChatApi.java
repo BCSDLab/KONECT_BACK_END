@@ -131,7 +131,7 @@ public interface ChatApi {
     @Operation(summary = "채팅방 메시지 리스트를 조회한다.", description = """
         ## 설명
         - 특정 채팅방의 메시지 목록을 페이지네이션으로 조회합니다.
-
+        
         ## 로직
         - 채팅방에 진입하면 읽지 않은 메시지를 자동으로 읽음 처리합니다.
         - 최신 메시지가 먼저 오도록 정렬됩니다 (DESC).
@@ -141,7 +141,7 @@ public interface ChatApi {
         - 어드민은 모든 어드민 채팅방을 조회할 수 있습니다.
         - `messageId`가 제공되면 해당 메시지가 포함된 페이지를 자동으로 계산하여 반환합니다.
           검색 결과에서 특정 메시지 위치로 이동할 때 사용합니다.
-
+        
         ## 에러
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
         - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다. messageId가 유효하지 않은 경우에도 동일합니다.
