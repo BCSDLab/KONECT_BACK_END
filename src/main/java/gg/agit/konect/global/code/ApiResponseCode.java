@@ -104,6 +104,7 @@ public enum ApiResponseCode {
     NOT_FOUND_NOTIFICATION_TOKEN(HttpStatus.NOT_FOUND, "알림 토큰을 찾을 수 없습니다."),
     NOT_FOUND_NOTIFICATION_INBOX(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     NOT_FOUND_ADVERTISEMENT(HttpStatus.NOT_FOUND, "광고를 찾을 수 없습니다."),
+    NOT_FOUND_EVENT(HttpStatus.NOT_FOUND, "행사를 찾을 수 없습니다."),
     NOT_FOUND_CLUB_SHEET_ID(HttpStatus.NOT_FOUND, "등록된 스프레드시트 ID가 없습니다. 먼저 스프레드시트 ID를 등록해 주세요."),
     NOT_FOUND_GOOGLE_DRIVE_AUTH(HttpStatus.NOT_FOUND, "Google Drive 권한이 연결되지 않았습니다. 먼저 Drive 권한을 연결해 주세요."),
 
