@@ -127,11 +127,8 @@ jacocoTestReport {
 		classDirectories.setFrom(
 			fileTree(layout.buildDirectory.dir("classes/java/main")) {
 				exclude([
-					// DTO, Request, Response
-					"**/*Dto.class",
-					"**/*DTO.class",
-					"**/*Request*.class",
-					"**/*Response*.class",
+					// DTO (dto 패키지 내부만 제외)
+					"**/dto/*.class",
 					// Entity
 					"**/domain/**/entity/*.class",
 					"**/entity/*.class",
