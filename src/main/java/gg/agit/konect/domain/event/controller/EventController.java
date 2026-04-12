@@ -1,6 +1,8 @@
 package gg.agit.konect.domain.event.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
@@ -12,6 +14,8 @@ import gg.agit.konect.domain.event.enums.EventProgramType;
 import gg.agit.konect.domain.event.service.EventService;
 import lombok.RequiredArgsConstructor;
 
+@RestController
+@Validated
 @RequiredArgsConstructor
 public class EventController implements EventApi {
 
