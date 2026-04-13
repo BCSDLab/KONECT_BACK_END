@@ -1191,7 +1191,7 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatMessageRepository.countByChatRoomId(groupRoom.getId(), null)).willReturn(100L);
         given(chatMessageRepository.findByChatRoomId(eq(groupRoom.getId()), nullable(LocalDateTime.class),
             eq(PageRequest.of(1, 20))))  // page=2이므로 offset=20
-            .willReturn(new PageImpl<>(List.of(page2Message), PageRequest.of(1, 20), 100L));
+            .willReturn(new PageImpl<>(List.of(targetMessage, page2Message), PageRequest.of(1, 20), 100L));
 
         // when — page=1을 보내도 서버가 page=2로 덮어씀
         ChatMessagePageResponse response = chatService.getMessages(userId, groupRoom.getId(), 1, 20, 50);
