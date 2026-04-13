@@ -1478,6 +1478,10 @@ public class ChatService {
     private int resolvePageForMessage(
         Integer roomId, Integer messageId, ChatRoom room, User user, int limit
     ) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("limit must be positive");
+        }
+
         ChatMessage targetMessage = chatMessageRepository.findByIdWithChatRoom(messageId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
 
