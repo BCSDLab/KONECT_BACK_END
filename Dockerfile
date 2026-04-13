@@ -23,7 +23,5 @@ ENTRYPOINT ["java", \
   "-Xmx256m", \
   "-XX:MaxMetaspaceSize=128m", \
   "-XX:+UseStringDeduplication", \
-  "-Xlog:gc*:file=/app/gc.log:time,uptime,level,tags:filecount=5,filesize=10m", \
-  "-XX:+HeapDumpOnOutOfMemoryError", \
   "-XX:HeapDumpPath=/app/heapdump.hprof", \
   "-jar", "KONECT_API.jar"]
