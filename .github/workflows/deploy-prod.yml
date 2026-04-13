@@ -91,33 +91,32 @@ jobs:
       - name: Backup prod MySQL before deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.PROD_SERVER_IP }}
-          username: ${{ secrets.PROD_SERVER_USER }}
-          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
-          port: ${{ secrets.PROD_SERVER_PORT }}
+          host: ${{ secrets.DB_SERVER_IP }}
+          username: ${{ secrets.DB_SERVER_USER }}
+          key: ${{ secrets.DB_SERVER_SSH_KEY }}
+          port: ${{ secrets.DB_SERVER_PORT }}
           script: |
             set -euo pipefail
             START_TIME=$(date +%s)
-
-            WORK_DIR="${{ secrets.PROD_WORK_DIR }}"
+      
+            WORK_DIR="/home/ubuntu/konect/prod-db-compose"
             MYSQL_CONTAINER="mysql-prod"
-
+      
             set -a
             source "$WORK_DIR/.env"
             set +a
-
+      
             BACKUP_DIR="$WORK_DIR/db-backups/"
-
             mkdir -p "$BACKUP_DIR"
-
+      
             DUMP_FILE="$BACKUP_DIR/$(date '+%Y%m%d_%H%M%S').sql"
             docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" "$MYSQL_CONTAINER" \
               mysqldump --no-tablespaces -u"$MYSQL_USERNAME" "$MYSQL_DATABASE" > "$DUMP_FILE"
-
-            find "$BACKUP_DIR" -type f -name '*.sql' -mtime +30 -delete
-
+      
+            find "$BACKUP_DIR" -type f -name '*.sql' -mtime +5 -delete
+      
             END_TIME=$(date +%s)
-            echo "Prod MySQL backup completed in $((END_TIME - START_TIME))s"
+            echo "Stage MySQL backup completed in $((END_TIME - START_TIME))s"
 
       - name: Deploy to prod server
         uses: appleboy/ssh-action@v1.2.0
