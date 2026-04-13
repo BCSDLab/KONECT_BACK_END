@@ -1,12 +1,11 @@
 package gg.agit.konect.global.ratelimit.aspect;
 
-import java.time.Duration;
-
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
@@ -17,6 +16,8 @@ import gg.agit.konect.global.ratelimit.exception.RateLimitExceededException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
+
 @Slf4j
 @Aspect
 @Component
@@ -24,6 +25,15 @@ import lombok.extern.slf4j.Slf4j;
 public class RateLimitAspect {
 
     private static final String RATE_LIMIT_KEY_PREFIX = "ratelimit:";
+
+    // Lua 스크립트: INCR로 원자적 증가 후, 처음 생성된 경우에만 TTL 설정
+    // 이 방식으로 SETNX와 INCR 사이의 레이스 컨디션을 방지
+    private static final String INCR_WITH_TTL_SCRIPT =
+        "local current = redis.call('INCR', KEYS[1]) " +
+        "if current == 1 then " +
+        "    redis.call('EXPIRE', KEYS[1], ARGV[1]) " +
+        "end " +
+        "return current";
 
     private final StringRedisTemplate redisTemplate;
     private final SpelExpressionParser parser = new SpelExpressionParser();
@@ -34,13 +44,13 @@ public class RateLimitAspect {
         int maxRequests = rateLimit.maxRequests();
         int timeWindowSeconds = rateLimit.timeWindowSeconds();
 
-        // 키가 없으면 TTL과 함께 초기화 (원자적 연산)
-        redisTemplate.opsForValue().setIfAbsent(
-            key, "0", Duration.ofSeconds(timeWindowSeconds)
+        // Lua 스크립트로 원자적 연산: INCR + 첫 생성 시 TTL 설정
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>(INCR_WITH_TTL_SCRIPT, Long.class);
+        Long currentCount = redisTemplate.execute(
+            script,
+            Collections.singletonList(key),
+            String.valueOf(timeWindowSeconds)
         );
-
-        // 요청 횟수 증가
-        Long currentCount = redisTemplate.opsForValue().increment(key);
 
         // 제한 초과 확인
         if (currentCount != null && currentCount > maxRequests) {
