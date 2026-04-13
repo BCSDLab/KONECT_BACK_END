@@ -25,6 +25,9 @@ spring:
           batch_size: 100
         order_inserts: true
         order_updates: true
+        query:
+          plan_cache_max_size: 64
+          plan_parameter_metadata_max_size: 32
     hibernate:
       ddl-auto: validate
     open-in-view: false
