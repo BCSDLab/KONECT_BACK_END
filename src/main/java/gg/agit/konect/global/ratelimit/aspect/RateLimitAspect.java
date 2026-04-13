@@ -91,6 +91,15 @@ public class RateLimitAspect {
         String[] paramNames = signature.getParameterNames();
         Object[] args = joinPoint.getArgs();
 
+        // -parameters 플래그 없이 컴파일된 경우 paramNames가 null일 수 있음
+        // 이 경우 arg0, arg1, ... 형태의 플레이스홀더 이름 생성
+        if (paramNames == null) {
+            paramNames = new String[args.length];
+            for (int i = 0; i < args.length; i++) {
+                paramNames[i] = "arg" + i;
+            }
+        }
+
         for (int i = 0; i < paramNames.length; i++) {
             context.setVariable(paramNames[i], args[i]);
         }
