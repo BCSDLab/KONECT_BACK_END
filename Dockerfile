@@ -4,12 +4,13 @@ ARG OTEL_JAVA_AGENT_VERSION=2.18.1
 
 WORKDIR /app
 
-RUN addgroup -S konect && adduser -S konect -G konect
+RUN addgroup -S konect && adduser -S konect -G konect \
+    && mkdir -p /app \
+    && chown -R konect:konect /app \
+    && chmod 755 /app \
 
 COPY build/libs/KONECT_API.jar KONECT_API.jar
 COPY opentelemetry-javaagent.jar opentelemetry-javaagent.jar
-
-RUN chown -R konect:konect /app
 
 USER konect:konect
 
