@@ -21,7 +21,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 ENTRYPOINT ["java", \
   "-Xms128m", \
   "-Xmx256m", \
-  "-XX:MaxMetaspaceSize=128m", \
+  "-XX:MaxMetaspaceSize=256m", \
   "-XX:+UseStringDeduplication", \
   "-XX:HeapDumpPath=/app/heapdump.hprof", \
   "-jar", "KONECT_API.jar"]
