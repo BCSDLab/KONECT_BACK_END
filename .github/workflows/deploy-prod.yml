@@ -116,7 +116,7 @@ jobs:
             find "$BACKUP_DIR" -type f -name '*.sql' -mtime +5 -delete
       
             END_TIME=$(date +%s)
-            echo "Stage MySQL backup completed in $((END_TIME - START_TIME))s"
+            echo "Prod MySQL backup completed in $((END_TIME - START_TIME))s"
 
       - name: Deploy to prod server
         uses: appleboy/ssh-action@v1.2.0
