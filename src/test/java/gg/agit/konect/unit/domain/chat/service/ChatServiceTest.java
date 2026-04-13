@@ -1270,13 +1270,9 @@ class ChatServiceTest extends ServiceTestSupport {
     void getMessagesWithMessageIdRejectsNonMemberWithNotFound() {
         // given
         Integer nonMemberId = 99;
-        Integer memberId = 10;
         User nonMember = createUser(nonMemberId, "비회원", UserRole.USER);
         ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
-        User sender = createUser(memberId, "멤버", UserRole.USER);
-        ChatMessage message = createMessage(50, groupRoom, sender, "메시지",
-            LocalDateTime.of(2026, 4, 11, 10, 1));
-
+        // messageId=50에 해당하는 메시지가 존재하더라도 비회원이므로 404
         given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
         given(userRepository.getById(nonMemberId)).willReturn(nonMember);
         // 비회원은 멤버십이 없음
