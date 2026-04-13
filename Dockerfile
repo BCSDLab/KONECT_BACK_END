@@ -7,7 +7,7 @@ WORKDIR /app
 RUN addgroup -S konect && adduser -S konect -G konect \
     && mkdir -p /app \
     && chown -R konect:konect /app \
-    && chmod 755 /app \
+    && chmod 755 /app
 
 COPY build/libs/KONECT_API.jar KONECT_API.jar
 COPY opentelemetry-javaagent.jar opentelemetry-javaagent.jar
