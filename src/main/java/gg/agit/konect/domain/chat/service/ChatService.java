@@ -406,23 +406,7 @@ public class ChatService {
         }
 
         LocalDateTime readAt = LocalDateTime.now();
-        ChatMessagePageResponse response = fetchMessagesByRoomType(
-            room, user, userId, roomId, page, limit, readAt);
 
-        // 동시 삽입으로 타겟 메시지가 응답에서 빠진 경우 페이지 재계산 후 1회 재시도
-        if (messageId != null && response.messages().stream()
-            .noneMatch(m -> m.messageId().equals(messageId))) {
-            page = resolvePageForMessage(roomId, messageId, room, user, limit);
-            response = fetchMessagesByRoomType(
-                room, user, userId, roomId, page, limit, readAt);
-        }
-
-        return response;
-    }
-
-    private ChatMessagePageResponse fetchMessagesByRoomType(
-        ChatRoom room, User user, Integer userId, Integer roomId, int page, int limit, LocalDateTime readAt
-    ) {
         if (room.isDirectRoom()) {
             boolean isAdminViewingSystemRoom = user.isAdmin() && isSystemAdminRoom(room);
             if (isAdminViewingSystemRoom) {
