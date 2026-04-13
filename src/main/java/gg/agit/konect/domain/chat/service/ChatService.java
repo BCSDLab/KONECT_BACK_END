@@ -406,7 +406,23 @@ public class ChatService {
         }
 
         LocalDateTime readAt = LocalDateTime.now();
+        ChatMessagePageResponse response = fetchMessagesByRoomType(
+            room, user, userId, roomId, page, limit, readAt);
 
+        // 동시 삽입으로 타겟 메시지가 응답에서 빠진 경우 페이지 재계산 후 1회 재시도
+        if (messageId != null && response.messages().stream()
+            .noneMatch(m -> m.messageId().equals(messageId))) {
+            page = resolvePageForMessage(roomId, messageId, room, user, limit);
+            response = fetchMessagesByRoomType(
+                room, user, userId, roomId, page, limit, readAt);
+        }
+
+        return response;
+    }
+
+    private ChatMessagePageResponse fetchMessagesByRoomType(
+        ChatRoom room, User user, Integer userId, Integer roomId, int page, int limit, LocalDateTime readAt
+    ) {
         if (room.isDirectRoom()) {
             boolean isAdminViewingSystemRoom = user.isAdmin() && isSystemAdminRoom(room);
             if (isAdminViewingSystemRoom) {
@@ -1493,7 +1509,7 @@ public class ChatService {
         }
 
         // NOTE: count와 fetch 사이에 새 메시지가 삽입될 수 있으나,
-        // 검색 메시지 이동 UX에서 1페이지 오차는 허용 가능함
+        // 호출부(getMessages)에서 응답에 타겟 메시지가 없으면 1회 재계산함
         long newerCount = chatMessageRepository.countNewerMessagesByChatRoomId(
             roomId, messageId, targetMessage.getCreatedAt(), visibleMessageFrom
         );
