@@ -1458,7 +1458,11 @@ public class ChatService {
             try {
                 clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
             } catch (CustomException e) {
-                throw CustomException.of(NOT_FOUND_CHAT_ROOM);
+                // 동아리 멤버십 없음만 404로 변환, 다른 예외는 그대로 전파
+                if (e.getErrorCode() == NOT_FOUND_CLUB_MEMBER) {
+                    throw CustomException.of(NOT_FOUND_CHAT_ROOM);
+                }
+                throw e;
             }
         } else {
             chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), userId)
