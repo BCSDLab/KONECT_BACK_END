@@ -1081,6 +1081,244 @@ class ChatServiceTest extends ServiceTestSupport {
         assertThat(member.getCustomRoomName()).isNull();
     }
 
+    // ===== getMessages with messageId (US-003) =====
+
+    @Test
+    @DisplayName("getMessages는 messageId가 null이면 기존 동작과 동일하게 동작한다")
+    void getMessagesWithNullMessageIdBehavesIdentically() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom groupRoom = createRoom(3, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember groupMember = createRoomMember(groupRoom, user, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage groupMessage = createMessage(300, groupRoom, user, "group", LocalDateTime.of(2026, 4, 11, 10, 3));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId)).willReturn(
+            Optional.of(groupMember));
+        given(chatRoomMemberRepository.findByChatRoomId(groupRoom.getId())).willReturn(List.of(groupMember));
+        given(chatMessageRepository.countByChatRoomId(groupRoom.getId(), null)).willReturn(1L);
+        given(chatMessageRepository.findByChatRoomId(eq(groupRoom.getId()), nullable(LocalDateTime.class),
+            eq(PageRequest.of(0, 20))))
+            .willReturn(new PageImpl<>(List.of(groupMessage), PageRequest.of(0, 20), 1));
+
+        // when — 기존 4-arg 오버로드 호출
+        ChatMessagePageResponse response = chatService.getMessages(userId, groupRoom.getId(), 1, 20);
+
+        // then
+        assertThat(response.messages()).hasSize(1);
+        verify(chatMessageRepository, never()).findByIdWithChatRoom(any());
+        verify(chatMessageRepository, never()).countNewerMessagesByChatRoomId(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("getMessages는 존재하지 않는 messageId에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void getMessagesWithMessageIdThrowsWhenMessageNotFound() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember groupMember = createRoomMember(groupRoom, user, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId))
+            .willReturn(Optional.of(groupMember));
+        given(chatMessageRepository.findByIdWithChatRoom(999)).willReturn(Optional.empty());
+
+        // when & then
+        assertErrorCode(
+            () -> chatService.getMessages(userId, groupRoom.getId(), 1, 20, 999),
+            NOT_FOUND_CHAT_ROOM
+        );
+    }
+
+    @Test
+    @DisplayName("getMessages는 다른 채팅방의 messageId에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void getMessagesWithMessageIdThrowsWhenMessageBelongsToOtherRoom() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoom otherRoom = createRoom(2, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember groupMember = createRoomMember(groupRoom, user, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        User sender = createUser(20, "작성자", UserRole.USER);
+        ChatMessage otherRoomMessage = createMessage(100, otherRoom, sender, "다른 방 메시지",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId))
+            .willReturn(Optional.of(groupMember));
+        given(chatMessageRepository.findByIdWithChatRoom(100)).willReturn(Optional.of(otherRoomMessage));
+
+        // when & then
+        assertErrorCode(
+            () -> chatService.getMessages(userId, groupRoom.getId(), 1, 20, 100),
+            NOT_FOUND_CHAT_ROOM
+        );
+    }
+
+    @Test
+    @DisplayName("getMessages는 group room에서 올바른 messageId 제공 시 계산된 페이지를 반환한다")
+    void getMessagesWithMessageIdCalculatesCorrectPageInGroupRoom() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember groupMember = createRoomMember(groupRoom, user, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        // 타겟 메시지: roomId=1, id=50, createdAt=14:00
+        ChatMessage targetMessage = createMessage(50, groupRoom, user, "찾는 메시지",
+            LocalDateTime.of(2026, 4, 11, 14, 0));
+
+        // 타겟 메시지보다 최신인 메시지가 25개 → page = 25/20 + 1 = 2
+        ChatMessage page2Message = createMessage(30, groupRoom, user, "페이지2 메시지",
+            LocalDateTime.of(2026, 4, 11, 13, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatMessageRepository.findByIdWithChatRoom(50)).willReturn(Optional.of(targetMessage));
+        given(chatMessageRepository.countNewerMessagesByChatRoomId(
+            groupRoom.getId(), 50, targetMessage.getCreatedAt(), null))
+            .willReturn(25L);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId)).willReturn(
+            Optional.of(groupMember));
+        given(chatRoomMemberRepository.findByChatRoomId(groupRoom.getId())).willReturn(List.of(groupMember));
+        given(chatMessageRepository.countByChatRoomId(groupRoom.getId(), null)).willReturn(100L);
+        given(chatMessageRepository.findByChatRoomId(eq(groupRoom.getId()), nullable(LocalDateTime.class),
+            eq(PageRequest.of(1, 20))))  // page=2이므로 offset=20
+            .willReturn(new PageImpl<>(List.of(page2Message, targetMessage), PageRequest.of(1, 20), 100L));
+
+        // when — page=1을 보내도 서버가 page=2로 덮어씀
+        ChatMessagePageResponse response = chatService.getMessages(userId, groupRoom.getId(), 1, 20, 50);
+
+        // then
+        assertThat(response.currentPage()).isEqualTo(2);
+        assertThat(response.messages().stream().anyMatch(m -> m.messageId().equals(50))).isTrue();
+        verify(chatMessageRepository).countNewerMessagesByChatRoomId(
+            groupRoom.getId(), 50, targetMessage.getCreatedAt(), null);
+    }
+
+    @Test
+    @DisplayName("getMessages는 visibleMessageFrom 범위 밖 messageId에 대해 NOT_FOUND_CHAT_ROOM을 던진다")
+    void getMessagesWithMessageIdThrowsWhenMessageBeforeVisibleMessageFrom() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom directRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member = createRoomMember(directRoom, user, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+        // 사용자가 나갔다가 돌아옴 → visibleMessageFrom이 설정됨
+        markMemberLeft(member, LocalDateTime.of(2026, 4, 11, 12, 0));
+
+        // 타겟 메시지가 visibleMessageFrom(12:00)보다 이전(10:30)에 작성됨
+        User partner = createUser(20, "상대", UserRole.USER);
+        ChatMessage oldMessage = createMessage(50, directRoom, partner, "오래된 메시지",
+            LocalDateTime.of(2026, 4, 11, 10, 30));
+
+        given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatMessageRepository.findByIdWithChatRoom(50)).willReturn(Optional.of(oldMessage));
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(directRoom.getId(), userId))
+            .willReturn(Optional.of(member));
+
+        // when & then
+        assertErrorCode(
+            () -> chatService.getMessages(userId, directRoom.getId(), 1, 20, 50),
+            NOT_FOUND_CHAT_ROOM
+        );
+    }
+
+    @Test
+    @DisplayName("getMessages는 messageId가 최신 메시지면 page=1을 계산한다")
+    void getMessagesWithMessageIdReturnsPage1ForNewestMessage() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember groupMember = createRoomMember(groupRoom, user, false, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        ChatMessage newestMessage = createMessage(100, groupRoom, user, "최신 메시지",
+            LocalDateTime.of(2026, 4, 11, 15, 0));
+
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatMessageRepository.findByIdWithChatRoom(100)).willReturn(Optional.of(newestMessage));
+        // 최신 메시지보다 더 최신인 메시지가 0개 → page = 0/20 + 1 = 1
+        given(chatMessageRepository.countNewerMessagesByChatRoomId(
+            groupRoom.getId(), 100, newestMessage.getCreatedAt(), null))
+            .willReturn(0L);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), userId)).willReturn(
+            Optional.of(groupMember));
+        given(chatRoomMemberRepository.findByChatRoomId(groupRoom.getId())).willReturn(List.of(groupMember));
+        given(chatMessageRepository.countByChatRoomId(groupRoom.getId(), null)).willReturn(50L);
+        given(chatMessageRepository.findByChatRoomId(eq(groupRoom.getId()), nullable(LocalDateTime.class),
+            eq(PageRequest.of(0, 20))))
+            .willReturn(new PageImpl<>(List.of(newestMessage), PageRequest.of(0, 20), 50L));
+
+        // when
+        ChatMessagePageResponse response = chatService.getMessages(userId, groupRoom.getId(), 1, 20, 100);
+
+        // then
+        assertThat(response.currentPage()).isEqualTo(1);
+        assertThat(response.messages().stream().anyMatch(m -> m.messageId().equals(100))).isTrue();
+    }
+
+    @Test
+    @DisplayName("getMessages는 비회원이 messageId로 조회하면 NOT_FOUND_CHAT_ROOM을 던진다 (오라클 방지)")
+    void getMessagesWithMessageIdRejectsNonMemberWithNotFound() {
+        // given
+        Integer nonMemberId = 99;
+        User nonMember = createUser(nonMemberId, "비회원", UserRole.USER);
+        ChatRoom groupRoom = createRoom(1, ChatType.GROUP, LocalDateTime.of(2026, 4, 11, 10, 0));
+        // messageId=50에 해당하는 메시지가 존재하더라도 비회원이므로 404
+        given(chatRoomRepository.findById(groupRoom.getId())).willReturn(Optional.of(groupRoom));
+        given(userRepository.getById(nonMemberId)).willReturn(nonMember);
+        // 비회원은 멤버십이 없음
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), nonMemberId))
+            .willReturn(Optional.empty());
+
+        // when & then — 유효한 messageId여도 접근 권한 없음과 동일한 404
+        assertErrorCode(
+            () -> chatService.getMessages(nonMemberId, groupRoom.getId(), 1, 20, 50),
+            NOT_FOUND_CHAT_ROOM
+        );
+        // messageId 조회 자체가 실행되지 않아야 함
+        verify(chatMessageRepository, never()).findByIdWithChatRoom(any());
+    }
+
+    @Test
+    @DisplayName("getMessages는 visibleMessageFrom과 동일 시각의 messageId를 거부한다 (경계 조건)")
+    void getMessagesWithMessageIdRejectsMessageAtExactVisibleMessageFromBoundary() {
+        // given
+        Integer userId = 10;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        ChatRoom directRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember member = createRoomMember(directRoom, user, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        LocalDateTime leftAt = LocalDateTime.of(2026, 4, 11, 12, 0);
+        markMemberLeft(member, leftAt);
+
+        // 메시지가 visibleMessageFrom과 정확히 같은 시각
+        User partner = createUser(20, "상대", UserRole.USER);
+        ChatMessage boundaryMessage = createMessage(50, directRoom, partner, "경계 메시지", leftAt);
+
+        given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(directRoom.getId(), userId))
+            .willReturn(Optional.of(member));
+        given(chatMessageRepository.findByIdWithChatRoom(50)).willReturn(Optional.of(boundaryMessage));
+
+        // when & then
+        assertErrorCode(
+            () -> chatService.getMessages(userId, directRoom.getId(), 1, 20, 50),
+            NOT_FOUND_CHAT_ROOM
+        );
+    }
+
     private User createUser(Integer id, String name, UserRole role) {
         return UserFixture.createUserWithId(UniversityFixture.createWithId(1), id, name,
             "2024" + String.format("%04d", id), role);

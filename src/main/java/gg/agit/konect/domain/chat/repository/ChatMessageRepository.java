@@ -2,6 +2,7 @@ package gg.agit.konect.domain.chat.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,13 +36,15 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         @Param("receiverId") Integer receiverId
     );
 
+    // ORDER BY는 countNewerMessagesByChatRoomId의 WHERE 조건과
+    // 일치해야 함. 페이지 계산 정확도가 두 쿼리의 정렬 일관성에 의존함.
     @Query("""
         SELECT cm
         FROM ChatMessage cm
         JOIN FETCH cm.sender
         WHERE cm.chatRoom.id = :chatRoomId
           AND (:visibleMessageFrom IS NULL OR cm.createdAt > :visibleMessageFrom)
-        ORDER BY cm.createdAt DESC
+        ORDER BY cm.createdAt DESC, cm.id DESC
         """)
     Page<ChatMessage> findByChatRoomId(
         @Param("chatRoomId") Integer chatRoomId,
@@ -138,6 +141,25 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
     List<ChatMessage> searchLatestMatchingMessagesByChatRoomIds(
         @Param("roomIds") List<Integer> roomIds,
         @Param("keyword") String keyword
+    );
+
+    @Query("SELECT cm FROM ChatMessage cm JOIN FETCH cm.chatRoom WHERE cm.id = :messageId")
+    Optional<ChatMessage> findByIdWithChatRoom(@Param("messageId") Integer messageId);
+
+    // ORDER BY 기준이 findByChatRoomId와 일치해야 함 (createdAt DESC, id DESC).
+    // 페이지 계산 정확도가 두 쿼리의 정렬 일관성에 의존함.
+    @Query("""
+        SELECT COUNT(m)
+        FROM ChatMessage m
+        WHERE m.chatRoom.id = :chatRoomId
+          AND (m.createdAt > :createdAt OR (m.createdAt = :createdAt AND m.id > :messageId))
+          AND (:visibleMessageFrom IS NULL OR m.createdAt > :visibleMessageFrom)
+        """)
+    long countNewerMessagesByChatRoomId(
+        @Param("chatRoomId") Integer chatRoomId,
+        @Param("messageId") Integer messageId,
+        @Param("createdAt") LocalDateTime createdAt,
+        @Param("visibleMessageFrom") LocalDateTime visibleMessageFrom
     );
 
     @Query("""
