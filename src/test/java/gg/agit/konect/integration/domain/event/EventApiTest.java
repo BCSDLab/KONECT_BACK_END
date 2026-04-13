@@ -141,7 +141,8 @@ class EventApiTest extends IntegrationTestSupport {
             .executeUpdate();
     }
 
-    private void insertEventBooth(Integer id, Integer eventId, String name, String category, String locationLabel, String zone,
+    private void insertEventBooth(Integer id, Integer eventId, String name, String category, String locationLabel,
+        String zone,
         boolean isOpen, Integer displayOrder) {
         entityManager.createNativeQuery("""
                 insert into event_booth (id, event_id, name, category, description, location_label, zone, thumbnail_url, is_open, display_order, created_at, updated_at)
@@ -173,7 +174,8 @@ class EventApiTest extends IntegrationTestSupport {
             .executeUpdate();
     }
 
-    private void insertEventBoothMapItem(Integer id, Integer eventBoothMapId, Integer eventBoothId, Integer x, Integer y,
+    private void insertEventBoothMapItem(Integer id, Integer eventBoothMapId, Integer eventBoothId, Integer x,
+        Integer y,
         Integer width, Integer height, String status) {
         entityManager.createNativeQuery("""
                 insert into event_booth_map_item (id, event_booth_map_id, event_booth_id, x, y, width, height, status, created_at, updated_at)

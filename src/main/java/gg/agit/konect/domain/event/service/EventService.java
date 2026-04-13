@@ -69,10 +69,12 @@ public class EventService {
         );
     }
 
-    public EventProgramsResponse getEventPrograms(Integer eventId, EventProgramType type, Integer page, Integer limit, Integer userId) {
+    public EventProgramsResponse getEventPrograms(Integer eventId, EventProgramType type, Integer page, Integer limit,
+        Integer userId) {
         getEvent(eventId);
 
-        List<EventProgram> filteredPrograms = eventProgramRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(eventId).stream()
+        List<EventProgram> filteredPrograms = eventProgramRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(
+                eventId).stream()
             .filter(program -> type == EventProgramType.ALL || program.getType() == type)
             .toList();
 
@@ -82,7 +84,7 @@ public class EventService {
             .toList();
 
         return new EventProgramsResponse(
-            (long) pagedPrograms.totalCount(),
+            (long)pagedPrograms.totalCount(),
             programs.size(),
             pagedPrograms.totalPage(),
             page,
@@ -91,10 +93,12 @@ public class EventService {
         );
     }
 
-    public EventBoothsResponse getEventBooths(Integer eventId, String category, String keyword, Integer page, Integer limit) {
+    public EventBoothsResponse getEventBooths(Integer eventId, String category, String keyword, Integer page,
+        Integer limit) {
         getEvent(eventId);
 
-        List<EventBooth> filteredBooths = eventBoothRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(eventId).stream()
+        List<EventBooth> filteredBooths = eventBoothRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(eventId)
+            .stream()
             .filter(booth -> category == null || category.isBlank() || booth.getCategory().equalsIgnoreCase(category))
             .filter(booth -> keyword == null || keyword.isBlank() || booth.getName().contains(keyword))
             .toList();
@@ -105,7 +109,7 @@ public class EventService {
             .toList();
 
         return new EventBoothsResponse(
-            (long) pagedBooths.totalCount(),
+            (long)pagedBooths.totalCount(),
             booths.size(),
             pagedBooths.totalPage(),
             page,
@@ -117,7 +121,8 @@ public class EventService {
         EventBoothMap boothMap = eventBoothMapRepository.findByEventId(eventId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
 
-        List<EventBoothMapItem> boothMapItems = eventBoothMapItemRepository.findAllByEventBoothMapIdOrderByIdAsc(boothMap.getId());
+        List<EventBoothMapItem> boothMapItems = eventBoothMapItemRepository.findAllByEventBoothMapIdOrderByIdAsc(
+            boothMap.getId());
         List<EventBoothMapResponse.BoothMapItemResponse> booths = boothMapItems.stream()
             .map(this::toEventBoothMapItemResponse)
             .toList();
@@ -147,7 +152,7 @@ public class EventService {
             .toList();
 
         return new EventMiniEventsResponse(
-            (long) pagedMiniEvents.totalCount(),
+            (long)pagedMiniEvents.totalCount(),
             miniEventResponses.size(),
             pagedMiniEvents.totalPage(),
             page,
@@ -158,9 +163,12 @@ public class EventService {
     public EventContentsResponse getEventContents(Integer eventId, String category, Integer page, Integer limit) {
         getEvent(eventId);
 
-        List<EventContent> filteredContents = eventContentRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(eventId).stream()
+        List<EventContent> filteredContents = eventContentRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(
+                eventId).stream()
             // 콘텐츠 타입 enum 이름과 동일한 문자열만 허용해 의도하지 않은 부분 일치를 막는다.
-            .filter(content -> category == null || category.isBlank() || content.getType().name().equalsIgnoreCase(category))
+            .filter(content -> category == null || category.isBlank() || content.getType()
+                .name()
+                .equalsIgnoreCase(category))
             .toList();
 
         PagedResult<EventContent> pagedContents = paginate(filteredContents, page, limit);
@@ -169,7 +177,7 @@ public class EventService {
             .toList();
 
         return new EventContentsResponse(
-            (long) pagedContents.totalCount(),
+            (long)pagedContents.totalCount(),
             contents.size(),
             pagedContents.totalPage(),
             page,
@@ -187,7 +195,7 @@ public class EventService {
         int fromIndex = Math.max((page - 1) * limit, 0);
         int toIndex = Math.min(fromIndex + limit, totalCount);
         List<T> pagedItems = fromIndex >= totalCount ? List.of() : items.subList(fromIndex, toIndex);
-        int totalPage = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / limit);
+        int totalPage = totalCount == 0 ? 0 : (int)Math.ceil((double)totalCount / limit);
         return new PagedResult<>(pagedItems, totalCount, totalPage);
     }
 

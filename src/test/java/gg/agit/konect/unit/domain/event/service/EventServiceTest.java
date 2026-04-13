@@ -220,7 +220,8 @@ class EventServiceTest extends ServiceTestSupport {
         return boothMap;
     }
 
-    private EventBooth createBooth(Integer id, Event event, String name, String category, String locationLabel, String zone,
+    private EventBooth createBooth(Integer id, Event event, String name, String category, String locationLabel,
+        String zone,
         Boolean isOpen) {
         EventBooth booth = instantiate(EventBooth.class);
         ReflectionTestUtils.setField(booth, "id", id);
@@ -235,7 +236,8 @@ class EventServiceTest extends ServiceTestSupport {
         return booth;
     }
 
-    private EventBoothMapItem createBoothMapItem(Integer id, EventBoothMap boothMap, EventBooth booth, Integer x, Integer y,
+    private EventBoothMapItem createBoothMapItem(Integer id, EventBoothMap boothMap, EventBooth booth, Integer x,
+        Integer y,
         Integer width, Integer height, EventBoothMapItemStatus status) {
         EventBoothMapItem boothMapItem = instantiate(EventBoothMapItem.class);
         ReflectionTestUtils.setField(boothMapItem, "id", id);
@@ -249,7 +251,8 @@ class EventServiceTest extends ServiceTestSupport {
         return boothMapItem;
     }
 
-    private EventMiniEvent createMiniEvent(Integer id, Event event, String title, String description, String rewardLabel,
+    private EventMiniEvent createMiniEvent(Integer id, Event event, String title, String description,
+        String rewardLabel,
         EventProgressStatus status) {
         EventMiniEvent miniEvent = instantiate(EventMiniEvent.class);
         ReflectionTestUtils.setField(miniEvent, "id", id);
@@ -281,7 +284,7 @@ class EventServiceTest extends ServiceTestSupport {
         gg.agit.konect.global.code.ApiResponseCode expectedCode) {
         org.assertj.core.api.Assertions.assertThatThrownBy(callable)
             .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(expectedCode));
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(expectedCode));
     }
 
     private <T> T instantiate(Class<T> type) {
