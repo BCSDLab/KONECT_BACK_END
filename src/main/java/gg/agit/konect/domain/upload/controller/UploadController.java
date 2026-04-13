@@ -17,7 +17,7 @@ public class UploadController implements UploadApi {
 
     private final UploadService uploadService;
 
-    @RateLimit(maxRequests = 50, timeWindowSeconds = 600, keyExpression = "#userId")
+    @RateLimit(maxRequests = 20, timeWindowSeconds = 60, keyExpression = "#userId")
     @Override
     public ResponseEntity<ImageUploadResponse> uploadImage(
         @UserId Integer userId,
