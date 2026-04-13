@@ -30,10 +30,10 @@ public class RateLimitAspect {
     // 이 방식으로 SETNX와 INCR 사이의 레이스 컨디션을 방지
     private static final String INCR_WITH_TTL_SCRIPT =
         "local current = redis.call('INCR', KEYS[1]) " +
-        "if current == 1 then " +
-        "    redis.call('EXPIRE', KEYS[1], ARGV[1]) " +
-        "end " +
-        "return current";
+            "if current == 1 then " +
+            "    redis.call('EXPIRE', KEYS[1], ARGV[1]) " +
+            "end " +
+            "return current";
 
     private final StringRedisTemplate redisTemplate;
     private final SpelExpressionParser parser = new SpelExpressionParser();

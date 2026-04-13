@@ -56,8 +56,8 @@ class RateLimitAspectTest {
         given(joinPoint.getSignature()).willReturn(methodSignature);
         given(methodSignature.getDeclaringTypeName()).willReturn("test");
         given(methodSignature.getName()).willReturn("method");
-        given(methodSignature.getParameterNames()).willReturn(new String[]{"userId"});
-        given(joinPoint.getArgs()).willReturn(new Object[]{"user123"});
+        given(methodSignature.getParameterNames()).willReturn(new String[] {"userId"});
+        given(joinPoint.getArgs()).willReturn(new Object[] {"user123"});
 
         // Lua 스크립트 실행 결과 모킹
         when(redisTemplate.execute(any(DefaultRedisScript.class), any(List.class), any(String.class)))
@@ -84,8 +84,8 @@ class RateLimitAspectTest {
         given(joinPoint.getSignature()).willReturn(methodSignature);
         given(methodSignature.getDeclaringTypeName()).willReturn("test");
         given(methodSignature.getName()).willReturn("method");
-        given(methodSignature.getParameterNames()).willReturn(new String[]{"userId"});
-        given(joinPoint.getArgs()).willReturn(new Object[]{"user123"});
+        given(methodSignature.getParameterNames()).willReturn(new String[] {"userId"});
+        given(joinPoint.getArgs()).willReturn(new Object[] {"user123"});
         given(joinPoint.proceed()).willReturn(null);
 
         when(redisTemplate.execute(any(DefaultRedisScript.class), any(List.class), any(String.class)))
@@ -109,8 +109,8 @@ class RateLimitAspectTest {
         given(joinPoint.getSignature()).willReturn(methodSignature);
         given(methodSignature.getDeclaringTypeName()).willReturn("test");
         given(methodSignature.getName()).willReturn("method");
-        given(methodSignature.getParameterNames()).willReturn(new String[]{"userId"});
-        given(joinPoint.getArgs()).willReturn(new Object[]{"user123"});
+        given(methodSignature.getParameterNames()).willReturn(new String[] {"userId"});
+        given(joinPoint.getArgs()).willReturn(new Object[] {"user123"});
 
         // Lua 스크립트가 카운터를 11로 반환 (제한 초과)
         when(redisTemplate.execute(any(DefaultRedisScript.class), any(List.class), any(String.class)))
