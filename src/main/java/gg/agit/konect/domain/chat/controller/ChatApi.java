@@ -143,8 +143,9 @@ public interface ChatApi {
           검색 결과에서 특정 메시지 위치로 이동할 때 사용합니다.
         
         ## 에러
-        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
-        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다. messageId가 유효하지 않은 경우에도 동일합니다.
+        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다 (messageId가 없는 일반 조회 시).
+        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
+          messageId가 제공된 경우, 메시지가 유효하지 않거나 접근 권한이 없거나 가시성 경계를 벗어난 경우에도 모두 404로 통일 응답됩니다.
         """)
     @GetMapping("/rooms/{chatRoomId}")
     ResponseEntity<ChatMessagePageResponse> getChatRoomMessages(
