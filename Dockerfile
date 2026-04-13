@@ -1,18 +1,17 @@
 FROM amazoncorretto:21-alpine
 
-ARG OTEL_JAVA_AGENT_VERSION=2.18.1
-
 WORKDIR /app
 
-RUN addgroup -S konect && adduser -S konect -G konect \
-    && mkdir -p /app \
-    && chown -R konect:konect /app \
-    && chmod 755 /app
+RUN addgroup -g 1000 -S konect \
+ && adduser -u 1000 -S konect -G konect \
+ && mkdir -p /app /app/logs \
+ && chown -R 1000:1000 /app \
+ && chmod 755 /app /app/logs
 
-COPY build/libs/KONECT_API.jar KONECT_API.jar
-COPY opentelemetry-javaagent.jar opentelemetry-javaagent.jar
+COPY --chown=1000:1000 build/libs/KONECT_API.jar KONECT_API.jar
+COPY --chown=1000:1000 opentelemetry-javaagent.jar opentelemetry-javaagent.jar
 
-USER konect:konect
+USER 1000:1000
 
 EXPOSE 8080
 
@@ -24,7 +23,7 @@ ENTRYPOINT ["java", \
   "-Xmx256m", \
   "-XX:MaxMetaspaceSize=256m", \
   "-XX:+UseStringDeduplication", \
-  "-Xlog:gc*:file=/app/gc.log:time,uptime,level,tags:filecount=5,filesize=10m", \
+  "-Xlog:gc*:file=/app/logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10m", \
   "-XX:+HeapDumpOnOutOfMemoryError", \
-  "-XX:HeapDumpPath=/app/heapdump.hprof", \
+  "-XX:HeapDumpPath=/app/logs/heapdump.hprof", \
   "-jar", "KONECT_API.jar"]
