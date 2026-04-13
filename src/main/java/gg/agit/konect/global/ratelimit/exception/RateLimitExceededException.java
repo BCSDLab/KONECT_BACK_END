@@ -28,13 +28,4 @@ public final class RateLimitExceededException {
         );
     }
 
-    /**
-     * 기본 메시지로 예외를 생성합니다.
-     *
-     * @return CustomException
-     */
-    public static CustomException create() {
-        return CustomException.of(ApiResponseCode.TOO_MANY_REQUESTS);
-    }
-
 }

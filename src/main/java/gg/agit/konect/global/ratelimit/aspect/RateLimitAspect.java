@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import gg.agit.konect.global.ratelimit.annotation.RateLimit;
 import gg.agit.konect.global.ratelimit.exception.RateLimitExceededException;
@@ -58,9 +59,9 @@ public class RateLimitAspect {
     private String generateKey(ProceedingJoinPoint joinPoint, RateLimit rateLimit) {
         String keyExpression = rateLimit.keyExpression();
         MethodSignature signature = (MethodSignature)joinPoint.getSignature();
+        String methodKey = signature.getDeclaringTypeName() + "." + signature.getName();
 
-        if (keyExpression == null || keyExpression.isBlank()) {
-            String methodKey = signature.getDeclaringTypeName() + "." + signature.getName();
+        if (!StringUtils.hasText(keyExpression)) {
             return RATE_LIMIT_KEY_PREFIX + methodKey;
         }
 
@@ -68,19 +69,15 @@ public class RateLimitAspect {
         String[] paramNames = signature.getParameterNames();
         Object[] args = joinPoint.getArgs();
 
-        if (paramNames != null) {
-            for (int i = 0; i < paramNames.length; i++) {
-                context.setVariable(paramNames[i], args[i]);
-            }
+        for (int i = 0; i < paramNames.length; i++) {
+            context.setVariable(paramNames[i], args[i]);
         }
 
         try {
             Object result = parser.parseExpression(keyExpression).getValue(context);
             String keyValue = result != null ? result.toString() : "unknown";
-            String methodKey = signature.getDeclaringTypeName() + "." + signature.getName();
             return RATE_LIMIT_KEY_PREFIX + methodKey + ":" + keyValue;
         } catch (Exception e) {
-            String methodKey = signature.getDeclaringTypeName() + "." + signature.getName();
             return RATE_LIMIT_KEY_PREFIX + methodKey;
         }
     }
