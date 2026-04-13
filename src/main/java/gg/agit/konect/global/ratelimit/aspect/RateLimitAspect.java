@@ -13,7 +13,6 @@ import org.springframework.util.StringUtils;
 
 import gg.agit.konect.global.ratelimit.annotation.RateLimit;
 import gg.agit.konect.global.ratelimit.exception.RateLimitExceededException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -21,7 +20,6 @@ import java.util.Collections;
 @Slf4j
 @Aspect
 @Component
-@RequiredArgsConstructor
 public class RateLimitAspect {
 
     private static final String RATE_LIMIT_KEY_PREFIX = "ratelimit:";
@@ -38,6 +36,14 @@ public class RateLimitAspect {
     private final StringRedisTemplate redisTemplate;
     private final SpelExpressionParser parser = new SpelExpressionParser();
 
+    // Lua 스크립트를 재사용하기 위해 미리 컴파일 (매 요청마다 생성 비용 제거)
+    private final DefaultRedisScript<Long> incrWithTtlScript;
+
+    public RateLimitAspect(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+        this.incrWithTtlScript = new DefaultRedisScript<>(INCR_WITH_TTL_SCRIPT, Long.class);
+    }
+
     @Around("@within(rateLimit) || @annotation(rateLimit)")
     public Object around(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
         String key = generateKey(joinPoint, rateLimit);
@@ -46,29 +52,27 @@ public class RateLimitAspect {
 
         // Redis 장애 시 fail-open 정책: 예외 발생하면 rate limit 체크를 스킵하고 요청 처리
         long currentCount;
-        long remainingSeconds;
         try {
-            // Lua 스크립트로 원자적 연산: INCR + 첫 생성 시 TTL 설정
-            DefaultRedisScript<Long> script = new DefaultRedisScript<>(INCR_WITH_TTL_SCRIPT, Long.class);
+            // 미리 생성해둔 Lua 스크립트 실행 (원자적 INCR + TTL 설정)
             Long count = redisTemplate.execute(
-                script,
+                incrWithTtlScript,
                 Collections.singletonList(key),
                 String.valueOf(timeWindowSeconds)
             );
             currentCount = count != null ? count : 0;
-
-            // 남은 TTL 조회 (초 단위)
-            Long expire = redisTemplate.getExpire(key);
-            remainingSeconds = expire != null && expire > 0 ? expire : timeWindowSeconds;
         } catch (Exception e) {
             log.warn("Rate limiting Redis operation failed for key={}: {}. Skipping rate limit check.",
                 key, e.getMessage());
             return joinPoint.proceed();
         }
 
-        // 제한 초과 확인
+        // 제한 초과 확인 - 초과 시에만 TTL 조회
         if (currentCount > maxRequests) {
-            throw RateLimitExceededException.withRemainingTime(remainingSeconds);
+            Long remainingSeconds = redisTemplate.getExpire(key);
+            long remaining = remainingSeconds != null && remainingSeconds > 0
+                ? remainingSeconds
+                : timeWindowSeconds;
+            throw RateLimitExceededException.withRemainingTime(remaining);
         }
 
         return joinPoint.proceed();
