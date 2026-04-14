@@ -10,16 +10,20 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
+import gg.agit.konect.domain.event.dto.EventMiniEventSummaryResponse;
+import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
 import gg.agit.konect.domain.event.model.EventBooth;
 import gg.agit.konect.domain.event.model.EventBoothMap;
 import gg.agit.konect.domain.event.model.EventBoothMapItem;
+import gg.agit.konect.domain.event.model.EventMiniEvent;
 import gg.agit.konect.domain.event.model.EventProgram;
 import gg.agit.konect.domain.event.repository.EventBoothMapItemRepository;
 import gg.agit.konect.domain.event.repository.EventBoothMapRepository;
 import gg.agit.konect.domain.event.repository.EventBoothRepository;
+import gg.agit.konect.domain.event.repository.EventMiniEventRepository;
 import gg.agit.konect.domain.event.repository.EventProgramRepository;
 import gg.agit.konect.domain.event.repository.EventRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -35,6 +39,7 @@ public class EventService {
     private final EventBoothRepository eventBoothRepository;
     private final EventBoothMapRepository eventBoothMapRepository;
     private final EventBoothMapItemRepository eventBoothMapItemRepository;
+    private final EventMiniEventRepository eventMiniEventRepository;
 
     public EventProgramsResponse getEventPrograms(Integer eventId, EventProgramType type, Integer page, Integer limit,
         Integer userId) {
@@ -108,6 +113,24 @@ public class EventService {
         );
     }
 
+    public EventMiniEventsResponse getEventMiniEvents(Integer eventId, Integer page, Integer limit, Integer userId) {
+        getEvent(eventId);
+
+        List<EventMiniEvent> miniEvents = eventMiniEventRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(eventId);
+        PagedResult<EventMiniEvent> pagedMiniEvents = paginate(miniEvents, page, limit);
+        List<EventMiniEventSummaryResponse> miniEventResponses = pagedMiniEvents.items().stream()
+            .map(this::toEventMiniEventSummaryResponse)
+            .toList();
+
+        return new EventMiniEventsResponse(
+            (long)pagedMiniEvents.totalCount(),
+            miniEventResponses.size(),
+            pagedMiniEvents.totalPage(),
+            page,
+            miniEventResponses
+        );
+    }
+
     private void getEvent(Integer eventId) {
         eventRepository.findById(eventId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
@@ -158,6 +181,18 @@ public class EventService {
             boothMapItem.getWidth(),
             boothMapItem.getHeight(),
             boothMapItem.getStatus().name()
+        );
+    }
+
+    private EventMiniEventSummaryResponse toEventMiniEventSummaryResponse(EventMiniEvent miniEvent) {
+        return new EventMiniEventSummaryResponse(
+            miniEvent.getId(),
+            miniEvent.getTitle(),
+            miniEvent.getThumbnailUrl(),
+            miniEvent.getDescription(),
+            miniEvent.getRewardLabel(),
+            miniEvent.getStatus().name(),
+            false
         );
     }
 

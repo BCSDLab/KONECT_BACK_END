@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
+import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
 import gg.agit.konect.domain.event.service.EventService;
@@ -34,5 +35,11 @@ public class EventController implements EventApi {
     @Override
     public ResponseEntity<EventBoothMapResponse> getEventBoothMap(Integer eventId) {
         return ResponseEntity.ok(eventService.getEventBoothMap(eventId));
+    }
+
+    @Override
+    public ResponseEntity<EventMiniEventsResponse> getEventMiniEvents(Integer eventId, Integer page, Integer limit,
+        Integer userId) {
+        return ResponseEntity.ok(eventService.getEventMiniEvents(eventId, page, limit, userId));
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
+import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
 import gg.agit.konect.global.auth.annotation.UserId;
@@ -43,5 +44,14 @@ public interface EventApi {
     @GetMapping("/{eventId}/booth-map")
     ResponseEntity<EventBoothMapResponse> getEventBoothMap(
         @PathVariable Integer eventId
+    );
+
+    @Operation(summary = "행사 미니 이벤트 목록을 조회한다.")
+    @GetMapping("/{eventId}/mini-events")
+    ResponseEntity<EventMiniEventsResponse> getEventMiniEvents(
+        @PathVariable Integer eventId,
+        @RequestParam(defaultValue = "1") @Min(1) Integer page,
+        @RequestParam(defaultValue = "20") @Min(1) Integer limit,
+        @UserId Integer userId
     );
 }
