@@ -35,7 +35,6 @@ import gg.agit.konect.domain.event.repository.EventMiniEventRepository;
 import gg.agit.konect.domain.event.repository.EventProgramRepository;
 import gg.agit.konect.domain.event.repository.EventRepository;
 import gg.agit.konect.domain.event.service.EventService;
-import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;
 
 class EventServiceTest extends ServiceTestSupport {
