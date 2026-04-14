@@ -46,3 +46,35 @@ CREATE TABLE IF NOT EXISTS event_booth
 
     FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS event_booth_map
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    event_id      INT                                                            NOT NULL,
+    map_image_url VARCHAR(255),
+    width         INT,
+    height        INT,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE,
+    CONSTRAINT uq_event_booth_map_event_id UNIQUE (event_id)
+);
+
+CREATE TABLE IF NOT EXISTS event_booth_map_item
+(
+    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    event_booth_map_id INT                                                            NOT NULL,
+    event_booth_id     INT                                                            NOT NULL,
+    x                  INT                                                            NOT NULL,
+    y                  INT                                                            NOT NULL,
+    width              INT                                                            NOT NULL,
+    height             INT                                                            NOT NULL,
+    status             ENUM ('OPEN', 'CLOSED', 'HIDDEN')                             NOT NULL DEFAULT 'OPEN',
+    created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
+    updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (event_booth_map_id) REFERENCES event_booth_map (id) ON DELETE CASCADE,
+    FOREIGN KEY (event_booth_id) REFERENCES event_booth (id) ON DELETE CASCADE,
+    CONSTRAINT uq_event_booth_map_item_booth_id UNIQUE (event_booth_id)
+);
