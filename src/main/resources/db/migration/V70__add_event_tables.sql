@@ -78,3 +78,19 @@ CREATE TABLE IF NOT EXISTS event_booth_map_item
     FOREIGN KEY (event_booth_id) REFERENCES event_booth (id) ON DELETE CASCADE,
     CONSTRAINT uq_event_booth_map_item_booth_id UNIQUE (event_booth_id)
 );
+
+CREATE TABLE IF NOT EXISTS event_mini_event
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    event_id      INT                                                            NOT NULL,
+    title         VARCHAR(100)                                                   NOT NULL,
+    description   VARCHAR(255)                                                   NOT NULL,
+    thumbnail_url VARCHAR(255),
+    reward_label  VARCHAR(100),
+    status        ENUM ('UPCOMING', 'ONGOING', 'ENDED')                          NOT NULL,
+    display_order INT                                                            NOT NULL DEFAULT 0,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
+);
