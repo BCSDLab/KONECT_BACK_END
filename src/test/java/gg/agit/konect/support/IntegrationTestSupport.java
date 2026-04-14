@@ -43,7 +43,7 @@ import gg.agit.konect.global.logging.LoggingProperties;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({TestSecurityConfig.class, TestJpaConfig.class, TestClaudeConfig.class})
+@Import({TestSecurityConfig.class, TestJpaConfig.class, TestClaudeConfig.class, EmbeddedRedisConfig.class})
 @TestPropertyConfig
 @Transactional  // 각 테스트 메서드 종료 시 자동 롤백하여 fork 내 데이터 격리 보장
 public abstract class IntegrationTestSupport {

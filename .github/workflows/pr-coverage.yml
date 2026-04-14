@@ -1,0 +1,272 @@
+name: PR Coverage Check
+
+on:
+  pull_request_target:
+    paths:
+      - 'src/main/java/**/*.java'
+      - 'src/test/java/**/*.java'
+      - 'build.gradle'
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Get changed Java files
+        id: changed-files
+        run: |
+          set -euo pipefail
+
+          CHANGED_MAIN_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^src/main/java/.*\.java$' || true)
+          CHANGED_MAIN_CLASSES=$(printf '%s\n' "$CHANGED_MAIN_FILES" | sed '/^$/d' | sed 's|src/main/java/||' | sed 's|/|.|g' | sed 's|\.java$||')
+
+          echo "Changed main Java files (package format):"
+          echo "$CHANGED_MAIN_CLASSES"
+
+          {
+            echo 'CHANGED_FILES<<EOF'
+            echo "$CHANGED_MAIN_CLASSES"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
+          FILE_COUNT=$(printf '%s\n' "$CHANGED_MAIN_CLASSES" | sed '/^$/d' | wc -l | tr -d ' ')
+          echo "FILE_COUNT=$FILE_COUNT" >> "$GITHUB_ENV"
+          echo "Changed file count: $FILE_COUNT"
+
+      - name: Run tests with JaCoCo
+        id: run-tests
+        run: |
+          ./gradlew test jacocoTestReport --no-daemon --build-cache
+
+      - name: Parse coverage for changed files
+        id: parse-coverage
+        if: always()
+        env:
+          CHANGED_FILES_OUTCOME: ${{ steps.changed-files.outcome }}
+          RUN_TESTS_OUTCOME: ${{ steps.run-tests.outcome }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import xml.etree.ElementTree as ET
+
+          def write_outputs(overall_coverage, total_lines, covered_lines, body_type, coverage_table):
+              with open(os.getenv('GITHUB_OUTPUT'), 'a') as f:
+                  f.write(f"overall_coverage={overall_coverage}\n")
+                  f.write(f"total_lines={total_lines}\n")
+                  f.write(f"covered_lines={covered_lines}\n")
+                  f.write(f"body_type={body_type}\n")
+                  f.write("coverage_table<<TABLEEOF\n")
+                  f.write(coverage_table)
+                  f.write("\nTABLEEOF\n")
+
+          report_path = 'build/reports/jacoco/test/jacocoTestReport.xml'
+          changed_raw = os.getenv('CHANGED_FILES', '').strip()
+
+          # 선행 스텝 실패 여부를 먼저 확인하여 실제 원인을 명확히 전달
+          changed_files_outcome = os.getenv('CHANGED_FILES_OUTCOME', '')
+          run_tests_outcome = os.getenv('RUN_TESTS_OUTCOME', '')
+
+          if changed_files_outcome != 'success':
+              write_outputs('N/A', 0, 0, 'workflow-error', '변경 파일 목록을 계산하지 못했습니다.')
+              raise SystemExit(1)
+          if run_tests_outcome != 'success':
+              write_outputs('N/A', 0, 0, 'workflow-error', '테스트 실행에 실패했습니다.')
+              raise SystemExit(1)
+
+          if not changed_raw:
+              write_outputs('N/A', 0, 0, 'no-main-changes', '변경된 main Java 소스 파일이 없어 커버리지를 계산하지 않았습니다.')
+              raise SystemExit(0)
+
+          if not os.path.exists(report_path):
+              write_outputs('N/A', 0, 0, 'no-report', 'JaCoCo 리포트 파일이 생성되지 않았습니다. 테스트 실행을 확인해주세요.')
+              raise SystemExit(1)
+
+          tree = ET.parse(report_path)
+          root = tree.getroot()
+          changed_classes = [c.strip() for c in changed_raw.split('\n') if c.strip()]
+
+          results = []
+          overall_covered = 0
+          overall_missed = 0
+
+          for package in root.findall('.//package'):
+              pkg_name = package.get('name', '').replace('/', '.')
+
+              for srcfile in package.findall('.//sourcefile'):
+                  filename = srcfile.get('name', '')
+                  full_class = f"{pkg_name}.{filename.replace('.java', '')}"
+
+                  if not any(re.search(re.escape(c) + r'($|\$)', full_class) for c in changed_classes):
+                      continue
+
+                  counter = srcfile.find('counter[@type="LINE"]')
+                  if counter is None:
+                      continue
+
+                  missed = int(counter.get('missed', 0))
+                  covered = int(counter.get('covered', 0))
+                  total = missed + covered
+                  if total == 0:
+                      continue
+
+                  ratio = (covered / total) * 100
+                  results.append({
+                      'class': full_class,
+                      'covered': covered,
+                      'total': total,
+                      'ratio': ratio,
+                  })
+                  overall_covered += covered
+                  overall_missed += missed
+
+          if not results:
+              write_outputs('0.0', 0, 0, 'no-coverage-data', '변경된 main Java 소스 파일에 대한 JaCoCo 데이터가 없습니다.')
+              raise SystemExit(0)
+
+          results.sort(key=lambda x: x['ratio'])
+          total_lines = overall_covered + overall_missed
+          overall_ratio = (overall_covered / total_lines) * 100 if total_lines > 0 else 0
+
+          table_lines = [
+              '| Class | Coverage | Lines | Status |',
+              '|-------|----------|-------|--------|',
+          ]
+          for result in results:
+              status = '✅' if result['ratio'] >= 70 else ('⚠️' if result['ratio'] >= 50 else '❌')
+              class_name = result['class'].split('.')[-1]
+              pkg = '.'.join(result['class'].split('.')[:-1])
+              table_lines.append(
+                  f"| {class_name}<br><sub>{pkg}</sub> | **{result['ratio']:.1f}%** | {result['covered']}/{result['total']} | {status} |"
+              )
+
+          write_outputs(f"{overall_ratio:.1f}", total_lines, overall_covered, 'coverage', '\n'.join(table_lines))
+          PYEOF
+
+      - name: Fail if coverage below threshold
+        if: steps.parse-coverage.outputs.body_type == 'coverage'
+        env:
+          OVERALL_COVERAGE: ${{ steps.parse-coverage.outputs.overall_coverage }}
+        run: |
+          COVERAGE_VAL=$(echo "$OVERALL_COVERAGE" | cut -d'.' -f1)
+          if [ "$COVERAGE_VAL" -lt 50 ]; then
+            echo "❌ 커버리지 ${OVERALL_COVERAGE}% 가 50% 임계값 미만입니다."
+            exit 1
+          fi
+          echo "✅ 커버리지 ${OVERALL_COVERAGE}% 가 임계값을 충족합니다."
+
+      - name: Comment PR with coverage results
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          OVERALL_COVERAGE: ${{ steps.parse-coverage.outputs.overall_coverage }}
+          TOTAL_LINES: ${{ steps.parse-coverage.outputs.total_lines }}
+          COVERED_LINES: ${{ steps.parse-coverage.outputs.covered_lines }}
+          BODY_TYPE: ${{ steps.parse-coverage.outputs.body_type }}
+          COVERAGE_TABLE: ${{ steps.parse-coverage.outputs.coverage_table }}
+          FILE_COUNT: ${{ env.FILE_COUNT }}
+        with:
+          script: |
+            const coverage = process.env.OVERALL_COVERAGE;
+            const totalLines = process.env.TOTAL_LINES;
+            const coveredLines = process.env.COVERED_LINES;
+            const bodyType = process.env.BODY_TYPE;
+            const table = process.env.COVERAGE_TABLE || '';
+            const fileCount = process.env.FILE_COUNT || '0';
+
+            let body = '## 🧪 JaCoCo Coverage Report (Changed Files)\n\n';
+
+            if (bodyType === 'no-main-changes') {
+              body += '> 이 PR에서 변경된 main Java 소스 파일이 없습니다.\n';
+            } else if (bodyType === 'no-coverage-data') {
+              body += '> 변경된 main Java 소스 파일에 대한 JaCoCo 데이터가 없습니다.\n';
+            } else if (bodyType === 'workflow-error') {
+              body += '> 워크플로우 실행 중 오류가 발생했습니다. 로그를 확인해주세요.\n';
+            } else if (bodyType === 'no-report') {
+              body += '> JaCoCo 리포트 파일이 생성되지 않았습니다. 테스트 실행을 확인해주세요.\n';
+            } else if (!bodyType) {
+              body += '> 이전 스텝에서 오류가 발생해 커버리지를 계산하지 못했습니다.\n';
+            } else {
+              const ratio = parseFloat(coverage);
+              const status = ratio >= 70 ? '✅' : (ratio >= 50 ? '⚠️' : '❌');
+
+              body += `### Summary\n`;
+              body += `- **Overall Coverage:** ${coverage}% ${status}\n`;
+              body += `- **Covered Lines:** ${coveredLines} / ${totalLines}\n`;
+              body += `- **Changed Files:** ${fileCount}\n\n`;
+              body += `### Coverage by File\n`;
+              body += `${table}\n\n`;
+
+              if (ratio < 50) {
+                body += '> ❌ **알림:** 커버리지가 50% 미만입니다. 테스트를 추가해주세요.\n';
+              } else if (ratio < 70) {
+                body += '> ⚠️ **알림:** 커버리지가 70% 미만입니다. 테스트 추가를 권장합니다.\n';
+              }
+            }
+
+            body += `\n[📊 View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              }
+            );
+
+            const existingComment = comments.find(c =>
+              c.user.login === 'github-actions[bot]' &&
+              c.body.includes('JaCoCo Coverage Report')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: build/reports/jacoco/test/
+          retention-days: 7

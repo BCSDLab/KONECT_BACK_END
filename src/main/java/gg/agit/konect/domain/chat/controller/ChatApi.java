@@ -139,9 +139,13 @@ public interface ChatApi {
         - 채팅방 참여자만 메시지를 조회할 수 있습니다.
         - 일반 유저는 자신이 참여한 채팅방만 조회할 수 있습니다.
         - 어드민은 모든 어드민 채팅방을 조회할 수 있습니다.
+        - `messageId`가 제공되면 해당 메시지가 포함된 페이지를 자동으로 계산하여 반환합니다.
+          검색 결과에서 특정 메시지 위치로 이동할 때 사용합니다.
         
         ## 에러
-        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
+        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다 (messageId가 없는 일반 조회 시).
+        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
+          messageId가 제공된 경우, 메시지가 유효하지 않거나 접근 권한이 없거나 가시성 경계를 벗어난 경우에도 모두 404로 통일 응답됩니다.
         """)
     @GetMapping("/rooms/{chatRoomId}")
     ResponseEntity<ChatMessagePageResponse> getChatRoomMessages(
@@ -150,7 +154,8 @@ public interface ChatApi {
         @Min(value = 1, message = "페이지 당 항목 수는 1 이상이어야 합니다.")
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
-        @UserId Integer userId
+        @UserId Integer userId,
+        @RequestParam(name = "messageId", required = false) Integer messageId
     );
 
     @Operation(summary = "메시지를 전송한다.", description = """

@@ -7,11 +7,12 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpResponseException;
 
-final class GoogleApiTestUtils {
+public final class GoogleApiTestUtils {
 
-    private GoogleApiTestUtils() {}
+    private GoogleApiTestUtils() {
+    }
 
-    static GoogleJsonResponseException googleException(int statusCode, String reason) {
+    public static GoogleJsonResponseException googleException(int statusCode, String reason) {
         GoogleJsonError.ErrorInfo errorInfo = new GoogleJsonError.ErrorInfo();
         errorInfo.setReason(reason);
 
@@ -28,11 +29,11 @@ final class GoogleApiTestUtils {
         return new GoogleJsonResponseException(builder, error);
     }
 
-    static HttpResponseException httpResponseException(int statusCode) {
+    public static HttpResponseException httpResponseException(int statusCode) {
         return httpResponseException(statusCode, null);
     }
 
-    static HttpResponseException httpResponseException(int statusCode, String content) {
+    public static HttpResponseException httpResponseException(int statusCode, String content) {
         return new HttpResponseException.Builder(
             statusCode,
             null,

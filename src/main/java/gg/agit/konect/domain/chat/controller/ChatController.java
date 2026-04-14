@@ -85,9 +85,10 @@ public class ChatController implements ChatApi {
         @RequestParam(name = "page", defaultValue = "1") Integer page,
         @RequestParam(name = "limit", defaultValue = "20", required = false) Integer limit,
         @PathVariable(value = "chatRoomId") Integer chatRoomId,
-        @UserId Integer userId
+        @UserId Integer userId,
+        @RequestParam(name = "messageId", required = false) Integer messageId
     ) {
-        ChatMessagePageResponse response = chatService.getMessages(userId, chatRoomId, page, limit);
+        ChatMessagePageResponse response = chatService.getMessages(userId, chatRoomId, page, limit, messageId);
         return ResponseEntity.ok(response);
     }
 

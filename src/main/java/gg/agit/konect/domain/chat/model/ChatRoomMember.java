@@ -24,6 +24,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = PROTECTED)
 public class ChatRoomMember extends BaseEntity {
 
+    private static final long DB_TIMESTAMP_PRECISION_NANOS = 1_000L;
+
     @EmbeddedId
     private ChatRoomMemberId id;
 
@@ -137,6 +139,20 @@ public class ChatRoomMember extends BaseEntity {
      */
     public void restoreDirectRoom() {
         this.leftAt = null;
+    }
+
+    /**
+     * 상대방의 새 메시지로 채팅방이 다시 보여야 할 때 사용한다.
+     * <p>
+     * 현재 구현은 메시지 노출/안읽음 계산을 모두 {@code > 기준시각}으로 비교한다.
+     * 그래서 첫 새 메시지와 같은 시각을 경계로 저장하면 그 메시지가 숨겨질 수 있어,
+     * DB timestamp(6) 정밀도에서 보정값이 사라지지 않도록 경계를 1마이크로초 앞당겨 해당 메시지부터 보이고 안읽음으로 계산되게 한다.
+     */
+    public void restoreDirectRoomFromIncomingMessage(LocalDateTime messageCreatedAt) {
+        LocalDateTime visibleFrom = messageCreatedAt.minusNanos(DB_TIMESTAMP_PRECISION_NANOS);
+        this.leftAt = null;
+        this.visibleMessageFrom = visibleFrom;
+        this.lastReadAt = visibleFrom;
     }
 
     /**

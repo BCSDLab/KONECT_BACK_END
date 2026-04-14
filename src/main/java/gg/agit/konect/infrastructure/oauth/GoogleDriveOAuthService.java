@@ -1,11 +1,9 @@
 package gg.agit.konect.infrastructure.oauth;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -41,11 +39,6 @@ public class GoogleDriveOAuthService {
     private static final Duration STATE_TTL = Duration.ofMinutes(10);
     private static final String CALLBACK_PATH = "/auth/oauth/google/drive/callback";
 
-    private static final DefaultRedisScript<String> GET_DEL_SCRIPT = new DefaultRedisScript<>(
-        "local v = redis.call('GET', KEYS[1]); if v then redis.call('DEL', KEYS[1]); end; return v;",
-        String.class
-    );
-
     private final GoogleSheetsProperties googleSheetsProperties;
     private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final RestTemplate restTemplate;
@@ -78,7 +71,7 @@ public class GoogleDriveOAuthService {
         }
 
         String stateKey = STATE_KEY_PREFIX + state;
-        String userIdStr = redis.execute(GET_DEL_SCRIPT, List.of(stateKey));
+        String userIdStr = redis.opsForValue().getAndDelete(stateKey);
 
         if (userIdStr == null || userIdStr.isBlank()) {
             log.warn("Invalid or expired Drive OAuth state. state={}", state);

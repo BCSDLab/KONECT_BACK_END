@@ -162,13 +162,10 @@ public class ClubService {
 
     @Transactional
     public void updateBasicInfo(Integer clubId, Integer userId, ClubBasicInfoUpdateRequest request) {
-        userRepository.getById(userId);
+        User user = userRepository.getById(userId);
         Club club = clubRepository.getById(clubId);
 
-        // TODO: 어드민 권한 체크 로직 추가 필요 (현재는 미구현)
-        // if (!isAdmin(userId)) {
-        //     throw CustomException.of(FORBIDDEN_CLUB_MANAGER_ACCESS);
-        // }
+        clubPermissionValidator.validateManagerAccess(clubId, user);
 
         club.updateBasicInfo(request.name(), request.clubCategory());
     }
@@ -199,7 +196,7 @@ public class ClubService {
             return MyManagedClubResponse.forAdmin(club, user);
         }
 
-        clubPermissionValidator.validateManagerAccess(clubId, userId);
+        clubPermissionValidator.validateManagerAccess(clubId, user);
 
         ClubMember clubMember = clubMemberRepository.getByClubIdAndUserId(clubId, userId);
         return MyManagedClubResponse.from(club, clubMember);

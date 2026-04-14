@@ -3,6 +3,7 @@ package gg.agit.konect.domain.upload.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,7 +44,7 @@ public class UploadService {
         validateS3Configuration();
         validateFile(file);
 
-        String contentType = file.getContentType();
+        String contentType = normalizeContentType(file.getContentType());
         String extension = getExtension(contentType);
         String key = buildKey(extension, target);
 
@@ -90,11 +91,16 @@ public class UploadService {
             throw CustomException.of(ApiResponseCode.INVALID_REQUEST_BODY);
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || contentType.isBlank() || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
+        if (s3StorageProperties.maxUploadBytes() != null
+            && s3StorageProperties.maxUploadBytes() > 0
+            && file.getSize() > s3StorageProperties.maxUploadBytes()) {
+            throw CustomException.of(ApiResponseCode.PAYLOAD_TOO_LARGE);
         }
 
+        String contentType = normalizeContentType(file.getContentType());
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw CustomException.of(ApiResponseCode.INVALID_FILE_CONTENT_TYPE);
+        }
     }
 
     private String buildKey(String extension, UploadTarget target) {
@@ -131,8 +137,18 @@ public class UploadService {
         return normalized;
     }
 
+    private String normalizeContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return null;
+        }
+        return contentType.trim().toLowerCase(Locale.ROOT);
+    }
+
     private String getExtension(String contentType) {
-        return switch (contentType.toLowerCase()) {
+        if (contentType == null) {
+            return "bin";
+        }
+        return switch (contentType) {
             case "image/png" -> "png";
             case "image/jpg", "image/jpeg" -> "jpg";
             case "image/webp" -> "webp";
@@ -147,8 +163,12 @@ public class UploadService {
 
         String trimmed = baseUrl.trim();
 
-        if (trimmed.endsWith("/")) {
-            return trimmed.substring(0, trimmed.length() - 1);
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+
+        if (trimmed.isEmpty()) {
+            throw CustomException.of(ApiResponseCode.ILLEGAL_STATE, "storage.cdn.base-url 설정이 필요합니다.");
         }
 
         return trimmed;

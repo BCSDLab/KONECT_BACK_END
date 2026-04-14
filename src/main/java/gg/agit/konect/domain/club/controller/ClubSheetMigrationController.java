@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
+import gg.agit.konect.domain.club.dto.SheetImportConfirmRequest;
+import gg.agit.konect.domain.club.dto.SheetImportPreviewResponse;
 import gg.agit.konect.domain.club.dto.SheetImportRequest;
 import gg.agit.konect.domain.club.dto.SheetImportResponse;
 import gg.agit.konect.domain.club.dto.SheetMigrateRequest;
@@ -36,6 +38,31 @@ public class ClubSheetMigrationController implements ClubSheetMigrationApi {
             clubId, requesterId, request.sourceSpreadsheetUrl()
         );
         return ResponseEntity.ok(ClubMemberSheetSyncResponse.of(0, newSpreadsheetId));
+    }
+
+    @Override
+    public ResponseEntity<SheetImportPreviewResponse> previewPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @UserId Integer requesterId
+    ) {
+        SheetImportPreviewResponse response = sheetImportService.previewPreMembersFromSheet(
+            clubId, requesterId
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<SheetImportResponse> confirmImportPreMembers(
+        @PathVariable(name = "clubId") Integer clubId,
+        @Valid @RequestBody SheetImportConfirmRequest request,
+        @UserId Integer requesterId
+    ) {
+        SheetImportResponse response = sheetImportService.confirmImportPreMembers(
+            clubId,
+            requesterId,
+            request.members()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @Override

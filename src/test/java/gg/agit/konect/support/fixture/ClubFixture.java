@@ -1,5 +1,7 @@
 package gg.agit.konect.support.fixture;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.model.University;
@@ -23,6 +25,16 @@ public class ClubFixture {
             .isApplicationEnabled(true)
             .isFeeRequired(false)
             .build();
+    }
+
+    public static Club createWithId(University university, Integer id) {
+        return createWithId(university, id, "BCSD Lab");
+    }
+
+    public static Club createWithId(University university, Integer id, String name) {
+        Club club = create(university, name);
+        ReflectionTestUtils.setField(club, "id", id);
+        return club;
     }
 
     public static Club createWithRecruitment(University university, String name) {

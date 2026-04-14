@@ -1,5 +1,7 @@
 package gg.agit.konect.support.fixture;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import gg.agit.konect.domain.university.enums.Campus;
 import gg.agit.konect.domain.university.model.University;
 
@@ -18,5 +20,15 @@ public class UniversityFixture {
 
     public static University createWithName(String koreanName) {
         return create(koreanName, Campus.MAIN);
+    }
+
+    public static University createWithId(Integer id) {
+        return createWithId(id, "한국기술교육대학교", Campus.MAIN);
+    }
+
+    public static University createWithId(Integer id, String koreanName, Campus campus) {
+        University university = create(koreanName, campus);
+        ReflectionTestUtils.setField(university, "id", id);
+        return university;
     }
 }

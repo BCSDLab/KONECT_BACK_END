@@ -29,7 +29,10 @@ public record ChatMessageMatchResult(
 
     @Schema(description = "매칭된 메시지 전송 시간", example = "2025.12.19 23:21", requiredMode = REQUIRED)
     @JsonFormat(pattern = "yyyy.MM.dd HH:mm")
-    LocalDateTime matchedMessageSentAt
+    LocalDateTime matchedMessageSentAt,
+
+    @Schema(description = "검색에 매칭된 메시지 ID", example = "42", requiredMode = REQUIRED)
+    Integer matchedMessageId
 ) {
 
     public static ChatMessageMatchResult from(ChatRoomSummaryResponse room, ChatMessage message) {
@@ -39,7 +42,8 @@ public record ChatMessageMatchResult(
             room.roomName(),
             room.roomImageUrl(),
             message.getContent(),
-            message.getCreatedAt()
+            message.getCreatedAt(),
+            message.getId()
         );
     }
 }

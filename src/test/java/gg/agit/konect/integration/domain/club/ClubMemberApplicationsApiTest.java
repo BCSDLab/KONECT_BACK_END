@@ -167,7 +167,7 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
     }
 
     @Nested
-    @DisplayName("GET /clubs/{clubId}/member-applications/{userId}/answers - 특정 멤버 지원서 답변 조회")
+    @DisplayName("GET /clubs/{clubId}/member-applications/users/{userId} - 특정 멤버 지원서 답변 조회")
     class GetApprovedMemberApplicationAnswers {
 
         @Test
@@ -193,9 +193,10 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
             mockLoginUser(president.getId());
 
             // when & then
-            performGet("/clubs/" + club.getId() + "/member-applications/" + approvedUser.getId() + "/answers")
+            performGet("/clubs/" + club.getId() + "/member-applications/users/" + approvedUser.getId())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(approvedUser.getId()))
+                .andExpect(jsonPath("$.applicationId").value(approvedApply.getId()))
+                .andExpect(jsonPath("$.studentNumber").value(approvedUser.getStudentNumber()))
                 .andExpect(jsonPath("$.name").value("승인자"))
                 .andExpect(jsonPath("$.answers", hasSize(2)))
                 .andExpect(jsonPath("$.answers[0].question").exists())
@@ -217,7 +218,7 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
             mockLoginUser(president.getId());
 
             // when & then
-            performGet("/clubs/" + club.getId() + "/member-applications/" + approvedUser.getId() + "/answers")
+            performGet("/clubs/" + club.getId() + "/member-applications/users/" + approvedUser.getId())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.answers", hasSize(0)));
         }
@@ -233,8 +234,8 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
             mockLoginUser(president.getId());
 
             // when & then
-            performGet("/clubs/" + club.getId() + "/member-applications/" + pendingUser.getId() + "/answers")
-                .andExpect(status().isBadRequest());
+            performGet("/clubs/" + club.getId() + "/member-applications/users/" + pendingUser.getId())
+                .andExpect(status().isNotFound());
         }
 
         @Test
@@ -247,8 +248,8 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
             mockLoginUser(president.getId());
 
             // when & then
-            performGet("/clubs/" + club.getId() + "/member-applications/" + nonMember.getId() + "/answers")
-                .andExpect(status().isBadRequest());
+            performGet("/clubs/" + club.getId() + "/member-applications/users/" + nonMember.getId())
+                .andExpect(status().isNotFound());
         }
 
         @Test
@@ -278,7 +279,7 @@ class ClubMemberApplicationsApiTest extends IntegrationTestSupport {
             mockLoginUser(president.getId());
 
             // when & then
-            performGet("/clubs/" + club.getId() + "/member-applications/" + approvedUser.getId() + "/answers")
+            performGet("/clubs/" + club.getId() + "/member-applications/users/" + approvedUser.getId())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.answers", hasSize(1)))
                 .andExpect(jsonPath("$.answers[0].question").value("구버전 질문"));
