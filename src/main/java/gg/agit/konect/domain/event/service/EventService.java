@@ -12,11 +12,13 @@ import gg.agit.konect.domain.event.dto.EventBoothSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
 import gg.agit.konect.domain.event.dto.EventContentSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventContentsResponse;
+import gg.agit.konect.domain.event.dto.EventHomeResponse;
 import gg.agit.konect.domain.event.dto.EventMiniEventSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
+import gg.agit.konect.domain.event.model.Event;
 import gg.agit.konect.domain.event.model.EventBooth;
 import gg.agit.konect.domain.event.model.EventBoothMap;
 import gg.agit.konect.domain.event.model.EventBoothMapItem;
@@ -45,6 +47,27 @@ public class EventService {
     private final EventBoothMapItemRepository eventBoothMapItemRepository;
     private final EventMiniEventRepository eventMiniEventRepository;
     private final EventContentRepository eventContentRepository;
+
+    public EventHomeResponse getEventHome(Integer eventId, Integer userId) {
+        Event event = getEvent(eventId);
+
+        return new EventHomeResponse(
+            event.getId(),
+            event.getTitle(),
+            event.getSubtitle(),
+            event.getPosterImageUrl(),
+            event.getStartAt(),
+            event.getEndAt(),
+            event.getNotice(),
+            new EventHomeResponse.Summary(
+                eventProgramRepository.countByEventId(eventId),
+                eventBoothRepository.countByEventId(eventId),
+                eventMiniEventRepository.countByEventId(eventId),
+                eventContentRepository.countByEventId(eventId)
+            ),
+            new EventHomeResponse.UserStatus(0, 0)
+        );
+    }
 
     public EventProgramsResponse getEventPrograms(Integer eventId, EventProgramType type, Integer page, Integer limit,
         Integer userId) {
@@ -162,8 +185,8 @@ public class EventService {
         );
     }
 
-    private void getEvent(Integer eventId) {
-        eventRepository.findById(eventId)
+    private Event getEvent(Integer eventId) {
+        return eventRepository.findById(eventId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
     }
 
