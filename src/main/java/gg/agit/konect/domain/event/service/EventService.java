@@ -7,13 +7,18 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
 import gg.agit.konect.domain.event.model.EventBooth;
+import gg.agit.konect.domain.event.model.EventBoothMap;
+import gg.agit.konect.domain.event.model.EventBoothMapItem;
 import gg.agit.konect.domain.event.model.EventProgram;
+import gg.agit.konect.domain.event.repository.EventBoothMapItemRepository;
+import gg.agit.konect.domain.event.repository.EventBoothMapRepository;
 import gg.agit.konect.domain.event.repository.EventBoothRepository;
 import gg.agit.konect.domain.event.repository.EventProgramRepository;
 import gg.agit.konect.domain.event.repository.EventRepository;
@@ -28,6 +33,8 @@ public class EventService {
     private final EventRepository eventRepository;
     private final EventProgramRepository eventProgramRepository;
     private final EventBoothRepository eventBoothRepository;
+    private final EventBoothMapRepository eventBoothMapRepository;
+    private final EventBoothMapItemRepository eventBoothMapItemRepository;
 
     public EventProgramsResponse getEventPrograms(Integer eventId, EventProgramType type, Integer page, Integer limit,
         Integer userId) {
@@ -77,6 +84,30 @@ public class EventService {
         );
     }
 
+    public EventBoothMapResponse getEventBoothMap(Integer eventId) {
+        EventBoothMap boothMap = eventBoothMapRepository.findByEventId(eventId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
+
+        List<EventBoothMapItem> boothMapItems = eventBoothMapItemRepository.findAllByEventBoothMapIdOrderByIdAsc(
+            boothMap.getId());
+        List<EventBoothMapResponse.BoothMapItemResponse> booths = boothMapItems.stream()
+            .map(this::toEventBoothMapItemResponse)
+            .toList();
+
+        List<EventBoothMapResponse.ZoneResponse> zones = booths.stream()
+            .map(EventBoothMapResponse.BoothMapItemResponse::zone)
+            .filter(zone -> zone != null && !zone.isBlank())
+            .distinct()
+            .map(zone -> new EventBoothMapResponse.ZoneResponse(zone, zone))
+            .toList();
+
+        return new EventBoothMapResponse(
+            boothMap.getMapImageUrl(),
+            zones,
+            booths
+        );
+    }
+
     private void getEvent(Integer eventId) {
         eventRepository.findById(eventId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
@@ -112,6 +143,21 @@ public class EventService {
             booth.getZone(),
             booth.getThumbnailUrl(),
             Boolean.TRUE.equals(booth.getIsOpen())
+        );
+    }
+
+    private EventBoothMapResponse.BoothMapItemResponse toEventBoothMapItemResponse(EventBoothMapItem boothMapItem) {
+        EventBooth booth = boothMapItem.getEventBooth();
+
+        return new EventBoothMapResponse.BoothMapItemResponse(
+            booth.getId(),
+            booth.getName(),
+            booth.getZone(),
+            boothMapItem.getX(),
+            boothMapItem.getY(),
+            boothMapItem.getWidth(),
+            boothMapItem.getHeight(),
+            boothMapItem.getStatus().name()
         );
     }
 
