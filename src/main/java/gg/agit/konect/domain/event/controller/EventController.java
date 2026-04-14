@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
+import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
+import gg.agit.konect.domain.event.dto.EventBoothsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
 import gg.agit.konect.domain.event.service.EventService;
@@ -21,5 +23,16 @@ public class EventController implements EventApi {
         Integer limit,
         Integer userId) {
         return ResponseEntity.ok(eventService.getEventPrograms(eventId, type, page, limit, userId));
+    }
+
+    @Override
+    public ResponseEntity<EventBoothsResponse> getEventBooths(Integer eventId, String category, String keyword,
+        Integer page, Integer limit) {
+        return ResponseEntity.ok(eventService.getEventBooths(eventId, category, keyword, page, limit));
+    }
+
+    @Override
+    public ResponseEntity<EventBoothMapResponse> getEventBoothMap(Integer eventId) {
+        return ResponseEntity.ok(eventService.getEventBoothMap(eventId));
     }
 }

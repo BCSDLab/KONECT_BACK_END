@@ -7,10 +7,14 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.event.dto.EventBoothSummaryResponse;
+import gg.agit.konect.domain.event.dto.EventBoothsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
+import gg.agit.konect.domain.event.model.EventBooth;
 import gg.agit.konect.domain.event.model.EventProgram;
+import gg.agit.konect.domain.event.repository.EventBoothRepository;
 import gg.agit.konect.domain.event.repository.EventProgramRepository;
 import gg.agit.konect.domain.event.repository.EventRepository;
 import gg.agit.konect.global.exception.CustomException;
@@ -23,11 +27,11 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final EventProgramRepository eventProgramRepository;
+    private final EventBoothRepository eventBoothRepository;
 
     public EventProgramsResponse getEventPrograms(Integer eventId, EventProgramType type, Integer page, Integer limit,
         Integer userId) {
-        eventRepository.findById(eventId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
+        getEvent(eventId);
 
         List<EventProgram> filteredPrograms = eventProgramRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(
                 eventId).stream()
@@ -49,6 +53,35 @@ public class EventService {
         );
     }
 
+    public EventBoothsResponse getEventBooths(Integer eventId, String category, String keyword, Integer page,
+        Integer limit) {
+        getEvent(eventId);
+
+        List<EventBooth> filteredBooths = eventBoothRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(eventId)
+            .stream()
+            .filter(booth -> category == null || category.isBlank() || booth.getCategory().equalsIgnoreCase(category))
+            .filter(booth -> keyword == null || keyword.isBlank() || booth.getName().contains(keyword))
+            .toList();
+
+        PagedResult<EventBooth> pagedBooths = paginate(filteredBooths, page, limit);
+        List<EventBoothSummaryResponse> booths = pagedBooths.items().stream()
+            .map(this::toEventBoothSummaryResponse)
+            .toList();
+
+        return new EventBoothsResponse(
+            (long)pagedBooths.totalCount(),
+            booths.size(),
+            pagedBooths.totalPage(),
+            page,
+            booths
+        );
+    }
+
+    private void getEvent(Integer eventId) {
+        eventRepository.findById(eventId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_EVENT));
+    }
+
     private <T> PagedResult<T> paginate(List<T> items, Integer page, Integer limit) {
         int totalCount = items.size();
         int fromIndex = Math.max((page - 1) * limit, 0);
@@ -67,6 +100,18 @@ public class EventService {
             program.getRewardPoint(),
             program.getStatus().name(),
             false
+        );
+    }
+
+    private EventBoothSummaryResponse toEventBoothSummaryResponse(EventBooth booth) {
+        return new EventBoothSummaryResponse(
+            booth.getId(),
+            booth.getName(),
+            booth.getCategory(),
+            booth.getLocationLabel(),
+            booth.getZone(),
+            booth.getThumbnailUrl(),
+            Boolean.TRUE.equals(booth.getIsOpen())
         );
     }
 
