@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
 import gg.agit.konect.domain.event.dto.EventContentsResponse;
+import gg.agit.konect.domain.event.dto.EventHomeResponse;
 import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
@@ -20,6 +21,13 @@ import jakarta.validation.constraints.Min;
 @Tag(name = "(Normal) Event: 행사", description = "행사 API")
 @RequestMapping("/events")
 public interface EventApi {
+
+    @Operation(summary = "행사 홈 정보를 조회한다.")
+    @GetMapping("/{eventId}/home")
+    ResponseEntity<EventHomeResponse> getEventHome(
+        @PathVariable Integer eventId,
+        @UserId Integer userId
+    );
 
     @Operation(summary = "행사 프로그램 목록을 조회한다.")
     @GetMapping("/{eventId}/programs")

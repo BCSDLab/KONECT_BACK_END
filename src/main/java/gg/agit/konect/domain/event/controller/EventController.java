@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
 import gg.agit.konect.domain.event.dto.EventContentsResponse;
+import gg.agit.konect.domain.event.dto.EventHomeResponse;
 import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramsResponse;
 import gg.agit.konect.domain.event.enums.EventProgramType;
@@ -19,6 +20,11 @@ import lombok.RequiredArgsConstructor;
 public class EventController implements EventApi {
 
     private final EventService eventService;
+
+    @Override
+    public ResponseEntity<EventHomeResponse> getEventHome(Integer eventId, Integer userId) {
+        return ResponseEntity.ok(eventService.getEventHome(eventId, userId));
+    }
 
     @Override
     public ResponseEntity<EventProgramsResponse> getEventPrograms(Integer eventId, EventProgramType type, Integer page,
