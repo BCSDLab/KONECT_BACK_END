@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import gg.agit.konect.domain.event.dto.EventBoothMapResponse;
 import gg.agit.konect.domain.event.dto.EventBoothSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventBoothsResponse;
+import gg.agit.konect.domain.event.dto.EventContentSummaryResponse;
+import gg.agit.konect.domain.event.dto.EventContentsResponse;
 import gg.agit.konect.domain.event.dto.EventMiniEventSummaryResponse;
 import gg.agit.konect.domain.event.dto.EventMiniEventsResponse;
 import gg.agit.konect.domain.event.dto.EventProgramSummaryResponse;
@@ -18,11 +20,13 @@ import gg.agit.konect.domain.event.enums.EventProgramType;
 import gg.agit.konect.domain.event.model.EventBooth;
 import gg.agit.konect.domain.event.model.EventBoothMap;
 import gg.agit.konect.domain.event.model.EventBoothMapItem;
+import gg.agit.konect.domain.event.model.EventContent;
 import gg.agit.konect.domain.event.model.EventMiniEvent;
 import gg.agit.konect.domain.event.model.EventProgram;
 import gg.agit.konect.domain.event.repository.EventBoothMapItemRepository;
 import gg.agit.konect.domain.event.repository.EventBoothMapRepository;
 import gg.agit.konect.domain.event.repository.EventBoothRepository;
+import gg.agit.konect.domain.event.repository.EventContentRepository;
 import gg.agit.konect.domain.event.repository.EventMiniEventRepository;
 import gg.agit.konect.domain.event.repository.EventProgramRepository;
 import gg.agit.konect.domain.event.repository.EventRepository;
@@ -40,6 +44,7 @@ public class EventService {
     private final EventBoothMapRepository eventBoothMapRepository;
     private final EventBoothMapItemRepository eventBoothMapItemRepository;
     private final EventMiniEventRepository eventMiniEventRepository;
+    private final EventContentRepository eventContentRepository;
 
     public EventProgramsResponse getEventPrograms(Integer eventId, EventProgramType type, Integer page, Integer limit,
         Integer userId) {
@@ -99,6 +104,7 @@ public class EventService {
             .map(this::toEventBoothMapItemResponse)
             .toList();
 
+        // 부스 목록 응답과 같은 구역 값을 맵에서도 그대로 내려 프론트가 별도 매핑 없이 재사용할 수 있게 맞춘다.
         List<EventBoothMapResponse.ZoneResponse> zones = booths.stream()
             .map(EventBoothMapResponse.BoothMapItemResponse::zone)
             .filter(zone -> zone != null && !zone.isBlank())
@@ -128,6 +134,31 @@ public class EventService {
             pagedMiniEvents.totalPage(),
             page,
             miniEventResponses
+        );
+    }
+
+    public EventContentsResponse getEventContents(Integer eventId, String category, Integer page, Integer limit) {
+        getEvent(eventId);
+
+        List<EventContent> filteredContents = eventContentRepository.findAllByEventIdOrderByDisplayOrderAscIdAsc(
+                eventId).stream()
+            // 콘텐츠 타입 enum 이름과 동일한 문자열만 허용해 의도하지 않은 부분 일치를 막는다.
+            .filter(content -> category == null || category.isBlank() || content.getType()
+                .name()
+                .equalsIgnoreCase(category))
+            .toList();
+
+        PagedResult<EventContent> pagedContents = paginate(filteredContents, page, limit);
+        List<EventContentSummaryResponse> contents = pagedContents.items().stream()
+            .map(this::toEventContentSummaryResponse)
+            .toList();
+
+        return new EventContentsResponse(
+            (long)pagedContents.totalCount(),
+            contents.size(),
+            pagedContents.totalPage(),
+            page,
+            contents
         );
     }
 
@@ -193,6 +224,17 @@ public class EventService {
             miniEvent.getRewardLabel(),
             miniEvent.getStatus().name(),
             false
+        );
+    }
+
+    private EventContentSummaryResponse toEventContentSummaryResponse(EventContent content) {
+        return new EventContentSummaryResponse(
+            content.getId(),
+            content.getTitle(),
+            content.getThumbnailUrl(),
+            content.getType().name(),
+            content.getSummary(),
+            content.getPublishedAt()
         );
     }
 

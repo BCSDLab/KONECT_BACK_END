@@ -94,3 +94,20 @@ CREATE TABLE IF NOT EXISTS event_mini_event
 
     FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS event_content
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    event_id      INT                                                            NOT NULL,
+    title         VARCHAR(100)                                                   NOT NULL,
+    summary       VARCHAR(255)                                                   NOT NULL,
+    body          TEXT,
+    thumbnail_url VARCHAR(255),
+    type          ENUM ('ARTICLE', 'IMAGE', 'VIDEO')                             NOT NULL,
+    published_at  TIMESTAMP,
+    display_order INT                                                            NOT NULL DEFAULT 0,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
+);
