@@ -312,7 +312,7 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
     @DisplayName("updateDirectRoomLastReadAt는 system-admin room에서 admin이 읽으면 시스템 관리자 멤버만 갱신한다")
     void updateDirectRoomLastReadAtUpdatesSystemAdminForAdminReader() {
         // given
-        Integer roomId = 10;
+        int roomId = 10;
         User admin = createUser(99, "관리자", UserRole.ADMIN);
         ChatRoom room = createRoom(roomId, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
         LocalDateTime readAt = LocalDateTime.of(2026, 4, 11, 10, 5);
@@ -332,7 +332,7 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
     @DisplayName("updateDirectRoomLastReadAt는 일반 멤버가 직접 채팅방에 속하면 본인 lastReadAt을 갱신한다")
     void updateDirectRoomLastReadAtUpdatesReaderWhenMemberExists() {
         // given
-        Integer roomId = 10;
+        int roomId = 10;
         User user = createUser(20, "사용자", UserRole.USER);
         ChatRoom room = createRoom(roomId, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
         LocalDateTime readAt = LocalDateTime.of(2026, 4, 11, 10, 5);
@@ -349,7 +349,7 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
     @DisplayName("updateDirectRoomLastReadAt는 일반 사용자가 멤버가 아니면 접근을 거부한다")
     void updateDirectRoomLastReadAtRejectsNonMemberUser() {
         // given
-        Integer roomId = 10;
+        int roomId = 10;
         User user = createUser(20, "사용자", UserRole.USER);
         ChatRoom room = createRoom(roomId, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
         LocalDateTime readAt = LocalDateTime.of(2026, 4, 11, 10, 5);
@@ -367,7 +367,7 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
     @DisplayName("updateDirectRoomLastReadAt는 admin이 system-admin room 비멤버여도 본인 멤버를 생성하지 않는다")
     void updateDirectRoomLastReadAtSkipsAdminMembershipCreationInSystemAdminRoom() {
         // given
-        Integer roomId = 10;
+        int roomId = 10;
         User admin = createUser(99, "관리자", UserRole.ADMIN);
         ChatRoom room = createRoom(roomId, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
         LocalDateTime readAt = LocalDateTime.of(2026, 4, 11, 10, 5);
