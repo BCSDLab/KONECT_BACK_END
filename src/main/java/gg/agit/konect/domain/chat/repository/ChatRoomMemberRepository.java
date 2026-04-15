@@ -120,6 +120,15 @@ public interface ChatRoomMemberRepository extends Repository<ChatRoomMember, Cha
         @Param("userId") Integer userId
     );
 
+    @Query("""
+        SELECT crm
+        FROM ChatRoomMember crm
+        JOIN FETCH crm.user
+        WHERE crm.id.chatRoomId = :chatRoomId
+          AND crm.leftAt IS NULL
+        """)
+    List<ChatRoomMember> findActiveMembersByChatRoomId(@Param("chatRoomId") Integer chatRoomId);
+
     List<ChatRoomMember> saveAll(Iterable<ChatRoomMember> chatRoomMembers);
 
 }
