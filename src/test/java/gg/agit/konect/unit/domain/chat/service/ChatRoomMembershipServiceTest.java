@@ -75,7 +75,7 @@ class ChatRoomMembershipServiceTest {
             .willReturn(java.util.Optional.of(user1));
         given(chatRoomRepository.findById(chatRoomId))
             .willReturn(java.util.Optional.of(chatRoom));
-        given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(true);
         given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId))
             .willReturn(List.of(member1, member2));
@@ -118,8 +118,38 @@ class ChatRoomMembershipServiceTest {
             .willReturn(java.util.Optional.of(user1));
         given(chatRoomRepository.findById(chatRoomId))
             .willReturn(java.util.Optional.of(chatRoom));
-        given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> chatRoomMembershipService.getChatRoomMembers(chatRoomId, currentUserId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", FORBIDDEN_CHAT_ROOM_ACCESS);
+    }
+
+    @Test
+    @DisplayName("나간 멤버가 조회 시도 시 FORBIDDEN 예외 발생")
+    void getChatRoomMembers_forbiddenWhenLeftMember() {
+        // given
+        Integer chatRoomId = 1;
+        Integer currentUserId = 100;
+
+        User user1 = User.builder()
+            .id(100)
+            .name("User1")
+            .imageUrl("image1.jpg")
+            .build();
+
+        ChatRoom chatRoom = ChatRoom.builder()
+            .id(chatRoomId)
+            .build();
+
+        given(userRepository.findById(currentUserId))
+            .willReturn(java.util.Optional.of(user1));
+        given(chatRoomRepository.findById(chatRoomId))
+            .willReturn(java.util.Optional.of(chatRoom));
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId))
+            .willReturn(false); // 나간 멤버는 활성 멤버가 아님
 
         // when & then
         assertThatThrownBy(() -> chatRoomMembershipService.getChatRoomMembers(chatRoomId, currentUserId))
@@ -158,7 +188,7 @@ class ChatRoomMembershipServiceTest {
             .willReturn(java.util.Optional.of(user1));
         given(chatRoomRepository.findById(chatRoomId))
             .willReturn(java.util.Optional.of(chatRoom));
-        given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(true);
         given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId))
             .willReturn(List.of(member1)); // 나간 멤버는 조회되지 않음

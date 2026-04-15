@@ -67,7 +67,7 @@ public class ChatRoomMembershipService {
             return;
         }
 
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), currentUser.getId())) {
+        if (!chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoom.getId(), currentUser.getId())) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
     }
