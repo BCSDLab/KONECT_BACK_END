@@ -509,6 +509,6 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
         assertThatThrownBy(callable)
             .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(errorCode));
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(errorCode));
     }
 }
