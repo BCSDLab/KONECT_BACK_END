@@ -47,7 +47,11 @@ public class ChatRoomMembershipService {
         User currentUser = userRepository.findById(currentUserId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_USER));
 
-        validateMembership(chatRoomId, currentUser);
+        // 채팅방 존재 여부 먼저 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+
+        validateMembership(chatRoom, currentUser);
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId);
 
@@ -57,13 +61,13 @@ public class ChatRoomMembershipService {
             .toList());
     }
 
-    private void validateMembership(Integer chatRoomId, User currentUser) {
+    private void validateMembership(ChatRoom chatRoom, User currentUser) {
         // 어드민은 시스템 어드민 방의 멤버를 조회할 수 있음
-        if (currentUser.isAdmin() && isSystemAdminRoom(chatRoomId)) {
+        if (currentUser.isAdmin() && isSystemAdminRoom(chatRoom.getId())) {
             return;
         }
 
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUser.getId())) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoom.getId(), currentUser.getId())) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
     }

@@ -73,6 +73,8 @@ class ChatRoomMembershipServiceTest {
 
         given(userRepository.findById(currentUserId))
             .willReturn(java.util.Optional.of(user1));
+        given(chatRoomRepository.findById(chatRoomId))
+            .willReturn(java.util.Optional.of(chatRoom));
         given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(true);
         given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId))
@@ -108,8 +110,14 @@ class ChatRoomMembershipServiceTest {
             .imageUrl("image1.jpg")
             .build();
 
+        ChatRoom chatRoom = ChatRoom.builder()
+            .id(chatRoomId)
+            .build();
+
         given(userRepository.findById(currentUserId))
             .willReturn(java.util.Optional.of(user1));
+        given(chatRoomRepository.findById(chatRoomId))
+            .willReturn(java.util.Optional.of(chatRoom));
         given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(false);
 
@@ -148,6 +156,8 @@ class ChatRoomMembershipServiceTest {
 
         given(userRepository.findById(currentUserId))
             .willReturn(java.util.Optional.of(user1));
+        given(chatRoomRepository.findById(chatRoomId))
+            .willReturn(java.util.Optional.of(chatRoom));
         given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(true);
         given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId))
