@@ -16,7 +16,6 @@ import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
-import gg.agit.konect.domain.chat.dto.ChatRoomMemberResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
@@ -26,7 +25,6 @@ import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -257,11 +255,11 @@ public interface ChatApi {
     @Operation(summary = "그룹 채팅방을 생성한다.", description = """
         ## 설명
         - 여러 유저를 초대하여 그룹 채팅방을 생성합니다.
-
+        
         ## 로직
         - 요청자(방장)를 포함하여 선택된 모든 유저가 참여하는 그룹 채팅방을 생성합니다.
         - 방장은 채팅방을 생성한 사용자입니다.
-
+        
         ## 에러
         - CANNOT_CREATE_CHAT_ROOM_WITH_SELF (400): 자기 자신만으로는 채팅방을 만들 수 없습니다.
         - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
@@ -275,12 +273,12 @@ public interface ChatApi {
     @Operation(summary = "채팅방 멤버 목록 조회", description = """
         ## 설명
         - 특정 채팅방의 모든 멤버 목록을 조회합니다.
-
+        
         ## 로직
         - 채팅방에 참여 중인 멤버만 조회할 수 있습니다.
         - 나간 멤버(leftAt이 설정된 멤버)는 목록에 포함되지 않습니다.
         - 각 멤버의 userId, 이름, 프로필 이미지, 방장 여부, 참여 시간을 반환합니다.
-
+        
         ## 에러
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
         - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.

@@ -155,8 +155,8 @@ public class ChatController implements ChatApi {
     @Override
     @GetMapping("/rooms/{chatRoomId}/members")
     public ResponseEntity<ChatRoomMembersResponse> getChatRoomMembers(
-            @PathVariable Integer chatRoomId,
-            @UserId Integer userId) {
+        @PathVariable Integer chatRoomId,
+        @UserId Integer userId) {
         ChatRoomMembersResponse response = chatRoomMembershipService.getChatRoomMembers(chatRoomId, userId);
         return ResponseEntity.ok(response);
     }
