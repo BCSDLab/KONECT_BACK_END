@@ -71,6 +71,8 @@ class ChatRoomMembershipServiceTest {
         ChatRoomMember member1 = ChatRoomMember.ofOwner(chatRoom, user1, LocalDateTime.now());
         ChatRoomMember member2 = ChatRoomMember.of(chatRoom, user2, LocalDateTime.now());
 
+        given(userRepository.findById(currentUserId))
+            .willReturn(java.util.Optional.of(user1));
         given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(true);
         given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId))
@@ -100,6 +102,14 @@ class ChatRoomMembershipServiceTest {
         Integer chatRoomId = 1;
         Integer currentUserId = 100;
 
+        User user1 = User.builder()
+            .id(100)
+            .name("User1")
+            .imageUrl("image1.jpg")
+            .build();
+
+        given(userRepository.findById(currentUserId))
+            .willReturn(java.util.Optional.of(user1));
         given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(false);
 
@@ -136,6 +146,8 @@ class ChatRoomMembershipServiceTest {
         ChatRoomMember member2 = ChatRoomMember.of(chatRoom, user2, LocalDateTime.now());
         member2.leaveDirectRoom(LocalDateTime.now()); // member2는 나간 상태
 
+        given(userRepository.findById(currentUserId))
+            .willReturn(java.util.Optional.of(user1));
         given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUserId))
             .willReturn(true);
         given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId))

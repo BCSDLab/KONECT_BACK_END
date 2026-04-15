@@ -2,6 +2,7 @@ package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,7 +44,10 @@ public class ChatRoomMembershipService {
 
     @Transactional(readOnly = true)
     public ChatRoomMembersResponse getChatRoomMembers(Integer chatRoomId, Integer currentUserId) {
-        validateMembership(chatRoomId, currentUserId);
+        User currentUser = userRepository.findById(currentUserId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_USER));
+
+        validateMembership(chatRoomId, currentUser);
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId);
 
@@ -53,8 +57,13 @@ public class ChatRoomMembershipService {
             .toList());
     }
 
-    private void validateMembership(Integer chatRoomId, Integer userId) {
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, userId)) {
+    private void validateMembership(Integer chatRoomId, User currentUser) {
+        // 어드민은 시스템 어드민 방의 멤버를 조회할 수 있음
+        if (currentUser.isAdmin() && isSystemAdminRoom(chatRoomId)) {
+            return;
+        }
+
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, currentUser.getId())) {
             throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
         }
     }
