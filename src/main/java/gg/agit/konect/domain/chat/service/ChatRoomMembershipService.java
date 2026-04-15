@@ -43,13 +43,10 @@ public class ChatRoomMembershipService {
 
     @Transactional(readOnly = true)
     public ChatRoomMembersResponse getChatRoomMembers(Integer chatRoomId, Integer currentUserId) {
-        // 1. 현재 사용자가 채팅방 멤버인지 확인 (존재 + 나가지 않음)
         validateMembership(chatRoomId, currentUserId);
 
-        // 2. 활성 멤버 목록 조회 (leftAt IS NULL)
         List<ChatRoomMember> members = chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId);
 
-        // 3. DTO 변환 및 반환
         return new ChatRoomMembersResponse(members.stream()
             .map(this::toMemberResponse)
             .toList());
@@ -65,7 +62,7 @@ public class ChatRoomMembershipService {
         return new ChatRoomMemberResponse(
             member.getUser().getId(),
             member.getUser().getName(),
-            member.getUser().getImageUrl(),  // getProfileImageUrl -> getImageUrl
+            member.getUser().getImageUrl(),
             member.isOwner(),
             member.getCreatedAt()
         );
