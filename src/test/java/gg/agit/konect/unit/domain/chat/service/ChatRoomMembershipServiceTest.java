@@ -24,6 +24,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import gg.agit.konect.domain.chat.dto.ChatRoomMemberResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
@@ -60,6 +62,107 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
 
     @InjectMocks
     private ChatRoomMembershipService chatRoomMembershipService;
+
+    @Test
+    @DisplayName("채팅방 멤버 목록 조회 성공")
+    void getChatRoomMembers_success() {
+        // given
+        Integer chatRoomId = 1;
+        Integer currentUserId = 100;
+
+        User user1 = createUser(currentUserId, "User1", UserRole.USER);
+        User user2 = createUser(200, "User2", UserRole.USER);
+        ChatRoom chatRoom = createRoom(chatRoomId, ChatType.GROUP, LocalDateTime.now());
+        ChatRoomMember member1 = createRoomMember(chatRoom, user1, true, LocalDateTime.now());
+        ChatRoomMember member2 = createRoomMember(chatRoom, user2, false, LocalDateTime.now());
+
+        given(userRepository.findById(currentUserId)).willReturn(Optional.of(user1));
+        given(chatRoomRepository.findById(chatRoomId)).willReturn(Optional.of(chatRoom));
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId)).willReturn(true);
+        given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId)).willReturn(List.of(member1, member2));
+
+        // when
+        ChatRoomMembersResponse response = chatRoomMembershipService.getChatRoomMembers(chatRoomId, currentUserId);
+
+        // then
+        assertThat(response.members()).hasSize(2);
+
+        ChatRoomMemberResponse firstMember = response.members().get(0);
+        assertThat(firstMember.userId()).isEqualTo(100);
+        assertThat(firstMember.name()).isEqualTo("User1");
+        assertThat(firstMember.isOwner()).isTrue();
+
+        ChatRoomMemberResponse secondMember = response.members().get(1);
+        assertThat(secondMember.userId()).isEqualTo(200);
+        assertThat(secondMember.name()).isEqualTo("User2");
+        assertThat(secondMember.isOwner()).isFalse();
+    }
+
+    @Test
+    @DisplayName("비멤버가 조회 시도 시 FORBIDDEN 예외 발생")
+    void getChatRoomMembers_forbiddenWhenNotMember() {
+        // given
+        Integer chatRoomId = 1;
+        Integer currentUserId = 100;
+        User user = createUser(currentUserId, "User1", UserRole.USER);
+        ChatRoom chatRoom = createRoom(chatRoomId, ChatType.GROUP, LocalDateTime.now());
+
+        given(userRepository.findById(currentUserId)).willReturn(Optional.of(user));
+        given(chatRoomRepository.findById(chatRoomId)).willReturn(Optional.of(chatRoom));
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId)).willReturn(false);
+
+        // when & then
+        assertErrorCode(
+            () -> chatRoomMembershipService.getChatRoomMembers(chatRoomId, currentUserId),
+            FORBIDDEN_CHAT_ROOM_ACCESS
+        );
+    }
+
+    @Test
+    @DisplayName("나간 멤버가 조회 시도 시 FORBIDDEN 예외 발생")
+    void getChatRoomMembers_forbiddenWhenLeftMember() {
+        // given
+        Integer chatRoomId = 1;
+        Integer currentUserId = 100;
+        User user = createUser(currentUserId, "User1", UserRole.USER);
+        ChatRoom chatRoom = createRoom(chatRoomId, ChatType.GROUP, LocalDateTime.now());
+
+        given(userRepository.findById(currentUserId)).willReturn(Optional.of(user));
+        given(chatRoomRepository.findById(chatRoomId)).willReturn(Optional.of(chatRoom));
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId)).willReturn(false);
+
+        // when & then
+        assertErrorCode(
+            () -> chatRoomMembershipService.getChatRoomMembers(chatRoomId, currentUserId),
+            FORBIDDEN_CHAT_ROOM_ACCESS
+        );
+    }
+
+    @Test
+    @DisplayName("나간 멤버는 조회되지 않음")
+    void getChatRoomMembers_excludesLeftMembers() {
+        // given
+        Integer chatRoomId = 1;
+        Integer currentUserId = 100;
+
+        User user1 = createUser(currentUserId, "User1", UserRole.USER);
+        User user2 = createUser(200, "User2", UserRole.USER);
+        ChatRoom chatRoom = createRoom(chatRoomId, ChatType.GROUP, LocalDateTime.now());
+        ChatRoomMember member1 = createRoomMember(chatRoom, user1, false, LocalDateTime.now());
+
+        given(userRepository.findById(currentUserId)).willReturn(Optional.of(user1));
+        given(chatRoomRepository.findById(chatRoomId)).willReturn(Optional.of(chatRoom));
+        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoomId, currentUserId)).willReturn(true);
+        given(chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId)).willReturn(List.of(member1));
+
+        // when
+        ChatRoomMembersResponse response = chatRoomMembershipService.getChatRoomMembers(chatRoomId, currentUserId);
+
+        // then
+        assertThat(response.members()).hasSize(1);
+        assertThat(response.members().get(0).userId()).isEqualTo(100);
+        assertThat(response.members().get(0).name()).isEqualTo("User1");
+    }
 
     @Test
     @DisplayName("addClubMember는 기존 클럽 채팅방이 없으면 생성하고 멤버를 저장한다")
@@ -406,6 +509,6 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
         assertThatThrownBy(callable)
             .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(errorCode));
+            .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(errorCode));
     }
 }
