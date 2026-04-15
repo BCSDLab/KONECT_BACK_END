@@ -48,6 +48,7 @@ public class ChatRoomMembershipService {
         List<ChatRoomMember> members = chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId);
 
         return new ChatRoomMembersResponse(members.stream()
+            .filter(member -> member.getUser().getDeletedAt() == null)
             .map(this::toMemberResponse)
             .toList());
     }
