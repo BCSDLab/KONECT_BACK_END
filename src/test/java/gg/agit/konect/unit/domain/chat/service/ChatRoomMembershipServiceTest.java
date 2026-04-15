@@ -286,7 +286,8 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
         given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
 
         // when & then
-        assertErrorCode(() -> chatRoomMembershipService.ensureClubRoomMember(directRoom.getId(), 20), NOT_FOUND_CHAT_ROOM);
+        assertErrorCode(() -> chatRoomMembershipService.ensureClubRoomMember(directRoom.getId(), 20),
+            NOT_FOUND_CHAT_ROOM);
         verify(clubMemberRepository, never()).getByClubIdAndUserId(any(), any());
     }
 
