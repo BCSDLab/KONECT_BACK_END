@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
+import gg.agit.konect.domain.chat.dto.ChatRoomMemberResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.Club;
@@ -38,6 +40,36 @@ public class ChatRoomMembershipService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public ChatRoomMembersResponse getChatRoomMembers(Integer chatRoomId, Integer currentUserId) {
+        // 1. 현재 사용자가 채팅방 멤버인지 확인 (존재 + 나가지 않음)
+        validateMembership(chatRoomId, currentUserId);
+
+        // 2. 활성 멤버 목록 조회 (leftAt IS NULL)
+        List<ChatRoomMember> members = chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId);
+
+        // 3. DTO 변환 및 반환
+        return new ChatRoomMembersResponse(members.stream()
+            .map(this::toMemberResponse)
+            .toList());
+    }
+
+    private void validateMembership(Integer chatRoomId, Integer userId) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndUserId(chatRoomId, userId)) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+    }
+
+    private ChatRoomMemberResponse toMemberResponse(ChatRoomMember member) {
+        return new ChatRoomMemberResponse(
+            member.getUser().getId(),
+            member.getUser().getName(),
+            member.getUser().getImageUrl(),  // getProfileImageUrl -> getImageUrl
+            member.isOwner(),
+            member.getCreatedAt()
+        );
+    }
 
     @Transactional
     public void addClubMember(ClubMember clubMember) {
