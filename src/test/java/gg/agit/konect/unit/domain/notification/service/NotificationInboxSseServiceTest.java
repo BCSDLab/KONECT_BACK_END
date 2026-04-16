@@ -113,7 +113,9 @@ class NotificationInboxSseServiceTest extends ServiceTestSupport {
     @DisplayName("send는 이미 완료된 emitter가 남아 있어도 예외 없이 정리한다")
     void sendRemovesCompletedEmitterOnIllegalStateException() throws Exception {
         // given
-        SseEmitter emitter = notificationInboxSseService.subscribe(1);
+        // subscribe의 completion callback에 의존하지 않고,
+        // 이미 종료된 emitter가 맵에 남아 있는 상태를 결정적으로 재현한다.
+        SseEmitter emitter = new SseEmitter();
         emitter.complete();
         emitters().put(1, emitter);
         NotificationInboxResponse response = createMockNotificationResponse();
