@@ -51,7 +51,12 @@ public class NotificationInboxSseService {
             log.warn("SSE send failed: userId={}", userId, e);
             emitters.remove(userId, emitter);
             if (e instanceof IOException ioException) {
-                emitter.completeWithError(ioException);
+                try {
+                    emitter.completeWithError(ioException);
+                } catch (IllegalStateException completeException) {
+                    log.warn("SSE emitter already completed while closing after send failure: userId={}", userId,
+                        completeException);
+                }
             }
         }
     }
