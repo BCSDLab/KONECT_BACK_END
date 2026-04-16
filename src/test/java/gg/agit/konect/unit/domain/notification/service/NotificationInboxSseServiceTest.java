@@ -2,6 +2,7 @@ package gg.agit.konect.unit.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -109,20 +110,17 @@ class NotificationInboxSseServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("send는 IOException 발생 시 emitter를 제거한다")
-    void sendRemovesEmitterOnIOException() {
+    @DisplayName("send는 이미 완료된 emitter가 남아 있어도 예외 없이 정리한다")
+    void sendRemovesCompletedEmitterOnIllegalStateException() throws Exception {
         // given
-        notificationInboxSseService.subscribe(1);
+        SseEmitter emitter = notificationInboxSseService.subscribe(1);
+        emitter.complete();
+        emitters().put(1, emitter);
         NotificationInboxResponse response = createMockNotificationResponse();
 
-        // when
-        // emitter가 존재하는 상태에서 전송 시도
-        notificationInboxSseService.send(1, response);
-
-        // then
-        // 메서드가 정상적으로 동작하는지 확인
-        assertThatCode(() -> notificationInboxSseService.send(1, response))
-            .doesNotThrowAnyException();
+        // when & then
+        assertThatNoException().isThrownBy(() -> notificationInboxSseService.send(1, response));
+        assertThat(emitters()).doesNotContainKey(1);
     }
 
     @SuppressWarnings("unchecked")

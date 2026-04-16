@@ -47,10 +47,12 @@ public class NotificationInboxSseService {
         }
         try {
             emitter.send(SseEmitter.event().name("notification").data(notification));
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             log.warn("SSE send failed: userId={}", userId, e);
             emitters.remove(userId, emitter);
-            emitter.completeWithError(e);
+            if (e instanceof IOException ioException) {
+                emitter.completeWithError(ioException);
+            }
         }
     }
 }
