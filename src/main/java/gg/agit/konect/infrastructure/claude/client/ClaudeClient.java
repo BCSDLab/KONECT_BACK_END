@@ -53,7 +53,19 @@ public class ClaudeClient {
         - club_apply: 동아리 지원
         - university_schedule: 학사 일정
         - council_notice: 학생회 공지사항
-        - study_time_*: 공부 시간 관련 테이블
+
+        ## 순공 시간(study time) 관련 테이블 상세
+        - study_timer: 현재 타이머가 켜진 세션 정보 (user_id, started_at). 실시간으로 타이머를 실행 중인 사용자만 존재함.
+        - study_time_daily: 일별 누적 공부 시간 (user_id, study_date DATE, total_seconds BIGINT). "오늘", "24시간 이내", "최근 N일" 등 날짜 기반 조회 시 이 테이블 사용.
+        - study_time_monthly: 월별 누적 공부 시간 (user_id, study_month DATE, total_seconds BIGINT). 월 단위 조회 시 이 테이블 사용.
+        - study_time_total: 사용자별 전체 누적 공부 시간 (user_id, total_seconds BIGINT). 누적 합계 조회 시 이 테이블 사용.
+        - study_time_ranking: 랭킹 데이터 (ranking_type_id, university_id, target_id, target_name, daily_seconds, monthly_seconds)
+        - ranking_type: 랭킹 타입 (1=CLUB, 2=STUDENT_NUMBER, 3=PERSONAL)
+
+        ### 순공 시간 조회 예시
+        - "오늘 또는 24시간 이내 순공 시간 기록이 있는 사용자 수" → study_time_daily에서 study_date = CURDATE() 조건
+        - "이번 달 순공 시간 기록이 있는 사용자 수" → study_time_monthly에서 study_month = DATE_FORMAT(NOW(), '%Y-%m-01') 조건
+        - "현재 타이머 실행 중인 사용자 수" → study_timer에서 COUNT(*)
 
         ## 응답 규칙
         - 반드시 한국어로 응답
