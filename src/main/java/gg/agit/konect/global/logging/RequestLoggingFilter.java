@@ -54,6 +54,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         try {
             MDC.put(REQUEST_ID, requestId);
+            cachedResponse.setHeader(REQUEST_ID_HEADER, requestId);
             stopWatch.start();
             log.info("request start [requestId: {}, uri: {} {}]", requestId, method, uri);
             chain.doFilter(cachedRequest, cachedResponse);
