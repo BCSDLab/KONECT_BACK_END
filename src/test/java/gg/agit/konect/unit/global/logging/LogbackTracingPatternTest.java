@@ -3,7 +3,6 @@ package gg.agit.konect.unit.global.logging;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.StringReader;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

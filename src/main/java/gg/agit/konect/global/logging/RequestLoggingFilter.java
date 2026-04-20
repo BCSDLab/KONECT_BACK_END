@@ -35,7 +35,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private static final String REQUEST_ID_HEADER = "X-Request-ID";
     private static final int MAX_REQUEST_ID_LENGTH = 128;
     // 응답 헤더와 로그에 그대로 남는 값이므로 제어 문자와 과도한 길이는 허용하지 않는다.
-    private static final Pattern REQUEST_ID_PATTERN = Pattern.compile("[A-Za-z0-9._-]{1," + MAX_REQUEST_ID_LENGTH + "}");
+    private static final Pattern REQUEST_ID_PATTERN = Pattern.compile(
+        "[A-Za-z0-9._-]{1," + MAX_REQUEST_ID_LENGTH + "}");
 
     private final ObjectProvider<PathMatcher> pathMatcherProvider;
     private final LoggingProperties properties;
