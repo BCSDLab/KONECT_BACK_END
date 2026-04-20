@@ -26,12 +26,28 @@ class RequestLoggingFilterTest {
     private static final String REQUEST_ID_HEADER = "X-Request-ID";
 
     @Test
-    @DisplayName("request id 헤더가 있으면 응답 헤더에도 같은 값을 내려준다")
-    void echoesIncomingRequestIdHeader() throws ServletException, IOException {
+    @DisplayName("유효한 request id 헤더는 응답 헤더에도 그대로 내려준다")
+    void echoesValidatedRequestIdHeader() throws ServletException, IOException {
         // given
         RequestLoggingFilter filter = createFilter();
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/notifications/inbox");
         request.addHeader(REQUEST_ID_HEADER, "incoming-request-id");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        filter.doFilter(request, response, new MockFilterChain(new NoOpServlet()));
+
+        // then
+        assertThat(response.getHeader(REQUEST_ID_HEADER)).isEqualTo("incoming-request-id");
+    }
+
+    @Test
+    @DisplayName("앞뒤 공백이 있는 request id 헤더는 trim 후 응답 헤더에 내려준다")
+    void trimsIncomingRequestIdHeader() throws ServletException, IOException {
+        // given
+        RequestLoggingFilter filter = createFilter();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/notifications/inbox");
+        request.addHeader(REQUEST_ID_HEADER, "  incoming-request-id  ");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // when
@@ -54,6 +70,25 @@ class RequestLoggingFilterTest {
 
         // then
         assertThat(response.getHeader(REQUEST_ID_HEADER)).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 request id 헤더면 새 값을 생성해 응답 헤더에 내려준다")
+    void generatesRequestIdForInvalidHeader() throws ServletException, IOException {
+        // given
+        RequestLoggingFilter filter = createFilter();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/notifications/inbox");
+        request.addHeader(REQUEST_ID_HEADER, "invalid request id");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // when
+        filter.doFilter(request, response, new MockFilterChain(new NoOpServlet()));
+
+        // then
+        assertThat(response.getHeader(REQUEST_ID_HEADER))
+            .isNotBlank()
+            .isNotEqualTo("invalid request id")
+            .matches("[A-Za-z0-9._-]{1,128}");
     }
 
     private RequestLoggingFilter createFilter() {
