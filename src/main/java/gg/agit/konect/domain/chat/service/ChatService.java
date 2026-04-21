@@ -433,7 +433,7 @@ public class ChatService {
         return getGroupMessagesByRoomId(roomId, userId, page, limit);
     }
 
-    @Transactional
+    @Transactional(readOnly = false)
     public ChatMessageDetailResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
@@ -746,7 +746,7 @@ public class ChatService {
             senderMember.restoreDirectRoom();
         }
 
-        chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        syncLastMessage(chatRoom, chatMessage);
         members.stream()
             .filter(member -> !member.getUserId().equals(userId))
             .filter(ChatRoomMember::hasLeft)
@@ -828,7 +828,7 @@ public class ChatService {
         ensureRoomMember(room, sender, member.getCreatedAt());
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
-        room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        syncLastMessage(room, message);
         updateClubMessageLastReadAt(roomId, userId, message.getCreatedAt());
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
@@ -909,7 +909,7 @@ public class ChatService {
         }
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
-        room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        syncLastMessage(room, message);
         updateLastReadAt(roomId, userId, message.getCreatedAt());
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
@@ -1208,6 +1208,12 @@ public class ChatService {
         if (isSystemAdminRoom && !sender.isAdmin()) {
             eventPublisher.publishEvent(AdminChatReceivedEvent.of(sender.getId(), sender.getName(), content));
         }
+    }
+
+    private void syncLastMessage(ChatRoom room, ChatMessage message) {
+        room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        // 채팅방 목록은 chat_room.last_message_*를 직접 조회하므로 메시지 저장과 메타데이터 갱신을 같은 경로에서 고정한다.
+        chatRoomRepository.updateLastMessage(room.getId(), message.getContent(), message.getCreatedAt());
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {

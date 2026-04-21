@@ -132,6 +132,7 @@ public class UserService {
                 ChatMessage.of(chatRoom, operator, DEFAULT_WELCOME_MESSAGE)
             );
             chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+            chatRoomRepository.updateLastMessage(chatRoom.getId(), chatMessage.getContent(), chatMessage.getCreatedAt());
         } catch (Exception e) {
             log.warn("회원가입 환영 메시지 전송 실패. userId={}", newUser.getId(), e);
         }
