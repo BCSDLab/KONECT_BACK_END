@@ -2,6 +2,7 @@ package gg.agit.konect.domain.chat.repository;
 
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +31,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
     int updateLastMessage(
         @Param("roomId") Integer roomId,
         @Param("content") String content,
-        @Param("sentAt") java.time.LocalDateTime sentAt
+        @Param("sentAt") LocalDateTime sentAt
     );
 
     @Query("""

@@ -433,7 +433,7 @@ public class ChatService {
         return getGroupMessagesByRoomId(roomId, userId, page, limit);
     }
 
-    @Transactional(readOnly = false)
+    @Transactional
     public ChatMessageDetailResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));

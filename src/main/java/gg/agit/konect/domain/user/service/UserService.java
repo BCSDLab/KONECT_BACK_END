@@ -131,12 +131,15 @@ public class UserService {
             ChatMessage chatMessage = chatMessageRepository.save(
                 ChatMessage.of(chatRoom, operator, DEFAULT_WELCOME_MESSAGE)
             );
-            chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-            chatRoomRepository.updateLastMessage(chatRoom.getId(), chatMessage.getContent(),
-                chatMessage.getCreatedAt());
+            syncLastMessage(chatRoom, chatMessage);
         } catch (Exception e) {
             log.warn("회원가입 환영 메시지 전송 실패. userId={}", newUser.getId(), e);
         }
+    }
+
+    private void syncLastMessage(ChatRoom chatRoom, ChatMessage chatMessage) {
+        chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        chatRoomRepository.updateLastMessage(chatRoom.getId(), chatMessage.getContent(), chatMessage.getCreatedAt());
     }
 
     private UnRegisteredUser findUnregisteredUser(String email, String providerId, Provider provider) {
