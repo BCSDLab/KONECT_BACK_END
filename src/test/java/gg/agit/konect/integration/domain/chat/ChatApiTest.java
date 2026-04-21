@@ -719,6 +719,35 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("메시지를 전송하면 chat_room last message 메타데이터도 함께 갱신된다")
+        @Sql(
+            statements = CHAT_TEST_DATA_CLEANUP_SQL,
+            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        )
+        void sendMessageUpdatesChatRoomLastMessageColumns() throws Exception {
+            // given
+            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
+            mockLoginUser(normalUser.getId());
+
+            // when
+            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("메타데이터 확인"))
+                .andExpect(status().isOk());
+
+            // then
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            transactionTemplate.execute(status -> {
+                clearPersistenceContext();
+                ChatRoom updatedRoom = chatRoomRepository.findById(chatRoom.getId()).orElseThrow();
+                assertThat(updatedRoom.getLastMessageContent()).isEqualTo("메타데이터 확인");
+                assertThat(updatedRoom.getLastMessageSentAt()).isNotNull();
+                return null;
+            });
+        }
+
+        @Test
         @DisplayName("관리자가 문의방에 답변하면 실제 문의 사용자에게 알림을 보낸다")
         void adminReplySendsNotificationToInquiryUser() throws Exception {
             User anotherAdmin = persist(UserFixture.createAdmin(university));
@@ -909,6 +938,15 @@ class ChatApiTest extends IntegrationTestSupport {
             mockLoginUser(targetUser.getId());
             performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("다시 안녕"))
                 .andExpect(status().isOk());
+
+            transactionTemplate.execute(status -> {
+                clearPersistenceContext();
+                ChatRoomMember restoredMember = chatRoomMemberRepository
+                    .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
+                    .orElseThrow();
+                assertThat(restoredMember.hasLeft()).isFalse();
+                return null;
+            });
 
             mockLoginUser(normalUser.getId());
             performGet("/chats/rooms")

@@ -825,6 +825,9 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomId(directRoom.getId()))
             .willReturn(List.of(senderMember, receiverMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            directRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
         given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(directRoom.getId()), eq(senderId),
             any(LocalDateTime.class)))
             .willReturn(1);
@@ -844,6 +847,44 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("sendMessage는 이미 더 최신 메시지가 있으면 room 마지막 메시지 메타데이터를 덮어쓰지 않는다")
+    void sendMessageDoesNotOverwriteRoomMetadataWhenNewerMessageAlreadyExists() {
+        Integer senderId = 10;
+        Integer receiverId = 20;
+        User sender = createUser(senderId, "보낸이", UserRole.USER);
+        User receiver = createUser(receiverId, "받는이", UserRole.USER);
+        ChatRoom directRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember senderMember = createRoomMember(directRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember receiverMember = createRoomMember(directRoom, receiver, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, directRoom, sender, "older",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        ReflectionTestUtils.setField(directRoom, "lastMessageContent", "newer");
+        ReflectionTestUtils.setField(directRoom, "lastMessageSentAt", LocalDateTime.of(2026, 4, 11, 10, 2));
+
+        given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
+        given(userRepository.getById(senderId)).willReturn(sender);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(directRoom.getId(), senderId))
+            .willReturn(Optional.of(senderMember));
+        given(chatRoomMemberRepository.findByChatRoomId(directRoom.getId()))
+            .willReturn(List.of(senderMember, receiverMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            directRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(0);
+        given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(directRoom.getId()), eq(senderId),
+            any(LocalDateTime.class)))
+            .willReturn(1);
+
+        chatService.sendMessage(senderId, directRoom.getId(), new ChatMessageSendRequest("older"));
+
+        assertThat(directRoom.getLastMessageContent()).isEqualTo("newer");
+        assertThat(directRoom.getLastMessageSentAt()).isEqualTo(LocalDateTime.of(2026, 4, 11, 10, 2));
+    }
+
+    @Test
     @DisplayName("sendMessage는 group room에서 메시지를 저장하고 그룹 알림을 보낸다")
     void sendMessageInGroupRoomSavesMessageAndSendsGroupNotification() {
         // given
@@ -860,6 +901,9 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), senderId))
             .willReturn(Optional.of(senderMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            groupRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
         given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(groupRoom.getId()), eq(senderId),
             any(LocalDateTime.class)))
             .willReturn(1);
@@ -926,6 +970,9 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(clubRoom.getId(), senderId))
             .willReturn(Optional.of(senderRoomMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            clubRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
         given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(clubRoom.getId()), eq(senderId),
             any(LocalDateTime.class)))
             .willReturn(1);
@@ -972,6 +1019,9 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
             .willReturn(List.of(systemAdminMember, targetMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            systemAdminRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
 
         // when
         ChatMessageDetailResponse response = chatService.sendMessage(adminId, systemAdminRoom.getId(),
