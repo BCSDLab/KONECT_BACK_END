@@ -939,6 +939,15 @@ class ChatApiTest extends IntegrationTestSupport {
             performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("다시 안녕"))
                 .andExpect(status().isOk());
 
+            transactionTemplate.execute(status -> {
+                clearPersistenceContext();
+                ChatRoomMember restoredMember = chatRoomMemberRepository
+                    .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
+                    .orElseThrow();
+                assertThat(restoredMember.hasLeft()).isFalse();
+                return null;
+            });
+
             mockLoginUser(normalUser.getId());
             performGet("/chats/rooms")
                 .andExpect(status().isOk())

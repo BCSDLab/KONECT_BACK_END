@@ -21,15 +21,25 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
 
     ChatRoom save(ChatRoom chatRoom);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("""
         UPDATE ChatRoom cr
         SET cr.lastMessageContent = :content,
             cr.lastMessageSentAt = :sentAt
         WHERE cr.id = :roomId
+          AND NOT EXISTS (
+              SELECT 1
+              FROM ChatMessage cm
+              WHERE cm.chatRoom.id = :roomId
+                AND (
+                    cm.createdAt > :sentAt
+                    OR (cm.createdAt = :sentAt AND cm.id > :messageId)
+                )
+          )
         """)
-    int updateLastMessage(
+    int updateLastMessageIfLatest(
         @Param("roomId") Integer roomId,
+        @Param("messageId") Integer messageId,
         @Param("content") String content,
         @Param("sentAt") LocalDateTime sentAt
     );

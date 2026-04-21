@@ -138,8 +138,15 @@ public class UserService {
     }
 
     private void syncLastMessage(ChatRoom chatRoom, ChatMessage chatMessage) {
-        chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
-        chatRoomRepository.updateLastMessage(chatRoom.getId(), chatMessage.getContent(), chatMessage.getCreatedAt());
+        int updated = chatRoomRepository.updateLastMessageIfLatest(
+            chatRoom.getId(),
+            chatMessage.getId(),
+            chatMessage.getContent(),
+            chatMessage.getCreatedAt()
+        );
+        if (updated > 0) {
+            chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        }
     }
 
     private UnRegisteredUser findUnregisteredUser(String email, String providerId, Provider provider) {

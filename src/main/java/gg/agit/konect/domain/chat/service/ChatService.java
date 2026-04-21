@@ -1211,9 +1211,17 @@ public class ChatService {
     }
 
     private void syncLastMessage(ChatRoom room, ChatMessage message) {
-        room.updateLastMessage(message.getContent(), message.getCreatedAt());
-        // 채팅방 목록은 chat_room.last_message_*를 직접 조회하므로 메시지 저장과 메타데이터 갱신을 같은 경로에서 고정한다.
-        chatRoomRepository.updateLastMessage(room.getId(), message.getContent(), message.getCreatedAt());
+        // 채팅방 목록은 chat_room.last_message_*를 직접 조회하므로
+        // 동시 전송에서도 가장 최신 메시지만 메타데이터를 덮어쓰도록 DB 조건을 같이 건다.
+        int updated = chatRoomRepository.updateLastMessageIfLatest(
+            room.getId(),
+            message.getId(),
+            message.getContent(),
+            message.getCreatedAt()
+        );
+        if (updated > 0) {
+            room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        }
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
