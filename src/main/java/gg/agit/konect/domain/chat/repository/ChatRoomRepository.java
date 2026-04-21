@@ -31,6 +31,7 @@ public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
               SELECT 1
               FROM ChatMessage cm
               WHERE cm.chatRoom.id = :roomId
+                AND cm.id <> :messageId
                 AND (
                     cm.createdAt > :sentAt
                     OR (cm.createdAt = :sentAt AND cm.id > :messageId)
