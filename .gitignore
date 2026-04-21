@@ -51,3 +51,6 @@ mcp-bridge/.env
 
 **/google-service-account.json
 .omx/
+
+skills-lock.json
+/package-lock.json
