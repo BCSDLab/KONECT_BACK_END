@@ -476,6 +476,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         clubMemberManagementService.removeMember(clubId, targetUserId, requesterId);
 
         // then
+        verify(clubPermissionValidator).validateLeaderAccess(clubId, requesterId);
         verify(clubMemberRepository).delete(target);
         verify(chatRoomMembershipService).removeClubMember(clubId, targetUserId);
     }
@@ -500,6 +501,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         clubMemberManagementService.removeMember(clubId, targetUserId, requesterId);
 
         // then
+        verify(clubPermissionValidator).validateLeaderAccess(clubId, requesterId);
         verify(clubMemberRepository).delete(target);
         verify(chatRoomMembershipService).removeClubMember(clubId, targetUserId);
     }
