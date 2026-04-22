@@ -72,10 +72,10 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
 
         // when
         ClubMemberSheetSyncResponse response = clubMemberSheetService.syncMembersToSheet(
-            clubId,
-            requesterId,
-            ClubSheetSortKey.POSITION,
-            true
+                clubId,
+                requesterId,
+                ClubSheetSortKey.POSITION,
+                true
         );
 
         // then
@@ -83,7 +83,7 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         verify(sheetSyncExecutor).executeWithSort(clubId, ClubSheetSortKey.POSITION, true);
         assertThat(response.syncedMemberCount()).isEqualTo(5);
         assertThat(response.sheetUrl())
-            .isEqualTo("https://docs.google.com/spreadsheets/d/" + spreadsheetId + "/edit");
+                .isEqualTo("https://docs.google.com/spreadsheets/d/" + spreadsheetId + "/edit");
     }
 
     @Test
@@ -97,9 +97,9 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
         gg.agit.konect.domain.club.model.SheetColumnMapping mapping = gg.agit.konect.domain.club.model.SheetColumnMapping.defaultMapping();
         SheetHeaderMapper.SheetAnalysisResult analysisResult = new SheetHeaderMapper.SheetAnalysisResult(
-            mapping,
-            null,
-            null
+                mapping,
+                null,
+                null
         );
 
         given(clubRepository.getById(clubId)).willReturn(club);
@@ -128,14 +128,14 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
 
         // when & then
         assertThatThrownBy(() -> clubMemberSheetService.syncMembersToSheet(
-            clubId,
-            requesterId,
-            ClubSheetSortKey.POSITION,
-            true
+                clubId,
+                requesterId,
+                ClubSheetSortKey.POSITION,
+                true
         ))
-            .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(
-                NOT_FOUND_CLUB_SHEET_ID));
+                .isInstanceOf(CustomException.class)
+                .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(
+                        NOT_FOUND_CLUB_SHEET_ID));
     }
 
     @Test
@@ -151,14 +151,14 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
 
         // when & then
         assertThatThrownBy(() -> clubMemberSheetService.syncMembersToSheet(
-            clubId,
-            requesterId,
-            ClubSheetSortKey.POSITION,
-            true
+                clubId,
+                requesterId,
+                ClubSheetSortKey.POSITION,
+                true
         ))
-            .isInstanceOf(CustomException.class)
-            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(
-                NOT_FOUND_CLUB_SHEET_ID));
+                .isInstanceOf(CustomException.class)
+                .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(
+                        NOT_FOUND_CLUB_SHEET_ID));
     }
 
     @Test
@@ -177,10 +177,10 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
 
         // when
         ClubMemberSheetSyncResponse response = clubMemberSheetService.syncMembersToSheet(
-            clubId,
-            requesterId,
-            ClubSheetSortKey.POSITION,
-            true
+                clubId,
+                requesterId,
+                ClubSheetSortKey.POSITION,
+                true
         );
 
         // then
@@ -188,7 +188,7 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         verify(sheetSyncExecutor).executeWithSort(clubId, ClubSheetSortKey.POSITION, true);
         assertThat(response.syncedMemberCount()).isEqualTo(0);
         assertThat(response.sheetUrl())
-            .isEqualTo("https://docs.google.com/spreadsheets/d/" + spreadsheetId + "/edit");
+                .isEqualTo("https://docs.google.com/spreadsheets/d/" + spreadsheetId + "/edit");
     }
 
     @Test
@@ -201,9 +201,9 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         Club club = ClubFixture.create(UniversityFixture.create());
         ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
         SheetHeaderMapper.SheetAnalysisResult analysisResult = new SheetHeaderMapper.SheetAnalysisResult(
-            null,
-            null,
-            null
+                null,
+                null,
+                null
         );
 
         given(clubRepository.getById(clubId)).willReturn(club);
@@ -211,6 +211,6 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
 
         // when & then
         assertThatThrownBy(() -> clubMemberSheetService.updateSheetId(clubId, requesterId, request))
-            .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 }

@@ -56,18 +56,18 @@ class ClubRecruitmentServiceTest extends ServiceTestSupport {
         // given
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), 1, "BCSD");
         User user = UserFixture.createUserWithId(
-            UniversityFixture.createWithId(1),
-            10,
-            "회원",
-            "20240001",
-            UserRole.USER
+                UniversityFixture.createWithId(1),
+                10,
+                "회원",
+                "20240001",
+                UserRole.USER
         );
         ClubRecruitment recruitment = ClubRecruitment.of(
-            LocalDateTime.now().minusDays(1),
-            LocalDateTime.now().plusDays(1),
-            false,
-            "모집 공고",
-            club
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().plusDays(1),
+                false,
+                "모집 공고",
+                club
         );
 
         given(clubRepository.getById(1)).willReturn(club);
@@ -88,18 +88,18 @@ class ClubRecruitmentServiceTest extends ServiceTestSupport {
         // given
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), 1, "BCSD");
         User user = UserFixture.createUserWithId(
-            UniversityFixture.createWithId(1),
-            10,
-            "지원자",
-            "20240001",
-            UserRole.USER
+                UniversityFixture.createWithId(1),
+                10,
+                "지원자",
+                "20240001",
+                UserRole.USER
         );
         ClubRecruitment recruitment = ClubRecruitment.of(
-            null,
-            null,
-            true,
-            "상시 모집",
-            club
+                null,
+                null,
+                true,
+                "상시 모집",
+                club
         );
 
         given(clubRepository.getById(1)).willReturn(club);
