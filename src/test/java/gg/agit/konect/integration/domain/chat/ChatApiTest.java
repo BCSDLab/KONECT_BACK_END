@@ -7,8 +7,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +24,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -219,19 +223,19 @@ class ChatApiTest extends IntegrationTestSupport {
             && roomMembers.stream().anyMatch(member -> member.getUserId().equals(secondUserId));
     }
 
-    private int parseChatRoomId(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+    private int parseChatRoomId(MvcResult result) throws Exception {
         String responseBody = result.getResponse().getContentAsString();
         return objectMapper.readTree(responseBody).get("chatRoomId").asInt();
     }
 
-    private List<Integer> extractRoomIds(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+    private List<Integer> extractRoomIds(MvcResult result) throws Exception {
         String responseBody = result.getResponse().getContentAsString();
-        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(responseBody);
-        com.fasterxml.jackson.databind.JsonNode rooms = root.get("rooms");
-        List<Integer> roomIds = new java.util.ArrayList<>();
+        JsonNode root = objectMapper.readTree(responseBody);
+        JsonNode rooms = root.get("rooms");
+        List<Integer> roomIds = new ArrayList<>();
         if (rooms != null && rooms.isArray()) {
-            for (com.fasterxml.jackson.databind.JsonNode room : rooms) {
-                com.fasterxml.jackson.databind.JsonNode roomIdNode =
+            for (JsonNode room : rooms) {
+                JsonNode roomIdNode =
                     room.has("chatRoomId") ? room.get("chatRoomId") : room.get("roomId");
                 if (roomIdNode != null) {
                     roomIds.add(roomIdNode.asInt());
