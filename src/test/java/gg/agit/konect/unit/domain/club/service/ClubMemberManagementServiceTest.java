@@ -81,13 +81,13 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.changeMemberPosition(
-                        clubId,
-                        10,
-                        10,
-                        new MemberPositionChangeRequest(ClubPosition.MANAGER)
-                ),
-                CANNOT_CHANGE_OWN_POSITION
+            () -> clubMemberManagementService.changeMemberPosition(
+                clubId,
+                10,
+                10,
+                new MemberPositionChangeRequest(ClubPosition.MANAGER)
+            ),
+            CANNOT_CHANGE_OWN_POSITION
         );
     }
 
@@ -101,23 +101,23 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Club club = createClub();
         User admin = UserFixture.createUserWithId(requesterId, "관리자", UserRole.ADMIN);
         ClubMember targetMember = ClubMemberFixture.createMember(club,
-                UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
+            UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(userRepository.getById(requesterId)).thenReturn(admin);
         when(clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId)).thenReturn(targetMember);
         when(clubMemberRepository.countByClubIdAndPosition(clubId, ClubPosition.MANAGER))
-                .thenReturn((long) ClubMemberManagementService.MAX_MANAGER_COUNT);
+            .thenReturn((long)ClubMemberManagementService.MAX_MANAGER_COUNT);
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.changeMemberPosition(
-                        clubId,
-                        targetUserId,
-                        requesterId,
-                        new MemberPositionChangeRequest(ClubPosition.MANAGER)
-                ),
-                MANAGER_LIMIT_EXCEEDED
+            () -> clubMemberManagementService.changeMemberPosition(
+                clubId,
+                targetUserId,
+                requesterId,
+                new MemberPositionChangeRequest(ClubPosition.MANAGER)
+            ),
+            MANAGER_LIMIT_EXCEEDED
         );
     }
 
@@ -132,20 +132,20 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(
-                userRepository.findAllByUniversityIdAndStudentNumber(
-                        club.getUniversity().getId(),
-                        request.studentNumber()
-                )
+            userRepository.findAllByUniversityIdAndStudentNumber(
+                club.getUniversity().getId(),
+                request.studentNumber()
+            )
         )
-                .thenReturn(List.of(
-                        UserFixture.createUserWithId(1, request.name(), UserRole.USER),
-                        UserFixture.createUserWithId(2, request.name(), UserRole.USER)
-                ));
+            .thenReturn(List.of(
+                UserFixture.createUserWithId(1, request.name(), UserRole.USER),
+                UserFixture.createUserWithId(2, request.name(), UserRole.USER)
+            ));
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.addPreMember(clubId, requesterId, request),
-                AMBIGUOUS_USER_MATCH
+            () -> clubMemberManagementService.addPreMember(clubId, requesterId, request),
+            AMBIGUOUS_USER_MATCH
         );
     }
 
@@ -161,15 +161,15 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(
-                userRepository.findAllByUniversityIdAndStudentNumber(
-                        club.getUniversity().getId(),
-                        request.studentNumber()
-                )
+            userRepository.findAllByUniversityIdAndStudentNumber(
+                club.getUniversity().getId(),
+                request.studentNumber()
+            )
         )
-                .thenReturn(List.of(matchedUser));
+            .thenReturn(List.of(matchedUser));
         when(clubMemberRepository.existsByClubIdAndUserId(clubId, matchedUser.getId())).thenReturn(false);
         when(clubMemberRepository.save(org.mockito.ArgumentMatchers.any(ClubMember.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+            .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         ClubPreMemberAddResponse response = clubMemberManagementService.addPreMember(clubId, requesterId, request);
@@ -202,13 +202,13 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.changeMemberPosition(
-                        clubId,
-                        targetUserId,
-                        requesterId,
-                        new MemberPositionChangeRequest(ClubPosition.MEMBER)
-                ),
-                CANNOT_MANAGE_HIGHER_POSITION
+            () -> clubMemberManagementService.changeMemberPosition(
+                clubId,
+                targetUserId,
+                requesterId,
+                new MemberPositionChangeRequest(ClubPosition.MEMBER)
+            ),
+            CANNOT_MANAGE_HIGHER_POSITION
         );
     }
 
@@ -232,13 +232,13 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.changeMemberPosition(
-                        clubId,
-                        targetUserId,
-                        requesterId,
-                        new MemberPositionChangeRequest(ClubPosition.PRESIDENT) // 회장으로 승격 시도 (부회장 권한 밖)
-                ),
-                FORBIDDEN_MEMBER_POSITION_CHANGE
+            () -> clubMemberManagementService.changeMemberPosition(
+                clubId,
+                targetUserId,
+                requesterId,
+                new MemberPositionChangeRequest(ClubPosition.PRESIDENT) // 회장으로 승격 시도 (부회장 권한 밖)
+            ),
+            FORBIDDEN_MEMBER_POSITION_CHANGE
         );
     }
 
@@ -250,26 +250,26 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Integer requesterId = 10;
         Club club = createClub();
         gg.agit.konect.domain.club.model.ClubPreMember preMember1 = gg.agit.konect.domain.club.model.ClubPreMember.builder()
-                .id(1)
-                .club(club)
-                .studentNumber("20240001")
-                .name("홍길동")
-                .clubPosition(ClubPosition.MEMBER)
-                .build();
+            .id(1)
+            .club(club)
+            .studentNumber("20240001")
+            .name("홍길동")
+            .clubPosition(ClubPosition.MEMBER)
+            .build();
         gg.agit.konect.domain.club.model.ClubPreMember preMember2 = gg.agit.konect.domain.club.model.ClubPreMember.builder()
-                .id(2)
-                .club(club)
-                .studentNumber("20240002")
-                .name("김철수")
-                .clubPosition(ClubPosition.MANAGER)
-                .build();
+            .id(2)
+            .club(club)
+            .studentNumber("20240002")
+            .name("김철수")
+            .clubPosition(ClubPosition.MANAGER)
+            .build();
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubPreMemberRepository.findAllByClubId(clubId)).thenReturn(List.of(preMember1, preMember2));
 
         // when
         gg.agit.konect.domain.club.dto.ClubPreMembersResponse response = clubMemberManagementService.getPreMembers(
-                clubId, requesterId);
+            clubId, requesterId);
 
         // then
         assertThat(response.preMembers()).hasSize(2);
@@ -284,12 +284,12 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Integer requesterId = 10;
         Club club = createClub();
         gg.agit.konect.domain.club.model.ClubPreMember preMember = gg.agit.konect.domain.club.model.ClubPreMember.builder()
-                .id(preMemberId)
-                .club(club)
-                .studentNumber("20240001")
-                .name("홍길동")
-                .clubPosition(ClubPosition.MEMBER)
-                .build();
+            .id(preMemberId)
+            .club(club)
+            .studentNumber("20240001")
+            .name("홍길동")
+            .clubPosition(ClubPosition.MEMBER)
+            .build();
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubPreMemberRepository.getByIdAndClubId(preMemberId, clubId)).thenReturn(preMember);
@@ -311,15 +311,15 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         User presidentUser = UserFixture.createUserWithId(currentPresidentId, "회장", UserRole.USER);
         ClubMember president = ClubMemberFixture.createPresident(club, presidentUser);
         gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(
-                currentPresidentId);
+            currentPresidentId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId)).thenReturn(president);
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.transferPresident(clubId, currentPresidentId, request),
-                ILLEGAL_ARGUMENT
+            () -> clubMemberManagementService.transferPresident(clubId, currentPresidentId, request),
+            ILLEGAL_ARGUMENT
         );
     }
 
@@ -336,7 +336,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubMember currentPresident = ClubMemberFixture.createPresident(club, currentPresidentUser);
         ClubMember newPresident = ClubMemberFixture.createMember(club, newPresidentUser);
         gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(
-                newPresidentId);
+            newPresidentId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId)).thenReturn(currentPresident);
@@ -361,11 +361,11 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         User presidentUser = UserFixture.createUserWithId(requesterId, "회장", UserRole.USER);
         ClubMemberFixture.createPresident(club, presidentUser);
         gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
-                null);
+            null);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
-                List.of());
+            List.of());
 
         // when
         List<ClubMember> result = clubMemberManagementService.changeVicePresident(clubId, requesterId, request);
@@ -390,11 +390,11 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
         ClubMember newVp = ClubMemberFixture.createMember(club, newVpUser);
         gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
-                newVpId);
+            newVpId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
-                List.of(currentVp));
+            List.of(currentVp));
         when(clubMemberRepository.getByClubIdAndUserId(clubId, newVpId)).thenReturn(newVp);
 
         // when
@@ -424,8 +424,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
-                CANNOT_DELETE_CLUB_PRESIDENT
+            () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
+            CANNOT_DELETE_CLUB_PRESIDENT
         );
     }
 
@@ -449,8 +449,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
-                CANNOT_REMOVE_NON_MEMBER
+            () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
+            CANNOT_REMOVE_NON_MEMBER
         );
     }
 
@@ -524,8 +524,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
-                CANNOT_REMOVE_NON_MEMBER
+            () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
+            CANNOT_REMOVE_NON_MEMBER
         );
     }
 
@@ -542,11 +542,11 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubMemberFixture.createPresident(club, presidentUser);
         ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
         gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
-                currentVpId);
+            currentVpId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
-                List.of(currentVp));
+            List.of(currentVp));
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentVpId)).thenReturn(currentVp);
 
         // when
@@ -573,11 +573,11 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubMember currentVp = ClubMemberFixture.createVicePresident(club, currentVpUser);
         ClubMember newVp = ClubMemberFixture.createMember(club, newVpUser);
         gg.agit.konect.domain.club.dto.VicePresidentChangeRequest request = new gg.agit.konect.domain.club.dto.VicePresidentChangeRequest(
-                newVpId);
+            newVpId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.findAllByClubIdAndPosition(clubId, ClubPosition.VICE_PRESIDENT)).thenReturn(
-                List.of(currentVp));
+            List.of(currentVp));
         when(clubMemberRepository.getByClubIdAndUserId(clubId, newVpId)).thenReturn(newVp);
 
         // when
@@ -602,7 +602,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         ClubMember currentPresident = ClubMemberFixture.createPresident(club, currentPresidentUser);
         ClubMember newPresident = ClubMemberFixture.createManager(club, newPresidentUser);
         gg.agit.konect.domain.club.dto.PresidentTransferRequest request = new gg.agit.konect.domain.club.dto.PresidentTransferRequest(
-                newPresidentId);
+            newPresidentId);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(clubMemberRepository.getByClubIdAndUserId(clubId, currentPresidentId)).thenReturn(currentPresident);
@@ -629,8 +629,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.removeMember(clubId, requesterId, requesterId),
-                CANNOT_REMOVE_SELF
+            () -> clubMemberManagementService.removeMember(clubId, requesterId, requesterId),
+            CANNOT_REMOVE_SELF
         );
     }
 
@@ -644,7 +644,7 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Club club = createClub();
         User admin = UserFixture.createUserWithId(requesterId, "관리자", UserRole.ADMIN);
         ClubMember targetMember = ClubMemberFixture.createVicePresident(club,
-                UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
+            UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER));
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(userRepository.getById(requesterId)).thenReturn(admin);
@@ -652,10 +652,10 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when
         ClubMember result = clubMemberManagementService.changeMemberPosition(
-                clubId,
-                targetUserId,
-                requesterId,
-                new MemberPositionChangeRequest(ClubPosition.VICE_PRESIDENT)
+            clubId,
+            targetUserId,
+            requesterId,
+            new MemberPositionChangeRequest(ClubPosition.VICE_PRESIDENT)
         );
 
         // then
@@ -670,22 +670,22 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         Integer requesterId = 10;
         Club club = createClub();
         ClubPreMemberBatchAddRequest request = new ClubPreMemberBatchAddRequest(List.of(
-                new ClubPreMemberAddRequest("20240001", "홍길동", ClubPosition.MEMBER),
-                new ClubPreMemberAddRequest("20240002", "김철수", ClubPosition.MANAGER)
+            new ClubPreMemberAddRequest("20240001", "홍길동", ClubPosition.MEMBER),
+            new ClubPreMemberAddRequest("20240002", "김철수", ClubPosition.MANAGER)
         ));
         User existingUser = UserFixture.createUserWithId(UniversityFixture.create(), 1, "홍길동", "20240001",
-                UserRole.USER);
+            UserRole.USER);
 
         when(clubRepository.getById(clubId)).thenReturn(club);
         when(userRepository.findAllByUniversityIdAndStudentNumber(club.getUniversity().getId(), "20240001"))
-                .thenReturn(List.of(existingUser));
+            .thenReturn(List.of(existingUser));
         when(clubMemberRepository.existsByClubIdAndUserId(clubId, existingUser.getId())).thenReturn(true);
         when(userRepository.findAllByUniversityIdAndStudentNumber(club.getUniversity().getId(), "20240002"))
-                .thenReturn(List.of());
+            .thenReturn(List.of());
 
         // when
         gg.agit.konect.domain.club.dto.ClubPreMemberBatchAddResponse response =
-                clubMemberManagementService.addPreMembersBatch(clubId, requesterId, request);
+            clubMemberManagementService.addPreMembersBatch(clubId, requesterId, request);
 
         // then
         assertThat(response.results()).hasSize(2);
@@ -713,8 +713,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
         // when & then
         assertErrorCode(
-                () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
-                CANNOT_MANAGE_HIGHER_POSITION
+            () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
+            CANNOT_MANAGE_HIGHER_POSITION
         );
     }
 
@@ -724,8 +724,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
 
     private void assertErrorCode(ThrowingCallable callable, ApiResponseCode errorCode) {
         assertThatThrownBy(callable::call)
-                .isInstanceOf(CustomException.class)
-                .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode()).isEqualTo(errorCode));
+            .isInstanceOf(CustomException.class)
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(errorCode));
     }
 
     @FunctionalInterface

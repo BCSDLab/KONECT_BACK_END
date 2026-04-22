@@ -40,8 +40,8 @@ class ClubTest extends ServiceTestSupport {
 
         // when & then
         assertThatThrownBy(() -> club.replaceFeeInfo("30000", "국민은행", null, null))
-                .isInstanceOf(CustomException.class)
-                .satisfies(exception -> assertThat(((CustomException) exception).getErrorCode())
-                        .isEqualTo(INVALID_REQUEST_BODY));
+            .isInstanceOf(CustomException.class)
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode())
+                .isEqualTo(INVALID_REQUEST_BODY));
     }
 }

@@ -36,7 +36,7 @@ class ClubPermissionValidatorTest extends ServiceTestSupport {
 
         // when & then
         assertThatCode(() -> clubPermissionValidator.validateLeaderAccess(clubId, admin))
-                .doesNotThrowAnyException();
+            .doesNotThrowAnyException();
         verifyNoInteractions(clubMemberRepository);
     }
 }
