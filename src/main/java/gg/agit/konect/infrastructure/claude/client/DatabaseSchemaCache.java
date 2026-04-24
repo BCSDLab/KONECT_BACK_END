@@ -1,7 +1,5 @@
 package gg.agit.konect.infrastructure.claude.client;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class DatabaseSchemaCache {
 
-    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
     private static final String TABLE_SCHEMA_SQL = """
         SELECT table_name, table_comment
         FROM information_schema.tables
@@ -40,28 +37,24 @@ public class DatabaseSchemaCache {
 
     private final JdbcTemplate jdbcTemplate;
     private volatile String cachedSchema;
-    private volatile Instant expiresAt = Instant.EPOCH;
 
     public DatabaseSchemaCache(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
     public String getSchemaSummary() {
-        Instant now = Instant.now();
         String currentSchema = cachedSchema;
-        if (currentSchema != null && now.isBefore(expiresAt)) {
+        if (currentSchema != null) {
             return currentSchema;
         }
 
         synchronized (this) {
-            now = Instant.now();
-            if (cachedSchema != null && now.isBefore(expiresAt)) {
+            if (cachedSchema != null) {
                 return cachedSchema;
             }
 
             try {
                 cachedSchema = loadSchemaSummary();
-                expiresAt = now.plus(CACHE_TTL);
                 return cachedSchema;
             } catch (DataAccessException e) {
                 log.error("Failed to load database schema summary", e);

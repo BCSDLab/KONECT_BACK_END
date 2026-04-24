@@ -14,7 +14,7 @@ ALTER TABLE `chat_room_member`
     COMMENT = '채팅방 참여자, 읽음 시점, 퇴장/숨김 상태';
 
 ALTER TABLE `club`
-    COMMENT = '대학교별 동아리 기본 정보와 회비/구글시트 연동 설정';
+    COMMENT = '대학교별 동아리 기본 정보';
 
 ALTER TABLE `club_apply`
     COMMENT = '사용자의 동아리 지원 신청';
@@ -29,7 +29,7 @@ ALTER TABLE `club_member`
     COMMENT = '동아리 소속 회원과 역할';
 
 ALTER TABLE `club_pre_member`
-    COMMENT = '구글시트에서 가져온 동아리 예비 회원';
+    COMMENT = '동아리 사전 등록 회원';
 
 ALTER TABLE `club_recruitment`
     COMMENT = '동아리 모집 공고와 모집 기간';
