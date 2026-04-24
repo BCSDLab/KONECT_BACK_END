@@ -746,7 +746,7 @@ public class ChatService {
             senderMember.restoreDirectRoom();
         }
 
-        chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+        syncLastMessage(chatRoom, chatMessage);
         members.stream()
             .filter(member -> !member.getUserId().equals(userId))
             .filter(ChatRoomMember::hasLeft)
@@ -828,7 +828,7 @@ public class ChatService {
         ensureRoomMember(room, sender, member.getCreatedAt());
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
-        room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        syncLastMessage(room, message);
         updateClubMessageLastReadAt(roomId, userId, message.getCreatedAt());
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
@@ -909,7 +909,7 @@ public class ChatService {
         }
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
-        room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        syncLastMessage(room, message);
         updateLastReadAt(roomId, userId, message.getCreatedAt());
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
@@ -1207,6 +1207,20 @@ public class ChatService {
     private void publishAdminChatEventIfNeeded(boolean isSystemAdminRoom, User sender, String content) {
         if (isSystemAdminRoom && !sender.isAdmin()) {
             eventPublisher.publishEvent(AdminChatReceivedEvent.of(sender.getId(), sender.getName(), content));
+        }
+    }
+
+    private void syncLastMessage(ChatRoom room, ChatMessage message) {
+        // 채팅방 목록은 chat_room.last_message_*를 직접 조회하므로
+        // 동시 전송에서도 가장 최신 메시지만 메타데이터를 덮어쓰도록 DB 조건을 같이 건다.
+        int updated = chatRoomRepository.updateLastMessageIfLatest(
+            room.getId(),
+            message.getId(),
+            message.getContent(),
+            message.getCreatedAt()
+        );
+        if (updated > 0) {
+            room.updateLastMessage(message.getContent(), message.getCreatedAt());
         }
     }
 

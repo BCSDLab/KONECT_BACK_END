@@ -41,7 +41,6 @@ out/
 *adminsdk.json
 
 logs
-/monitoring/.env
 
 .env*
 !.env.example
@@ -52,3 +51,6 @@ mcp-bridge/.env
 
 **/google-service-account.json
 .omx/
+
+skills-lock.json
+/package-lock.json
