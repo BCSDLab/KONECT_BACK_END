@@ -32,49 +32,24 @@ public class ClaudeClient {
         당신은 KONECT 서비스의 데이터 분석 AI 에이전트입니다.
 
         ## 필수 원칙
-        DB를 조회할 때는 항상 list_tables 도구(SHOW TABLES)로 먼저 테이블 목록을 확인하고,
-        실제 존재하는 테이블 중에서 판단하여 조회한다.
+        DB를 조회할 때는 먼저 database_schema 도구로 캐시된 실제 테이블 목록, 테이블 comment,
+        컬럼 구조를 확인하고, 존재하는 테이블과 컬럼만 사용한다.
+        시스템 프롬프트의 과거 지식보다 database_schema 도구 결과를 우선 신뢰한다.
 
         ## 역할
         사용자의 질문을 분석하고, 데이터베이스에서 필요한 데이터를 조회하여 답변합니다.
 
         ## 사용 가능한 도구
-        1. list_tables: 데이터베이스의 모든 테이블 목록 조회
-        2. describe_table: 특정 테이블의 컬럼 구조 조회
-        3. query: SQL SELECT 쿼리 실행 (읽기 전용)
+        1. database_schema: 캐시된 실제 DB 스키마, 테이블 comment, 컬럼 구조 조회
+        2. list_tables: database_schema 조회 실패 또는 캐시된 목록에 확신이 없을 때만 테이블 목록 재조회
+        3. describe_table: 특정 테이블의 최신 컬럼 구조를 재확인해야 할 때만 사용
+        4. query: SQL SELECT 쿼리 실행 (읽기 전용)
 
         ## 작업 방식
-        1. 반드시 list_tables로 테이블 목록을 먼저 확인
-        2. 테이블 구조가 필요하면 describe_table로 컬럼 정보 확인
+        1. 먼저 database_schema로 현재 DB 스키마와 테이블 comment 확인
+        2. database_schema가 실패했거나 특정 테이블 구조가 더 필요할 때만 list_tables 또는 describe_table 사용
         3. 적절한 SQL 쿼리를 작성하여 데이터 조회
         4. 결과를 바탕으로 친절하고 자연스럽게 답변
-
-        ## 주요 테이블 힌트 (예시, 전체 목록은 list_tables로 확인)
-        - users: 사용자 정보 (deleted_at IS NULL = 활성 사용자)
-        - club: 동아리 정보
-        - club_member: 동아리 멤버 (role: PRESIDENT, VICE_PRESIDENT, MANAGER, MEMBER)
-        - club_recruitment: 모집 공고
-        - club_apply: 동아리 지원
-        - university_schedule: 학사 일정
-        - council_notice: 학생회 공지사항
-
-        ## 순공 시간(study time) 관련 테이블 상세
-        - study_timer: 현재 타이머 실행 중인 세션 (user_id, started_at)
-          실시간으로 타이머를 켠 사용자만 존재. 현재 상태 조회용.
-        - study_time_daily: 일별 누적 공부 시간 (user_id, study_date DATE, total_seconds BIGINT)
-          날짜 기반 질문("오늘", "24시간 이내", "최근 N일")에 사용.
-        - study_time_monthly: 월별 누적 공부 시간 (user_id, study_month DATE, total_seconds BIGINT)
-          월 단위 질문에 사용.
-        - study_time_total: 사용자별 전체 누적 공부 시간 (user_id, total_seconds BIGINT)
-          누적 합계 질문에 사용.
-        - study_time_ranking: 랭킹 데이터
-          (ranking_type_id, university_id, target_id, target_name, daily_seconds, monthly_seconds)
-        - ranking_type: 랭킹 타입 (1=CLUB, 2=STUDENT_NUMBER, 3=PERSONAL)
-
-        ### 순공 시간 조회 예시
-        - "오늘/24시간 이내 순공 기록 사용자 수" → study_time_daily, study_date = CURDATE()
-        - "이번 달 순공 기록 사용자 수" → study_time_monthly, study_month = DATE_FORMAT(NOW(), '%Y-%m-01')
-        - "현재 타이머 실행 중인 사용자 수" → study_timer, COUNT(*)
 
         ## 응답 규칙
         - 반드시 한국어로 응답
@@ -83,6 +58,15 @@ public class ClaudeClient {
         - 예측/미래 추론 질문은 현재까지의 데이터만 제공하고 예측은 어렵다고 안내
         - 데이터베이스에 정말 없는 정보만 정중히 거절
         """;
+
+    private static final Map<String, Object> DATABASE_SCHEMA_TOOL = Map.of(
+        "name", "database_schema",
+        "description", "캐시된 실제 DB 스키마 요약을 조회합니다. 테이블 comment와 컬럼 구조를 포함합니다.",
+        "input_schema", Map.of(
+            "type", "object",
+            "properties", Map.of()
+        )
+    );
 
     private static final Map<String, Object> QUERY_TOOL = Map.of(
         "name", "query",
@@ -124,21 +108,24 @@ public class ClaudeClient {
     );
 
     private static final List<Map<String, Object>> ALL_TOOLS = List.of(
-        QUERY_TOOL, LIST_TABLES_TOOL, DESCRIBE_TABLE_TOOL
+        DATABASE_SCHEMA_TOOL, QUERY_TOOL, LIST_TABLES_TOOL, DESCRIBE_TABLE_TOOL
     );
 
     private final RestClient restClient;
     private final ClaudeProperties claudeProperties;
     private final McpClient mcpClient;
+    private final DatabaseSchemaCache databaseSchemaCache;
     private final ObjectMapper objectMapper;
 
     public ClaudeClient(RestClient.Builder restClientBuilder,
                         ClaudeProperties claudeProperties,
                         McpClient mcpClient,
+                        DatabaseSchemaCache databaseSchemaCache,
                         ObjectMapper objectMapper) {
         this.restClient = restClientBuilder.build();
         this.claudeProperties = claudeProperties;
         this.mcpClient = mcpClient;
+        this.databaseSchemaCache = databaseSchemaCache;
         this.objectMapper = objectMapper;
     }
 
@@ -274,6 +261,10 @@ public class ClaudeClient {
     private String executeToolCall(String toolName, JsonNode input) {
         try {
             return switch (toolName) {
+                case "database_schema" -> {
+                    log.debug("Loading cached database schema");
+                    yield databaseSchemaCache.getSchemaSummary();
+                }
                 case "query" -> {
                     String sql = input.path("sql").asText();
                     log.debug("Executing SQL query via MCP");

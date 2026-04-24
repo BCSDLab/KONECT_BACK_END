@@ -273,12 +273,12 @@ public interface ChatApi {
     @Operation(summary = "채팅방 멤버 목록 조회", description = """
         ## 설명
         - 특정 채팅방의 모든 멤버 목록을 조회합니다.
-        
+
         ## 로직
         - 채팅방에 참여 중인 멤버만 조회할 수 있습니다.
         - 나간 멤버(leftAt이 설정된 멤버)는 목록에 포함되지 않습니다.
         - 각 멤버의 userId, 이름, 프로필 이미지, 방장 여부, 참여 시간을 반환합니다.
-        
+
         ## 에러
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
         - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
