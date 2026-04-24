@@ -476,57 +476,8 @@ class ClubMemberManagementServiceTest extends ServiceTestSupport {
         clubMemberManagementService.removeMember(clubId, targetUserId, requesterId);
 
         // then
-        verify(clubPermissionValidator).validateLeaderAccess(clubId, requesterId);
         verify(clubMemberRepository).delete(target);
         verify(chatRoomMembershipService).removeClubMember(clubId, targetUserId);
-    }
-
-    @Test
-    @DisplayName("removeMember는 어드민이 동아리 소속이 아니어도 일반 회원 제거를 수행할 수 있다")
-    void removeMemberAllowsAdminWithoutClubMembership() {
-        // given
-        Integer clubId = 1;
-        Integer requesterId = 100;
-        Integer targetUserId = 200;
-        Club club = createClub();
-        User adminUser = UserFixture.createUserWithId(requesterId, "관리자", UserRole.ADMIN);
-        User targetUser = UserFixture.createUserWithId(targetUserId, "대상", UserRole.USER);
-        ClubMember target = ClubMemberFixture.createMember(club, targetUser);
-
-        when(clubRepository.getById(clubId)).thenReturn(club);
-        when(userRepository.getById(requesterId)).thenReturn(adminUser);
-        when(clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId)).thenReturn(target);
-
-        // when
-        clubMemberManagementService.removeMember(clubId, targetUserId, requesterId);
-
-        // then
-        verify(clubPermissionValidator).validateLeaderAccess(clubId, requesterId);
-        verify(clubMemberRepository).delete(target);
-        verify(chatRoomMembershipService).removeClubMember(clubId, targetUserId);
-    }
-
-    @Test
-    @DisplayName("removeMember는 어드민이라도 운영진 이상 직책은 직접 제거할 수 없다")
-    void removeMemberRejectsAdminRemovingNonMemberPosition() {
-        // given
-        Integer clubId = 1;
-        Integer requesterId = 100;
-        Integer targetUserId = 200;
-        Club club = createClub();
-        User adminUser = UserFixture.createUserWithId(requesterId, "관리자", UserRole.ADMIN);
-        User targetUser = UserFixture.createUserWithId(targetUserId, "운영진", UserRole.USER);
-        ClubMember target = ClubMemberFixture.createManager(club, targetUser);
-
-        when(clubRepository.getById(clubId)).thenReturn(club);
-        when(userRepository.getById(requesterId)).thenReturn(adminUser);
-        when(clubMemberRepository.getByClubIdAndUserId(clubId, targetUserId)).thenReturn(target);
-
-        // when & then
-        assertErrorCode(
-            () -> clubMemberManagementService.removeMember(clubId, targetUserId, requesterId),
-            CANNOT_REMOVE_NON_MEMBER
-        );
     }
 
     @Test

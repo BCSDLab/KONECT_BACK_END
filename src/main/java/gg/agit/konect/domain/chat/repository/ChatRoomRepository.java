@@ -2,11 +2,9 @@ package gg.agit.konect.domain.chat.repository;
 
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -20,30 +18,6 @@ import gg.agit.konect.global.exception.CustomException;
 public interface ChatRoomRepository extends Repository<ChatRoom, Integer> {
 
     ChatRoom save(ChatRoom chatRoom);
-
-    @Modifying(flushAutomatically = true)
-    @Query("""
-        UPDATE ChatRoom cr
-        SET cr.lastMessageContent = :content,
-            cr.lastMessageSentAt = :sentAt
-        WHERE cr.id = :roomId
-          AND NOT EXISTS (
-              SELECT 1
-              FROM ChatMessage cm
-              WHERE cm.chatRoom.id = :roomId
-                AND cm.id <> :messageId
-                AND (
-                    cm.createdAt > :sentAt
-                    OR (cm.createdAt = :sentAt AND cm.id > :messageId)
-                )
-          )
-        """)
-    int updateLastMessageIfLatest(
-        @Param("roomId") Integer roomId,
-        @Param("messageId") Integer messageId,
-        @Param("content") String content,
-        @Param("sentAt") LocalDateTime sentAt
-    );
 
     @Query("""
         SELECT DISTINCT cr

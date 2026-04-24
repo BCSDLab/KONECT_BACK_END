@@ -9,6 +9,7 @@ RUN addgroup -g 1000 -S konect \
  && chmod 755 /app /app/logs
 
 COPY --chown=1000:1000 build/libs/KONECT_API.jar KONECT_API.jar
+COPY --chown=1000:1000 opentelemetry-javaagent.jar opentelemetry-javaagent.jar
 
 USER 1000:1000
 
