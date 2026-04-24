@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import gg.agit.konect.global.logging.MdcTaskDecorator;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -44,6 +45,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(DEFAULT_MAX_POOL_SIZE);
         executor.setQueueCapacity(DEFAULT_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("async-default-");
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS);
@@ -63,6 +65,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(SHEET_SYNC_MAX_POOL_SIZE);
         executor.setQueueCapacity(SHEET_SYNC_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("sheet-sync-");
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(SHEET_SYNC_AWAIT_TERMINATION_SECONDS);
@@ -77,6 +80,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(NOTIFICATION_MAX_POOL_SIZE);
         executor.setQueueCapacity(NOTIFICATION_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("notification-");
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.setRejectedExecutionHandler((runnable, pool) -> {
             log.warn("알림 스레드풀 포화로 작업이 거절되었습니다. poolSize={}, activeCount={}, queueSize={}",
                 pool.getPoolSize(), pool.getActiveCount(), pool.getQueue().size());
@@ -95,6 +99,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(SLACK_MAX_POOL_SIZE);
         executor.setQueueCapacity(SLACK_QUEUE_CAPACITY);
         executor.setThreadNamePrefix("slack-");
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.setRejectedExecutionHandler((runnable, pool) -> {
             log.warn("Slack 스레드풀 포화로 작업이 거절되었습니다. poolSize={}, activeCount={}, queueSize={}",
                 pool.getPoolSize(), pool.getActiveCount(), pool.getQueue().size());
