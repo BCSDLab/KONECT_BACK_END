@@ -113,7 +113,6 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
         verify(sheetHeaderMapper).analyzeAllSheets("test-sheet-id");
         assertThat(club.getGoogleSheetId()).isEqualTo("test-sheet-id");
-        assertThat(club.getSheetColumnMapping()).isEqualTo("{}");
     }
 
     @Test

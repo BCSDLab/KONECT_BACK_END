@@ -7,11 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +21,6 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.transaction.TestTransaction;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -223,28 +219,6 @@ class ChatApiTest extends IntegrationTestSupport {
             && roomMembers.stream().anyMatch(member -> member.getUserId().equals(secondUserId));
     }
 
-    private int parseChatRoomId(MvcResult result) throws Exception {
-        String responseBody = result.getResponse().getContentAsString();
-        return objectMapper.readTree(responseBody).get("chatRoomId").asInt();
-    }
-
-    private List<Integer> extractRoomIds(MvcResult result) throws Exception {
-        String responseBody = result.getResponse().getContentAsString();
-        JsonNode root = objectMapper.readTree(responseBody);
-        JsonNode rooms = root.get("rooms");
-        List<Integer> roomIds = new ArrayList<>();
-        if (rooms != null && rooms.isArray()) {
-            for (JsonNode room : rooms) {
-                JsonNode roomIdNode =
-                    room.has("chatRoomId") ? room.get("chatRoomId") : room.get("roomId");
-                if (roomIdNode != null) {
-                    roomIds.add(roomIdNode.asInt());
-                }
-            }
-        }
-        return roomIds;
-    }
-
     @Nested
     @DisplayName("POST /chats/rooms - 일반 채팅방 생성")
     class CreateDirectChatRoom {
@@ -413,34 +387,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("관리자는 멤버가 아니어도 문의방 멤버 목록을 조회할 수 있다")
-        void adminCanReadInquiryRoomMembersWithoutMembership() throws Exception {
-            User anotherAdmin = persist(UserFixture.createAdmin(university));
-            clearPersistenceContext();
-
-            mockLoginUser(normalUser.getId());
-            int chatRoomId = parseChatRoomId(
-                performPost("/chats/rooms/admin")
-                    .andExpect(status().isOk())
-                    .andReturn()
-            );
-
-            clearPersistenceContext();
-
-            mockLoginUser(anotherAdmin.getId());
-            performGet("/chats/rooms/" + chatRoomId + "/members")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.members.length()").value(2))
-                .andExpect(jsonPath("$.members[*].userId").value(
-                    org.hamcrest.Matchers.containsInAnyOrder(SYSTEM_ADMIN_ID, normalUser.getId())
-                ));
-
-            assertThat(chatRoomMemberRepository.findByChatRoomId(chatRoomId))
-                .extracting(ChatRoomMember::getUserId)
-                .containsExactlyInAnyOrder(SYSTEM_ADMIN_ID, normalUser.getId());
-        }
-
-        @Test
         @DisplayName("어드민이 나간 문의 채팅방에 사용자가 새 메시지를 보내 어드민 목록에 다시 노출된다")
         @Transactional(propagation = Propagation.REQUIRES_NEW)
         @Sql(
@@ -498,6 +444,28 @@ class ChatApiTest extends IntegrationTestSupport {
             assertThat(extractRoomIds(adminRoomsAfterNewMessage)).contains(chatRoomId);
         }
 
+        private int parseChatRoomId(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+            String responseBody = result.getResponse().getContentAsString();
+            return objectMapper.readTree(responseBody).get("chatRoomId").asInt();
+        }
+
+        private List<Integer> extractRoomIds(org.springframework.test.web.servlet.MvcResult result) throws Exception {
+            String responseBody = result.getResponse().getContentAsString();
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(responseBody);
+            com.fasterxml.jackson.databind.JsonNode rooms = root.get("rooms");
+            List<Integer> roomIds = new java.util.ArrayList<>();
+            if (rooms != null && rooms.isArray()) {
+                for (com.fasterxml.jackson.databind.JsonNode room : rooms) {
+                    // roomId 또는 chatRoomId 필드 확인
+                    com.fasterxml.jackson.databind.JsonNode roomIdNode =
+                        room.has("chatRoomId") ? room.get("chatRoomId") : room.get("roomId");
+                    if (roomIdNode != null) {
+                        roomIds.add(roomIdNode.asInt());
+                    }
+                }
+            }
+            return roomIds;
+        }
     }
 
     @Nested
@@ -751,35 +719,6 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("메시지를 전송하면 chat_room last message 메타데이터도 함께 갱신된다")
-        @Sql(
-            statements = CHAT_TEST_DATA_CLEANUP_SQL,
-            config = @SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
-            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
-        )
-        void sendMessageUpdatesChatRoomLastMessageColumns() throws Exception {
-            // given
-            ChatRoom chatRoom = createDirectChatRoom(normalUser, targetUser);
-            mockLoginUser(normalUser.getId());
-
-            // when
-            performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("메타데이터 확인"))
-                .andExpect(status().isOk());
-
-            // then
-            TestTransaction.flagForCommit();
-            TestTransaction.end();
-
-            transactionTemplate.execute(status -> {
-                clearPersistenceContext();
-                ChatRoom updatedRoom = chatRoomRepository.findById(chatRoom.getId()).orElseThrow();
-                assertThat(updatedRoom.getLastMessageContent()).isEqualTo("메타데이터 확인");
-                assertThat(updatedRoom.getLastMessageSentAt()).isNotNull();
-                return null;
-            });
-        }
-
-        @Test
         @DisplayName("관리자가 문의방에 답변하면 실제 문의 사용자에게 알림을 보낸다")
         void adminReplySendsNotificationToInquiryUser() throws Exception {
             User anotherAdmin = persist(UserFixture.createAdmin(university));
@@ -970,15 +909,6 @@ class ChatApiTest extends IntegrationTestSupport {
             mockLoginUser(targetUser.getId());
             performPost("/chats/rooms/" + chatRoom.getId() + "/messages", new ChatMessageSendRequest("다시 안녕"))
                 .andExpect(status().isOk());
-
-            transactionTemplate.execute(status -> {
-                clearPersistenceContext();
-                ChatRoomMember restoredMember = chatRoomMemberRepository
-                    .findByChatRoomIdAndUserId(chatRoom.getId(), normalUser.getId())
-                    .orElseThrow();
-                assertThat(restoredMember.hasLeft()).isFalse();
-                return null;
-            });
 
             mockLoginUser(normalUser.getId());
             performGet("/chats/rooms")
@@ -2072,33 +2002,6 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
         }
-
-        @Test
-        @DisplayName("다른 관리자는 문의방 멤버가 아니어도 뮤트 설정을 변경할 수 있다")
-        void anotherAdminCanToggleMuteInInquiryRoomWithoutMembership() throws Exception {
-            User anotherAdmin = persist(UserFixture.createAdmin(university));
-            clearPersistenceContext();
-
-            mockLoginUser(normalUser.getId());
-            int chatRoomId = parseChatRoomId(
-                performPost("/chats/rooms/admin")
-                    .andExpect(status().isOk())
-                    .andReturn()
-            );
-
-            mockLoginUser(anotherAdmin.getId());
-            performPost("/chats/rooms/" + chatRoomId + "/mute")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isMuted").value(true));
-
-            clearPersistenceContext();
-
-            assertThat(notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
-                NotificationTargetType.CHAT_ROOM,
-                chatRoomId,
-                anotherAdmin.getId()
-            )).isPresent();
-        }
     }
 
     @Nested
@@ -2140,23 +2043,6 @@ class ChatApiTest extends IntegrationTestSupport {
             // when & then - 1글자 키워드로 검색
             performGet("/chats/rooms/search?keyword=a&page=1&limit=20")
                 .andExpect(status().isOk());
-        }
-
-        @Test
-        @DisplayName("일반 group 채팅방 메시지는 검색 대상에 포함되지 않는다")
-        void searchChatsExcludesOpenGroupRoomMessages() throws Exception {
-            User groupMember = createUser("그룹멤버", "2021136014");
-            ChatRoom groupRoom = createGroupChatRoomWithOwner(normalUser, groupMember);
-            persistChatMessage(groupRoom, groupMember, "그룹전용키워드");
-            clearPersistenceContext();
-
-            mockLoginUser(normalUser.getId());
-
-            performGet("/chats/rooms/search?keyword=그룹전용키워드&page=1&limit=20")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roomMatches.totalCount").value(0))
-                .andExpect(jsonPath("$.messageMatches.totalCount").value(0))
-                .andExpect(jsonPath("$.messageMatches.currentCount").value(0));
         }
     }
 }

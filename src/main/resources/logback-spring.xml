@@ -9,7 +9,7 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>
-                [%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %clr(%-5level) %clr(${PID:-}){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr([trace=%X{dd.trace_id:-} span=%X{dd.span_id:-} request=%X{requestId:-}]){yellow} %clr(%-40.40logger{36}){cyan} : %msg%n
+                [%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %clr(%-5level) %clr(${PID:-}){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr([trace=%X{trace_id:-}%X{traceId:-} span=%X{span_id:-}%X{spanId:-} request=%X{requestId:-}]){yellow} %clr(%-40.40logger{36}){cyan} : %msg%n
             </pattern>
         </encoder>
     </appender>
@@ -17,24 +17,24 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/konect-backend.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/konect-backend.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/konect-backend.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>
         </rollingPolicy>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %-5level ${PID:-} --- [%15.15thread] [trace=%X{dd.trace_id:-} span=%X{dd.span_id:-} request=%X{requestId:-}] %-40.40logger{36} : %msg%n</pattern>
+            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %-5level ${PID:-} --- [%15.15thread] [trace=%X{trace_id:-}%X{traceId:-} span=%X{span_id:-}%X{spanId:-} request=%X{requestId:-}] %-40.40logger{36} : %msg%n</pattern>
         </encoder>
     </appender>
 
     <appender name="SCHEDULER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/scheduler.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/scheduler.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/scheduler.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>7</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %-5level [%thread] [trace=%X{dd.trace_id:-} span=%X{dd.span_id:-} request=%X{requestId:-}] : %msg%n</pattern>
+            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS}] %-5level [%thread] : %msg%n</pattern>
         </encoder>
     </appender>
 

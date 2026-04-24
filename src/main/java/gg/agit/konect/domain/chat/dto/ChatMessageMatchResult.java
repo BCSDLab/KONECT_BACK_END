@@ -32,13 +32,7 @@ public record ChatMessageMatchResult(
     LocalDateTime matchedMessageSentAt,
 
     @Schema(description = "검색에 매칭된 메시지 ID", example = "42", requiredMode = REQUIRED)
-    Integer matchedMessageId,
-
-    @Schema(description = "읽지 않은 메시지 수", example = "3", requiredMode = REQUIRED)
-    Integer unreadCount,
-
-    @Schema(description = "채팅방 알림 뮤트 여부", example = "false", requiredMode = REQUIRED)
-    Boolean isMuted
+    Integer matchedMessageId
 ) {
 
     public static ChatMessageMatchResult from(ChatRoomSummaryResponse room, ChatMessage message) {
@@ -49,9 +43,7 @@ public record ChatMessageMatchResult(
             room.roomImageUrl(),
             message.getContent(),
             message.getCreatedAt(),
-            message.getId(),
-            room.unreadCount(),
-            room.isMuted()
+            message.getId()
         );
     }
 }
