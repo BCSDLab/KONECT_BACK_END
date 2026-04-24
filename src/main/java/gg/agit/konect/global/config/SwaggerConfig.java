@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import org.springdoc.core.models.GroupedOpenApi;
 
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 
 @Configuration
+@Profile("!prod")
 public class SwaggerConfig {
 
     private final String serverUrl;
@@ -58,8 +60,8 @@ public class SwaggerConfig {
             .addOpenApiCustomizer(openApi -> openApi.setTags(
                 openApi.getTags() != null
                     ? openApi.getTags().stream()
-                        .sorted((a, b) -> a.getName().compareTo(b.getName()))
-                        .toList()
+                      .sorted((a, b) -> a.getName().compareTo(b.getName()))
+                      .toList()
                     : null
             ))
             .build();
