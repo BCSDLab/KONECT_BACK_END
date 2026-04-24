@@ -41,13 +41,13 @@ public class ClaudeClient {
 
         ## 사용 가능한 도구
         1. database_schema: 캐시된 실제 DB 스키마, 테이블 comment, 컬럼 구조 조회
-        2. list_tables: 데이터베이스의 모든 테이블 목록 조회
-        3. describe_table: 특정 테이블의 컬럼 구조 조회
+        2. list_tables: database_schema 조회 실패 또는 캐시된 목록에 확신이 없을 때만 테이블 목록 재조회
+        3. describe_table: 특정 테이블의 최신 컬럼 구조를 재확인해야 할 때만 사용
         4. query: SQL SELECT 쿼리 실행 (읽기 전용)
 
         ## 작업 방식
         1. 먼저 database_schema로 현재 DB 스키마와 테이블 comment 확인
-        2. 특정 테이블 구조가 더 필요하면 describe_table로 컬럼 정보 재확인
+        2. database_schema가 실패했거나 특정 테이블 구조가 더 필요할 때만 list_tables 또는 describe_table 사용
         3. 적절한 SQL 쿼리를 작성하여 데이터 조회
         4. 결과를 바탕으로 친절하고 자연스럽게 답변
 

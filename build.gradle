@@ -140,8 +140,8 @@ jacocoTestReport {
 					"**/exception/*.class",
 					"**/*Exception.class",
 					// 외부 API 클라이언트 (단위 테스트 어려운 클래스)
-					"**/infrastructure/claude/**",
-					"**/infrastructure/mcp/**",
+					"**/infrastructure/claude/client/ClaudeClient.class",
+					"**/infrastructure/mcp/client/McpClient.class",
 					// 기타
 					"**/Application.class",  // Spring Boot 메인 클래스
 				])

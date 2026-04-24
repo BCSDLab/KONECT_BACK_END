@@ -1,10 +1,13 @@
 package gg.agit.konect.infrastructure.claude.client;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class DatabaseSchemaCache {
 
+    private static final Duration FAILURE_RETRY_INTERVAL = Duration.ofSeconds(30);
+    private static final String FALLBACK_SCHEMA =
+        "DB 스키마 요약 조회에 실패했습니다. list_tables와 describe_table 도구로 다시 확인하세요.";
     private static final String TABLE_SCHEMA_SQL = """
         SELECT table_name, table_comment
         FROM information_schema.tables
@@ -37,6 +43,7 @@ public class DatabaseSchemaCache {
 
     private final JdbcTemplate jdbcTemplate;
     private volatile String cachedSchema;
+    private volatile Instant retrySchemaLoadAt = Instant.EPOCH;
 
     public DatabaseSchemaCache(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -47,10 +54,18 @@ public class DatabaseSchemaCache {
         if (currentSchema != null) {
             return currentSchema;
         }
+        Instant now = Instant.now();
+        if (now.isBefore(retrySchemaLoadAt)) {
+            return FALLBACK_SCHEMA;
+        }
 
         synchronized (this) {
             if (cachedSchema != null) {
                 return cachedSchema;
+            }
+            now = Instant.now();
+            if (now.isBefore(retrySchemaLoadAt)) {
+                return FALLBACK_SCHEMA;
             }
 
             try {
@@ -58,7 +73,8 @@ public class DatabaseSchemaCache {
                 return cachedSchema;
             } catch (DataAccessException e) {
                 log.error("Failed to load database schema summary", e);
-                return "DB 스키마 요약 조회에 실패했습니다. list_tables와 describe_table 도구로 다시 확인하세요.";
+                retrySchemaLoadAt = now.plus(FAILURE_RETRY_INTERVAL);
+                return FALLBACK_SCHEMA;
             }
         }
     }
@@ -68,44 +84,49 @@ public class DatabaseSchemaCache {
             TABLE_SCHEMA_SQL,
             (rs, rowNum) -> new TableSchema(
                 rs.getString("table_name"),
-                normalizeComment(rs.getString("table_comment"))
+                nullSafeTrim(rs.getString("table_comment"))
             )
         );
+
+        if (tables.isEmpty()) {
+            log.warn("Database schema cache loaded an empty schema summary");
+            throw new DataRetrievalFailureException("Database schema summary is empty");
+        }
+
         List<ColumnSchema> columns = jdbcTemplate.query(
             COLUMN_SCHEMA_SQL,
             (rs, rowNum) -> new ColumnSchema(
                 rs.getString("table_name"),
                 rs.getString("column_name"),
                 rs.getString("column_type"),
-                normalizeComment(rs.getString("is_nullable")),
-                normalizeComment(rs.getString("column_key")),
-                normalizeComment(rs.getString("column_comment"))
+                nullSafeTrim(rs.getString("is_nullable")),
+                nullSafeTrim(rs.getString("column_key")),
+                nullSafeTrim(rs.getString("column_comment"))
             )
         );
 
-        if (tables.isEmpty()) {
-            log.warn("Database schema cache loaded an empty schema summary");
-            return "현재 DB 스키마를 조회했지만 테이블 정보를 찾지 못했습니다.";
-        }
-
         Map<String, StringBuilder> columnsByTable = new LinkedHashMap<>();
         for (ColumnSchema column : columns) {
-            columnsByTable.computeIfAbsent(column.tableName(), ignored -> new StringBuilder())
+            StringBuilder tableColumns = columnsByTable.computeIfAbsent(
+                column.tableName(),
+                ignored -> new StringBuilder()
+            );
+            tableColumns
                 .append("    - ")
                 .append(column.columnName())
                 .append(" ")
                 .append(column.columnType());
 
             if ("NO".equals(column.isNullable())) {
-                columnsByTable.get(column.tableName()).append(" NOT NULL");
+                tableColumns.append(" NOT NULL");
             }
             if (!column.columnKey().isBlank()) {
-                columnsByTable.get(column.tableName()).append(" ").append(column.columnKey());
+                tableColumns.append(" ").append(column.columnKey());
             }
             if (!column.comment().isBlank()) {
-                columnsByTable.get(column.tableName()).append(": ").append(column.comment());
+                tableColumns.append(": ").append(column.comment());
             }
-            columnsByTable.get(column.tableName()).append('\n');
+            tableColumns.append('\n');
         }
 
         StringBuilder summary = new StringBuilder();
@@ -125,11 +146,11 @@ public class DatabaseSchemaCache {
         return summary.toString();
     }
 
-    private String normalizeComment(String comment) {
-        if (comment == null || comment.isBlank()) {
+    private String nullSafeTrim(String value) {
+        if (value == null || value.isBlank()) {
             return "";
         }
-        return comment.trim();
+        return value.trim();
     }
 
     private record TableSchema(
