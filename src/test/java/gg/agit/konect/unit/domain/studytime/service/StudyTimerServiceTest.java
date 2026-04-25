@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import gg.agit.konect.domain.studytime.dto.StudyTimerStopRequest;
 import gg.agit.konect.domain.studytime.dto.StudyTimerSyncRequest;
@@ -30,6 +29,7 @@ import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;
+import gg.agit.konect.support.fixture.StudyTimerFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 import jakarta.persistence.EntityManager;
 
@@ -111,9 +111,6 @@ class StudyTimerServiceTest extends ServiceTestSupport {
     private StudyTimer createTimerStartedOneHourAgo() {
         User user = UserFixture.createUserWithId(1, "2021136001");
         LocalDateTime startedAt = LocalDateTime.now().minusHours(1);
-        StudyTimer studyTimer = StudyTimer.of(user, startedAt);
-        ReflectionTestUtils.setField(studyTimer, "createdAt", startedAt);
-        ReflectionTestUtils.setField(studyTimer, "updatedAt", startedAt);
-        return studyTimer;
+        return StudyTimerFixture.createStartedTimer(user, startedAt);
     }
 }

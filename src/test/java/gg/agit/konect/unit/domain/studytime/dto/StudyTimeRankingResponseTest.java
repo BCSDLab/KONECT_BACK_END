@@ -10,10 +10,23 @@ import gg.agit.konect.domain.studytime.dto.StudyTimeRankingResponse;
 import gg.agit.konect.domain.studytime.model.RankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import gg.agit.konect.domain.university.model.University;
-import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.UniversityFixture;
 
-class StudyTimeRankingResponseTest extends ServiceTestSupport {
+class StudyTimeRankingResponseTest {
+
+    @Test
+    @DisplayName("한 글자 개인 이름은 마스킹하지 않는다")
+    void fromKeepsSingleLetterPersonalRankingName() {
+        // given
+        StudyTimeRanking ranking = createRanking("김");
+
+        // when
+        StudyTimeRankingResponse response = StudyTimeRankingResponse.from(ranking, 1, "PERSONAL");
+
+        // then
+        assertThat(response.name()).isEqualTo("김");
+        assertThat(response.rank()).isEqualTo(1);
+    }
 
     @Test
     @DisplayName("개인 랭킹 이름은 첫 글자와 마지막 글자만 남기고 마스킹한다")
