@@ -9,7 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import gg.agit.konect.domain.studytime.model.RankingType;
 import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
@@ -17,6 +16,7 @@ import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
 import gg.agit.konect.domain.studytime.service.StudyTimeSchedulerService;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.support.ServiceTestSupport;
+import gg.agit.konect.support.fixture.RankingTypeFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 
 class StudyTimeSchedulerServiceTest extends ServiceTestSupport {
@@ -58,14 +58,9 @@ class StudyTimeSchedulerServiceTest extends ServiceTestSupport {
     }
 
     private StudyTimeRanking createRanking(Long dailySeconds, Long monthlySeconds) {
-        RankingType rankingType = new TestRankingType();
-        ReflectionTestUtils.setField(rankingType, "id", 1);
-
+        RankingType rankingType = RankingTypeFixture.createWithId(1);
         University university = UniversityFixture.createWithId(1);
 
         return StudyTimeRanking.of(rankingType, university, 1, "BCSD Lab", dailySeconds, monthlySeconds);
-    }
-
-    private static class TestRankingType extends RankingType {
     }
 }
