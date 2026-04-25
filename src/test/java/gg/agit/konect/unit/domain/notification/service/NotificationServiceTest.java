@@ -119,6 +119,24 @@ class NotificationServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("registerToken은 ExponentPushToken 형식도 허용한다")
+    void registerTokenAcceptsExponentPushTokenFormat() {
+        // given
+        User user = createUser(1, "2021136001");
+        String exponentToken = "ExponentPushToken[valid-token]";
+        given(userRepository.getById(1)).willReturn(user);
+        given(notificationDeviceTokenRepository.findByUserId(1)).willReturn(Optional.empty());
+
+        // when
+        notificationService.registerToken(1, new NotificationTokenRegisterRequest(exponentToken));
+
+        // then
+        verify(notificationDeviceTokenRepository).save(argThat(token ->
+            token.getUser().equals(user) && token.getToken().equals(exponentToken)
+        ));
+    }
+
+    @Test
     @DisplayName("deleteToken은 일치하는 토큰이 있을 때만 삭제한다")
     void deleteTokenDeletesOnlyMatchingToken() {
         // given
@@ -293,6 +311,35 @@ class NotificationServiceTest extends ServiceTestSupport {
             eq("동아리 지원이 승인되었어요."),
             eq(Map.of("path", "clubs/7"))
         );
+    }
+
+    @Test
+    @DisplayName("동아리 지원 알림은 푸시 토큰이 없어도 인앱 알림과 SSE를 유지한다")
+    void sendClubApplicationNotificationKeepsInboxAndSseWhenPushTokenMissing() {
+        // given
+        User user = createUser(3, "2021136003");
+        NotificationInbox inbox = NotificationInbox.of(
+            user,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "KONECT",
+            "동아리 지원이 승인되었어요.",
+            "clubs/7"
+        );
+        given(notificationInboxService.save(
+            3,
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "KONECT",
+            "동아리 지원이 승인되었어요.",
+            "clubs/7"
+        )).willReturn(inbox);
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of());
+
+        // when
+        notificationService.sendClubApplicationApprovedNotification(3, 7, "KONECT");
+
+        // then
+        verify(notificationInboxService).sendSse(eq(3), any(NotificationInboxResponse.class));
+        verify(expoPushClient, never()).sendNotification(any(), any(), any(), any(), any());
     }
 
     @Test
