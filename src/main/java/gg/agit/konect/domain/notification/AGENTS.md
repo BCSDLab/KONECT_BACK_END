@@ -24,7 +24,8 @@
 - DB의 `notification_device_token.user_id`는 unique 제약을 가진다.
 - 현재 구현 기준으로 한 사용자에게 활성 token row는 하나만 존재한다.
 - token 문자열은 `ExponentPushToken[...]` 또는 `ExpoPushToken[...]` 형식만 허용한다.
-- token 조회는 row가 없으면 `NOT_FOUND_NOTIFICATION_TOKEN`으로 실패한다.
+- 내 토큰 조회 API 등 `getByUserId()`를 사용하는 조회는 row가 없으면 `NOT_FOUND_NOTIFICATION_TOKEN`으로 실패한다.
+- 푸시 발송 경로의 `findTokensByUserId()` 조회는 row가 없으면 빈 리스트를 반환하며, 이 경우 푸시 발송만 생략한다.
 - token 삭제는 요청한 userId와 token이 정확히 일치할 때만 삭제하고, 없으면 조용히 끝난다.
 
 ### `NotificationInbox`
