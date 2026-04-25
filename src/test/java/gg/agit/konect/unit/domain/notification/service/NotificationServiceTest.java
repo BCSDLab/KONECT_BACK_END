@@ -119,6 +119,24 @@ class NotificationServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("registerToken은 ExponentPushToken 형식도 허용한다")
+    void registerTokenAcceptsExponentPushTokenFormat() {
+        // given
+        User user = createUser(1, "2021136001");
+        String exponentToken = "ExponentPushToken[valid-token]";
+        given(userRepository.getById(1)).willReturn(user);
+        given(notificationDeviceTokenRepository.findByUserId(1)).willReturn(Optional.empty());
+
+        // when
+        notificationService.registerToken(1, new NotificationTokenRegisterRequest(exponentToken));
+
+        // then
+        verify(notificationDeviceTokenRepository).save(argThat(token ->
+            token.getUser().equals(user) && token.getToken().equals(exponentToken)
+        ));
+    }
+
+    @Test
     @DisplayName("deleteToken은 일치하는 토큰이 있을 때만 삭제한다")
     void deleteTokenDeletesOnlyMatchingToken() {
         // given
@@ -292,6 +310,39 @@ class NotificationServiceTest extends ServiceTestSupport {
             eq("KONECT"),
             eq("동아리 지원이 승인되었어요."),
             eq(Map.of("path", "clubs/7"))
+        );
+    }
+
+    @Test
+    @DisplayName("지원 제출 알림은 푸시 토큰이 없어도 인앱 알림과 SSE를 유지한다")
+    void sendClubApplicationSubmittedNotificationKeepsInboxAndSseWhenPushTokenMissing() {
+        assertClubApplicationNotificationKeepsInboxAndSseWithoutPush(
+            NotificationInboxType.CLUB_APPLICATION_SUBMITTED,
+            "홍길동님이 동아리 가입을 신청했어요.",
+            "mypage/manager/7/applications/1",
+            () -> notificationService.sendClubApplicationSubmittedNotification(3, 1, 7, "KONECT", "홍길동")
+        );
+    }
+
+    @Test
+    @DisplayName("지원 승인 알림은 푸시 토큰이 없어도 인앱 알림과 SSE를 유지한다")
+    void sendClubApplicationApprovedNotificationKeepsInboxAndSseWhenPushTokenMissing() {
+        assertClubApplicationNotificationKeepsInboxAndSseWithoutPush(
+            NotificationInboxType.CLUB_APPLICATION_APPROVED,
+            "동아리 지원이 승인되었어요.",
+            "clubs/7",
+            () -> notificationService.sendClubApplicationApprovedNotification(3, 7, "KONECT")
+        );
+    }
+
+    @Test
+    @DisplayName("지원 거절 알림은 푸시 토큰이 없어도 인앱 알림과 SSE를 유지한다")
+    void sendClubApplicationRejectedNotificationKeepsInboxAndSseWhenPushTokenMissing() {
+        assertClubApplicationNotificationKeepsInboxAndSseWithoutPush(
+            NotificationInboxType.CLUB_APPLICATION_REJECTED,
+            "동아리 지원이 거절되었어요.",
+            "clubs/7",
+            () -> notificationService.sendClubApplicationRejectedNotification(3, 7, "KONECT")
         );
     }
 
@@ -776,5 +827,30 @@ class NotificationServiceTest extends ServiceTestSupport {
             .isMarketingAgreement(true)
             .imageUrl("https://example.com/profile-" + id + ".png")
             .build();
+    }
+
+    private void assertClubApplicationNotificationKeepsInboxAndSseWithoutPush(
+        NotificationInboxType type,
+        String body,
+        String path,
+        Runnable notificationSender
+    ) {
+        User user = createUser(3, "2021136003");
+        NotificationInbox inbox = NotificationInbox.of(user, type, "KONECT", body, path);
+        given(notificationInboxService.save(3, type, "KONECT", body, path)).willReturn(inbox);
+        given(notificationDeviceTokenRepository.findTokensByUserId(3)).willReturn(List.of());
+
+        notificationSender.run();
+
+        verify(notificationInboxService).save(3, type, "KONECT", body, path);
+        ArgumentCaptor<NotificationInboxResponse> responseCaptor =
+            ArgumentCaptor.forClass(NotificationInboxResponse.class);
+        verify(notificationInboxService).sendSse(eq(3), responseCaptor.capture());
+        NotificationInboxResponse response = responseCaptor.getValue();
+        assertThat(response.type()).isEqualTo(type);
+        assertThat(response.title()).isEqualTo("KONECT");
+        assertThat(response.body()).isEqualTo(body);
+        assertThat(response.path()).isEqualTo(path);
+        verify(expoPushClient, never()).sendNotification(any(), any(), any(), any(), any());
     }
 }
