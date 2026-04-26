@@ -22,14 +22,4 @@ public class StudyTimeSchedulerService {
         }
         return studyTimeRankingRepository.resetDailySeconds();
     }
-
-    @Transactional
-    public int resetStudyTimeRankingDaily() {
-        return studyTimeRankingRepository.resetDailySeconds();
-    }
-
-    @Transactional
-    public int resetStudyTimeRankingMonthly() {
-        return studyTimeRankingRepository.resetDailyAndMonthlySeconds();
-    }
 }
