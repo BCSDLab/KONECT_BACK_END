@@ -82,7 +82,7 @@ public class UserOAuthAccountService {
     @Transactional
     public int cleanupExpiredWithdrawnUserOAuthAccounts(LocalDateTime now) {
         LocalDateTime expiredAt = now.minusDays(RESTORE_WINDOW_DAYS);
-        int deletedCount = userOAuthAccountRepository.deleteRevokedExpiredWithdrawnUsersBefore(
+        int deletedCount = userOAuthAccountRepository.deleteRevokedExpiredWithdrawnOAuthAccountsBefore(
             expiredAt,
             Provider.APPLE
         );
