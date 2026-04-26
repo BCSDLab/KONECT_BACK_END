@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.studytime.scheduler;
 
+import java.time.LocalDate;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,24 +19,14 @@ public class StudyTimeScheduler {
     private final StudyTimeSchedulerService studyTimeSchedulerService;
 
     @Scheduled(cron = "0 0 0 * * *")
-    public void resetStudyTimeRankingDaily() {
+    public void resetStudyTimeRanking() {
         try {
-            SCHEDULER_LOGGER.info("일일 공부 시간 랭킹 초기화 시작");
-            studyTimeSchedulerService.resetStudyTimeRankingDaily();
-            SCHEDULER_LOGGER.info("일일 공부 시간 랭킹 초기화 완료");
+            LocalDate today = LocalDate.now();
+            SCHEDULER_LOGGER.info("스터디 시간 랭킹 초기화를 시작합니다. targetDate={}", today);
+            int updatedCount = studyTimeSchedulerService.resetStudyTimeRanking(today);
+            SCHEDULER_LOGGER.info("스터디 시간 랭킹 초기화를 완료했습니다. targetDate={}, updatedCount={}", today, updatedCount);
         } catch (Exception e) {
-            SCHEDULER_LOGGER.error("일일 공부 시간 랭킹 초기화 과정에서 오류가 발생했습니다.", e);
-        }
-    }
-
-    @Scheduled(cron = "0 0 0 1 * *")
-    public void resetStudyTimeRankingMonthly() {
-        try {
-            SCHEDULER_LOGGER.info("월간 공부 시간 랭킹 초기화 시작");
-            studyTimeSchedulerService.resetStudyTimeRankingMonthly();
-            SCHEDULER_LOGGER.info("월간 공부 시간 랭킹 초기화 완료");
-        } catch (Exception e) {
-            SCHEDULER_LOGGER.error("월간 공부 시간 랭킹 초기화 과정에서 오류가 발생했습니다.", e);
+            SCHEDULER_LOGGER.error("스터디 시간 랭킹 초기화 중 오류가 발생했습니다.", e);
         }
     }
 }

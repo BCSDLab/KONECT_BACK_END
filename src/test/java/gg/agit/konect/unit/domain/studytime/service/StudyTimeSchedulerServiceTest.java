@@ -1,23 +1,20 @@
 package gg.agit.konect.unit.domain.studytime.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import gg.agit.konect.domain.studytime.model.RankingType;
-import gg.agit.konect.domain.studytime.model.StudyTimeRanking;
 import gg.agit.konect.domain.studytime.repository.StudyTimeRankingRepository;
 import gg.agit.konect.domain.studytime.service.StudyTimeSchedulerService;
-import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.support.ServiceTestSupport;
-import gg.agit.konect.support.fixture.RankingTypeFixture;
-import gg.agit.konect.support.fixture.UniversityFixture;
 
 class StudyTimeSchedulerServiceTest extends ServiceTestSupport {
 
@@ -28,39 +25,34 @@ class StudyTimeSchedulerServiceTest extends ServiceTestSupport {
     private StudyTimeSchedulerService studyTimeSchedulerService;
 
     @Test
-    @DisplayName("일간 랭킹 초기화는 dailySeconds만 0으로 만들고 monthlySeconds는 유지한다")
-    void resetStudyTimeRankingDailyKeepsMonthlySeconds() {
+    @DisplayName("월초에는 일간과 월간 랭킹을 한 번에 초기화한다")
+    void resetStudyTimeRankingResetsDailyAndMonthlyOnFirstDayOfMonth() {
         // given
-        StudyTimeRanking ranking = createRanking(120L, 3600L);
-        given(studyTimeRankingRepository.findAll()).willReturn(List.of(ranking));
+        LocalDate firstDayOfMonth = LocalDate.of(2026, 5, 1);
+        when(studyTimeRankingRepository.resetDailyAndMonthlySeconds()).thenReturn(10);
 
         // when
-        studyTimeSchedulerService.resetStudyTimeRankingDaily();
+        int updatedCount = studyTimeSchedulerService.resetStudyTimeRanking(firstDayOfMonth);
 
         // then
-        assertThat(ranking.getDailySeconds()).isZero();
-        assertThat(ranking.getMonthlySeconds()).isEqualTo(3600L);
+        assertThat(updatedCount).isEqualTo(10);
+        verify(studyTimeRankingRepository).resetDailyAndMonthlySeconds();
+        verify(studyTimeRankingRepository, never()).resetDailySeconds();
     }
 
     @Test
-    @DisplayName("월간 랭킹 초기화는 monthlySeconds만 0으로 만들고 dailySeconds는 유지한다")
-    void resetStudyTimeRankingMonthlyKeepsDailySeconds() {
+    @DisplayName("월초가 아니면 일간 랭킹만 초기화한다")
+    void resetStudyTimeRankingResetsOnlyDailyOnNonFirstDayOfMonth() {
         // given
-        StudyTimeRanking ranking = createRanking(120L, 3600L);
-        given(studyTimeRankingRepository.findAll()).willReturn(List.of(ranking));
+        LocalDate nonFirstDayOfMonth = LocalDate.of(2026, 5, 2);
+        when(studyTimeRankingRepository.resetDailySeconds()).thenReturn(7);
 
         // when
-        studyTimeSchedulerService.resetStudyTimeRankingMonthly();
+        int updatedCount = studyTimeSchedulerService.resetStudyTimeRanking(nonFirstDayOfMonth);
 
         // then
-        assertThat(ranking.getDailySeconds()).isEqualTo(120L);
-        assertThat(ranking.getMonthlySeconds()).isZero();
-    }
-
-    private StudyTimeRanking createRanking(Long dailySeconds, Long monthlySeconds) {
-        RankingType rankingType = RankingTypeFixture.createWithId(1);
-        University university = UniversityFixture.createWithId(1);
-
-        return StudyTimeRanking.of(rankingType, university, 1, "BCSD Lab", dailySeconds, monthlySeconds);
+        assertThat(updatedCount).isEqualTo(7);
+        verify(studyTimeRankingRepository).resetDailySeconds();
+        verify(studyTimeRankingRepository, never()).resetDailyAndMonthlySeconds();
     }
 }
