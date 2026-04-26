@@ -42,6 +42,8 @@ public interface ClubRepository extends Repository<Club, Integer> {
 
     List<Club> findAll();
 
+    boolean existsById(Integer id);
+
     Club save(Club club);
 
     @Query("SELECT COUNT(c) FROM Club c")
