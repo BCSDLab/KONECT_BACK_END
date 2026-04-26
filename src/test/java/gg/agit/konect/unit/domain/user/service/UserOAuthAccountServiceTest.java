@@ -246,14 +246,15 @@ class UserOAuthAccountServiceTest extends ServiceTestSupport {
     void cleanupExpiredWithdrawnUserOAuthAccountsDeletesUsingThreshold() {
         // given
         LocalDateTime now = LocalDateTime.of(2026, 4, 10, 9, 30);
-        given(userOAuthAccountRepository.deleteAllByWithdrawnUsersBefore(now.minusDays(7))).willReturn(3);
+        given(userOAuthAccountRepository.deleteRevokedExpiredWithdrawnUsersBefore(now.minusDays(7), Provider.APPLE))
+            .willReturn(3);
 
         // when
         int deletedCount = userOAuthAccountService.cleanupExpiredWithdrawnUserOAuthAccounts(now);
 
         // then
         assertThat(deletedCount).isEqualTo(3);
-        verify(userOAuthAccountRepository).deleteAllByWithdrawnUsersBefore(now.minusDays(7));
+        verify(userOAuthAccountRepository).deleteRevokedExpiredWithdrawnUsersBefore(now.minusDays(7), Provider.APPLE);
         verify(userOAuthAccountRepository).flush();
     }
 
