@@ -2,6 +2,7 @@ package gg.agit.konect.unit.domain.user.service;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -10,6 +11,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
@@ -57,9 +59,10 @@ class UserSchedulerServiceTest extends ServiceTestSupport {
         userSchedulerService.cleanupExpiredWithdrawnOAuthAccountsAfterRestoreWindow(now);
 
         // then
-        verify(appleTokenRevocationService).revoke("apple-refresh-token");
-        verify(userSchedulerTxService).clearAppleRefreshTokenIfMatches(account.getId(), "apple-refresh-token");
-        verify(userOAuthAccountService).cleanupExpiredWithdrawnUserOAuthAccounts(now);
+        InOrder inOrder = inOrder(appleTokenRevocationService, userSchedulerTxService, userOAuthAccountService);
+        inOrder.verify(appleTokenRevocationService).revoke("apple-refresh-token");
+        inOrder.verify(userSchedulerTxService).clearAppleRefreshTokenIfMatches(account.getId(), "apple-refresh-token");
+        inOrder.verify(userOAuthAccountService).cleanupExpiredWithdrawnUserOAuthAccounts(now);
     }
 
     @Test
