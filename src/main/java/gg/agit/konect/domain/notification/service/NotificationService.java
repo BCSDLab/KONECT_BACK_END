@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
@@ -74,7 +75,7 @@ public class NotificationService {
     }
 
     @Async("notificationTaskExecutor")
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendChatNotification(Integer receiverId, Integer roomId, String senderName, String messageContent) {
         try {
             if (chatPresenceService.isUserInChatRoom(roomId, receiverId)) {
@@ -114,7 +115,7 @@ public class NotificationService {
     }
 
     @Async("notificationTaskExecutor")
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendGroupChatNotification(
         Integer roomId,
         Integer senderId,
@@ -191,7 +192,7 @@ public class NotificationService {
     }
 
     @Async("notificationTaskExecutor")
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendClubApplicationSubmittedNotification(
         Integer receiverId,
         Integer applicationId,
@@ -208,7 +209,7 @@ public class NotificationService {
     }
 
     @Async("notificationTaskExecutor")
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendClubApplicationApprovedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 승인되었어요.";
         String path = "clubs/" + clubId;
@@ -219,7 +220,7 @@ public class NotificationService {
     }
 
     @Async("notificationTaskExecutor")
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendClubApplicationRejectedNotification(Integer receiverId, Integer clubId, String clubName) {
         String body = "동아리 지원이 거절되었어요.";
         String path = "clubs/" + clubId;

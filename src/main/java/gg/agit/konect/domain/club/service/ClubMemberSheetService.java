@@ -32,20 +32,18 @@ public class ClubMemberSheetService {
     private final SheetHeaderMapper sheetHeaderMapper;
     private final ObjectMapper objectMapper;
 
-    @Transactional
     public void updateSheetId(
         Integer clubId,
         Integer requesterId,
         ClubSheetIdUpdateRequest request
     ) {
-        Club club = clubRepository.getById(clubId);
-        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
-
         String spreadsheetId = SpreadsheetUrlParser.extractId(request.spreadsheetUrl());
+        clubRepository.getById(clubId);
+        clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         SheetHeaderMapper.SheetAnalysisResult result =
             sheetHeaderMapper.analyzeAllSheets(spreadsheetId);
-        applySheetRegistration(club, spreadsheetId, result);
+        saveSheetRegistration(clubId, spreadsheetId, result);
     }
 
     @Transactional
@@ -55,9 +53,18 @@ public class ClubMemberSheetService {
         String spreadsheetId,
         SheetHeaderMapper.SheetAnalysisResult result
     ) {
-        Club club = clubRepository.getById(clubId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
+        saveSheetRegistration(clubId, spreadsheetId, result);
+    }
+
+    private void saveSheetRegistration(
+        Integer clubId,
+        String spreadsheetId,
+        SheetHeaderMapper.SheetAnalysisResult result
+    ) {
+        Club club = clubRepository.getById(clubId);
         applySheetRegistration(club, spreadsheetId, result);
+        clubRepository.save(club);
     }
 
     private void applySheetRegistration(
@@ -78,7 +85,6 @@ public class ClubMemberSheetService {
         }
     }
 
-    @Transactional(readOnly = true)
     public ClubMemberSheetSyncResponse syncMembersToSheet(
         Integer clubId,
         Integer requesterId,
