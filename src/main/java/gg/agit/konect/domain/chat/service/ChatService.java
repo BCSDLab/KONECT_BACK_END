@@ -899,10 +899,6 @@ public class ChatService {
         List<ChatRoomSummaryResponse> directRooms = getDirectChatRooms(userId);
         List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
 
-        List<Integer> roomIds = new ArrayList<>();
-        roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
-        roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
-
         Map<Integer, String> defaultRoomNameMap = chatRoomSummaryService.getDefaultRoomNameMap(
             directRooms,
             clubRooms
