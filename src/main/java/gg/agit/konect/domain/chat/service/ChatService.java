@@ -538,24 +538,20 @@ public class ChatService {
             .toList();
 
         List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
-        Map<Integer, ChatMessage> lastMessageMap = getLastMessageMap(roomIds);
         Map<Integer, Integer> unreadCountMap = getRoomUnreadCountMap(roomIds, userId);
 
         return rooms.stream()
-            .map(room -> {
-                ChatMessage lastMessage = lastMessageMap.get(room.getId());
-                return new ChatRoomSummaryResponse(
-                    room.getId(),
-                    ChatType.CLUB_GROUP,
-                    room.getClub().getName(),
-                    room.getClub().getImageUrl(),
-                    lastMessage != null ? lastMessage.getContent() : null,
-                    lastMessage != null ? lastMessage.getCreatedAt() : null,
-                    room.getCreatedAt(),
-                    unreadCountMap.getOrDefault(room.getId(), 0),
-                    false
-                );
-            })
+            .map(room -> new ChatRoomSummaryResponse(
+                room.getId(),
+                ChatType.CLUB_GROUP,
+                room.getClub().getName(),
+                room.getClub().getImageUrl(),
+                room.getLastMessageContent(),
+                room.getLastMessageSentAt(),
+                room.getCreatedAt(),
+                unreadCountMap.getOrDefault(room.getId(), 0),
+                false
+            ))
             .toList();
     }
 
@@ -566,24 +562,20 @@ public class ChatService {
         }
 
         List<Integer> roomIds = rooms.stream().map(ChatRoom::getId).toList();
-        Map<Integer, ChatMessage> lastMessageMap = getLastMessageMap(roomIds);
         Map<Integer, Integer> unreadCountMap = getRoomUnreadCountMap(roomIds, userId);
 
         return rooms.stream()
-            .map(room -> {
-                ChatMessage lastMessage = lastMessageMap.get(room.getId());
-                return new ChatRoomSummaryResponse(
-                    room.getId(),
-                    ChatType.GROUP,
-                    DEFAULT_GROUP_ROOM_NAME,
-                    null,
-                    lastMessage != null ? lastMessage.getContent() : null,
-                    lastMessage != null ? lastMessage.getCreatedAt() : null,
-                    room.getCreatedAt(),
-                    unreadCountMap.getOrDefault(room.getId(), 0),
-                    false
-                );
-            })
+            .map(room -> new ChatRoomSummaryResponse(
+                room.getId(),
+                ChatType.GROUP,
+                DEFAULT_GROUP_ROOM_NAME,
+                null,
+                room.getLastMessageContent(),
+                room.getLastMessageSentAt(),
+                room.getCreatedAt(),
+                unreadCountMap.getOrDefault(room.getId(), 0),
+                false
+            ))
             .toList();
     }
 
@@ -1255,15 +1247,6 @@ public class ChatService {
         }
 
         return left;
-    }
-
-    private Map<Integer, ChatMessage> getLastMessageMap(List<Integer> roomIds) {
-        if (roomIds.isEmpty()) {
-            return Map.of();
-        }
-
-        return chatMessageRepository.findLatestMessagesByRoomIds(roomIds).stream()
-            .collect(Collectors.toMap(message -> message.getChatRoom().getId(), message -> message));
     }
 
     private Map<Integer, Integer> getRoomUnreadCountMap(List<Integer> roomIds, Integer userId) {
