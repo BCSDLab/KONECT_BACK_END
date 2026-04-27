@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -129,6 +130,38 @@ class ScheduleApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.schedules", hasSize(1)))
                 .andExpect(jsonPath("$.schedules[0].title").value("우리대학 일정"));
         }
+
+        @Test
+        @DisplayName("다가오는 일정은 시작 전 일정만 D-Day를 반환한다")
+        void getUpcomingSchedulesReturnsDDayOnlyBeforeStartDate() throws Exception {
+            // given
+            LocalDate today = LocalDate.now();
+            Schedule ongoingSchedule = persist(ScheduleFixture.createUniversity(
+                "진행 중 일정",
+                today.minusDays(1).atStartOfDay(),
+                today.plusDays(1).atStartOfDay()
+            ));
+            Schedule futureSchedule = persist(ScheduleFixture.createUniversity(
+                "내일 시작 일정",
+                today.plusDays(1).atStartOfDay(),
+                today.plusDays(2).atStartOfDay()
+            ));
+
+            persist(ScheduleFixture.createUniversitySchedule(ongoingSchedule, university));
+            persist(ScheduleFixture.createUniversitySchedule(futureSchedule, university));
+            clearPersistenceContext();
+
+            mockLoginUser(user.getId());
+
+            // when & then
+            performGet("/schedules/upcoming")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(2)))
+                .andExpect(jsonPath("$.schedules[0].title").value("진행 중 일정"))
+                .andExpect(jsonPath("$.schedules[0].dDay").doesNotExist())
+                .andExpect(jsonPath("$.schedules[1].title").value("내일 시작 일정"))
+                .andExpect(jsonPath("$.schedules[1].dDay").value(1));
+        }
     }
 
     @Nested
@@ -187,6 +220,36 @@ class ScheduleApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.schedules", hasSize(1)))
                 .andExpect(jsonPath("$.schedules[0].title").value("수강신청 기간"));
+        }
+
+        @Test
+        @DisplayName("검색어는 앞뒤 공백과 대소문자를 무시한다")
+        void getSchedulesWithTrimmedCaseInsensitiveQuery() throws Exception {
+            // given
+            LocalDateTime marchStart = LocalDateTime.of(TEST_YEAR, MARCH, 1, 0, 0);
+
+            Schedule examSchedule = persist(ScheduleFixture.createUniversity(
+                "Final EXAM",
+                marchStart.plusDays(1),
+                marchStart.plusDays(EXPECTED_SCHEDULE_COUNT)
+            ));
+            Schedule registrationSchedule = persist(ScheduleFixture.createUniversity(
+                "수강신청 기간",
+                marchStart.plusDays(DAYS_10),
+                marchStart.plusDays(DAYS_15)
+            ));
+
+            persist(ScheduleFixture.createUniversitySchedule(examSchedule, university));
+            persist(ScheduleFixture.createUniversitySchedule(registrationSchedule, university));
+            clearPersistenceContext();
+
+            mockLoginUser(user.getId());
+
+            // when & then
+            performGet("/schedules?year=" + TEST_YEAR + "&month=" + MARCH + "&query=  exam  ")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.schedules", hasSize(1)))
+                .andExpect(jsonPath("$.schedules[0].title").value("Final EXAM"));
         }
 
         @Test
