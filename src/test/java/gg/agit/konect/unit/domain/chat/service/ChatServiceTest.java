@@ -52,6 +52,7 @@ import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
+import gg.agit.konect.domain.chat.service.ChatRoomSettingsService;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -99,6 +100,9 @@ class ChatServiceTest extends ServiceTestSupport {
 
     @Mock
     private ChatRoomMembershipService chatRoomMembershipService;
+
+    @Mock
+    private ChatRoomSettingsService chatRoomSettingsService;
 
     @Mock
     private NotificationService notificationService;

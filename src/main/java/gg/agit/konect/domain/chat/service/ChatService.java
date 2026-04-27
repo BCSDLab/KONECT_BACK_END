@@ -82,6 +82,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final ChatRoomMembershipService chatRoomMembershipService;
+    private final ChatRoomSettingsService chatRoomSettingsService;
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -212,50 +213,11 @@ public class ChatService {
         List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
         List<ChatRoomSummaryResponse> groupRooms = getGroupChatRooms(userId);
 
-        List<Integer> roomIds = new ArrayList<>();
-        roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
-        roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
-        roomIds.addAll(groupRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
-
-        Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
-        Map<Integer, String> customRoomNameMap = getCustomRoomNameMap(roomIds, userId);
         List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
-
-        directRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
-            room.roomId(),
-            room.chatType(),
-            resolveRoomName(room.roomId(), room.roomName(), customRoomNameMap),
-            room.roomImageUrl(),
-            room.lastMessage(),
-            room.lastSentAt(),
-            room.createdAt(),
-            room.unreadCount(),
-            muteMap.getOrDefault(room.roomId(), false)
-        )));
-
-        clubRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
-            room.roomId(),
-            room.chatType(),
-            resolveRoomName(room.roomId(), room.roomName(), customRoomNameMap),
-            room.roomImageUrl(),
-            room.lastMessage(),
-            room.lastSentAt(),
-            room.createdAt(),
-            room.unreadCount(),
-            muteMap.getOrDefault(room.roomId(), false)
-        )));
-
-        groupRooms.forEach(room -> rooms.add(new ChatRoomSummaryResponse(
-            room.roomId(),
-            room.chatType(),
-            resolveRoomName(room.roomId(), room.roomName(), customRoomNameMap),
-            room.roomImageUrl(),
-            room.lastMessage(),
-            room.lastSentAt(),
-            room.createdAt(),
-            room.unreadCount(),
-            muteMap.getOrDefault(room.roomId(), false)
-        )));
+        rooms.addAll(directRooms);
+        rooms.addAll(clubRooms);
+        rooms.addAll(groupRooms);
+        rooms = new ArrayList<>(chatRoomSettingsService.applyUserSettings(rooms, userId));
 
         rooms.sort(
             Comparator.comparing(
@@ -948,12 +910,11 @@ public class ChatService {
         roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
         roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
 
-        Map<Integer, Boolean> muteMap = getMuteMap(roomIds, userId);
-        Map<Integer, String> customRoomNameMap = getCustomRoomNameMap(roomIds, userId);
         Map<Integer, String> defaultRoomNameMap = getDefaultRoomNameMap(directRooms, clubRooms);
         List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
-        directRooms.forEach(room -> rooms.add(applyRoomSettings(room, muteMap, customRoomNameMap)));
-        clubRooms.forEach(room -> rooms.add(applyRoomSettings(room, muteMap, customRoomNameMap)));
+        rooms.addAll(directRooms);
+        rooms.addAll(clubRooms);
+        rooms = new ArrayList<>(chatRoomSettingsService.applyUserSettings(rooms, userId));
 
         rooms.sort(
             Comparator.comparing(ChatRoomSummaryResponse::lastSentAt,
@@ -961,24 +922,6 @@ public class ChatService {
                 .thenComparing(ChatRoomSummaryResponse::roomId)
         );
         return new AccessibleChatRooms(rooms, defaultRoomNameMap);
-    }
-
-    private ChatRoomSummaryResponse applyRoomSettings(
-        ChatRoomSummaryResponse room,
-        Map<Integer, Boolean> muteMap,
-        Map<Integer, String> customRoomNameMap
-    ) {
-        return new ChatRoomSummaryResponse(
-            room.roomId(),
-            room.chatType(),
-            resolveRoomName(room.roomId(), room.roomName(), customRoomNameMap),
-            room.roomImageUrl(),
-            room.lastMessage(),
-            room.lastSentAt(),
-            room.createdAt(),
-            room.unreadCount(),
-            muteMap.getOrDefault(room.roomId(), false)
-        );
     }
 
     private ChatRoomMatchesResponse searchRoomsByName(
@@ -1057,25 +1000,6 @@ public class ChatService {
         return new PageImpl<>(List.of(), PageRequest.of(page - 1, limit), 0);
     }
 
-    private Map<Integer, Boolean> getMuteMap(List<Integer> roomIds, Integer userId) {
-        if (roomIds.isEmpty()) {
-            return Map.of();
-        }
-
-        List<NotificationMuteSetting> settings = notificationMuteSettingRepository
-            .findByTargetTypeAndTargetIdsAndUserId(NotificationTargetType.CHAT_ROOM, roomIds, userId);
-
-        Map<Integer, Boolean> muteMap = new HashMap<>();
-        for (NotificationMuteSetting setting : settings) {
-            Integer targetId = setting.getTargetId();
-            if (targetId != null) {
-                muteMap.put(targetId, setting.getIsMuted());
-            }
-        }
-
-        return muteMap;
-    }
-
     private Map<Integer, LocalDateTime> getVisibleMessageFromMap(List<Integer> roomIds, Integer userId) {
         if (roomIds.isEmpty()) {
             return Map.of();
@@ -1096,21 +1020,6 @@ public class ChatService {
         directRooms.forEach(room -> defaultRoomNameMap.put(room.roomId(), room.roomName()));
         clubRooms.forEach(room -> defaultRoomNameMap.put(room.roomId(), room.roomName()));
         return defaultRoomNameMap;
-    }
-
-    private Map<Integer, String> getCustomRoomNameMap(List<Integer> roomIds, Integer userId) {
-        if (roomIds.isEmpty()) {
-            return Map.of();
-        }
-
-        return chatRoomMemberRepository.findByChatRoomIdsAndUserId(roomIds, userId).stream()
-            .filter(member -> StringUtils.hasText(member.getCustomRoomName()))
-            .collect(Collectors.toMap(ChatRoomMember::getChatRoomId, ChatRoomMember::getCustomRoomName));
-    }
-
-    private String resolveRoomName(Integer roomId, String
-        defaultRoomName, Map<Integer, String> customRoomNameMap) {
-        return customRoomNameMap.getOrDefault(roomId, defaultRoomName);
     }
 
     private boolean matchesRoomName(
