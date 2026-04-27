@@ -109,27 +109,6 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         @Param("adminRole") UserRole adminRole
     );
 
-    @Query(
-        value = """
-            SELECT cm
-            FROM ChatMessage cm
-            JOIN FETCH cm.chatRoom cr
-            WHERE cr.id IN :roomIds
-              AND LOCATE(LOWER(:keyword), LOWER(cm.content)) > 0
-              AND cm.id = (
-                  SELECT MAX(innerCm.id)
-                  FROM ChatMessage innerCm
-                  WHERE innerCm.chatRoom.id = cr.id
-                    AND LOCATE(LOWER(:keyword), LOWER(innerCm.content)) > 0
-              )
-            ORDER BY cm.createdAt DESC, cm.id DESC
-            """
-    )
-    List<ChatMessage> searchLatestMatchingMessagesByChatRoomIds(
-        @Param("roomIds") List<Integer> roomIds,
-        @Param("keyword") String keyword
-    );
-
     @Query("SELECT cm FROM ChatMessage cm JOIN FETCH cm.chatRoom WHERE cm.id = :messageId")
     Optional<ChatMessage> findByIdWithChatRoom(@Param("messageId") Integer messageId);
 
