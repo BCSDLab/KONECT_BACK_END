@@ -47,6 +47,7 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
+import gg.agit.konect.domain.chat.repository.ChatMessageQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
@@ -90,6 +91,9 @@ class ChatServiceTest extends ServiceTestSupport {
 
     @Mock
     private ChatInviteQueryRepository chatInviteQueryRepository;
+
+    @Mock
+    private ChatMessageQueryRepository chatMessageQueryRepository;
 
     @Mock
     private UserRepository userRepository;
