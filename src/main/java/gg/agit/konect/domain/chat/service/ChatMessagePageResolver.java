@@ -74,7 +74,7 @@ public class ChatMessagePageResolver {
             if (!isAdminViewingSystemRoom) {
                 throw CustomException.of(NOT_FOUND_CHAT_ROOM);
             }
-            return new AccessContext(member, isAdminViewingSystemRoom);
+            return new AccessContext(Optional.empty(), true);
         }
 
         if (room.isClubGroupRoom()) {
