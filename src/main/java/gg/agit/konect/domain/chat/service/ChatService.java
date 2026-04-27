@@ -82,7 +82,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final ChatRoomMembershipService chatRoomMembershipService;
-    private final ChatRoomSettingsService chatRoomSettingsService;
+    private final ChatRoomSummaryService chatRoomSummaryService;
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -213,18 +213,11 @@ public class ChatService {
         List<ChatRoomSummaryResponse> clubRooms = getClubChatRooms(userId);
         List<ChatRoomSummaryResponse> groupRooms = getGroupChatRooms(userId);
 
-        List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
-        rooms.addAll(directRooms);
-        rooms.addAll(clubRooms);
-        rooms.addAll(groupRooms);
-        rooms = new ArrayList<>(chatRoomSettingsService.applyUserSettings(rooms, userId));
-
-        rooms.sort(
-            Comparator.comparing(
-                (ChatRoomSummaryResponse room) ->
-                    room.lastSentAt() != null ? room.lastSentAt() : room.createdAt(),
-                Comparator.reverseOrder()
-            )
+        List<ChatRoomSummaryResponse> rooms = chatRoomSummaryService.summarizeChatRooms(
+            userId,
+            directRooms,
+            clubRooms,
+            groupRooms
         );
 
         return new ChatRoomsSummaryResponse(rooms);
@@ -910,16 +903,14 @@ public class ChatService {
         roomIds.addAll(directRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
         roomIds.addAll(clubRooms.stream().map(ChatRoomSummaryResponse::roomId).toList());
 
-        Map<Integer, String> defaultRoomNameMap = getDefaultRoomNameMap(directRooms, clubRooms);
-        List<ChatRoomSummaryResponse> rooms = new ArrayList<>();
-        rooms.addAll(directRooms);
-        rooms.addAll(clubRooms);
-        rooms = new ArrayList<>(chatRoomSettingsService.applyUserSettings(rooms, userId));
-
-        rooms.sort(
-            Comparator.comparing(ChatRoomSummaryResponse::lastSentAt,
-                    Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(ChatRoomSummaryResponse::roomId)
+        Map<Integer, String> defaultRoomNameMap = chatRoomSummaryService.getDefaultRoomNameMap(
+            directRooms,
+            clubRooms
+        );
+        List<ChatRoomSummaryResponse> rooms = chatRoomSummaryService.summarizeSearchableRooms(
+            userId,
+            directRooms,
+            clubRooms
         );
         return new AccessibleChatRooms(rooms, defaultRoomNameMap);
     }
@@ -1010,16 +1001,6 @@ public class ChatService {
             visibleMessageFromMap.put(roomMember.getChatRoomId(), roomMember.getVisibleMessageFrom());
         }
         return visibleMessageFromMap;
-    }
-
-    private Map<Integer, String> getDefaultRoomNameMap(
-        List<ChatRoomSummaryResponse> directRooms,
-        List<ChatRoomSummaryResponse> clubRooms
-    ) {
-        Map<Integer, String> defaultRoomNameMap = new HashMap<>();
-        directRooms.forEach(room -> defaultRoomNameMap.put(room.roomId(), room.roomName()));
-        clubRooms.forEach(room -> defaultRoomNameMap.put(room.roomId(), room.roomName()));
-        return defaultRoomNameMap;
     }
 
     private boolean matchesRoomName(
