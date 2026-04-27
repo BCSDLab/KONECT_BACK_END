@@ -32,6 +32,7 @@ import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
+import gg.agit.konect.domain.chat.service.ChatRoomSystemAdminService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
@@ -59,6 +60,9 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ChatRoomSystemAdminService chatRoomSystemAdminService;
 
     @InjectMocks
     private ChatRoomMembershipService chatRoomMembershipService;
@@ -316,8 +320,7 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
         User admin = createUser(99, "관리자", UserRole.ADMIN);
         ChatRoom room = createRoom(roomId, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
         LocalDateTime readAt = LocalDateTime.of(2026, 4, 11, 10, 5);
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(roomId)))
-            .willReturn(List.<Object[]>of(new Object[] {roomId, SYSTEM_ADMIN_ID, readAt}));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(roomId)).willReturn(true);
 
         // when
         chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, admin, readAt, room);
@@ -371,8 +374,7 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
         User admin = createUser(99, "관리자", UserRole.ADMIN);
         ChatRoom room = createRoom(roomId, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
         LocalDateTime readAt = LocalDateTime.of(2026, 4, 11, 10, 5);
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(roomId)))
-            .willReturn(List.<Object[]>of(new Object[] {roomId, SYSTEM_ADMIN_ID, readAt}));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(roomId)).willReturn(true);
 
         // when
         chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, admin, readAt, room);

@@ -41,6 +41,7 @@ public class ChatRoomMembershipService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
+    private final ChatRoomSystemAdminService chatRoomSystemAdminService;
 
     @Transactional(readOnly = true)
     public ChatRoomMembersResponse getChatRoomMembers(Integer chatRoomId, Integer currentUserId) {
@@ -63,7 +64,7 @@ public class ChatRoomMembershipService {
 
     private void validateMembership(ChatRoom chatRoom, User currentUser) {
         // 어드민은 시스템 어드민 방의 멤버를 조회할 수 있음
-        if (currentUser.isAdmin() && isSystemAdminRoom(chatRoom.getId())) {
+        if (currentUser.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(chatRoom.getId())) {
             return;
         }
 
@@ -110,7 +111,7 @@ public class ChatRoomMembershipService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateDirectRoomLastReadAt(Integer roomId, User user, LocalDateTime readAt, ChatRoom room) {
         // 어드민이 SYSTEM_ADMIN 방의 메시지를 읽으면 SYSTEM_ADMIN의 lastReadAt을 업데이트
-        if (user.isAdmin() && isSystemAdminRoom(roomId)) {
+        if (user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(roomId)) {
             chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, SYSTEM_ADMIN_ID, readAt);
             return;
         }
@@ -176,18 +177,11 @@ public class ChatRoomMembershipService {
 
         // 어드민은 SYSTEM_ADMIN 방의 메시지를 조회할 수 있지만, 멤버로 추가되지는 않는다
         // (멤버가 추가되면 findByTwoUsers에서 해당 방을 찾지 못해 채팅방이 중복 생성됨)
-        if (user.isAdmin() && isSystemAdminRoom(room.getId())) {
+        if (user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(room.getId())) {
             return;
         }
 
         throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-    }
-
-    private boolean isSystemAdminRoom(Integer roomId) {
-        List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(roomId));
-        return memberIds.stream()
-            .map(row -> (Integer)row[1])
-            .anyMatch(userId -> userId.equals(SYSTEM_ADMIN_ID));
     }
 
     private boolean isDuplicateKeyException(DataIntegrityViolationException e) {

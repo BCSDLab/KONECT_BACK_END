@@ -83,6 +83,7 @@ public class ChatService {
     private final ChatRoomSummaryService chatRoomSummaryService;
     private final ChatSearchService chatSearchService;
     private final ChatMessagePageResolver chatMessagePageResolver;
+    private final ChatRoomSystemAdminService chatRoomSystemAdminService;
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -353,7 +354,8 @@ public class ChatService {
         LocalDateTime readAt = LocalDateTime.now();
 
         if (room.isDirectRoom()) {
-            boolean isAdminViewingSystemRoom = user.isAdmin() && isSystemAdminRoom(room);
+            boolean isAdminViewingSystemRoom = user.isAdmin()
+                && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
             if (isAdminViewingSystemRoom) {
                 chatRoomMembershipService.updateLastReadAt(roomId, SYSTEM_ADMIN_ID, readAt);
                 recordPresenceSafely(roomId, userId);
@@ -406,7 +408,7 @@ public class ChatService {
         } else if (room.isDirectRoom()) {
             // 어드민이 SYSTEM_ADMIN 방에 접근하는 경우는 멤버십 체크를 건너뜀
             boolean isAdminAccessingSystemAdminRoom = user.isAdmin()
-                && isSystemAdminRoom(room);
+                && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
             if (!isAdminAccessingSystemAdminRoom) {
                 getAccessibleDirectRoomMember(room, user);
             }
@@ -662,7 +664,7 @@ public class ChatService {
 
         // 어드민이 SYSTEM_ADMIN 방에 메시지를 보내는 경우
         boolean isAdminSendingToSystemAdminRoom = sender.isAdmin()
-            && isSystemAdminRoom(chatRoom);
+            && chatRoomSystemAdminService.isSystemAdminRoom(chatRoom.getId());
 
         ChatRoomMember senderMember = null;
         boolean senderHadLeft = false;
@@ -1036,7 +1038,7 @@ public class ChatService {
     private boolean shouldSkipSystemAdminMembership(ChatRoom room, User user) {
         // 문의방은 SYSTEM_ADMIN + 일반 사용자 2인 구조를 전제로 재사용(findByTwoUsers)되므로,
         // 생성/재오픈 경로에서도 일반 ADMIN을 멤버로 추가하면 안 된다.
-        return user.isAdmin() && isSystemAdminRoom(room);
+        return user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
     }
 
     private String normalizeCustomRoomName(String roomName) {
@@ -1149,7 +1151,7 @@ public class ChatService {
         return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
             .orElseGet(() -> {
                 // 어드민은 SYSTEM_ADMIN 방에 멤버로 추가되지 않음
-                if (user.isAdmin() && isSystemAdminRoom(chatRoom)) {
+                if (user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(chatRoom.getId())) {
                     throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
                 }
                 throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
@@ -1169,7 +1171,7 @@ public class ChatService {
     }
 
     private LocalDateTime resolveAdminSystemRoomVisibleMessageFrom(List<ChatRoomMember> members) {
-        ChatRoomMember systemAdminMember = findRoomMember(members, SYSTEM_ADMIN_ID);
+        ChatRoomMember systemAdminMember = chatRoomSystemAdminService.findSystemAdminMember(members);
         return systemAdminMember != null ? systemAdminMember.getVisibleMessageFrom() : null;
     }
 
@@ -1187,17 +1189,6 @@ public class ChatService {
         }
 
         member.restoreDirectRoom();
-    }
-
-    private boolean isSystemAdminRoom(ChatRoom chatRoom) {
-        List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
-            List.of(chatRoom.getId())
-        );
-        List<Integer> userIds = memberIds.stream()
-            .map(row -> (Integer)row[1])
-            .toList();
-
-        return userIds.contains(SYSTEM_ADMIN_ID);
     }
 
     private boolean shouldDisplayAsOwnMessage(

@@ -1,11 +1,11 @@
 package gg.agit.konect.domain.chat.service;
 
-import static gg.agit.konect.domain.chat.service.ChatRoomMembershipService.SYSTEM_ADMIN_ID;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_MEMBER;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +28,7 @@ public class ChatMessagePageResolver {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ClubMemberRepository clubMemberRepository;
+    private final ChatRoomSystemAdminService chatRoomSystemAdminService;
 
     public int resolvePageForMessage(
         Integer roomId,
@@ -36,7 +37,7 @@ public class ChatMessagePageResolver {
         User user,
         int limit
     ) {
-        ensureMessageLookupAccess(room, user);
+        AccessContext accessContext = ensureMessageLookupAccess(room, user);
 
         ChatMessage targetMessage = chatMessageRepository.findByIdWithChatRoom(messageId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
@@ -45,7 +46,7 @@ public class ChatMessagePageResolver {
             throw CustomException.of(NOT_FOUND_CHAT_ROOM);
         }
 
-        LocalDateTime visibleMessageFrom = resolveVisibleMessageFrom(room, user);
+        LocalDateTime visibleMessageFrom = resolveVisibleMessageFrom(room, user, accessContext);
         if (visibleMessageFrom != null && !targetMessage.getCreatedAt().isAfter(visibleMessageFrom)) {
             throw CustomException.of(NOT_FOUND_CHAT_ROOM);
         }
@@ -60,15 +61,16 @@ public class ChatMessagePageResolver {
      * messageId 조회 전 방 접근 권한을 검증한다.
      * 권한 없음과 메시지 미존재를 구분할 수 없게 NOT_FOUND_CHAT_ROOM으로 통일한다.
      */
-    private void ensureMessageLookupAccess(ChatRoom room, User user) {
+    private AccessContext ensureMessageLookupAccess(ChatRoom room, User user) {
         if (room.isDirectRoom()) {
-            boolean isMember = chatRoomMemberRepository
-                .findByChatRoomIdAndUserId(room.getId(), user.getId())
-                .isPresent();
-            if (!isMember && !(user.isAdmin() && isSystemAdminRoom(room))) {
+            Optional<ChatRoomMember> member = chatRoomMemberRepository
+                .findByChatRoomIdAndUserId(room.getId(), user.getId());
+            boolean isAdminViewingSystemRoom = user.isAdmin()
+                && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
+            if (member.isEmpty() && !isAdminViewingSystemRoom) {
                 throw CustomException.of(NOT_FOUND_CHAT_ROOM);
             }
-            return;
+            return new AccessContext(member, isAdminViewingSystemRoom);
         }
 
         if (room.isClubGroupRoom()) {
@@ -80,43 +82,35 @@ public class ChatMessagePageResolver {
                 }
                 throw e;
             }
-            return;
+            return AccessContext.none();
         }
 
-        chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
-            .filter(member -> !member.hasLeft())
+        ChatRoomMember member = chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
+            .filter(roomMember -> !roomMember.hasLeft())
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+        return new AccessContext(Optional.of(member), false);
     }
 
-    private LocalDateTime resolveVisibleMessageFrom(ChatRoom room, User user) {
+    private LocalDateTime resolveVisibleMessageFrom(ChatRoom room, User user, AccessContext accessContext) {
         if (!room.isDirectRoom()) {
             return null;
         }
 
-        if (user.isAdmin() && isSystemAdminRoom(room)) {
+        if (user.isAdmin() && accessContext.isAdminViewingSystemRoom()) {
             List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(room.getId());
-            ChatRoomMember systemAdminMember = findRoomMember(members, SYSTEM_ADMIN_ID);
+            ChatRoomMember systemAdminMember = chatRoomSystemAdminService.findSystemAdminMember(members);
             return systemAdminMember != null ? systemAdminMember.getVisibleMessageFrom() : null;
         }
 
-        return chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
+        return accessContext.member()
             .map(ChatRoomMember::getVisibleMessageFrom)
             .orElse(null);
     }
 
-    private boolean isSystemAdminRoom(ChatRoom chatRoom) {
-        List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
-            List.of(chatRoom.getId())
-        );
-        return memberIds.stream()
-            .map(row -> (Integer)row[1])
-            .anyMatch(userId -> userId.equals(SYSTEM_ADMIN_ID));
-    }
+    private record AccessContext(Optional<ChatRoomMember> member, boolean isAdminViewingSystemRoom) {
 
-    private ChatRoomMember findRoomMember(List<ChatRoomMember> members, Integer userId) {
-        return members.stream()
-            .filter(member -> member.getUserId().equals(userId))
-            .findFirst()
-            .orElse(null);
+        private static AccessContext none() {
+            return new AccessContext(Optional.empty(), false);
+        }
     }
 }

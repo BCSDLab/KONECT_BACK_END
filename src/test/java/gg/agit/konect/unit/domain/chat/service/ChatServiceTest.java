@@ -56,6 +56,7 @@ import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.chat.service.ChatRoomSummaryService;
 import gg.agit.konect.domain.chat.service.ChatSearchService;
 import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
+import gg.agit.konect.domain.chat.service.ChatRoomSystemAdminService;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -114,6 +115,9 @@ class ChatServiceTest extends ServiceTestSupport {
     private ChatSearchService chatSearchService;
 
     @Mock
+    private ChatRoomSystemAdminService chatRoomSystemAdminService;
+
+    @Mock
     private NotificationService notificationService;
 
     @Mock
@@ -128,7 +132,8 @@ class ChatServiceTest extends ServiceTestSupport {
         chatMessagePageResolver = new ChatMessagePageResolver(
             chatMessageRepository,
             chatRoomMemberRepository,
-            clubMemberRepository
+            clubMemberRepository,
+            chatRoomSystemAdminService
         );
         chatService = new ChatService(
             chatRoomRepository,
@@ -144,6 +149,7 @@ class ChatServiceTest extends ServiceTestSupport {
             chatRoomSummaryService,
             chatSearchService,
             chatMessagePageResolver,
+            chatRoomSystemAdminService,
             notificationService,
             eventPublisher
         );
@@ -221,11 +227,7 @@ class ChatServiceTest extends ServiceTestSupport {
             .willReturn(Optional.empty());
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), targetUserId))
             .willReturn(Optional.empty());
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(room.getId())))
-            .willReturn(List.of(
-                new Object[] {room.getId(), SYSTEM_ADMIN_ID, room.getCreatedAt()},
-                new Object[] {room.getId(), targetUserId, room.getCreatedAt()}
-            ));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(room.getId())).willReturn(true);
 
         // when
         ChatRoomResponse response = chatService.createOrGetChatRoom(adminUserId,
@@ -809,11 +811,9 @@ class ChatServiceTest extends ServiceTestSupport {
 
         given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
         given(userRepository.getById(adminId)).willReturn(admin);
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(systemAdminRoom.getId())))
-            .willReturn(List.of(
-                new Object[] {systemAdminRoom.getId(), SYSTEM_ADMIN_ID, systemAdminRoom.getCreatedAt()},
-                new Object[] {systemAdminRoom.getId(), 20, systemAdminRoom.getCreatedAt()}
-            ));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(systemAdminRoom.getId())).willReturn(true);
+        given(chatRoomSystemAdminService.findSystemAdminMember(List.of(systemAdminMember, targetMember)))
+            .willReturn(systemAdminMember);
         given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
             .willReturn(List.of(systemAdminMember, targetMember));
         given(chatMessageRepository.findByChatRoomId(eq(systemAdminRoom.getId()), nullable(LocalDateTime.class),
@@ -1051,11 +1051,7 @@ class ChatServiceTest extends ServiceTestSupport {
 
         given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
         given(userRepository.getById(adminId)).willReturn(admin);
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(systemAdminRoom.getId())))
-            .willReturn(List.of(
-                new Object[] {systemAdminRoom.getId(), SYSTEM_ADMIN_ID, systemAdminRoom.getCreatedAt()},
-                new Object[] {systemAdminRoom.getId(), targetUserId, systemAdminRoom.getCreatedAt()}
-            ));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(systemAdminRoom.getId())).willReturn(true);
         given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
             .willReturn(List.of(systemAdminMember, targetMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);

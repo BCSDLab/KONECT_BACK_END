@@ -27,6 +27,7 @@ import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
+import gg.agit.konect.domain.chat.service.ChatRoomSystemAdminService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.user.enums.UserRole;
@@ -52,6 +53,9 @@ class ChatMessagePageResolverTest extends ServiceTestSupport {
 
     @Mock
     private ClubMemberRepository clubMemberRepository;
+
+    @Mock
+    private ChatRoomSystemAdminService chatRoomSystemAdminService;
 
     @InjectMocks
     private ChatMessagePageResolver chatMessagePageResolver;
@@ -250,14 +254,14 @@ class ChatMessagePageResolverTest extends ServiceTestSupport {
 
     private void stubSystemAdminRoom(ChatRoom room) {
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), 99)).willReturn(Optional.empty());
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(room.getId())))
-            .willReturn(List.<Object[]>of(new Object[] {room.getId(), SYSTEM_ADMIN_ID, room.getCreatedAt()}));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(room.getId())).willReturn(true);
     }
 
     private void stubSystemAdminMember(ChatRoom room, LocalDateTime visibleMessageFrom) {
         ChatRoomMember member = member(room, user(SYSTEM_ADMIN_ID, UserRole.ADMIN));
         ReflectionTestUtils.setField(member, "visibleMessageFrom", visibleMessageFrom);
         given(chatRoomMemberRepository.findByChatRoomId(room.getId())).willReturn(List.of(member));
+        given(chatRoomSystemAdminService.findSystemAdminMember(List.of(member))).willReturn(member);
     }
 
     private void stubTargetMessage(ChatMessage message) {
