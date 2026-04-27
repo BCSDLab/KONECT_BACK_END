@@ -20,7 +20,7 @@ import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
-import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
+import gg.agit.konect.domain.chat.repository.ChatMessageQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChatSearchService {
 
-    private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageQueryRepository chatMessageQueryRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     public ChatSearchResponse search(
@@ -94,7 +94,7 @@ public class ChatSearchService {
             .toList();
         Map<Integer, LocalDateTime> visibleMessageFromMap = getVisibleMessageFromMap(directRoomIds, userId);
 
-        List<ChatMessageMatchResult> matchedMessages = chatMessageRepository
+        List<ChatMessageMatchResult> matchedMessages = chatMessageQueryRepository
             .searchLatestMatchingMessagesByChatRoomIds(roomIds, keyword)
             .stream()
             .filter(message -> isVisibleMessageMatch(message, roomMap, visibleMessageFromMap))

@@ -1279,6 +1279,40 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("관리자는 멤버가 아니어도 사용자 문의방을 검색할 수 있다")
+        void searchChatsIncludesInquiryRoomForAdminWithoutMembership() throws Exception {
+            // given
+            User anotherAdmin = persist(UserFixture.createAdmin(university));
+            clearPersistenceContext();
+
+            mockLoginUser(normalUser.getId());
+            int chatRoomId = parseChatRoomId(
+                performPost("/chats/rooms/admin")
+                    .andExpect(status().isOk())
+                    .andReturn()
+            );
+            performPost("/chats/rooms/" + chatRoomId + "/messages",
+                new ChatMessageSendRequest("관리자 검색 문의"))
+                .andExpect(status().isOk());
+
+            clearPersistenceContext();
+            mockLoginUser(anotherAdmin.getId());
+
+            // when & then
+            performGet("/chats/rooms/search?keyword=일반유저&page=1&limit=10")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomMatches.totalCount").value(1))
+                .andExpect(jsonPath("$.roomMatches.currentCount").value(1))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomId").value(chatRoomId))
+                .andExpect(jsonPath("$.roomMatches.rooms[0].roomName").value("일반유저"))
+                .andExpect(jsonPath("$.messageMatches.totalCount").value(0));
+
+            assertThat(chatRoomMemberRepository.findByChatRoomId(chatRoomId))
+                .extracting(ChatRoomMember::getUserId)
+                .containsExactlyInAnyOrder(SYSTEM_ADMIN_ID, normalUser.getId());
+        }
+
+        @Test
         @DisplayName("채팅방 검색 결과에 페이지네이션을 적용한다")
         void searchChatsAppliesPaginationToRoomMatches() throws Exception {
             // given
