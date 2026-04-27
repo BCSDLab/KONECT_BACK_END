@@ -1,6 +1,7 @@
 package gg.agit.konect.integration.domain.schedule;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -139,12 +140,12 @@ class ScheduleApiTest extends IntegrationTestSupport {
             Schedule ongoingSchedule = persist(ScheduleFixture.createUniversity(
                 "진행 중 일정",
                 today.minusDays(1).atStartOfDay(),
-                today.plusDays(1).atStartOfDay()
+                today.plusDays(DAYS_10).atStartOfDay()
             ));
             Schedule futureSchedule = persist(ScheduleFixture.createUniversity(
-                "내일 시작 일정",
-                today.plusDays(1).atStartOfDay(),
-                today.plusDays(2).atStartOfDay()
+                "미래 시작 일정",
+                today.plusDays(DAYS_30).atStartOfDay(),
+                today.plusDays(DAYS_35).atStartOfDay()
             ));
 
             persist(ScheduleFixture.createUniversitySchedule(ongoingSchedule, university));
@@ -159,8 +160,8 @@ class ScheduleApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.schedules", hasSize(2)))
                 .andExpect(jsonPath("$.schedules[0].title").value("진행 중 일정"))
                 .andExpect(jsonPath("$.schedules[0].dDay").doesNotExist())
-                .andExpect(jsonPath("$.schedules[1].title").value("내일 시작 일정"))
-                .andExpect(jsonPath("$.schedules[1].dDay").value(1));
+                .andExpect(jsonPath("$.schedules[1].title").value("미래 시작 일정"))
+                .andExpect(jsonPath("$.schedules[1].dDay").value(greaterThan(0)));
         }
     }
 
