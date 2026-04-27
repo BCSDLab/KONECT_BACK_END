@@ -29,22 +29,27 @@ public class ClubSheetRegistrationService {
         SheetHeaderMapper.SheetAnalysisResult result
     ) {
         Club club = clubRepository.getById(clubId);
-        applySheetRegistration(club, spreadsheetId, result);
+        applySheetRegistration(club, clubId, spreadsheetId, result);
         clubRepository.save(club);
     }
 
     private void applySheetRegistration(
         Club club,
+        Integer clubId,
         String spreadsheetId,
         SheetHeaderMapper.SheetAnalysisResult result
     ) {
-        String mappingJson = serializeMemberListMapping(result);
+        String mappingJson = serializeMemberListMapping(clubId, spreadsheetId, result);
 
         club.updateGoogleSheetId(spreadsheetId);
         club.updateSheetColumnMapping(mappingJson);
     }
 
-    private String serializeMemberListMapping(SheetHeaderMapper.SheetAnalysisResult result) {
+    private String serializeMemberListMapping(
+        Integer clubId,
+        String spreadsheetId,
+        SheetHeaderMapper.SheetAnalysisResult result
+    ) {
         SheetColumnMapping memberListMapping = result.memberListMapping();
         if (memberListMapping == null) {
             throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
@@ -53,7 +58,12 @@ public class ClubSheetRegistrationService {
         try {
             return objectMapper.writeValueAsString(memberListMapping.toMap());
         } catch (JsonProcessingException e) {
-            log.warn("Failed to serialize sheet column mapping.", e);
+            log.warn(
+                "Failed to serialize sheet column mapping. clubId={}, spreadsheetId={}",
+                clubId,
+                spreadsheetId,
+                e
+            );
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }

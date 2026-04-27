@@ -47,6 +47,7 @@ public class ClubMemberSheetService {
         String spreadsheetId,
         SheetHeaderMapper.SheetAnalysisResult result
     ) {
+        validateClubExists(clubId);
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
         clubSheetRegistrationService.updateSheetRegistration(clubId, spreadsheetId, result);
     }
