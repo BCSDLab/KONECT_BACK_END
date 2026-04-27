@@ -32,8 +32,8 @@ public class ClubMemberSheetService {
         Integer requesterId,
         ClubSheetIdUpdateRequest request
     ) {
-        String spreadsheetId = SpreadsheetUrlParser.extractId(request.spreadsheetUrl());
         validateClubExists(clubId);
+        String spreadsheetId = SpreadsheetUrlParser.extractId(request.spreadsheetUrl());
         clubPermissionValidator.validateManagerAccess(clubId, requesterId);
 
         SheetHeaderMapper.SheetAnalysisResult result =

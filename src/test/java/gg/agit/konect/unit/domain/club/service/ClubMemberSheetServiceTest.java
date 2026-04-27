@@ -121,7 +121,7 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         // given
         Integer clubId = 1;
         Integer requesterId = 2;
-        String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/test-sheet-id/edit";
+        String spreadsheetUrl = "invalid-sheet-url";
         ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
 
         given(clubRepository.existsById(clubId)).willReturn(false);
