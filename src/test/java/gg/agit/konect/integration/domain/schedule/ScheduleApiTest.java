@@ -1,6 +1,5 @@
 package gg.agit.konect.integration.domain.schedule;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -163,7 +162,7 @@ class ScheduleApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.schedules[0].title").value("진행 중 일정"))
                 .andExpect(jsonPath("$.schedules[0].dDay").value(nullValue()))
                 .andExpect(jsonPath("$.schedules[1].title").value("미래 시작 일정"))
-                .andExpect(jsonPath("$.schedules[1].dDay").value(greaterThan(0)));
+                .andExpect(jsonPath("$.schedules[1].dDay").value(DAYS_30));
         }
     }
 
