@@ -47,13 +47,14 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
-import gg.agit.konect.domain.chat.repository.ChatMessageQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
+import gg.agit.konect.domain.chat.service.ChatRoomSummaryService;
+import gg.agit.konect.domain.chat.service.ChatSearchService;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -97,9 +98,6 @@ class ChatServiceTest extends ServiceTestSupport {
     private ChatInviteQueryRepository chatInviteQueryRepository;
 
     @Mock
-    private ChatMessageQueryRepository chatMessageQueryRepository;
-
-    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -107,6 +105,12 @@ class ChatServiceTest extends ServiceTestSupport {
 
     @Mock
     private ChatRoomMembershipService chatRoomMembershipService;
+
+    @Mock
+    private ChatRoomSummaryService chatRoomSummaryService;
+
+    @Mock
+    private ChatSearchService chatSearchService;
 
     @Mock
     private NotificationService notificationService;
