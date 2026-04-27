@@ -69,13 +69,10 @@ public class ChatRoomQueryRepository {
             .where(
                 chatRoom.roomType.eq(roomType),
                 nonAdminUser.role.ne(adminRole),
+                nonAdminUser.deletedAt.isNull(),
                 // 관리자는 문의방 멤버가 아니거나 나갔어도 새 메시지가 있으면 목록에서 다시 볼 수 있다.
                 viewerAdminMember.leftAt.isNull()
-                    .or(viewerAdminMember.id.userId.isNull())
-                    .or(
-                        viewerAdminMember.leftAt.isNotNull()
-                            .and(chatRoom.lastMessageSentAt.gt(viewerAdminMember.visibleMessageFrom))
-                    ),
+                    .or(chatRoom.lastMessageSentAt.gt(viewerAdminMember.visibleMessageFrom)),
                 JPAExpressions
                     .selectOne()
                     .from(userReply)
