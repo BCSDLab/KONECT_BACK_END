@@ -65,9 +65,13 @@ public class ChatMessagePageResolver {
         if (room.isDirectRoom()) {
             Optional<ChatRoomMember> member = chatRoomMemberRepository
                 .findByChatRoomIdAndUserId(room.getId(), user.getId());
+            if (member.isPresent()) {
+                return new AccessContext(member, false);
+            }
+
             boolean isAdminViewingSystemRoom = user.isAdmin()
                 && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
-            if (member.isEmpty() && !isAdminViewingSystemRoom) {
+            if (!isAdminViewingSystemRoom) {
                 throw CustomException.of(NOT_FOUND_CHAT_ROOM);
             }
             return new AccessContext(member, isAdminViewingSystemRoom);

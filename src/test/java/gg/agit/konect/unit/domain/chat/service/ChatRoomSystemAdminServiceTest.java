@@ -33,8 +33,7 @@ class ChatRoomSystemAdminServiceTest extends ServiceTestSupport {
     @Test
     @DisplayName("isSystemAdminRoom은 SYSTEM_ADMIN 멤버가 있으면 true를 반환한다")
     void isSystemAdminRoomReturnsTrueWhenSystemAdminMemberExists() {
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(1)))
-            .willReturn(List.<Object[]>of(new Object[] {1, SYSTEM_ADMIN_ID, LocalDateTime.now()}));
+        given(chatRoomMemberRepository.existsByChatRoomIdAndUserId(1, SYSTEM_ADMIN_ID)).willReturn(true);
 
         boolean result = chatRoomSystemAdminService.isSystemAdminRoom(1);
 

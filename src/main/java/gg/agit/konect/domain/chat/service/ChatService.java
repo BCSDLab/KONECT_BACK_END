@@ -1149,13 +1149,7 @@ public class ChatService {
 
     private ChatRoomMember getOrCreateDirectRoomMember(ChatRoom chatRoom, User user) {
         return chatRoomMemberRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
-            .orElseGet(() -> {
-                // 어드민은 SYSTEM_ADMIN 방에 멤버로 추가되지 않음
-                if (user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(chatRoom.getId())) {
-                    throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-                }
-                throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-            });
+            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
     }
 
     private ChatRoomMember getAccessibleDirectRoomMember(ChatRoom chatRoom, User user) {
