@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -28,21 +27,12 @@ public class ClubSheetRegistrationService {
         String spreadsheetId,
         SheetHeaderMapper.SheetAnalysisResult result
     ) {
-        Club club = clubRepository.getById(clubId);
-        applySheetRegistration(club, clubId, spreadsheetId, result);
-        clubRepository.save(club);
-    }
-
-    private void applySheetRegistration(
-        Club club,
-        Integer clubId,
-        String spreadsheetId,
-        SheetHeaderMapper.SheetAnalysisResult result
-    ) {
         String mappingJson = serializeMemberListMapping(clubId, spreadsheetId, result);
 
-        club.updateGoogleSheetId(spreadsheetId);
-        club.updateSheetColumnMapping(mappingJson);
+        int updatedCount = clubRepository.updateSheetRegistration(clubId, spreadsheetId, mappingJson);
+        if (updatedCount == 0) {
+            throw CustomException.of(ApiResponseCode.NOT_FOUND_CLUB);
+        }
     }
 
     private String serializeMemberListMapping(
