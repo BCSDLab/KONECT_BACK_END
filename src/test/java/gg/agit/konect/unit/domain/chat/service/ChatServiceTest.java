@@ -124,16 +124,13 @@ class ChatServiceTest extends ServiceTestSupport {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    private ChatMessagePageResolver chatMessagePageResolver;
-
-    private ChatDirectRoomAccessService chatDirectRoomAccessService;
-
     private ChatService chatService;
 
     @BeforeEach
     void setUp() {
-        chatDirectRoomAccessService = new ChatDirectRoomAccessService(chatRoomMemberRepository);
-        chatMessagePageResolver = new ChatMessagePageResolver(
+        ChatDirectRoomAccessService chatDirectRoomAccessService =
+            new ChatDirectRoomAccessService(chatRoomMemberRepository);
+        ChatMessagePageResolver chatMessagePageResolver = new ChatMessagePageResolver(
             chatMessageRepository,
             chatRoomMemberRepository,
             clubMemberRepository,

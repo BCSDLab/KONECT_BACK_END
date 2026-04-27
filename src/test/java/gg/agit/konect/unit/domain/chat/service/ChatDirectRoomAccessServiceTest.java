@@ -60,9 +60,9 @@ class ChatDirectRoomAccessServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId()))
             .willReturn(Optional.of(member));
 
-        ChatRoomMember result = chatDirectRoomAccessService.getAccessibleMember(room, user);
+        chatDirectRoomAccessService.getAccessibleMember(room, user);
 
-        assertThat(result.hasLeft()).isFalse();
+        assertThat(member.hasLeft()).isFalse();
     }
 
     @Test
