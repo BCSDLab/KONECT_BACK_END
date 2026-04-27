@@ -4,7 +4,7 @@ import static gg.agit.konect.domain.chat.model.QChatMessage.chatMessage;
 import static gg.agit.konect.domain.chat.model.QChatRoom.chatRoom;
 
 import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
 
 import org.springframework.stereotype.Repository;
 
@@ -27,6 +27,8 @@ public class ChatMessageQueryRepository {
         List<Integer> roomIds,
         String keyword
     ) {
+        Objects.requireNonNull(keyword, "keyword must not be null");
+
         if (roomIds.isEmpty()) {
             return List.of();
         }
@@ -55,8 +57,8 @@ public class ChatMessageQueryRepository {
 
     private BooleanExpression containsKeyword(QChatMessage message, String keyword) {
         return Expressions.booleanTemplate(
-            "LOCATE({0}, LOWER({1})) > 0",
-            keyword.toLowerCase(Locale.ROOT),
+            "LOCATE(LOWER({0}), LOWER({1})) > 0",
+            keyword,
             message.content
         );
     }
