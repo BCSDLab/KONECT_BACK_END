@@ -53,7 +53,7 @@ public class ClubSheetRegistrationService {
         try {
             return objectMapper.writeValueAsString(memberListMapping.toMap());
         } catch (JsonProcessingException e) {
-            log.warn("Failed to serialize sheet column mapping. cause={}", e.getMessage());
+            log.warn("Failed to serialize sheet column mapping.", e);
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
