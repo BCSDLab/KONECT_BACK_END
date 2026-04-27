@@ -335,12 +335,12 @@ public class ChatService {
         return ChatInvitableUsersResponse.forClubSort(pagedInvitableUsers, sections);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatMessagePageResponse getMessages(Integer userId, Integer roomId, Integer page, Integer limit) {
         return getMessages(userId, roomId, page, limit, null);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatMessagePageResponse getMessages(
         Integer userId, Integer roomId, Integer page, Integer limit, Integer messageId
     ) {

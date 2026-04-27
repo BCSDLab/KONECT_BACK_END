@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class ChatDirectRoomAccessService {
 
     private final ChatRoomMemberRepository chatRoomMemberRepository;
