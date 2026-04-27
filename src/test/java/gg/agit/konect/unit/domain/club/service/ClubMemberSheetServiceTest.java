@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import gg.agit.konect.domain.club.service.ClubPermissionValidator;
 import gg.agit.konect.domain.club.service.ClubSheetRegistrationService;
 import gg.agit.konect.domain.club.service.SheetHeaderMapper;
 import gg.agit.konect.domain.club.service.SheetSyncExecutor;
+import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
@@ -111,6 +113,26 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
         verify(sheetHeaderMapper).analyzeAllSheets("test-sheet-id");
         verify(clubSheetRegistrationService).updateSheetRegistration(clubId, "test-sheet-id", analysisResult);
+    }
+
+    @Test
+    @DisplayName("updateSheetId는 동아리가 없으면 외부 분석을 호출하지 않는다")
+    void updateSheetIdThrowsNotFoundClubBeforeSheetAnalysis() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 2;
+        String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/test-sheet-id/edit";
+        ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
+
+        given(clubRepository.existsById(clubId)).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> clubMemberSheetService.updateSheetId(clubId, requesterId, request))
+            .isInstanceOf(CustomException.class)
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(
+                ApiResponseCode.NOT_FOUND_CLUB));
+
+        verifyNoInteractions(clubPermissionValidator, sheetHeaderMapper, clubSheetRegistrationService);
     }
 
     @Test

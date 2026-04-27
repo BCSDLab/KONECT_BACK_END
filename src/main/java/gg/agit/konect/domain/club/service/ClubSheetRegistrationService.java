@@ -7,7 +7,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,16 +38,23 @@ public class ClubSheetRegistrationService {
         String spreadsheetId,
         SheetHeaderMapper.SheetAnalysisResult result
     ) {
-        String mappingJson = null;
-        try {
-            mappingJson = objectMapper.writeValueAsString(result.memberListMapping().toMap());
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to serialize mapping, skipping. cause={}", e.getMessage());
-        }
+        String mappingJson = serializeMemberListMapping(result);
 
         club.updateGoogleSheetId(spreadsheetId);
-        if (mappingJson != null) {
-            club.updateSheetColumnMapping(mappingJson);
+        club.updateSheetColumnMapping(mappingJson);
+    }
+
+    private String serializeMemberListMapping(SheetHeaderMapper.SheetAnalysisResult result) {
+        SheetColumnMapping memberListMapping = result.memberListMapping();
+        if (memberListMapping == null) {
+            throw CustomException.of(ApiResponseCode.CLUB_SHEET_ANALYSIS_REQUIRED);
+        }
+
+        try {
+            return objectMapper.writeValueAsString(memberListMapping.toMap());
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize sheet column mapping. cause={}", e.getMessage());
+            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
     }
 }
