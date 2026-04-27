@@ -3,28 +3,30 @@ package gg.agit.konect.unit.domain.club.service;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CLUB_SHEET_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gg.agit.konect.domain.club.dto.ClubMemberSheetSyncResponse;
 import gg.agit.konect.domain.club.dto.ClubSheetIdUpdateRequest;
 import gg.agit.konect.domain.club.enums.ClubSheetSortKey;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.SheetColumnMapping;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubPreMemberRepository;
 import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.club.service.ClubMemberSheetService;
 import gg.agit.konect.domain.club.service.ClubPermissionValidator;
+import gg.agit.konect.domain.club.service.ClubSheetRegistrationService;
 import gg.agit.konect.domain.club.service.SheetHeaderMapper;
 import gg.agit.konect.domain.club.service.SheetSyncExecutor;
+import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
@@ -51,13 +53,13 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
     private SheetHeaderMapper sheetHeaderMapper;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private ClubSheetRegistrationService clubSheetRegistrationService;
 
     @InjectMocks
     private ClubMemberSheetService clubMemberSheetService;
 
     @Test
-    @DisplayName("시트 동기화 수에 사전 회원도 포함한다")
+    @DisplayName("시트 동기화 응답에 사전 회원 수를 포함한다")
     void syncMembersToSheetIncludesPreMembersInCount() {
         // given
         Integer clubId = 1;
@@ -87,24 +89,22 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("updateSheetId는 정상 동작한다")
-    void updateSheetIdWorksNormally() throws JsonProcessingException {
+    @DisplayName("시트 ID를 분석한 뒤 등록 서비스에 위임한다")
+    void updateSheetIdWorksNormally() {
         // given
         Integer clubId = 1;
         Integer requesterId = 2;
         String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/test-sheet-id/edit";
-        Club club = ClubFixture.create(UniversityFixture.create());
         ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
-        gg.agit.konect.domain.club.model.SheetColumnMapping mapping = gg.agit.konect.domain.club.model.SheetColumnMapping.defaultMapping();
+        SheetColumnMapping mapping = SheetColumnMapping.defaultMapping();
         SheetHeaderMapper.SheetAnalysisResult analysisResult = new SheetHeaderMapper.SheetAnalysisResult(
             mapping,
             null,
             null
         );
 
-        given(clubRepository.getById(clubId)).willReturn(club);
+        given(clubRepository.existsById(clubId)).willReturn(true);
         given(sheetHeaderMapper.analyzeAllSheets("test-sheet-id")).willReturn(analysisResult);
-        given(objectMapper.writeValueAsString(analysisResult.memberListMapping().toMap())).willReturn("{}");
 
         // when
         clubMemberSheetService.updateSheetId(clubId, requesterId, request);
@@ -112,12 +112,31 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
         // then
         verify(clubPermissionValidator).validateManagerAccess(clubId, requesterId);
         verify(sheetHeaderMapper).analyzeAllSheets("test-sheet-id");
-        assertThat(club.getGoogleSheetId()).isEqualTo("test-sheet-id");
-        assertThat(club.getSheetColumnMapping()).isEqualTo("{}");
+        verify(clubSheetRegistrationService).updateSheetRegistration(clubId, "test-sheet-id", analysisResult);
     }
 
     @Test
-    @DisplayName("syncMembersToSheet는 sheetId가 null인 경우 NOT_FOUND_CLUB_SHEET_ID 예외를 던진다")
+    @DisplayName("updateSheetId는 동아리가 없으면 외부 분석을 호출하지 않는다")
+    void updateSheetIdThrowsNotFoundClubBeforeSheetAnalysis() {
+        // given
+        Integer clubId = 1;
+        Integer requesterId = 2;
+        String spreadsheetUrl = "invalid-sheet-url";
+        ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
+
+        given(clubRepository.existsById(clubId)).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> clubMemberSheetService.updateSheetId(clubId, requesterId, request))
+            .isInstanceOf(CustomException.class)
+            .satisfies(exception -> assertThat(((CustomException)exception).getErrorCode()).isEqualTo(
+                ApiResponseCode.NOT_FOUND_CLUB));
+
+        verifyNoInteractions(clubPermissionValidator, sheetHeaderMapper, clubSheetRegistrationService);
+    }
+
+    @Test
+    @DisplayName("syncMembersToSheet는 sheetId가 null이면 예외를 던진다")
     void syncMembersToSheetThrowsNotFoundClubSheetIdWhenSheetIdIsNull() {
         // given
         Integer clubId = 1;
@@ -139,7 +158,7 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("syncMembersToSheet는 sheetId가 blank인 경우 NOT_FOUND_CLUB_SHEET_ID 예외를 던진다")
+    @DisplayName("syncMembersToSheet는 sheetId가 blank이면 예외를 던진다")
     void syncMembersToSheetThrowsNotFoundClubSheetIdWhenSheetIdIsBlank() {
         // given
         Integer clubId = 1;
@@ -162,7 +181,7 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("syncMembersToSheet는 빈 동아리(멤버 0명)에 대해 정상 동작한다")
+    @DisplayName("syncMembersToSheet는 빈 동아리도 정상 처리한다")
     void syncMembersToSheetHandlesEmptyClub() {
         // given
         Integer clubId = 1;
@@ -192,13 +211,12 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("updateSheetId는 null memberListMapping 분석 결과 시 NullPointerException이 발생한다")
-    void updateSheetIdThrowsNpeWhenMemberListMappingIsNull() throws JsonProcessingException {
+    @DisplayName("updateSheetId는 null memberListMapping 분석 결과를 등록 서비스로 전달한다")
+    void updateSheetIdDelegatesNullMemberListMapping() {
         // given
         Integer clubId = 1;
         Integer requesterId = 2;
         String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/test-sheet-id/edit";
-        Club club = ClubFixture.create(UniversityFixture.create());
         ClubSheetIdUpdateRequest request = new ClubSheetIdUpdateRequest(spreadsheetUrl);
         SheetHeaderMapper.SheetAnalysisResult analysisResult = new SheetHeaderMapper.SheetAnalysisResult(
             null,
@@ -206,11 +224,17 @@ class ClubMemberSheetServiceTest extends ServiceTestSupport {
             null
         );
 
-        given(clubRepository.getById(clubId)).willReturn(club);
+        given(clubRepository.existsById(clubId)).willReturn(true);
         given(sheetHeaderMapper.analyzeAllSheets("test-sheet-id")).willReturn(analysisResult);
 
-        // when & then
-        assertThatThrownBy(() -> clubMemberSheetService.updateSheetId(clubId, requesterId, request))
-            .isInstanceOf(NullPointerException.class);
+        // when
+        clubMemberSheetService.updateSheetId(clubId, requesterId, request);
+
+        // then
+        verify(clubSheetRegistrationService).updateSheetRegistration(
+            eq(clubId),
+            eq("test-sheet-id"),
+            eq(analysisResult)
+        );
     }
 }
