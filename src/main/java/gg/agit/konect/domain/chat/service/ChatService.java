@@ -667,12 +667,8 @@ public class ChatService {
         boolean isAdminSendingToSystemAdminRoom = sender.isAdmin()
             && chatRoomSystemAdminService.isSystemAdminRoom(chatRoom.getId());
 
-        ChatRoomMember senderMember = null;
-        boolean senderHadLeft = false;
-
         if (!isAdminSendingToSystemAdminRoom) {
-            senderMember = chatDirectRoomAccessService.getAccessibleMember(chatRoom, sender);
-            senderHadLeft = senderMember.hasLeft();
+            chatDirectRoomAccessService.getAccessibleMember(chatRoom, sender);
         }
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
@@ -681,10 +677,6 @@ public class ChatService {
         ChatMessage chatMessage = chatMessageRepository.save(
             ChatMessage.of(chatRoom, sender, request.content())
         );
-
-        if (senderHadLeft && senderMember != null) {
-            senderMember.restoreDirectRoom();
-        }
 
         syncLastMessage(chatRoom, chatMessage);
         members.stream()
