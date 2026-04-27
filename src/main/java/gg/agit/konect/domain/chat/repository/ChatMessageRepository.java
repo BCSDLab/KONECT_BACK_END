@@ -109,19 +109,6 @@ public interface ChatMessageRepository extends Repository<ChatMessage, Integer> 
         @Param("adminRole") UserRole adminRole
     );
 
-    @Query("""
-        SELECT m
-        FROM ChatMessage m
-        JOIN FETCH m.sender
-        WHERE m.id IN (
-            SELECT MAX(m2.id)
-            FROM ChatMessage m2
-            WHERE m2.chatRoom.id IN :roomIds
-            GROUP BY m2.chatRoom.id
-        )
-        """)
-    List<ChatMessage> findLatestMessagesByRoomIds(@Param("roomIds") List<Integer> roomIds);
-
     @Query("SELECT cm FROM ChatMessage cm JOIN FETCH cm.chatRoom WHERE cm.id = :messageId")
     Optional<ChatMessage> findByIdWithChatRoom(@Param("messageId") Integer messageId);
 
