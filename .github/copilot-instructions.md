@@ -22,7 +22,7 @@
 
 - 이 저장소의 기존 Spring Boot, JPA, QueryDSL, Bean Validation, 예외 처리, 테스트 패턴을 우선 따른다.
 - 요청 범위를 벗어난 추상화, 확장 포인트, 방어 코드, unrelated cleanup을 제안하지 않는다.
-- Java 코드에서 import로 해결할 수 있는 경우 FCQN(Full Qualified Class Name)을 사용하지 않도록 지적한다.
+- Java 코드에서 import로 해결할 수 있는 경우 FQCN(Full Qualified Class Name)을 사용하지 않도록 지적한다.
 - 기존 스타일과 일치하지 않는 코드가 실제 유지보수 위험을 만들 때만 지적한다. 단순히 다른 스타일도 가능하다는 이유로 코멘트를 남기지 않는다.
 - 도메인별 `AGENTS.md`가 있는 경로를 수정하는 PR에서는 해당 문서의 정책, 역할, 생명주기, 불변식과 구현이 어긋나지 않는지 확인한다.
 - 변경 범위 밖의 오래된 죽은 코드, 이름 변경, 포맷 정리는 현재 PR의 버그나 회귀와 직접 연결될 때만 언급한다.
