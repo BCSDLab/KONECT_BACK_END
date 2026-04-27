@@ -49,6 +49,7 @@ import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.repository.RoomUnreadCountProjection;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -75,6 +76,7 @@ public class ChatService {
     private static final String DEFAULT_GROUP_ROOM_NAME = "그룹 채팅";
 
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomQueryRepository chatRoomQueryRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
@@ -550,7 +552,7 @@ public class ChatService {
     }
 
     private List<ChatRoomSummaryResponse> getAdminDirectChatRooms(Integer adminUserId) {
-        List<AdminChatRoomProjection> projections = chatRoomRepository.findAdminChatRoomsOptimized(
+        List<AdminChatRoomProjection> projections = chatRoomQueryRepository.findAdminChatRoomsOptimized(
             SYSTEM_ADMIN_ID, adminUserId, UserRole.ADMIN, ChatType.DIRECT
         );
 
