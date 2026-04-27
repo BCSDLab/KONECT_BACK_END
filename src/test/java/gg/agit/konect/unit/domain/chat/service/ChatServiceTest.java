@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
@@ -55,6 +55,7 @@ import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.chat.service.ChatRoomSummaryService;
 import gg.agit.konect.domain.chat.service.ChatSearchService;
+import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -118,8 +119,35 @@ class ChatServiceTest extends ServiceTestSupport {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks
+    private ChatMessagePageResolver chatMessagePageResolver;
+
     private ChatService chatService;
+
+    @BeforeEach
+    void setUp() {
+        chatMessagePageResolver = new ChatMessagePageResolver(
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            clubMemberRepository
+        );
+        chatService = new ChatService(
+            chatRoomRepository,
+            chatRoomQueryRepository,
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            notificationMuteSettingRepository,
+            clubMemberRepository,
+            chatInviteQueryRepository,
+            userRepository,
+            chatPresenceService,
+            chatRoomMembershipService,
+            chatRoomSummaryService,
+            chatSearchService,
+            chatMessagePageResolver,
+            notificationService,
+            eventPublisher
+        );
+    }
 
     @Test
     @DisplayName("createOrGetChatRoom은 자기 자신과의 direct room 생성을 거부한다")

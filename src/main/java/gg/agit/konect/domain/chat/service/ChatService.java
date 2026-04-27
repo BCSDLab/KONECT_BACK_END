@@ -82,6 +82,7 @@ public class ChatService {
     private final ChatRoomMembershipService chatRoomMembershipService;
     private final ChatRoomSummaryService chatRoomSummaryService;
     private final ChatSearchService chatSearchService;
+    private final ChatMessagePageResolver chatMessagePageResolver;
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -346,8 +347,7 @@ public class ChatService {
         User user = userRepository.getById(userId);
 
         if (messageId != null) {
-            ensureMessageLookupAccess(room, user, userId);
-            page = resolvePageForMessage(roomId, messageId, room, user, limit);
+            page = chatMessagePageResolver.resolvePageForMessage(roomId, messageId, room, user, limit);
         }
 
         LocalDateTime readAt = LocalDateTime.now();
@@ -1198,85 +1198,6 @@ public class ChatService {
             .toList();
 
         return userIds.contains(SYSTEM_ADMIN_ID);
-    }
-
-    /**
-     * messageId 조회 전 방 접근 권한을 검증한다.
-     * 권한 없음과 메시지 미존재를 구분할 수 없게 NOT_FOUND_CHAT_ROOM으로 통일하여
-     * 메시지 존재 여부 오라클을 방지한다.
-     */
-    private void ensureMessageLookupAccess(ChatRoom room, User user, Integer userId) {
-        if (room.isDirectRoom()) {
-            boolean isMember = chatRoomMemberRepository
-                .findByChatRoomIdAndUserId(room.getId(), userId)
-                .isPresent();
-            if (!isMember && !(user.isAdmin() && isSystemAdminRoom(room))) {
-                throw CustomException.of(NOT_FOUND_CHAT_ROOM);
-            }
-        } else if (room.isClubGroupRoom()) {
-            try {
-                clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
-            } catch (CustomException e) {
-                // 동아리 멤버십 없음만 404로 변환, 다른 예외는 그대로 전파
-                if (e.getErrorCode() == NOT_FOUND_CLUB_MEMBER) {
-                    throw CustomException.of(NOT_FOUND_CHAT_ROOM);
-                }
-                throw e;
-            }
-        } else {
-            chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), userId)
-                .filter(member -> !member.hasLeft())
-                .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-        }
-    }
-
-    /**
-     * messageId가 가리키는 메시지가 포함된 페이지 번호를 계산한다.
-     * 가시성 검증 및 정보 누출 방지를 위해 동일한 에러 코드를 사용한다.
-     */
-    private int resolvePageForMessage(
-        Integer roomId, Integer messageId, ChatRoom room, User user, int limit
-    ) {
-        ChatMessage targetMessage = chatMessageRepository.findByIdWithChatRoom(messageId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-
-        // 정보 누출 방지를 위해 동일한 에러 코드 사용
-        if (!targetMessage.getChatRoom().getId().equals(roomId)) {
-            throw CustomException.of(NOT_FOUND_CHAT_ROOM);
-        }
-
-        LocalDateTime visibleMessageFrom = resolveVisibleMessageFromPure(room, user);
-
-        if (visibleMessageFrom != null && !targetMessage.getCreatedAt().isAfter(visibleMessageFrom)) {
-            throw CustomException.of(NOT_FOUND_CHAT_ROOM);
-        }
-
-        // NOTE: count와 fetch 사이에 새 메시지가 삽입될 수 있으나,
-        // 호출부(getMessages)에서 응답에 타겟 메시지가 없으면 1회 재계산함
-        long newerCount = chatMessageRepository.countNewerMessagesByChatRoomId(
-            roomId, messageId, targetMessage.getCreatedAt(), visibleMessageFrom
-        );
-        return (int)(newerCount / limit) + 1;
-    }
-
-    /**
-     * 채팅방 타입에 따른 메시지 가시성 기준 시간을 조회한다.
-     * 기존 getMessages() 흐름의 가시성 로직과 동일한 값을 반환하되,
-     * 방 복원 등 부수효과는 발생시키지 않는다.
-     */
-    private LocalDateTime resolveVisibleMessageFromPure(ChatRoom room, User user) {
-        if (!room.isDirectRoom()) {
-            return null;
-        }
-
-        if (user.isAdmin() && isSystemAdminRoom(room)) {
-            List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(room.getId());
-            return resolveAdminSystemRoomVisibleMessageFrom(members);
-        }
-
-        return chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
-            .map(ChatRoomMember::getVisibleMessageFrom)
-            .orElse(null);
     }
 
     private boolean shouldDisplayAsOwnMessage(
