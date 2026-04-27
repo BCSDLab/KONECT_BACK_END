@@ -1,7 +1,8 @@
 package gg.agit.konect.integration.domain.schedule;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.LinkedMultiValueMap;
 
 import gg.agit.konect.domain.schedule.model.Schedule;
 import gg.agit.konect.domain.university.model.University;
@@ -159,7 +161,7 @@ class ScheduleApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.schedules", hasSize(2)))
                 .andExpect(jsonPath("$.schedules[0].title").value("진행 중 일정"))
-                .andExpect(jsonPath("$.schedules[0].dDay").doesNotExist())
+                .andExpect(jsonPath("$.schedules[0].dDay").value(nullValue()))
                 .andExpect(jsonPath("$.schedules[1].title").value("미래 시작 일정"))
                 .andExpect(jsonPath("$.schedules[1].dDay").value(greaterThan(0)));
         }
@@ -245,9 +247,13 @@ class ScheduleApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             mockLoginUser(user.getId());
+            LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("year", String.valueOf(TEST_YEAR));
+            params.add("month", String.valueOf(MARCH));
+            params.add("query", "  exam  ");
 
             // when & then
-            performGet("/schedules?year=" + TEST_YEAR + "&month=" + MARCH + "&query=  exam  ")
+            performGet("/schedules", params)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.schedules", hasSize(1)))
                 .andExpect(jsonPath("$.schedules[0].title").value("Final EXAM"));
