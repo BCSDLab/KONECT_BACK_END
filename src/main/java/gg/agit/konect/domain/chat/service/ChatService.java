@@ -46,6 +46,7 @@ import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
 import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
+import gg.agit.konect.domain.chat.repository.ChatMessageQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
@@ -79,6 +80,7 @@ public class ChatService {
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ChatInviteQueryRepository chatInviteQueryRepository;
+    private final ChatMessageQueryRepository chatMessageQueryRepository;
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final ChatRoomMembershipService chatRoomMembershipService;
@@ -1016,7 +1018,7 @@ public class ChatService {
             .toList();
         Map<Integer, LocalDateTime> visibleMessageFromMap = getVisibleMessageFromMap(directRoomIds, userId);
 
-        List<ChatMessageMatchResult> matchedMessages = chatMessageRepository
+        List<ChatMessageMatchResult> matchedMessages = chatMessageQueryRepository
             .searchLatestMatchingMessagesByChatRoomIds(roomIds, keyword)
             .stream()
             .filter(message -> isVisibleMessageMatch(message, roomMap, visibleMessageFromMap))
