@@ -82,6 +82,7 @@ public class ChatService {
     private final ChatRoomMembershipService chatRoomMembershipService;
     private final ChatRoomSummaryService chatRoomSummaryService;
     private final ChatSearchService chatSearchService;
+    private final ChatMessageReadService chatMessageReadService;
     private final ChatMessagePageResolver chatMessagePageResolver;
     private final ChatRoomSystemAdminService chatRoomSystemAdminService;
     private final ChatDirectRoomAccessService chatDirectRoomAccessService;
@@ -360,25 +361,25 @@ public class ChatService {
             if (isAdminViewingSystemRoom) {
                 chatRoomMembershipService.updateLastReadAt(roomId, SYSTEM_ADMIN_ID, readAt);
                 recordPresenceSafely(roomId, userId);
-                return getAdminSystemDirectChatRoomMessages(user, room, roomId, page, limit, readAt);
+                return chatMessageReadService.getAdminSystemDirectChatRoomMessages(user, room, page, limit, readAt);
             }
 
             chatRoomMembershipService.updateDirectRoomLastReadAt(roomId, user, readAt, room);
             recordPresenceSafely(roomId, userId);
-            return getDirectChatRoomMessages(userId, roomId, page, limit, readAt);
+            return chatMessageReadService.getDirectChatRoomMessages(user, room, page, limit, readAt);
         }
 
         if (room.isClubGroupRoom()) {
             chatRoomMembershipService.ensureClubRoomMember(roomId, userId);
             chatRoomMembershipService.updateLastReadAt(roomId, userId, readAt);
             recordPresenceSafely(roomId, userId);
-            return getClubMessagesByRoomId(roomId, userId, page, limit);
+            return chatMessageReadService.getClubMessagesByRoom(room, userId, page, limit);
         }
 
         getAccessibleRoomMember(room, userId);
         chatRoomMembershipService.updateLastReadAt(roomId, userId, readAt);
         recordPresenceSafely(roomId, userId);
-        return getGroupMessagesByRoomId(roomId, userId, page, limit);
+        return chatMessageReadService.getGroupMessagesByRoom(roomId, userId, page, limit);
     }
 
     @Transactional
@@ -572,89 +573,6 @@ public class ChatService {
             .toList();
     }
 
-    private ChatMessagePageResponse buildDirectChatRoomMessages(
-        User user,
-        Integer roomId,
-        Integer page,
-        Integer limit,
-        LocalDateTime readAt,
-        LocalDateTime visibleMessageFrom,
-        List<LocalDateTime> sortedReadBaselines,
-        Integer maskedAdminId
-    ) {
-        PageRequest pageable = PageRequest.of(page - 1, limit);
-        Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, visibleMessageFrom, pageable);
-
-        List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
-            .map(message -> {
-                Integer senderId = maskedAdminId != null
-                    ? resolveDirectSenderId(message, maskedAdminId)
-                    : message.getSender().getId();
-                boolean isMine = maskedAdminId != null
-                    ? shouldDisplayAsOwnMessage(user, message, true)
-                    : message.isSentBy(user.getId());
-                boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
-                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
-                return new ChatMessageDetailResponse(
-                    message.getId(),
-                    senderId,
-                    null,
-                    message.getContent(),
-                    message.getCreatedAt(),
-                    isRead,
-                    unreadCount,
-                    isMine
-                );
-            })
-            .toList();
-
-        return new ChatMessagePageResponse(
-            messages.getTotalElements(),
-            messages.getNumberOfElements(),
-            messages.getTotalPages(),
-            messages.getNumber() + 1,
-            null,
-            responseMessages
-        );
-    }
-
-    private ChatMessagePageResponse getDirectChatRoomMessages(
-        Integer userId,
-        Integer roomId,
-        Integer page,
-        Integer limit,
-        LocalDateTime readAt
-    ) {
-        ChatRoom chatRoom = getDirectRoom(roomId);
-        User user = userRepository.getById(userId);
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        LocalDateTime visibleMessageFrom =
-            chatDirectRoomAccessService.prepareAccessAndGetVisibleMessageFrom(chatRoom, user);
-
-        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
-
-        return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
-            visibleMessageFrom, sortedReadBaselines, null);
-    }
-
-    private ChatMessagePageResponse getAdminSystemDirectChatRoomMessages(
-        User user,
-        ChatRoom chatRoom,
-        Integer roomId,
-        Integer page,
-        Integer limit,
-        LocalDateTime readAt
-    ) {
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        LocalDateTime visibleMessageFrom = resolveAdminSystemRoomVisibleMessageFrom(members);
-
-        List<LocalDateTime> sortedReadBaselines = toAdminChatReadBaselines(members);
-        Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
-
-        return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
-            visibleMessageFrom, sortedReadBaselines, maskedAdminId);
-    }
-
     private ChatMessageDetailResponse sendDirectMessage(
         Integer userId,
         Integer roomId,
@@ -710,48 +628,6 @@ public class ChatService {
         );
     }
 
-    private ChatMessagePageResponse getClubMessagesByRoomId(
-        Integer roomId,
-        Integer userId,
-        Integer page,
-        Integer limit
-    ) {
-        ChatRoom room = getClubRoom(roomId);
-
-        PageRequest pageable = PageRequest.of(page - 1, limit);
-        long totalCount = chatMessageRepository.countByChatRoomId(roomId, null);
-        Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomId(roomId, null, pageable);
-        List<ChatMessage> messages = messagePage.getContent();
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
-
-        List<ChatMessageDetailResponse> responseMessages = messages.stream()
-            .map(message -> {
-                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
-                return new ChatMessageDetailResponse(
-                    message.getId(),
-                    message.getSender().getId(),
-                    message.getSender().getName(),
-                    message.getContent(),
-                    message.getCreatedAt(),
-                    null,
-                    unreadCount,
-                    message.isSentBy(userId)
-                );
-            })
-            .toList();
-
-        int totalPage = limit > 0 ? (int)Math.ceil((double)totalCount / (double)limit) : 0;
-        return new ChatMessagePageResponse(
-            totalCount,
-            responseMessages.size(),
-            totalPage,
-            page,
-            room.getClub().getId(),
-            responseMessages
-        );
-    }
-
     private ChatMessageDetailResponse sendClubMessageByRoomId(Integer roomId, Integer userId, String content) {
         ChatRoom room = getClubRoom(roomId);
         ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
@@ -785,48 +661,6 @@ public class ChatService {
             null,
             countUnreadSince(message.getCreatedAt(), sortedReadBaselines),
             true
-        );
-    }
-
-    private ChatMessagePageResponse getGroupMessagesByRoomId(
-        Integer roomId,
-        Integer userId,
-        Integer page,
-        Integer limit
-    ) {
-        chatRoomRepository.getById(roomId);
-
-        PageRequest pageable = PageRequest.of(page - 1, limit);
-        long totalCount = chatMessageRepository.countByChatRoomId(roomId, null);
-        Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomId(roomId, null, pageable);
-        List<ChatMessage> messages = messagePage.getContent();
-        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
-
-        List<ChatMessageDetailResponse> responseMessages = messages.stream()
-            .map(message -> {
-                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
-                return new ChatMessageDetailResponse(
-                    message.getId(),
-                    message.getSender().getId(),
-                    message.getSender().getName(),
-                    message.getContent(),
-                    message.getCreatedAt(),
-                    null,
-                    unreadCount,
-                    message.isSentBy(userId)
-                );
-            })
-            .toList();
-
-        int totalPage = limit > 0 ? (int)Math.ceil((double)totalCount / (double)limit) : 0;
-        return new ChatMessagePageResponse(
-            totalCount,
-            responseMessages.size(),
-            totalPage,
-            page,
-            null,
-            responseMessages
         );
     }
 
@@ -929,28 +763,6 @@ public class ChatService {
                 UnreadMessageCount::chatRoomId,
                 unreadMessageCount -> unreadMessageCount.unreadCount().intValue()
             ));
-    }
-
-    private Integer getMaskedAdminId(User user, ChatRoom chatRoom) {
-        if (user.isAdmin()) {
-            return null;
-        }
-
-        List<Object[]> memberResults = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
-            List.of(chatRoom.getId())
-        );
-        List<MemberInfo> memberInfos = memberResults.stream()
-            .map(row -> new MemberInfo((Integer)row[1], (LocalDateTime)row[2]))
-            .toList();
-
-        boolean hasSystemAdmin = memberInfos.stream()
-            .anyMatch(info -> info.userId().equals(SYSTEM_ADMIN_ID));
-
-        if (hasSystemAdmin) {
-            return SYSTEM_ADMIN_ID;
-        }
-
-        return null;
     }
 
     private void publishAdminChatEventIfNeeded(boolean isSystemAdminRoom, User sender, String content) {
@@ -1073,31 +885,6 @@ public class ChatService {
             .toList();
     }
 
-    private List<LocalDateTime> toAdminChatReadBaselines(List<ChatRoomMember> members) {
-        LocalDateTime adminLastReadAt = null;
-        LocalDateTime userLastReadAt = null;
-
-        for (ChatRoomMember member : members) {
-            if (member.getUser().isAdmin()) {
-                if (adminLastReadAt == null || member.getLastReadAt().isAfter(adminLastReadAt)) {
-                    adminLastReadAt = member.getLastReadAt();
-                }
-            } else {
-                userLastReadAt = member.getLastReadAt();
-            }
-        }
-
-        List<LocalDateTime> baselines = new ArrayList<>();
-        if (adminLastReadAt != null) {
-            baselines.add(adminLastReadAt);
-        }
-        if (userLastReadAt != null) {
-            baselines.add(userLastReadAt);
-        }
-        baselines.sort(Comparator.naturalOrder());
-        return baselines;
-    }
-
     private int countUnreadSince(LocalDateTime messageCreatedAt, List<LocalDateTime> sortedReadBaselines) {
         int left = 0;
         int right = sortedReadBaselines.size();
@@ -1138,29 +925,6 @@ public class ChatService {
         }
 
         return unreadCountMap;
-    }
-
-    private LocalDateTime resolveAdminSystemRoomVisibleMessageFrom(List<ChatRoomMember> members) {
-        ChatRoomMember systemAdminMember = chatRoomSystemAdminService.findSystemAdminMember(members);
-        return systemAdminMember != null ? systemAdminMember.getVisibleMessageFrom() : null;
-    }
-
-    private boolean shouldDisplayAsOwnMessage(
-        User currentUser,
-        ChatMessage message,
-        boolean isAdminViewingSystemRoom
-    ) {
-        if (isAdminViewingSystemRoom) {
-            return message.getSender().isAdmin();
-        }
-        return message.isSentBy(currentUser.getId());
-    }
-
-    private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
-        if (maskedAdminId != null && message.getSender().isAdmin()) {
-            return maskedAdminId;
-        }
-        return message.getSender().getId();
     }
 
     private ChatRoomMember findRoomMember(List<ChatRoomMember> members, Integer userId) {

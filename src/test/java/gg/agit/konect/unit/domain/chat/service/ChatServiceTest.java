@@ -52,6 +52,7 @@ import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatDirectRoomAccessService;
+import gg.agit.konect.domain.chat.service.ChatMessageReadService;
 import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
@@ -136,6 +137,12 @@ class ChatServiceTest extends ServiceTestSupport {
             clubMemberRepository,
             chatRoomSystemAdminService
         );
+        ChatMessageReadService chatMessageReadService = new ChatMessageReadService(
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            chatRoomSystemAdminService,
+            chatDirectRoomAccessService
+        );
         chatService = new ChatService(
             chatRoomRepository,
             chatRoomQueryRepository,
@@ -149,6 +156,7 @@ class ChatServiceTest extends ServiceTestSupport {
             chatRoomMembershipService,
             chatRoomSummaryService,
             chatSearchService,
+            chatMessageReadService,
             chatMessagePageResolver,
             chatRoomSystemAdminService,
             chatDirectRoomAccessService,
