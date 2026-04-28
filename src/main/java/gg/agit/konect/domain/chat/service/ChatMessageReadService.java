@@ -32,6 +32,7 @@ public class ChatMessageReadService {
     private final ChatRoomSystemAdminService chatRoomSystemAdminService;
     private final ChatDirectRoomAccessService chatDirectRoomAccessService;
 
+    @Transactional
     public ChatMessagePageResponse getDirectChatRoomMessages(
         User user,
         ChatRoom chatRoom,
@@ -62,7 +63,7 @@ public class ChatMessageReadService {
         LocalDateTime visibleMessageFrom = resolveAdminSystemRoomVisibleMessageFrom(members);
 
         List<LocalDateTime> sortedReadBaselines = toAdminChatReadBaselines(members);
-        Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
+        Integer maskedAdminId = getMaskedAdminId(user, members);
 
         return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
             visibleMessageFrom, sortedReadBaselines, maskedAdminId);
@@ -268,28 +269,19 @@ public class ChatMessageReadService {
         return message.getSender().getId();
     }
 
-    private Integer getMaskedAdminId(User user, ChatRoom chatRoom) {
+    private Integer getMaskedAdminId(User user, List<ChatRoomMember> members) {
         if (user.isAdmin()) {
             return null;
         }
 
-        List<Object[]> memberResults = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
-            List.of(chatRoom.getId())
-        );
-        List<MemberInfo> memberInfos = memberResults.stream()
-            .map(row -> new MemberInfo((Integer)row[1], (LocalDateTime)row[2]))
-            .toList();
-
-        boolean hasSystemAdmin = memberInfos.stream()
-            .anyMatch(info -> info.userId().equals(SYSTEM_ADMIN_ID));
+        boolean hasSystemAdmin = members.stream()
+            .map(ChatRoomMember::getUserId)
+            .anyMatch(memberUserId -> memberUserId.equals(SYSTEM_ADMIN_ID));
 
         if (hasSystemAdmin) {
             return SYSTEM_ADMIN_ID;
         }
 
         return null;
-    }
-
-    private record MemberInfo(Integer userId, LocalDateTime createdAt) {
     }
 }

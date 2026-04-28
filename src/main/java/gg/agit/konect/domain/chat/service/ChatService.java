@@ -7,16 +7,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,11 +34,9 @@ import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
 import gg.agit.konect.domain.chat.dto.UnreadMessageCount;
 import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.domain.chat.enums.ChatType;
-import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
-import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomQueryRepository;
@@ -52,7 +47,6 @@ import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.notification.enums.NotificationTargetType;
 import gg.agit.konect.domain.notification.model.NotificationMuteSetting;
 import gg.agit.konect.domain.notification.repository.NotificationMuteSettingRepository;
-import gg.agit.konect.domain.notification.service.NotificationService;
 import gg.agit.konect.domain.user.enums.UserRole;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.domain.user.repository.UserRepository;
@@ -67,7 +61,6 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class ChatService {
 
-    private static final String ETC_SECTION_NAME = "기타";
     private static final String DEFAULT_GROUP_ROOM_NAME = "그룹 채팅";
 
     private final ChatRoomRepository chatRoomRepository;
@@ -76,18 +69,17 @@ public class ChatService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final NotificationMuteSettingRepository notificationMuteSettingRepository;
     private final ClubMemberRepository clubMemberRepository;
-    private final ChatInviteQueryRepository chatInviteQueryRepository;
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final ChatRoomMembershipService chatRoomMembershipService;
     private final ChatRoomSummaryService chatRoomSummaryService;
     private final ChatSearchService chatSearchService;
+    private final ChatInviteService chatInviteService;
     private final ChatMessageReadService chatMessageReadService;
     private final ChatMessagePageResolver chatMessagePageResolver;
     private final ChatRoomSystemAdminService chatRoomSystemAdminService;
     private final ChatDirectRoomAccessService chatDirectRoomAccessService;
-    private final NotificationService notificationService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final ChatMessageSendService chatMessageSendService;
 
     @Transactional
     public ChatRoomResponse createOrGetChatRoom(Integer currentUserId, ChatRoomCreateRequest request) {
@@ -239,101 +231,7 @@ public class ChatService {
         Integer page,
         Integer limit
     ) {
-        userRepository.getById(userId);
-        PageRequest pageRequest = PageRequest.of(page - 1, limit);
-
-        if (sortBy == ChatInviteSortBy.CLUB) {
-            return getInvitableUsersGroupedByClub(userId, query, pageRequest);
-        }
-
-        Page<User> filteredUserEntitiesPage = chatInviteQueryRepository.findInvitableUsers(userId, query, pageRequest);
-
-        // 응답 DTO는 채팅 초대 화면에서 바로 쓰는 최소 필드만 유지한다.
-        List<ChatInvitableUsersResponse.InvitableUser> filteredUsers = filteredUserEntitiesPage.getContent().stream()
-            .map(ChatInvitableUsersResponse.InvitableUser::from)
-            .toList();
-
-        // 응답 메타(total/current page 정보)는 유지하면서 내용만 DTO로 치환한다.
-        Page<ChatInvitableUsersResponse.InvitableUser> filteredUsersPage = new PageImpl<>(
-            filteredUsers,
-            pageRequest,
-            filteredUserEntitiesPage.getTotalElements()
-        );
-
-        return ChatInvitableUsersResponse.forNameSort(filteredUsersPage);
-    }
-
-    private ChatInvitableUsersResponse getInvitableUsersGroupedByClub(
-        Integer userId,
-        String query,
-        PageRequest pageRequest
-    ) {
-        // CLUB 정렬은 DB가 현재 페이지에 들어갈 userId까지 잘라 오고,
-        // 서비스는 그 결과를 섹션 응답으로만 복원한다.
-        Page<Integer> pagedUserIds = chatInviteQueryRepository.findInvitableUserIdsGroupedByClub(
-            userId,
-            query,
-            pageRequest
-        );
-
-        if (pagedUserIds.isEmpty()) {
-            return ChatInvitableUsersResponse.forClubSort(
-                new PageImpl<>(List.of(), pageRequest, pagedUserIds.getTotalElements()),
-                List.of()
-            );
-        }
-
-        // IN 조회는 정렬 순서를 보장하지 않으므로, DB가 정한 userId 페이지 순서대로 다시 조립한다.
-        Map<Integer, User> pagedUserMap = userRepository.findAllByIdIn(pagedUserIds.getContent()).stream()
-            .collect(Collectors.toMap(User::getId, user -> user));
-
-        List<ChatInvitableUsersResponse.InvitableUser> pagedUsers = pagedUserIds.getContent().stream()
-            .map(pagedUserMap::get)
-            .filter(Objects::nonNull)
-            .map(ChatInvitableUsersResponse.InvitableUser::from)
-            .toList();
-
-        Page<ChatInvitableUsersResponse.InvitableUser> pagedInvitableUsers = new PageImpl<>(
-            pagedUsers,
-            pageRequest,
-            pagedUserIds.getTotalElements()
-        );
-
-        record SectionKey(Integer clubId, String clubName) {
-        }
-
-        Map<Integer, Integer> representativeClubByUserId = new HashMap<>();
-        Map<Integer, String> representativeClubNames = new HashMap<>();
-        // 현재 페이지 사용자에 대해서만 대표 동아리를 다시 구해도,
-        // userId 자체는 이미 대표 동아리 기준으로 정렬돼 있으므로 페이지 경계는 유지된다.
-        chatInviteQueryRepository.findSharedClubMemberships(userId, pagedUserIds.getContent()).stream()
-            .forEach(clubMember -> {
-                representativeClubNames.putIfAbsent(clubMember.getClub().getId(), clubMember.getClub().getName());
-                representativeClubByUserId.putIfAbsent(clubMember.getUser().getId(), clubMember.getClub().getId());
-            });
-
-        // 대표 동아리가 없는 사용자는 기타 섹션으로 떨어지고,
-        // 같은 대표 동아리를 가진 사용자끼리만 현재 페이지 sections[]로 묶는다.
-        Map<SectionKey, List<ChatInvitableUsersResponse.InvitableUser>> sectionMap = new LinkedHashMap<>();
-        pagedUsers.forEach(user -> {
-            Integer representativeClubId = representativeClubByUserId.get(user.userId());
-            String clubName = representativeClubId == null
-                ? ETC_SECTION_NAME
-                : representativeClubNames.get(representativeClubId);
-            SectionKey key = new SectionKey(representativeClubId, clubName);
-            sectionMap.computeIfAbsent(key, ignored -> new ArrayList<>())
-                .add(user);
-        });
-
-        List<ChatInvitableUsersResponse.InvitableSection> sections = sectionMap.entrySet().stream()
-            .map(entry -> new ChatInvitableUsersResponse.InvitableSection(
-                entry.getKey().clubId(),
-                entry.getKey().clubName(),
-                entry.getValue()
-            ))
-            .toList();
-
-        return ChatInvitableUsersResponse.forClubSort(pagedInvitableUsers, sections);
+        return chatInviteService.getInvitableUsers(userId, query, sortBy, page, limit);
     }
 
     @Transactional
@@ -384,18 +282,7 @@ public class ChatService {
 
     @Transactional
     public ChatMessageDetailResponse sendMessage(Integer userId, Integer roomId, ChatMessageSendRequest request) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-
-        if (room.isDirectRoom()) {
-            return sendDirectMessage(userId, roomId, request);
-        }
-
-        if (room.isClubGroupRoom()) {
-            return sendClubMessageByRoomId(roomId, userId, request.content());
-        }
-
-        return sendGroupMessageByRoomId(roomId, userId, request.content());
+        return chatMessageSendService.sendMessage(userId, roomId, request);
     }
 
     @Transactional
@@ -573,136 +460,170 @@ public class ChatService {
             .toList();
     }
 
-    private ChatMessageDetailResponse sendDirectMessage(
+    private ChatMessagePageResponse buildDirectChatRoomMessages(
+        User user,
+        Integer roomId,
+        Integer page,
+        Integer limit,
+        LocalDateTime readAt,
+        LocalDateTime visibleMessageFrom,
+        List<LocalDateTime> sortedReadBaselines,
+        Integer maskedAdminId
+    ) {
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, visibleMessageFrom, pageable);
+
+        List<ChatMessageDetailResponse> responseMessages = messages.getContent().stream()
+            .map(message -> {
+                Integer senderId = maskedAdminId != null
+                    ? resolveDirectSenderId(message, maskedAdminId)
+                    : message.getSender().getId();
+                boolean isMine = maskedAdminId != null
+                    ? shouldDisplayAsOwnMessage(user, message, true)
+                    : message.isSentBy(user.getId());
+                boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
+                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
+                return new ChatMessageDetailResponse(
+                    message.getId(),
+                    senderId,
+                    null,
+                    message.getContent(),
+                    message.getCreatedAt(),
+                    isRead,
+                    unreadCount,
+                    isMine
+                );
+            })
+            .toList();
+
+        return new ChatMessagePageResponse(
+            messages.getTotalElements(),
+            messages.getNumberOfElements(),
+            messages.getTotalPages(),
+            messages.getNumber() + 1,
+            null,
+            responseMessages
+        );
+    }
+
+    private ChatMessagePageResponse getDirectChatRoomMessages(
         Integer userId,
         Integer roomId,
-        ChatMessageSendRequest request
+        Integer page,
+        Integer limit,
+        LocalDateTime readAt
     ) {
         ChatRoom chatRoom = getDirectRoom(roomId);
-        User sender = userRepository.getById(userId);
-
-        // 어드민이 SYSTEM_ADMIN 방에 메시지를 보내는 경우
-        boolean isAdminSendingToSystemAdminRoom = sender.isAdmin()
-            && chatRoomSystemAdminService.isSystemAdminRoom(chatRoom.getId());
-
-        if (!isAdminSendingToSystemAdminRoom) {
-            chatDirectRoomAccessService.getAccessibleMember(chatRoom, sender);
-        }
-
+        User user = userRepository.getById(userId);
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        User receiver = resolveDirectMessageReceiver(members, sender);
-
-        ChatMessage chatMessage = chatMessageRepository.save(
-            ChatMessage.of(chatRoom, sender, request.content())
-        );
-
-        syncLastMessage(chatRoom, chatMessage);
-        members.stream()
-            .filter(member -> !member.getUserId().equals(userId))
-            .filter(ChatRoomMember::hasLeft)
-            .forEach(member -> member.restoreDirectRoomFromIncomingMessage(chatMessage.getCreatedAt()));
-
-        // 어드민이 보낸 경우는 lastReadAt 업데이트하지 않음 (멤버가 아니므로)
-        if (!isAdminSendingToSystemAdminRoom) {
-            updateMemberLastReadAt(roomId, userId, chatMessage.getCreatedAt());
-        }
+        LocalDateTime visibleMessageFrom =
+            chatDirectRoomAccessService.prepareAccessAndGetVisibleMessageFrom(chatRoom, user);
 
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
-        notificationService.sendChatNotification(receiver.getId(), roomId, sender.getName(), request.content());
-
-        boolean isSystemAdminRoom = members.stream()
-            .map(ChatRoomMember::getUserId)
-            .anyMatch(memberUserId -> memberUserId.equals(SYSTEM_ADMIN_ID));
-        publishAdminChatEventIfNeeded(isSystemAdminRoom, sender, request.content());
-
-        return new ChatMessageDetailResponse(
-            chatMessage.getId(),
-            chatMessage.getSender().getId(),
-            null,
-            chatMessage.getContent(),
-            chatMessage.getCreatedAt(),
-            true,
-            countUnreadSince(chatMessage.getCreatedAt(), sortedReadBaselines),
-            true
-        );
+        return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
+            visibleMessageFrom, sortedReadBaselines, null);
     }
 
-    private ChatMessageDetailResponse sendClubMessageByRoomId(Integer roomId, Integer userId, String content) {
+    private ChatMessagePageResponse getAdminSystemDirectChatRoomMessages(
+        User user,
+        ChatRoom chatRoom,
+        Integer roomId,
+        Integer page,
+        Integer limit,
+        LocalDateTime readAt
+    ) {
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
+        LocalDateTime visibleMessageFrom = resolveAdminSystemRoomVisibleMessageFrom(members);
+
+        List<LocalDateTime> sortedReadBaselines = toAdminChatReadBaselines(members);
+        Integer maskedAdminId = getMaskedAdminId(user, chatRoom);
+
+        return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
+            visibleMessageFrom, sortedReadBaselines, maskedAdminId);
+    }
+
+    private ChatMessagePageResponse getClubMessagesByRoomId(
+        Integer roomId,
+        Integer userId,
+        Integer page,
+        Integer limit
+    ) {
         ChatRoom room = getClubRoom(roomId);
-        ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
-        User sender = member.getUser();
 
-        ensureRoomMember(room, sender, member.getCreatedAt());
-
-        ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
-        syncLastMessage(room, message);
-        updateClubMessageLastReadAt(roomId, userId, message.getCreatedAt());
-
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        long totalCount = chatMessageRepository.countByChatRoomId(roomId, null);
+        Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomId(roomId, null, pageable);
+        List<ChatMessage> messages = messagePage.getContent();
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        List<Integer> recipientUserIds = members.stream().map(ChatRoomMember::getUserId).toList();
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
-        notificationService.sendGroupChatNotification(
-            roomId,
-            sender.getId(),
-            room.getClub().getName(),
-            sender.getName(),
-            message.getContent(),
-            recipientUserIds
-        );
+        List<ChatMessageDetailResponse> responseMessages = messages.stream()
+            .map(message -> {
+                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
+                return new ChatMessageDetailResponse(
+                    message.getId(),
+                    message.getSender().getId(),
+                    message.getSender().getName(),
+                    message.getContent(),
+                    message.getCreatedAt(),
+                    null,
+                    unreadCount,
+                    message.isSentBy(userId)
+                );
+            })
+            .toList();
 
-        return new ChatMessageDetailResponse(
-            message.getId(),
-            sender.getId(),
-            sender.getName(),
-            message.getContent(),
-            message.getCreatedAt(),
-            null,
-            countUnreadSince(message.getCreatedAt(), sortedReadBaselines),
-            true
+        int totalPage = limit > 0 ? (int)Math.ceil((double)totalCount / (double)limit) : 0;
+        return new ChatMessagePageResponse(
+            totalCount,
+            responseMessages.size(),
+            totalPage,
+            page,
+            room.getClub().getId(),
+            responseMessages
         );
     }
 
-    private ChatMessageDetailResponse sendGroupMessageByRoomId(Integer roomId, Integer userId, String content) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-        User sender = userRepository.getById(userId);
+    private ChatMessagePageResponse getGroupMessagesByRoomId(
+        Integer roomId,
+        Integer userId,
+        Integer page,
+        Integer limit
+    ) {
+        chatRoomRepository.getById(roomId);
 
-        ChatRoomMember senderMember = getRoomMember(roomId, userId);
-        if (senderMember.hasLeft()) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
-
-        ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
-        syncLastMessage(room, message);
-        updateLastReadAt(roomId, userId, message.getCreatedAt());
-
+        PageRequest pageable = PageRequest.of(page - 1, limit);
+        long totalCount = chatMessageRepository.countByChatRoomId(roomId, null);
+        Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomId(roomId, null, pageable);
+        List<ChatMessage> messages = messagePage.getContent();
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
-        List<Integer> recipientUserIds = members.stream()
-            .map(ChatRoomMember::getUserId)
-            .filter(id -> !id.equals(userId))
-            .toList();
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
 
-        notificationService.sendGroupChatNotification(
-            roomId,
-            sender.getId(),
-            DEFAULT_GROUP_ROOM_NAME,
-            sender.getName(),
-            message.getContent(),
-            recipientUserIds
-        );
+        List<ChatMessageDetailResponse> responseMessages = messages.stream()
+            .map(message -> {
+                int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
+                return new ChatMessageDetailResponse(
+                    message.getId(),
+                    message.getSender().getId(),
+                    message.getSender().getName(),
+                    message.getContent(),
+                    message.getCreatedAt(),
+                    null,
+                    unreadCount,
+                    message.isSentBy(userId)
+                );
+            })
+            .toList();
 
-        return new ChatMessageDetailResponse(
-            message.getId(),
-            sender.getId(),
-            sender.getName(),
-            message.getContent(),
-            message.getCreatedAt(),
+        int totalPage = limit > 0 ? (int)Math.ceil((double)totalCount / (double)limit) : 0;
+        return new ChatMessagePageResponse(
+            totalCount,
+            responseMessages.size(),
+            totalPage,
+            page,
             null,
-            countUnreadSince(message.getCreatedAt(), sortedReadBaselines),
-            true
+            responseMessages
         );
     }
 
@@ -765,24 +686,26 @@ public class ChatService {
             ));
     }
 
-    private void publishAdminChatEventIfNeeded(boolean isSystemAdminRoom, User sender, String content) {
-        if (isSystemAdminRoom && !sender.isAdmin()) {
-            eventPublisher.publishEvent(AdminChatReceivedEvent.of(sender.getId(), sender.getName(), content));
+    private Integer getMaskedAdminId(User user, ChatRoom chatRoom) {
+        if (user.isAdmin()) {
+            return null;
         }
-    }
 
-    private void syncLastMessage(ChatRoom room, ChatMessage message) {
-        // 채팅방 목록은 chat_room.last_message_*를 직접 조회하므로
-        // 동시 전송에서도 가장 최신 메시지만 메타데이터를 덮어쓰도록 DB 조건을 같이 건다.
-        int updated = chatRoomRepository.updateLastMessageIfLatest(
-            room.getId(),
-            message.getId(),
-            message.getContent(),
-            message.getCreatedAt()
+        List<Object[]> memberResults = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(
+            List.of(chatRoom.getId())
         );
-        if (updated > 0) {
-            room.updateLastMessage(message.getContent(), message.getCreatedAt());
+        List<MemberInfo> memberInfos = memberResults.stream()
+            .map(row -> new MemberInfo((Integer)row[1], (LocalDateTime)row[2]))
+            .toList();
+
+        boolean hasSystemAdmin = memberInfos.stream()
+            .anyMatch(info -> info.userId().equals(SYSTEM_ADMIN_ID));
+
+        if (hasSystemAdmin) {
+            return SYSTEM_ADMIN_ID;
         }
+
+        return null;
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
@@ -854,35 +777,36 @@ public class ChatService {
         return roomName.trim();
     }
 
-    private void updateMemberLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
-        int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
-        if (updated == 0) {
-            ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-            User user = userRepository.getById(userId);
-            ensureRoomMember(room, user, lastReadAt);
-        }
-    }
-
-    private void updateLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
-        chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
-    }
-
-    private void updateClubMessageLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
-        int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
-        if (updated == 0) {
-            ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-            User user = userRepository.getById(userId);
-            ensureRoomMember(room, user, lastReadAt);
-        }
-    }
-
     private List<LocalDateTime> toSortedReadBaselines(List<ChatRoomMember> members) {
         return members.stream()
             .map(ChatRoomMember::getLastReadAt)
             .sorted()
             .toList();
+    }
+
+    private List<LocalDateTime> toAdminChatReadBaselines(List<ChatRoomMember> members) {
+        LocalDateTime adminLastReadAt = null;
+        LocalDateTime userLastReadAt = null;
+
+        for (ChatRoomMember member : members) {
+            if (member.getUser().isAdmin()) {
+                if (adminLastReadAt == null || member.getLastReadAt().isAfter(adminLastReadAt)) {
+                    adminLastReadAt = member.getLastReadAt();
+                }
+            } else {
+                userLastReadAt = member.getLastReadAt();
+            }
+        }
+
+        List<LocalDateTime> baselines = new ArrayList<>();
+        if (adminLastReadAt != null) {
+            baselines.add(adminLastReadAt);
+        }
+        if (userLastReadAt != null) {
+            baselines.add(userLastReadAt);
+        }
+        baselines.sort(Comparator.naturalOrder());
+        return baselines;
     }
 
     private int countUnreadSince(LocalDateTime messageCreatedAt, List<LocalDateTime> sortedReadBaselines) {
@@ -925,6 +849,29 @@ public class ChatService {
         }
 
         return unreadCountMap;
+    }
+
+    private LocalDateTime resolveAdminSystemRoomVisibleMessageFrom(List<ChatRoomMember> members) {
+        ChatRoomMember systemAdminMember = chatRoomSystemAdminService.findSystemAdminMember(members);
+        return systemAdminMember != null ? systemAdminMember.getVisibleMessageFrom() : null;
+    }
+
+    private boolean shouldDisplayAsOwnMessage(
+        User currentUser,
+        ChatMessage message,
+        boolean isAdminViewingSystemRoom
+    ) {
+        if (isAdminViewingSystemRoom) {
+            return message.getSender().isAdmin();
+        }
+        return message.isSentBy(currentUser.getId());
+    }
+
+    private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
+        if (maskedAdminId != null && message.getSender().isAdmin()) {
+            return maskedAdminId;
+        }
+        return message.getSender().getId();
     }
 
     private ChatRoomMember findRoomMember(List<ChatRoomMember> members, Integer userId) {
@@ -1005,32 +952,6 @@ public class ChatService {
         return findDirectPartner(members, userId);
     }
 
-    private User findNonAdminUser(List<ChatRoomMember> members) {
-        Map<Integer, User> userMap = members.stream()
-            .collect(Collectors.toMap(
-                ChatRoomMember::getUserId,
-                ChatRoomMember::getUser,
-                (existing, replacement) -> existing
-            ));
-        List<MemberInfo> memberInfos = members.stream()
-            .map(m -> new MemberInfo(m.getUserId(), m.getCreatedAt()))
-            .toList();
-        return findNonAdminUserFromMemberInfo(memberInfos, userMap);
-    }
-
-    private User resolveDirectMessageReceiver(List<ChatRoomMember> members, User sender) {
-        Map<Integer, User> userMap = members.stream()
-            .collect(Collectors.toMap(
-                ChatRoomMember::getUserId,
-                ChatRoomMember::getUser,
-                (existing, replacement) -> existing
-            ));
-        List<MemberInfo> memberInfos = members.stream()
-            .map(m -> new MemberInfo(m.getUserId(), m.getCreatedAt()))
-            .toList();
-        return resolveMessageReceiverFromMemberInfo(sender, memberInfos, userMap);
-    }
-
     private User findDirectPartnerFromMemberInfo(
         List<MemberInfo> memberInfos,
         Integer userId,
@@ -1056,35 +977,6 @@ public class ChatService {
         }
 
         return findDirectPartnerFromMemberInfo(memberInfos, userId, userMap);
-    }
-
-    private User findNonAdminUserFromMemberInfo(List<MemberInfo> memberInfos, Map<Integer, User> userMap) {
-        return memberInfos.stream()
-            .sorted(Comparator.comparing(MemberInfo::createdAt))
-            .map(info -> userMap.get(info.userId()))
-            .filter(Objects::nonNull)
-            .filter(user -> !user.isAdmin())
-            .findFirst()
-            .orElse(null);
-    }
-
-    private User resolveMessageReceiverFromMemberInfo(
-        User sender,
-        List<MemberInfo> memberInfos,
-        Map<Integer, User> userMap
-    ) {
-        if (sender.isAdmin()) {
-            User nonAdminUser = findNonAdminUserFromMemberInfo(memberInfos, userMap);
-            if (nonAdminUser != null) {
-                return nonAdminUser;
-            }
-        }
-
-        User partner = findDirectPartnerFromMemberInfo(memberInfos, sender.getId(), userMap);
-        if (partner == null) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
-        return partner;
     }
 
     private void validateGroupRoomForKick(ChatRoom room) {
