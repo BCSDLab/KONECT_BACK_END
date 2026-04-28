@@ -94,7 +94,7 @@ public class ChatMessageSendService {
 
         // 어드민이 보낸 경우는 lastReadAt 업데이트하지 않음 (멤버가 아니므로)
         if (!isAdminSendingToSystemAdminRoom) {
-            updateMemberLastReadAt(roomId, userId, chatMessage.getCreatedAt());
+            updateLastReadAtOrEnsureMember(roomId, userId, chatMessage.getCreatedAt());
         }
 
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
@@ -127,7 +127,7 @@ public class ChatMessageSendService {
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.of(room, sender, content));
         syncLastMessage(room, message);
-        updateClubMessageLastReadAt(roomId, userId, message.getCreatedAt());
+        updateLastReadAtOrEnsureMember(roomId, userId, message.getCreatedAt());
 
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(roomId);
         List<Integer> recipientUserIds = members.stream().map(ChatRoomMember::getUserId).toList();
@@ -210,7 +210,7 @@ public class ChatMessageSendService {
             }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, joinedAt)));
     }
 
-    private void updateMemberLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
+    private void updateLastReadAtOrEnsureMember(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
         int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
         if (updated == 0) {
             ChatRoom room = chatRoomRepository.findById(roomId)
@@ -222,16 +222,6 @@ public class ChatMessageSendService {
 
     private void updateLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
         chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
-    }
-
-    private void updateClubMessageLastReadAt(Integer roomId, Integer userId, LocalDateTime lastReadAt) {
-        int updated = chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, userId, lastReadAt);
-        if (updated == 0) {
-            ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-            User user = userRepository.getById(userId);
-            ensureRoomMember(room, user, lastReadAt);
-        }
     }
 
     private List<LocalDateTime> toSortedReadBaselines(List<ChatRoomMember> members) {
