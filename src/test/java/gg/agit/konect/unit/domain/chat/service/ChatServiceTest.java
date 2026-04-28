@@ -831,6 +831,8 @@ class ChatServiceTest extends ServiceTestSupport {
             LocalDateTime.of(2026, 4, 11, 10, 0));
         ReflectionTestUtils.setField(systemAdminMember, "visibleMessageFrom",
             LocalDateTime.of(2026, 4, 11, 10, 5));
+        ReflectionTestUtils.setField(targetMember, "visibleMessageFrom",
+            LocalDateTime.of(2026, 4, 11, 10, 7));
         systemAdminMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 7));
         targetMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 3));
         ChatMessage adminMessage = createMessage(100, systemAdminRoom, admin, "관리자 답변",
@@ -862,7 +864,7 @@ class ChatServiceTest extends ServiceTestSupport {
                 ChatMessageDetailResponse::isMine
             )
             .containsExactly(
-                tuple(adminId, "관리자 답변", 1, true),
+                tuple(adminId, "관리자 답변", 0, true),
                 tuple(targetUser.getId(), "사용자 문의", 2, false)
             );
         verify(chatRoomMembershipService).updateLastReadAt(eq(systemAdminRoom.getId()), eq(SYSTEM_ADMIN_ID),
@@ -885,6 +887,8 @@ class ChatServiceTest extends ServiceTestSupport {
         ChatRoomMember systemAdminMember = createRoomMember(systemAdminRoom, systemAdmin, false,
             LocalDateTime.of(2026, 4, 11, 10, 0));
         ReflectionTestUtils.setField(userMember, "visibleMessageFrom", LocalDateTime.of(2026, 4, 11, 10, 5));
+        ReflectionTestUtils.setField(systemAdminMember, "visibleMessageFrom",
+            LocalDateTime.of(2026, 4, 11, 10, 7));
         userMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 7));
         systemAdminMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 3));
         ChatMessage adminMessage = createMessage(100, systemAdminRoom, admin, "관리자 답변",
@@ -915,7 +919,7 @@ class ChatServiceTest extends ServiceTestSupport {
                 ChatMessageDetailResponse::isMine
             )
             .containsExactly(
-                tuple(SYSTEM_ADMIN_ID, "관리자 답변", 1, false),
+                tuple(SYSTEM_ADMIN_ID, "관리자 답변", 0, false),
                 tuple(userId, "사용자 문의", 2, true)
             );
         verify(chatRoomMembershipService).updateDirectRoomLastReadAt(eq(systemAdminRoom.getId()), eq(user),

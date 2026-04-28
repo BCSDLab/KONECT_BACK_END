@@ -197,7 +197,7 @@ public class ChatMessageReadService {
 
     private List<LocalDateTime> toSortedReadBaselines(List<ChatRoomMember> members) {
         return members.stream()
-            .map(ChatRoomMember::getLastReadAt)
+            .map(this::resolveUnreadBaseline)
             .sorted()
             .toList();
     }
@@ -207,12 +207,13 @@ public class ChatMessageReadService {
         LocalDateTime userLastReadAt = null;
 
         for (ChatRoomMember member : members) {
+            LocalDateTime unreadBaseline = resolveUnreadBaseline(member);
             if (member.getUser().isAdmin()) {
-                if (adminLastReadAt == null || member.getLastReadAt().isAfter(adminLastReadAt)) {
-                    adminLastReadAt = member.getLastReadAt();
+                if (adminLastReadAt == null || unreadBaseline.isAfter(adminLastReadAt)) {
+                    adminLastReadAt = unreadBaseline;
                 }
             } else {
-                userLastReadAt = member.getLastReadAt();
+                userLastReadAt = unreadBaseline;
             }
         }
 
@@ -225,6 +226,20 @@ public class ChatMessageReadService {
         }
         baselines.sort(Comparator.naturalOrder());
         return baselines;
+    }
+
+    private LocalDateTime resolveUnreadBaseline(ChatRoomMember member) {
+        LocalDateTime lastReadAt = member.getLastReadAt();
+        LocalDateTime visibleMessageFrom = member.getVisibleMessageFrom();
+
+        // direct 방에서 다시 보이기 시작한 시각 이전 메시지는 unreadCount에도 포함하지 않는다.
+        if (visibleMessageFrom == null) {
+            return lastReadAt;
+        }
+        if (lastReadAt == null) {
+            return visibleMessageFrom;
+        }
+        return lastReadAt.isAfter(visibleMessageFrom) ? lastReadAt : visibleMessageFrom;
     }
 
     private int countUnreadSince(LocalDateTime messageCreatedAt, List<LocalDateTime> sortedReadBaselines) {
