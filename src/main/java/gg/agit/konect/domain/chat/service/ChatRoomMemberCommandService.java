@@ -61,7 +61,7 @@ public class ChatRoomMemberCommandService {
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
-        return ChatRoomMemberLookup.getByChatRoomIdAndUserId(chatRoomMemberRepository, roomId, userId);
+        return ChatRoomMemberLookup.getRoomMember(chatRoomMemberRepository, roomId, userId);
     }
 
     private void validateGroupRoomForKick(ChatRoom room) {

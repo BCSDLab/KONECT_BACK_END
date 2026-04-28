@@ -11,7 +11,7 @@ final class ChatRoomMemberLookup {
     private ChatRoomMemberLookup() {
     }
 
-    static ChatRoomMember getByChatRoomIdAndUserId(
+    static ChatRoomMember getRoomMember(
         ChatRoomMemberRepository chatRoomMemberRepository,
         Integer roomId,
         Integer userId

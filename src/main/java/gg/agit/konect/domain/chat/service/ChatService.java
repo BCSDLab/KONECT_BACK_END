@@ -950,7 +950,7 @@ public class ChatService {
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
-        return ChatRoomMemberLookup.getByChatRoomIdAndUserId(chatRoomMemberRepository, roomId, userId);
+        return ChatRoomMemberLookup.getRoomMember(chatRoomMemberRepository, roomId, userId);
     }
 
     private ChatRoomMember getAccessibleRoomMember(ChatRoom room, Integer userId) {
