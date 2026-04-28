@@ -278,10 +278,6 @@ public class ChatMessageReadService {
             .map(ChatRoomMember::getUserId)
             .anyMatch(memberUserId -> memberUserId.equals(SYSTEM_ADMIN_ID));
 
-        if (hasSystemAdmin) {
-            return SYSTEM_ADMIN_ID;
-        }
-
-        return null;
+        return hasSystemAdmin ? SYSTEM_ADMIN_ID : null;
     }
 }
