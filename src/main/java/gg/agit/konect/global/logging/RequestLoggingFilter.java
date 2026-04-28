@@ -15,6 +15,7 @@ import org.springframework.util.PathMatcher;
 import org.springframework.util.StopWatch;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -48,6 +49,9 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             return;
         }
 
+        HttpServletRequest wrappedRequest = request instanceof ContentCachingRequestWrapper
+            ? request
+            : new ContentCachingRequestWrapper(request);
         StopWatch stopWatch = new StopWatch();
         String requestId = getRequestId(httpRequest);
         String method = httpRequest.getMethod();
@@ -58,7 +62,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             response.setHeader(REQUEST_ID_HEADER, requestId);
             stopWatch.start();
             log.info("request start [requestId: {}, uri: {} {}]", requestId, method, uri);
-            chain.doFilter(request, response);
+            chain.doFilter(wrappedRequest, response);
         } finally {
             stopWatch.stop();
             log.info("request end [requestId: {}, uri: {} {}, time: {}ms, status: {}]",

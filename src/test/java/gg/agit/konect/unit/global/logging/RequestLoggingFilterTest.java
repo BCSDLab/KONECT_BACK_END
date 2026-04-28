@@ -14,6 +14,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -95,16 +96,13 @@ class RequestLoggingFilterTest {
     }
 
     @Test
-    @DisplayName("본문을 기록하지 않는 요청 로깅은 원본 request와 response를 그대로 전달한다")
-    void passesOriginalRequestAndResponseWithoutCachingWrappers() throws ServletException, IOException {
+    @DisplayName("요청 본문 캐시는 유지하되 원본 response를 그대로 전달한다")
+    void wrapsRequestOnlyForExceptionBodyLogging() throws ServletException, IOException {
         // given
         RequestLoggingFilter filter = createFilter();
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/notifications/inbox");
         MockHttpServletResponse response = new MockHttpServletResponse();
-        OriginalRequestResponseAssertFilterChain chain = new OriginalRequestResponseAssertFilterChain(
-            request,
-            response
-        );
+        RequestWrapperResponseAssertFilterChain chain = new RequestWrapperResponseAssertFilterChain(response);
 
         // when
         filter.doFilter(request, response, chain);
@@ -129,24 +127,19 @@ class RequestLoggingFilterTest {
         }
     }
 
-    private static class OriginalRequestResponseAssertFilterChain implements FilterChain {
+    private static class RequestWrapperResponseAssertFilterChain implements FilterChain {
 
-        private final ServletRequest expectedRequest;
         private final ServletResponse expectedResponse;
         private boolean invoked;
 
-        private OriginalRequestResponseAssertFilterChain(
-            ServletRequest expectedRequest,
-            ServletResponse expectedResponse
-        ) {
-            this.expectedRequest = expectedRequest;
+        private RequestWrapperResponseAssertFilterChain(ServletResponse expectedResponse) {
             this.expectedResponse = expectedResponse;
         }
 
         @Override
         public void doFilter(ServletRequest request, ServletResponse response) {
             invoked = true;
-            assertThat(request).isSameAs(expectedRequest);
+            assertThat(request).isInstanceOf(ContentCachingRequestWrapper.class);
             assertThat(response).isSameAs(expectedResponse);
         }
     }
