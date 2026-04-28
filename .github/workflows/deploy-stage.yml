@@ -41,6 +41,7 @@ jobs:
           set -a
           source .env.example
           set +a
+          unset JAVA_TOOL_OPTIONS
           ./gradlew bootJar -x test --build-cache -Dspring.profiles.active=stage
 
       - name: Set up Docker Buildx
