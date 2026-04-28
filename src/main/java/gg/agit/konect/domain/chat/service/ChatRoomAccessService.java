@@ -43,7 +43,22 @@ public class ChatRoomAccessService {
     }
 
     public ChatRoomMember getAccessibleMember(ChatRoom room, User user) {
-        return getAccessibleMember(room, user.getId());
+        Integer userId = user.getId();
+
+        if (room.isClubGroupRoom()) {
+            chatRoomMembershipService.ensureClubRoomMember(room.getId(), userId);
+            return getRoomMember(room.getId(), userId);
+        }
+
+        if (room.isDirectRoom()) {
+            return chatDirectRoomAccessService.getAccessibleMember(room, user);
+        }
+
+        ChatRoomMember member = getRoomMember(room.getId(), userId);
+        if (member.hasLeft()) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+        return member;
     }
 
     public void ensureMuteAccess(ChatRoom room, User user) {
