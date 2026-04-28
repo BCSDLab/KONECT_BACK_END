@@ -15,8 +15,6 @@ import org.springframework.util.PathMatcher;
 import org.springframework.util.StopWatch;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -50,8 +48,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             return;
         }
 
-        var cachedRequest = new ContentCachingRequestWrapper(request);
-        var cachedResponse = new ContentCachingResponseWrapper(response);
         StopWatch stopWatch = new StopWatch();
         String requestId = getRequestId(httpRequest);
         String method = httpRequest.getMethod();
@@ -59,16 +55,15 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         try {
             MDC.put(REQUEST_ID, requestId);
-            cachedResponse.setHeader(REQUEST_ID_HEADER, requestId);
+            response.setHeader(REQUEST_ID_HEADER, requestId);
             stopWatch.start();
             log.info("request start [requestId: {}, uri: {} {}]", requestId, method, uri);
-            chain.doFilter(cachedRequest, cachedResponse);
+            chain.doFilter(request, response);
         } finally {
             stopWatch.stop();
             log.info("request end [requestId: {}, uri: {} {}, time: {}ms, status: {}]",
-                requestId, method, uri, stopWatch.getTotalTimeMillis(), cachedResponse.getStatus());
+                requestId, method, uri, stopWatch.getTotalTimeMillis(), response.getStatus());
             MDC.remove(REQUEST_ID);
-            cachedResponse.copyBodyToResponse();
         }
     }
 
