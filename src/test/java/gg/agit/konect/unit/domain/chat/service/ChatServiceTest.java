@@ -51,11 +51,12 @@ import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.service.ChatDirectRoomAccessService;
+import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.chat.service.ChatRoomSummaryService;
 import gg.agit.konect.domain.chat.service.ChatSearchService;
-import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
 import gg.agit.konect.domain.chat.service.ChatRoomSystemAdminService;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.domain.club.model.Club;
@@ -123,13 +124,13 @@ class ChatServiceTest extends ServiceTestSupport {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    private ChatMessagePageResolver chatMessagePageResolver;
-
     private ChatService chatService;
 
     @BeforeEach
     void setUp() {
-        chatMessagePageResolver = new ChatMessagePageResolver(
+        ChatDirectRoomAccessService chatDirectRoomAccessService =
+            new ChatDirectRoomAccessService(chatRoomMemberRepository);
+        ChatMessagePageResolver chatMessagePageResolver = new ChatMessagePageResolver(
             chatMessageRepository,
             chatRoomMemberRepository,
             clubMemberRepository,
@@ -150,6 +151,7 @@ class ChatServiceTest extends ServiceTestSupport {
             chatSearchService,
             chatMessagePageResolver,
             chatRoomSystemAdminService,
+            chatDirectRoomAccessService,
             notificationService,
             eventPublisher
         );
