@@ -59,6 +59,10 @@ class ChatInviteServiceTest extends ServiceTestSupport {
         );
 
         // then
+        assertThat(response.totalCount()).isEqualTo(1L);
+        assertThat(response.currentCount()).isEqualTo(1);
+        assertThat(response.totalPage()).isEqualTo(1);
+        assertThat(response.currentPage()).isEqualTo(1);
         assertThat(response.sortBy()).isEqualTo(ChatInviteSortBy.NAME);
         assertThat(response.grouped()).isFalse();
         assertThat(response.users())
@@ -74,19 +78,30 @@ class ChatInviteServiceTest extends ServiceTestSupport {
         Integer userId = 10;
         User requester = createUser(userId, "요청자");
         User bcsdUser = createUser(20, "BCSD 후보");
-        User etcUser = createUser(30, "기타 후보");
+        User dualSharedUser = createUser(30, "복수 공유 후보");
+        User etcUser = createUser(40, "기타 후보");
         Club bcsd = ClubFixture.createWithId(UniversityFixture.create(), 1, "BCSD");
+        Club seminar = ClubFixture.createWithId(UniversityFixture.create(), 2, "Seminar");
         ClubMember bcsdMembership = ClubMemberFixture.createMember(bcsd, bcsdUser);
+        ClubMember dualBcsdMembership = ClubMemberFixture.createMember(bcsd, dualSharedUser);
+        ClubMember dualSeminarMembership = ClubMemberFixture.createMember(seminar, dualSharedUser);
         PageRequest pageRequest = PageRequest.of(0, 20);
         ChatInviteService service = new ChatInviteService(chatInviteQueryRepository, userRepository);
 
         given(userRepository.getById(userId)).willReturn(requester);
         given(chatInviteQueryRepository.findInvitableUserIdsGroupedByClub(userId, null, pageRequest))
-            .willReturn(new PageImpl<>(List.of(bcsdUser.getId(), etcUser.getId()), pageRequest, 2));
-        given(userRepository.findAllByIdIn(List.of(bcsdUser.getId(), etcUser.getId())))
-            .willReturn(List.of(etcUser, bcsdUser));
-        given(chatInviteQueryRepository.findSharedClubMemberships(userId, List.of(bcsdUser.getId(), etcUser.getId())))
-            .willReturn(List.of(bcsdMembership));
+            .willReturn(new PageImpl<>(
+                List.of(bcsdUser.getId(), dualSharedUser.getId(), etcUser.getId()),
+                pageRequest,
+                3
+            ));
+        given(userRepository.findAllByIdIn(List.of(bcsdUser.getId(), dualSharedUser.getId(), etcUser.getId())))
+            .willReturn(List.of(etcUser, dualSharedUser, bcsdUser));
+        given(chatInviteQueryRepository.findSharedClubMemberships(
+            userId,
+            List.of(bcsdUser.getId(), dualSharedUser.getId(), etcUser.getId())
+        ))
+            .willReturn(List.of(bcsdMembership, dualBcsdMembership, dualSeminarMembership));
 
         // when
         ChatInvitableUsersResponse response = service.getInvitableUsers(
@@ -98,6 +113,10 @@ class ChatInviteServiceTest extends ServiceTestSupport {
         );
 
         // then
+        assertThat(response.totalCount()).isEqualTo(3L);
+        assertThat(response.currentCount()).isEqualTo(3);
+        assertThat(response.totalPage()).isEqualTo(1);
+        assertThat(response.currentPage()).isEqualTo(1);
         assertThat(response.sortBy()).isEqualTo(ChatInviteSortBy.CLUB);
         assertThat(response.grouped()).isTrue();
         assertThat(response.users()).isEmpty();
@@ -106,11 +125,11 @@ class ChatInviteServiceTest extends ServiceTestSupport {
             .containsExactly("BCSD", "기타");
         assertThat(response.sections().get(0).users())
             .extracting(ChatInvitableUsersResponse.InvitableUser::userId)
-            .containsExactly(bcsdUser.getId());
+            .containsExactly(bcsdUser.getId(), dualSharedUser.getId());
         assertThat(response.sections().get(1).users())
             .extracting(ChatInvitableUsersResponse.InvitableUser::userId)
             .containsExactly(etcUser.getId());
-        verify(userRepository).findAllByIdIn(List.of(bcsdUser.getId(), etcUser.getId()));
+        verify(userRepository).findAllByIdIn(List.of(bcsdUser.getId(), dualSharedUser.getId(), etcUser.getId()));
     }
 
     private User createUser(Integer id, String name) {
