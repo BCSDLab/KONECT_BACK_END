@@ -125,6 +125,11 @@ public class ChatRoomMembershipService {
     public void ensureClubRoomMember(Integer roomId, Integer userId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+        ensureClubRoomMember(room, userId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void ensureClubRoomMember(ChatRoom room, Integer userId) {
         if (!room.isGroupRoom() || room.getClub() == null) {
             throw CustomException.of(NOT_FOUND_CHAT_ROOM);
         }

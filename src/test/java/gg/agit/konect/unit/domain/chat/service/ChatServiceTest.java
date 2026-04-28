@@ -55,15 +55,16 @@ import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatDirectRoomAccessService;
 import gg.agit.konect.domain.chat.service.ChatInviteService;
 import gg.agit.konect.domain.chat.service.ChatMessageReadService;
-import gg.agit.konect.domain.chat.service.ChatMessageSendService;
 import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
+import gg.agit.konect.domain.chat.service.ChatMessageSendService;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
+import gg.agit.konect.domain.chat.service.ChatRoomAccessService;
 import gg.agit.konect.domain.chat.service.ChatRoomCreationService;
 import gg.agit.konect.domain.chat.service.ChatRoomMemberCommandService;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.chat.service.ChatRoomSummaryService;
-import gg.agit.konect.domain.chat.service.ChatSearchService;
 import gg.agit.konect.domain.chat.service.ChatRoomSystemAdminService;
+import gg.agit.konect.domain.chat.service.ChatSearchService;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -142,6 +143,13 @@ class ChatServiceTest extends ServiceTestSupport {
             clubMemberRepository,
             chatRoomSystemAdminService
         );
+        ChatRoomAccessService chatRoomAccessService = new ChatRoomAccessService(
+            chatRoomMemberRepository,
+            userRepository,
+            chatRoomMembershipService,
+            chatRoomSystemAdminService,
+            chatDirectRoomAccessService
+        );
         ChatRoomMemberCommandService chatRoomMemberCommandService = new ChatRoomMemberCommandService(
             chatRoomRepository,
             chatRoomMemberRepository
@@ -192,6 +200,7 @@ class ChatServiceTest extends ServiceTestSupport {
             chatInviteService,
             chatMessageReadService,
             chatMessagePageResolver,
+            chatRoomAccessService,
             chatRoomCreationService,
             chatRoomSystemAdminService,
             chatDirectRoomAccessService,
@@ -502,6 +511,7 @@ class ChatServiceTest extends ServiceTestSupport {
         // then
         assertThat(response.isMuted()).isTrue();
         assertThat(setting.getIsMuted()).isTrue();
+        verify(userRepository, times(1)).getById(userId);
         verify(notificationMuteSettingRepository).save(setting);
     }
 
