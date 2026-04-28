@@ -46,9 +46,10 @@ public class ChatMessageReadService {
             chatDirectRoomAccessService.prepareAccessAndGetVisibleMessageFrom(chatRoom, user);
 
         List<LocalDateTime> sortedReadBaselines = toSortedReadBaselines(members);
+        Integer maskedAdminId = getMaskedAdminId(user, members);
 
         return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
-            visibleMessageFrom, sortedReadBaselines, null);
+            visibleMessageFrom, sortedReadBaselines, maskedAdminId);
     }
 
     public ChatMessagePageResponse getAdminSystemDirectChatRoomMessages(
@@ -168,9 +169,7 @@ public class ChatMessageReadService {
                 Integer senderId = maskedAdminId != null
                     ? resolveDirectSenderId(message, maskedAdminId)
                     : message.getSender().getId();
-                boolean isMine = maskedAdminId != null
-                    ? shouldDisplayAsOwnMessage(user, message, true)
-                    : message.isSentBy(user.getId());
+                boolean isMine = message.isSentBy(user.getId());
                 boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
                 int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
                 return new ChatMessageDetailResponse(
@@ -249,17 +248,6 @@ public class ChatMessageReadService {
     private LocalDateTime resolveAdminSystemRoomVisibleMessageFrom(List<ChatRoomMember> members) {
         ChatRoomMember systemAdminMember = chatRoomSystemAdminService.findSystemAdminMember(members);
         return systemAdminMember != null ? systemAdminMember.getVisibleMessageFrom() : null;
-    }
-
-    private boolean shouldDisplayAsOwnMessage(
-        User currentUser,
-        ChatMessage message,
-        boolean isAdminViewingSystemRoom
-    ) {
-        if (isAdminViewingSystemRoom) {
-            return message.getSender().isAdmin();
-        }
-        return message.isSentBy(currentUser.getId());
     }
 
     private Integer resolveDirectSenderId(ChatMessage message, Integer maskedAdminId) {
