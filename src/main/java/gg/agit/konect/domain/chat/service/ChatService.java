@@ -950,8 +950,7 @@ public class ChatService {
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
-        return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
-            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
+        return ChatRoomMemberLookup.getByChatRoomIdAndUserId(chatRoomMemberRepository, roomId, userId);
     }
 
     private ChatRoomMember getAccessibleRoomMember(ChatRoom room, Integer userId) {

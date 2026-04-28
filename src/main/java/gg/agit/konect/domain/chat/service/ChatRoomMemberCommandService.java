@@ -4,7 +4,6 @@ import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_KICK_IN_NON_GROU
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_KICK_ROOM_OWNER;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_KICK_SELF;
 import static gg.agit.konect.global.code.ApiResponseCode.CANNOT_LEAVE_GROUP_CHAT_ROOM;
-import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_KICK;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 
@@ -62,8 +61,7 @@ public class ChatRoomMemberCommandService {
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
-        return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
-            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
+        return ChatRoomMemberLookup.getByChatRoomIdAndUserId(chatRoomMemberRepository, roomId, userId);
     }
 
     private void validateGroupRoomForKick(ChatRoom room) {
