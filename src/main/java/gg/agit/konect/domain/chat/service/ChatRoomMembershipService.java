@@ -148,7 +148,8 @@ public class ChatRoomMembershipService {
             });
     }
 
-    private void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {
+    @Transactional
+    public void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
                 LocalDateTime lastReadAt = member.getLastReadAt();
@@ -156,6 +157,26 @@ public class ChatRoomMembershipService {
                     member.updateLastReadAt(baseline);
                 }
             }, () -> saveRoomMemberIgnoringDuplicate(room, user, baseline));
+    }
+
+    @Transactional
+    public void ensureDirectRoomRequester(ChatRoom room, User user, LocalDateTime joinedAt) {
+        if (shouldSkipSystemAdminMembership(room, user)) {
+            return;
+        }
+
+        chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
+            .ifPresentOrElse(member -> {
+                if (member.hasLeft()) {
+                    member.reopenDirectRoom(LocalDateTime.now());
+                    return;
+                }
+
+                LocalDateTime lastReadAt = member.getLastReadAt();
+                if (lastReadAt == null || lastReadAt.isBefore(joinedAt)) {
+                    member.updateLastReadAt(joinedAt);
+                }
+            }, () -> saveRoomMemberIgnoringDuplicate(room, user, joinedAt));
     }
 
     private void saveRoomMemberIgnoringDuplicate(ChatRoom room, User user, LocalDateTime baseline) {
@@ -182,6 +203,12 @@ public class ChatRoomMembershipService {
         }
 
         throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+    }
+
+    private boolean shouldSkipSystemAdminMembership(ChatRoom room, User user) {
+        // 문의방은 SYSTEM_ADMIN + 일반 사용자 2인 구조를 전제로 재사용(findByTwoUsers)되므로,
+        // 생성/재오픈 경로에서도 일반 ADMIN을 멤버로 추가하면 안 된다.
+        return user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
     }
 
     private boolean isDuplicateKeyException(DataIntegrityViolationException e) {
