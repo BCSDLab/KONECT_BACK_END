@@ -203,6 +203,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         RUNTIME_ERROR_LOGGER.error(slackMessage);
+        requestDebugLogging(request);
 
         return buildErrorResponse(ApiResponseCode.UNEXPECTED_SERVER_ERROR);
     }
@@ -253,6 +254,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorTraceId
     ) {
         log.warn("[{}] {} | errorTraceId={}", httpStatus, errorMessage, errorTraceId);
+        requestDebugLogging(request);
+    }
+
+    private void requestDebugLogging(HttpServletRequest request) {
         log.debug("Request: {} {}", request.getMethod(), request.getRequestURI());
         log.debug("Headers: {}", getHeaders(request));
         log.debug("Query String: {}", getQueryString(request));
