@@ -71,6 +71,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ChatPresenceService chatPresenceService;
     private final ChatRoomMembershipService chatRoomMembershipService;
+    private final ChatRoomMemberCommandService chatRoomMemberCommandService;
     private final ChatRoomSummaryService chatRoomSummaryService;
     private final ChatSearchService chatSearchService;
     private final ChatInviteService chatInviteService;
@@ -97,37 +98,12 @@ public class ChatService {
 
     @Transactional
     public void leaveChatRoom(Integer userId, Integer roomId) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-
-        if (room.isClubGroupRoom()) {
-            throw CustomException.of(CANNOT_LEAVE_GROUP_CHAT_ROOM);
-        }
-
-        ChatRoomMember member = getRoomMember(roomId, userId);
-        if (room.isDirectRoom()) {
-            member.leaveDirectRoom(LocalDateTime.now());
-            return;
-        }
-
-        chatRoomMemberRepository.deleteByChatRoomIdAndUserId(roomId, userId);
+        chatRoomMemberCommandService.leaveChatRoom(userId, roomId);
     }
 
     @Transactional
     public void kickMember(Integer requesterId, Integer roomId, Integer targetUserId) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
-
-        validateGroupRoomForKick(room);
-        validateNotSelfKick(requesterId, targetUserId);
-
-        ChatRoomMember requester = getRoomMember(roomId, requesterId);
-        validateKickAuthority(requester);
-
-        ChatRoomMember target = getRoomMember(roomId, targetUserId);
-        validateNotOwnerTarget(target);
-
-        chatRoomMemberRepository.deleteByChatRoomIdAndUserId(roomId, targetUserId);
+        chatRoomMemberCommandService.kickMember(requesterId, roomId, targetUserId);
     }
 
     public ChatRoomsSummaryResponse getChatRooms(Integer userId) {
@@ -636,8 +612,7 @@ public class ChatService {
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
-        return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
-            .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
+        return ChatRoomMemberLookup.getRoomMember(chatRoomMemberRepository, roomId, userId);
     }
 
     private ChatRoomMember getAccessibleRoomMember(ChatRoom room, Integer userId) {
@@ -879,30 +854,6 @@ public class ChatService {
         }
 
         return findDirectPartnerFromMemberInfo(memberInfos, userId, userMap);
-    }
-
-    private void validateGroupRoomForKick(ChatRoom room) {
-        if (!room.isGroupRoom() || room.isClubGroupRoom()) {
-            throw CustomException.of(CANNOT_KICK_IN_NON_GROUP_ROOM);
-        }
-    }
-
-    private void validateNotSelfKick(Integer requesterId, Integer targetUserId) {
-        if (requesterId.equals(targetUserId)) {
-            throw CustomException.of(CANNOT_KICK_SELF);
-        }
-    }
-
-    private void validateKickAuthority(ChatRoomMember requester) {
-        if (!requester.isOwner()) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_KICK);
-        }
-    }
-
-    private void validateNotOwnerTarget(ChatRoomMember target) {
-        if (target.isOwner()) {
-            throw CustomException.of(CANNOT_KICK_ROOM_OWNER);
-        }
     }
 
     private void recordPresenceSafely(Integer roomId, Integer userId) {
