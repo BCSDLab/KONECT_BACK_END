@@ -152,10 +152,7 @@ public class ChatRoomMembershipService {
     public void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
-                LocalDateTime lastReadAt = member.getLastReadAt();
-                if (lastReadAt == null || lastReadAt.isBefore(baseline)) {
-                    member.updateLastReadAt(baseline);
-                }
+                updateLastReadAtIfOlder(member, baseline);
             }, () -> saveRoomMemberIgnoringDuplicate(room, user, baseline));
     }
 
@@ -172,11 +169,15 @@ public class ChatRoomMembershipService {
                     return;
                 }
 
-                LocalDateTime lastReadAt = member.getLastReadAt();
-                if (lastReadAt == null || lastReadAt.isBefore(joinedAt)) {
-                    member.updateLastReadAt(joinedAt);
-                }
+                updateLastReadAtIfOlder(member, joinedAt);
             }, () -> saveRoomMemberIgnoringDuplicate(room, user, joinedAt));
+    }
+
+    private void updateLastReadAtIfOlder(ChatRoomMember member, LocalDateTime baseline) {
+        LocalDateTime lastReadAt = member.getLastReadAt();
+        if (lastReadAt == null || lastReadAt.isBefore(baseline)) {
+            member.updateLastReadAt(baseline);
+        }
     }
 
     private void saveRoomMemberIgnoringDuplicate(ChatRoom room, User user, LocalDateTime baseline) {
