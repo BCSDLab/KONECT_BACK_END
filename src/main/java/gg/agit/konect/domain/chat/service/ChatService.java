@@ -83,6 +83,7 @@ public class ChatService {
     private final ChatRoomSummaryService chatRoomSummaryService;
     private final ChatSearchService chatSearchService;
     private final ChatMessagePageResolver chatMessagePageResolver;
+    private final ChatRoomAccessService chatRoomAccessService;
     private final ChatRoomSystemAdminService chatRoomSystemAdminService;
     private final ChatDirectRoomAccessService chatDirectRoomAccessService;
     private final NotificationService notificationService;
@@ -375,7 +376,7 @@ public class ChatService {
             return getClubMessagesByRoomId(roomId, userId, page, limit);
         }
 
-        getAccessibleRoomMember(room, userId);
+        chatRoomAccessService.getAccessibleMember(room, userId);
         chatRoomMembershipService.updateLastReadAt(roomId, userId, readAt);
         recordPresenceSafely(roomId, userId);
         return getGroupMessagesByRoomId(roomId, userId, page, limit);
@@ -403,19 +404,7 @@ public class ChatService {
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CHAT_ROOM));
         User user = userRepository.getById(userId);
 
-        if (room.isClubGroupRoom()) {
-            ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
-            ensureRoomMember(room, member.getUser(), member.getCreatedAt());
-        } else if (room.isDirectRoom()) {
-            // 어드민이 SYSTEM_ADMIN 방에 접근하는 경우는 멤버십 체크를 건너뜀
-            boolean isAdminAccessingSystemAdminRoom = user.isAdmin()
-                && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
-            if (!isAdminAccessingSystemAdminRoom) {
-                chatDirectRoomAccessService.getAccessibleMember(room, user);
-            }
-        } else {
-            getAccessibleRoomMember(room, userId);
-        }
+        chatRoomAccessService.ensureMuteAccess(room, user);
         Boolean isMuted = notificationMuteSettingRepository.findByTargetTypeAndTargetIdAndUserId(
                 NotificationTargetType.CHAT_ROOM,
                 roomId,
@@ -444,7 +433,7 @@ public class ChatService {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
 
-        ChatRoomMember roomMember = getAccessibleRoomMember(room, userId);
+        ChatRoomMember roomMember = chatRoomAccessService.getAccessibleMember(room, userId);
         roomMember.updateCustomRoomName(normalizeCustomRoomName(request.roomName()));
     }
 
@@ -976,27 +965,6 @@ public class ChatService {
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
         return chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, userId)
             .orElseThrow(() -> CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS));
-    }
-
-    private ChatRoomMember getAccessibleRoomMember(ChatRoom room, Integer userId) {
-        if (room.isClubGroupRoom()) {
-            ClubMember member = clubMemberRepository.getByClubIdAndUserId(room.getClub().getId(), userId);
-            ensureRoomMember(room, member.getUser(), member.getCreatedAt());
-            return getRoomMember(room.getId(), userId);
-        }
-
-        if (room.isDirectRoom()) {
-            User user = userRepository.getById(userId);
-            return chatDirectRoomAccessService.getAccessibleMember(room, user);
-        }
-
-        ChatRoomMember member = getRoomMember(room.getId(), userId);
-
-        if (member.hasLeft()) {
-            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
-        }
-
-        return member;
     }
 
     private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
