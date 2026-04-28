@@ -469,6 +469,7 @@ class ChatServiceTest extends ServiceTestSupport {
         // then
         assertThat(response.isMuted()).isTrue();
         assertThat(setting.getIsMuted()).isTrue();
+        verify(userRepository, times(1)).getById(userId);
         verify(notificationMuteSettingRepository).save(setting);
     }
 

@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class ChatRoomAccessService {
 
     private final ChatRoomMemberRepository chatRoomMemberRepository;
@@ -42,12 +42,16 @@ public class ChatRoomAccessService {
         return member;
     }
 
+    public ChatRoomMember getAccessibleMember(ChatRoom room, User user) {
+        return getAccessibleMember(room, user.getId());
+    }
+
     public void ensureMuteAccess(ChatRoom room, User user) {
         if (room.isDirectRoom() && user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(room.getId())) {
             return;
         }
 
-        getAccessibleMember(room, user.getId());
+        getAccessibleMember(room, user);
     }
 
     private ChatRoomMember getRoomMember(Integer roomId, Integer userId) {
