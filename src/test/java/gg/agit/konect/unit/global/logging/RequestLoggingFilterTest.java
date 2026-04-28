@@ -9,13 +9,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.util.PathMatcher;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 
 import gg.agit.konect.global.logging.LoggingProperties;
@@ -91,6 +95,22 @@ class RequestLoggingFilterTest {
             .matches("[A-Za-z0-9._-]{1,128}");
     }
 
+    @Test
+    @DisplayName("요청 본문 캐시는 유지하되 원본 response를 그대로 전달한다")
+    void wrapsRequestOnlyForExceptionBodyLogging() throws ServletException, IOException {
+        // given
+        RequestLoggingFilter filter = createFilter();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/notifications/inbox");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        RequestWrapperResponseAssertFilterChain chain = new RequestWrapperResponseAssertFilterChain(response);
+
+        // when
+        filter.doFilter(request, response, chain);
+
+        // then
+        assertThat(chain.invoked).isTrue();
+    }
+
     private RequestLoggingFilter createFilter() {
         StaticListableBeanFactory beanFactory = new StaticListableBeanFactory();
         beanFactory.addBean("pathMatcher", new AntPathMatcher());
@@ -104,6 +124,23 @@ class RequestLoggingFilterTest {
         protected void service(jakarta.servlet.http.HttpServletRequest req,
             jakarta.servlet.http.HttpServletResponse resp) {
             resp.setStatus(MockHttpServletResponse.SC_OK);
+        }
+    }
+
+    private static class RequestWrapperResponseAssertFilterChain implements FilterChain {
+
+        private final ServletResponse expectedResponse;
+        private boolean invoked;
+
+        private RequestWrapperResponseAssertFilterChain(ServletResponse expectedResponse) {
+            this.expectedResponse = expectedResponse;
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response) {
+            invoked = true;
+            assertThat(request).isInstanceOf(ContentCachingRequestWrapper.class);
+            assertThat(response).isSameAs(expectedResponse);
         }
     }
 }
