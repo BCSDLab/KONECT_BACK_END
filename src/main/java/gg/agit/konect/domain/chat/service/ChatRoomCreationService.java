@@ -33,7 +33,7 @@ public class ChatRoomCreationService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final UserRepository userRepository;
-    private final ChatRoomSystemAdminService chatRoomSystemAdminService;
+    private final ChatRoomMembershipService chatRoomMembershipService;
 
     public ChatRoomResponse createOrGetChatRoom(Integer currentUserId, ChatRoomCreateRequest request) {
         User currentUser = userRepository.getById(currentUserId);
@@ -55,8 +55,8 @@ public class ChatRoomCreationService {
             .orElseGet(() -> chatRoomRepository.save(ChatRoom.directOf()));
 
         LocalDateTime joinedAt = Objects.requireNonNull(chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null");
-        ensureDirectRoomRequester(chatRoom, currentUser, joinedAt);
-        ensureRoomMember(chatRoom, targetUser, joinedAt);
+        chatRoomMembershipService.ensureDirectRoomRequester(chatRoom, currentUser, joinedAt);
+        chatRoomMembershipService.ensureMember(chatRoom, targetUser, joinedAt);
 
         return ChatRoomResponse.from(chatRoom);
     }
@@ -106,51 +106,16 @@ public class ChatRoomCreationService {
                 LocalDateTime joinedAt = Objects.requireNonNull(
                     newRoom.getCreatedAt(), "chatRoom.createdAt must not be null"
                 );
-                ensureRoomMember(newRoom, systemAdmin, joinedAt);
-                ensureRoomMember(newRoom, targetUser, joinedAt);
+                chatRoomMembershipService.ensureMember(newRoom, systemAdmin, joinedAt);
+                chatRoomMembershipService.ensureMember(newRoom, targetUser, joinedAt);
                 return newRoom;
             });
 
         LocalDateTime joinedAt = Objects.requireNonNull(
             chatRoom.getCreatedAt(), "chatRoom.createdAt must not be null"
         );
-        ensureDirectRoomRequester(chatRoom, adminUser, joinedAt);
+        chatRoomMembershipService.ensureDirectRoomRequester(chatRoom, adminUser, joinedAt);
 
         return ChatRoomResponse.from(chatRoom);
-    }
-
-    private void ensureRoomMember(ChatRoom room, User user, LocalDateTime joinedAt) {
-        chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
-            .ifPresentOrElse(member -> {
-                LocalDateTime lastReadAt = member.getLastReadAt();
-                if (lastReadAt == null || lastReadAt.isBefore(joinedAt)) {
-                    member.updateLastReadAt(joinedAt);
-                }
-            }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, joinedAt)));
-    }
-
-    private void ensureDirectRoomRequester(ChatRoom room, User user, LocalDateTime joinedAt) {
-        if (shouldSkipSystemAdminMembership(room, user)) {
-            return;
-        }
-
-        chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
-            .ifPresentOrElse(member -> {
-                if (member.hasLeft()) {
-                    member.reopenDirectRoom(LocalDateTime.now());
-                    return;
-                }
-
-                LocalDateTime lastReadAt = member.getLastReadAt();
-                if (lastReadAt == null || lastReadAt.isBefore(joinedAt)) {
-                    member.updateLastReadAt(joinedAt);
-                }
-            }, () -> chatRoomMemberRepository.save(ChatRoomMember.of(room, user, joinedAt)));
-    }
-
-    private boolean shouldSkipSystemAdminMembership(ChatRoom room, User user) {
-        // 문의방은 SYSTEM_ADMIN + 일반 사용자 2인 구조를 전제로 재사용(findByTwoUsers)되므로,
-        // 생성/재오픈 경로에서도 일반 ADMIN을 멤버로 추가하면 안 된다.
-        return user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
     }
 }

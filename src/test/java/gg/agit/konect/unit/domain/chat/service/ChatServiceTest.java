@@ -43,15 +43,17 @@ import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.enums.ChatType;
+import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
-import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.chat.service.ChatDirectRoomAccessService;
+import gg.agit.konect.domain.chat.service.ChatInviteService;
+import gg.agit.konect.domain.chat.service.ChatMessageSendService;
 import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
 import gg.agit.konect.domain.chat.service.ChatRoomCreationService;
@@ -99,9 +101,6 @@ class ChatServiceTest extends ServiceTestSupport {
     private ClubMemberRepository clubMemberRepository;
 
     @Mock
-    private ChatInviteQueryRepository chatInviteQueryRepository;
-
-    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -115,6 +114,9 @@ class ChatServiceTest extends ServiceTestSupport {
 
     @Mock
     private ChatSearchService chatSearchService;
+
+    @Mock
+    private ChatInviteService chatInviteService;
 
     @Mock
     private ChatRoomSystemAdminService chatRoomSystemAdminService;
@@ -137,11 +139,29 @@ class ChatServiceTest extends ServiceTestSupport {
             clubMemberRepository,
             chatRoomSystemAdminService
         );
+        ChatRoomMembershipService chatRoomMembershipForCreation = new ChatRoomMembershipService(
+            chatRoomRepository,
+            chatRoomMemberRepository,
+            clubMemberRepository,
+            userRepository,
+            chatRoomSystemAdminService
+        );
         ChatRoomCreationService chatRoomCreationService = new ChatRoomCreationService(
             chatRoomRepository,
             chatRoomMemberRepository,
             userRepository,
-            chatRoomSystemAdminService
+            chatRoomMembershipForCreation
+        );
+        ChatMessageSendService chatMessageSendService = new ChatMessageSendService(
+            chatRoomRepository,
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            clubMemberRepository,
+            userRepository,
+            chatRoomSystemAdminService,
+            chatDirectRoomAccessService,
+            notificationService,
+            eventPublisher
         );
         chatService = new ChatService(
             chatRoomRepository,
@@ -150,18 +170,17 @@ class ChatServiceTest extends ServiceTestSupport {
             chatRoomMemberRepository,
             notificationMuteSettingRepository,
             clubMemberRepository,
-            chatInviteQueryRepository,
             userRepository,
             chatPresenceService,
             chatRoomMembershipService,
             chatRoomSummaryService,
             chatSearchService,
+            chatInviteService,
             chatMessagePageResolver,
             chatRoomCreationService,
             chatRoomSystemAdminService,
             chatDirectRoomAccessService,
-            notificationService,
-            eventPublisher
+            chatMessageSendService
         );
     }
 
@@ -1043,6 +1062,51 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("sendMessage는 일반 사용자가 SYSTEM_ADMIN 방에 보내면 관리자 문의 이벤트를 발행한다")
+    void sendMessageByUserInSystemAdminRoomPublishesAdminChatEvent() {
+        // given
+        Integer senderId = 20;
+        String content = "문의합니다";
+        User sender = createUser(senderId, "사용자", UserRole.USER);
+        User systemAdmin = createUser(SYSTEM_ADMIN_ID, "시스템관리자", UserRole.ADMIN);
+        ChatRoom systemAdminRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember senderMember = createRoomMember(systemAdminRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember systemAdminMember = createRoomMember(systemAdminRoom, systemAdmin, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, systemAdminRoom, sender, content,
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
+        given(userRepository.getById(senderId)).willReturn(sender);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(systemAdminRoom.getId(), senderId))
+            .willReturn(Optional.of(senderMember));
+        given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
+            .willReturn(List.of(systemAdminMember, senderMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            systemAdminRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
+        given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(systemAdminRoom.getId()), eq(senderId),
+            any(LocalDateTime.class)))
+            .willReturn(1);
+
+        // when
+        chatService.sendMessage(senderId, systemAdminRoom.getId(), new ChatMessageSendRequest(content));
+
+        // then
+        ArgumentCaptor<AdminChatReceivedEvent> eventCaptor = ArgumentCaptor.forClass(AdminChatReceivedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue())
+            .extracting(
+                AdminChatReceivedEvent::senderId,
+                AdminChatReceivedEvent::senderName,
+                AdminChatReceivedEvent::content
+            )
+            .containsExactly(senderId, sender.getName(), content);
+    }
+
+    @Test
     @DisplayName("sendMessage는 admin이 system admin room에 보내면 멤버십 체크를 건너뛰고 lastReadAt 업데이트도 하지 않는다")
     void sendMessageAdminBypassesMembershipInSystemAdminRoom() {
         // given
@@ -1084,6 +1148,7 @@ class ChatServiceTest extends ServiceTestSupport {
         // 비관리자에게 알림이 전송되어야 한다
         verify(notificationService).sendChatNotification(eq(targetUserId), eq(systemAdminRoom.getId()), eq("관리자"),
             eq("문의"));
+        verify(eventPublisher, never()).publishEvent(any(AdminChatReceivedEvent.class));
     }
 
     // ===== toggleMute additional =====
