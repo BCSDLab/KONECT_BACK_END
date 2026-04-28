@@ -25,22 +25,26 @@ public class ChatRoomAccessService {
     private final ChatDirectRoomAccessService chatDirectRoomAccessService;
 
     public ChatRoomMember getAccessibleMember(ChatRoom room, Integer userId) {
-        return getAccessibleMember(room, userId, null);
+        if (room.isDirectRoom()) {
+            User user = userRepository.getById(userId);
+            return chatDirectRoomAccessService.getAccessibleMember(room, user);
+        }
+
+        return getAccessibleNonDirectMember(room, userId);
     }
 
     public ChatRoomMember getAccessibleMember(ChatRoom room, User user) {
-        return getAccessibleMember(room, user.getId(), user);
+        if (room.isDirectRoom()) {
+            return chatDirectRoomAccessService.getAccessibleMember(room, user);
+        }
+
+        return getAccessibleNonDirectMember(room, user.getId());
     }
 
-    private ChatRoomMember getAccessibleMember(ChatRoom room, Integer userId, User directRoomUser) {
+    private ChatRoomMember getAccessibleNonDirectMember(ChatRoom room, Integer userId) {
         if (room.isClubGroupRoom()) {
             chatRoomMembershipService.ensureClubRoomMember(room, userId);
             return getRoomMember(room.getId(), userId);
-        }
-
-        if (room.isDirectRoom()) {
-            User user = directRoomUser != null ? directRoomUser : userRepository.getById(userId);
-            return chatDirectRoomAccessService.getAccessibleMember(room, user);
         }
 
         ChatRoomMember member = getRoomMember(room.getId(), userId);
