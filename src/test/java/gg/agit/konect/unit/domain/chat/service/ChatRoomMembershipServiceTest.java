@@ -419,6 +419,28 @@ class ChatRoomMembershipServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("ensureClubRoomMember는 이미 조회한 club group room을 재조회하지 않고 멤버를 보장한다")
+    void ensureClubRoomMemberUsesProvidedRoomWithoutRefetch() {
+        // given
+        Club club = createClub(10);
+        ChatRoom room = createRoom(30, ChatType.CLUB_GROUP, LocalDateTime.of(2026, 4, 11, 9, 0));
+        ReflectionTestUtils.setField(room, "club", club);
+        User user = createUser(20, "동아리원", UserRole.USER);
+        ClubMember clubMember = createClubMember(club, user, LocalDateTime.of(2026, 4, 11, 10, 0));
+
+        given(clubMemberRepository.getByClubIdAndUserId(club.getId(), user.getId())).willReturn(clubMember);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId()))
+            .willReturn(Optional.empty());
+
+        // when
+        chatRoomMembershipService.ensureClubRoomMember(room, user.getId());
+
+        // then
+        verify(chatRoomRepository, never()).findById(any());
+        verify(chatRoomMemberRepository).save(any(ChatRoomMember.class));
+    }
+
+    @Test
     @DisplayName("updateLastReadAt는 저장된 값이 더 오래된 경우에만 갱신 쿼리를 위임한다")
     void updateLastReadAtDelegatesConditionalUpdate() {
         // when

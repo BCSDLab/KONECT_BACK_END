@@ -34,7 +34,7 @@ public class ChatRoomAccessService {
 
     private ChatRoomMember getAccessibleMember(ChatRoom room, Integer userId, User directRoomUser) {
         if (room.isClubGroupRoom()) {
-            chatRoomMembershipService.ensureClubRoomMember(room.getId(), userId);
+            chatRoomMembershipService.ensureClubRoomMember(room, userId);
             return getRoomMember(room.getId(), userId);
         }
 
