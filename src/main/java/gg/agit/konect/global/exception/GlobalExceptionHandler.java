@@ -1,11 +1,14 @@
 package gg.agit.konect.global.exception;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
@@ -41,6 +44,21 @@ import lombok.extern.slf4j.Slf4j;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger RUNTIME_ERROR_LOGGER = LoggerFactory.getLogger("runtime.error");
+    private static final String MASKED_HEADER_VALUE = "***";
+    private static final List<String> SENSITIVE_HEADER_NAMES = List.of(
+        "authorization",
+        "cookie",
+        "proxy-authorization",
+        "set-cookie"
+    );
+    private static final List<String> SENSITIVE_QUERY_PARAMETER_NAMES = List.of(
+        "access_token",
+        "client_secret",
+        "code",
+        "password",
+        "refresh_token",
+        "token"
+    );
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Object> handleCustomException(
@@ -203,6 +221,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         RUNTIME_ERROR_LOGGER.error(slackMessage);
+        requestDebugLogging(request);
 
         return buildErrorResponse(ApiResponseCode.UNEXPECTED_SERVER_ERROR);
     }
@@ -253,20 +272,39 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorTraceId
     ) {
         log.warn("[{}] {} | errorTraceId={}", httpStatus, errorMessage, errorTraceId);
+        requestDebugLogging(request);
+    }
+
+    private void requestDebugLogging(HttpServletRequest request) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
         log.debug("Request: {} {}", request.getMethod(), request.getRequestURI());
-        log.debug("Headers: {}", getHeaders(request));
+        log.debug("Headers: {}", getLoggableHeaders(request));
         log.debug("Query String: {}", getQueryString(request));
         log.debug("Body: {}", getRequestBody(request));
     }
 
-    private Map<String, Object> getHeaders(HttpServletRequest request) {
+    private Map<String, Object> getLoggableHeaders(HttpServletRequest request) {
         Map<String, Object> headerMap = new HashMap<>();
         Enumeration<String> headerArray = request.getHeaderNames();
         while (headerArray.hasMoreElements()) {
             String headerName = headerArray.nextElement();
-            headerMap.put(headerName, request.getHeader(headerName));
+            headerMap.put(headerName, getLoggableHeaderValue(request, headerName));
         }
         return headerMap;
+    }
+
+    private String getLoggableHeaderValue(HttpServletRequest request, String headerName) {
+        if (isSensitiveHeader(headerName)) {
+            return MASKED_HEADER_VALUE;
+        }
+        return request.getHeader(headerName);
+    }
+
+    private boolean isSensitiveHeader(String headerName) {
+        return SENSITIVE_HEADER_NAMES.stream()
+            .anyMatch(sensitiveHeaderName -> sensitiveHeaderName.equalsIgnoreCase(headerName));
     }
 
     private String getQueryString(HttpServletRequest httpRequest) {
@@ -274,7 +312,42 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (queryString == null) {
             return " - ";
         }
-        return queryString;
+        return getLoggableQueryString(queryString);
+    }
+
+    private String getLoggableQueryString(String queryString) {
+        StringJoiner loggableQueryString = new StringJoiner("&");
+        for (String parameter : queryString.split("&", -1)) {
+            loggableQueryString.add(getLoggableQueryParameter(parameter));
+        }
+        return loggableQueryString.toString();
+    }
+
+    private String getLoggableQueryParameter(String parameter) {
+        int delimiterIndex = parameter.indexOf('=');
+        String parameterName = delimiterIndex >= 0
+            ? parameter.substring(0, delimiterIndex)
+            : parameter;
+
+        if (!isSensitiveQueryParameter(parameterName)) {
+            return parameter;
+        }
+
+        return parameterName + "=" + MASKED_HEADER_VALUE;
+    }
+
+    private boolean isSensitiveQueryParameter(String parameterName) {
+        String decodedParameterName = decodeQueryParameterName(parameterName);
+        return SENSITIVE_QUERY_PARAMETER_NAMES.stream()
+            .anyMatch(sensitiveParameterName -> sensitiveParameterName.equalsIgnoreCase(decodedParameterName));
+    }
+
+    private String decodeQueryParameterName(String parameterName) {
+        try {
+            return URLDecoder.decode(parameterName, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return parameterName;
+        }
     }
 
     private String getRequestBody(HttpServletRequest request) {
