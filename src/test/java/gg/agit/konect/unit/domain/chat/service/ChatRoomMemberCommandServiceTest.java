@@ -6,6 +6,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -81,7 +82,9 @@ class ChatRoomMemberCommandServiceTest extends ServiceTestSupport {
         );
 
         // then
-        verify(chatRoomMembershipService).ensureMember(any(ChatRoom.class), any(User.class), any(LocalDateTime.class));
+        verify(chatRoomMembershipService).ensureMember(eq(room), eq(newMember), any(LocalDateTime.class));
+        verify(chatRoomMembershipService, never()).ensureMember(eq(room), eq(requester), any(LocalDateTime.class));
+        verify(chatRoomMembershipService, never()).ensureMember(eq(room), eq(existingMember), any(LocalDateTime.class));
     }
 
     @Test
