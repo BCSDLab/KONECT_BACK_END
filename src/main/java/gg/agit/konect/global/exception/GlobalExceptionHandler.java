@@ -41,6 +41,13 @@ import lombok.extern.slf4j.Slf4j;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger RUNTIME_ERROR_LOGGER = LoggerFactory.getLogger("runtime.error");
+    private static final String MASKED_HEADER_VALUE = "***";
+    private static final List<String> SENSITIVE_HEADER_NAMES = List.of(
+        "authorization",
+        "cookie",
+        "proxy-authorization",
+        "set-cookie"
+    );
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Object> handleCustomException(
@@ -258,20 +265,35 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private void requestDebugLogging(HttpServletRequest request) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
         log.debug("Request: {} {}", request.getMethod(), request.getRequestURI());
-        log.debug("Headers: {}", getHeaders(request));
+        log.debug("Headers: {}", getLoggableHeaders(request));
         log.debug("Query String: {}", getQueryString(request));
         log.debug("Body: {}", getRequestBody(request));
     }
 
-    private Map<String, Object> getHeaders(HttpServletRequest request) {
+    private Map<String, Object> getLoggableHeaders(HttpServletRequest request) {
         Map<String, Object> headerMap = new HashMap<>();
         Enumeration<String> headerArray = request.getHeaderNames();
         while (headerArray.hasMoreElements()) {
             String headerName = headerArray.nextElement();
-            headerMap.put(headerName, request.getHeader(headerName));
+            headerMap.put(headerName, getLoggableHeaderValue(request, headerName));
         }
         return headerMap;
+    }
+
+    private String getLoggableHeaderValue(HttpServletRequest request, String headerName) {
+        if (isSensitiveHeader(headerName)) {
+            return MASKED_HEADER_VALUE;
+        }
+        return request.getHeader(headerName);
+    }
+
+    private boolean isSensitiveHeader(String headerName) {
+        return SENSITIVE_HEADER_NAMES.stream()
+            .anyMatch(sensitiveHeaderName -> sensitiveHeaderName.equalsIgnoreCase(headerName));
     }
 
     private String getQueryString(HttpServletRequest httpRequest) {

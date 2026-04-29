@@ -43,6 +43,9 @@ class GlobalExceptionHandlerTest {
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/clubs");
         request.setContentType("application/json");
+        request.addHeader("Authorization", "Bearer secret-token");
+        request.addHeader("Cookie", "session=secret-cookie");
+        request.addHeader("X-Request-ID", "request-1");
         request.setContent("""
             {"name":"KONECT"}
             """.getBytes());
@@ -55,6 +58,34 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(output)
             .contains("Request: POST /clubs")
+            .contains("Authorization=***")
+            .contains("Cookie=***")
+            .contains("X-Request-ID=request-1")
+            .doesNotContain("secret-token")
+            .doesNotContain("secret-cookie")
             .contains("Body: {\"name\":\"KONECT\"}");
+    }
+
+    @Test
+    @DisplayName("DEBUG 로그가 꺼져 있으면 요청 상세 정보를 계산하지 않는다")
+    void skipsRequestDetailLoggingWhenDebugIsDisabled(CapturedOutput output) {
+        // given
+        exceptionHandlerLogger.setLevel(Level.INFO);
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/clubs");
+        request.setContentType("application/json");
+        request.setContent("""
+            {"name":"KONECT"}
+            """.getBytes());
+        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
+
+        // when
+        var response = handler.handleException(wrappedRequest, new RuntimeException("boom"));
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(output)
+            .doesNotContain("Request: POST /clubs")
+            .doesNotContain("Body: {\"name\":\"KONECT\"}");
     }
 }
