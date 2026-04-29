@@ -16,6 +16,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersInviteRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
@@ -252,6 +253,28 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "그룹 채팅방에 멤버를 초대한다.", description = """
+        ## 설명
+        - 일반 그룹 채팅방의 기존 멤버가 여러 유저를 추가 초대합니다.
+        
+        ## 로직
+        - 방장 여부와 관계없이 현재 참여 중인 멤버라면 초대할 수 있습니다.
+        - 1:1 채팅방과 동아리 채팅방에는 초대할 수 없습니다.
+        - 이미 참여 중인 멤버, 요청자 자신, 중복 userId는 무시합니다.
+        
+        ## 에러
+        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
+        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
+        - CANNOT_INVITE_IN_NON_GROUP_ROOM (400): 일반 그룹 채팅방에서만 초대할 수 있습니다.
+        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
+        """)
+    @PostMapping("/rooms/{chatRoomId}/members")
+    ResponseEntity<Void> inviteMembers(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @Valid @RequestBody ChatRoomMembersInviteRequest request,
+        @UserId Integer userId
+    );
+
     @Operation(summary = "그룹 채팅방을 생성한다.", description = """
         ## 설명
         - 여러 유저를 초대하여 그룹 채팅방을 생성합니다.
@@ -273,12 +296,12 @@ public interface ChatApi {
     @Operation(summary = "채팅방 멤버 목록 조회", description = """
         ## 설명
         - 특정 채팅방의 모든 멤버 목록을 조회합니다.
-
+        
         ## 로직
         - 채팅방에 참여 중인 멤버만 조회할 수 있습니다.
         - 나간 멤버(leftAt이 설정된 멤버)는 목록에 포함되지 않습니다.
         - 각 멤버의 userId, 이름, 프로필 이미지, 방장 여부, 참여 시간을 반환합니다.
-
+        
         ## 에러
         - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
         - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.

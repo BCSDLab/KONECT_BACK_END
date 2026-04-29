@@ -23,6 +23,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersInviteRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomSummaryResponse;
@@ -103,6 +104,11 @@ public class ChatService {
     @Transactional
     public void kickMember(Integer requesterId, Integer roomId, Integer targetUserId) {
         chatRoomMemberCommandService.kickMember(requesterId, roomId, targetUserId);
+    }
+
+    @Transactional
+    public void inviteMembers(Integer requesterId, Integer roomId, ChatRoomMembersInviteRequest request) {
+        chatRoomMemberCommandService.inviteMembers(requesterId, roomId, request.userIds());
     }
 
     public ChatRoomsSummaryResponse getChatRooms(Integer userId) {

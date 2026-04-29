@@ -32,6 +32,7 @@ import org.springframework.util.LinkedMultiValueMap;
 
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersInviteRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.enums.ChatType;
 import gg.agit.konect.domain.chat.model.ChatMessage;
@@ -1602,6 +1603,166 @@ class ChatApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.senderName").value(normalUser.getName()))
                 .andExpect(jsonPath("$.content").value("그룹방 첫 메시지"))
                 .andExpect(jsonPath("$.isMine").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /chats/rooms/{chatRoomId}/members - 그룹 채팅방 멤버 초대")
+    class InviteMembers {
+
+        private User ownerUser;
+        private User memberUser;
+        private User newMemberA;
+        private User newMemberB;
+        private ChatRoom groupRoom;
+
+        @BeforeEach
+        void setUpInviteFixture() {
+            ownerUser = createUser("초대방장", "2021136101");
+            memberUser = createUser("초대멤버", "2021136102");
+            newMemberA = createUser("새멤버A", "2021136103");
+            newMemberB = createUser("새멤버B", "2021136104");
+            groupRoom = createGroupChatRoomWithOwner(ownerUser, memberUser);
+            clearPersistenceContext();
+        }
+
+        @Test
+        @DisplayName("GROUP active 멤버가 여러 명을 초대한다")
+        void inviteMembersSuccess() throws Exception {
+            mockLoginUser(memberUser.getId());
+
+            performPost(
+                "/chats/rooms/" + groupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(List.of(newMemberA.getId(), newMemberB.getId()))
+            )
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomId(groupRoom.getId()))
+                .extracting(ChatRoomMember::getUserId)
+                .containsExactlyInAnyOrder(
+                    ownerUser.getId(),
+                    memberUser.getId(),
+                    newMemberA.getId(),
+                    newMemberB.getId()
+                );
+        }
+
+        @Test
+        @DisplayName("방장이 아닌 active 멤버도 초대할 수 있다")
+        void nonOwnerMemberCanInviteMembers() throws Exception {
+            mockLoginUser(memberUser.getId());
+
+            performPost(
+                "/chats/rooms/" + groupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(List.of(newMemberA.getId()))
+            )
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+            ChatRoomMember invitedMember = chatRoomMemberRepository
+                .findByChatRoomIdAndUserId(groupRoom.getId(), newMemberA.getId())
+                .orElseThrow();
+            assertThat(invitedMember.isOwner()).isFalse();
+        }
+
+        @Test
+        @DisplayName("채팅방 멤버가 아니면 초대할 수 없다")
+        void inviteMembersByOutsiderFails() throws Exception {
+            User outsider = createUser("외부사용자", "2021136105");
+            mockLoginUser(outsider.getId());
+
+            performPost(
+                "/chats/rooms/" + groupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(List.of(newMemberA.getId()))
+            )
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_CHAT_ROOM_ACCESS"));
+        }
+
+        @Test
+        @DisplayName("DIRECT 채팅방에는 멤버를 초대할 수 없다")
+        void inviteMembersToDirectRoomFails() throws Exception {
+            ChatRoom directRoom = createDirectChatRoom(ownerUser, memberUser);
+            mockLoginUser(ownerUser.getId());
+
+            performPost(
+                "/chats/rooms/" + directRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(List.of(newMemberA.getId()))
+            )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_INVITE_IN_NON_GROUP_ROOM"));
+        }
+
+        @Test
+        @DisplayName("CLUB_GROUP 채팅방에는 멤버를 초대할 수 없다")
+        void inviteMembersToClubGroupRoomFails() throws Exception {
+            Club inviteClub = persist(ClubFixture.create(university, "초대 테스트 동아리"));
+            ChatRoom clubGroupRoom = persist(ChatRoom.clubGroupOf(inviteClub));
+            addRoomMember(clubGroupRoom, ownerUser);
+            mockLoginUser(ownerUser.getId());
+
+            performPost(
+                "/chats/rooms/" + clubGroupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(List.of(newMemberA.getId()))
+            )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_INVITE_IN_NON_GROUP_ROOM"));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 userId가 포함되면 전체 요청을 실패시킨다")
+        void inviteMembersWithMissingUserFails() throws Exception {
+            mockLoginUser(memberUser.getId());
+
+            performPost(
+                "/chats/rooms/" + groupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(List.of(newMemberA.getId(), 99999))
+            )
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND_USER"));
+
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomIdAndUserId(
+                groupRoom.getId(), newMemberA.getId()
+            )).isEmpty();
+        }
+
+        @Test
+        @DisplayName("userIds에 null이 포함되면 validation 에러를 반환한다")
+        void inviteMembersWithNullUserIdFails() throws Exception {
+            mockLoginUser(memberUser.getId());
+            List<Integer> userIds = new ArrayList<>();
+            userIds.add(null);
+
+            performPost(
+                "/chats/rooms/" + groupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(userIds)
+            )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+        }
+
+        @Test
+        @DisplayName("이미 참여 중인 멤버와 자기 자신과 중복 userId는 무시한다")
+        void inviteMembersIgnoresExistingSelfAndDuplicateUsers() throws Exception {
+            mockLoginUser(memberUser.getId());
+
+            performPost(
+                "/chats/rooms/" + groupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(List.of(
+                    memberUser.getId(),
+                    ownerUser.getId(),
+                    newMemberA.getId(),
+                    newMemberA.getId()
+                ))
+            )
+                .andExpect(status().isNoContent());
+
+            clearPersistenceContext();
+            assertThat(chatRoomMemberRepository.findByChatRoomId(groupRoom.getId()))
+                .extracting(ChatRoomMember::getUserId)
+                .containsExactlyInAnyOrder(ownerUser.getId(), memberUser.getId(), newMemberA.getId());
         }
     }
 

@@ -15,6 +15,7 @@ import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersInviteRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
@@ -140,6 +141,16 @@ public class ChatController implements ChatApi {
         @UserId Integer userId
     ) {
         chatService.kickMember(userId, chatRoomId, targetUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> inviteMembers(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @Valid @RequestBody ChatRoomMembersInviteRequest request,
+        @UserId Integer userId
+    ) {
+        chatService.inviteMembers(userId, chatRoomId, request);
         return ResponseEntity.noContent().build();
     }
 
