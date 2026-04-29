@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDateTime;
@@ -34,6 +35,7 @@ import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
 import gg.agit.konect.support.ServiceTestSupport;
+import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UserFixture;
 
@@ -69,10 +71,10 @@ class ChatRoomMemberCommandServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(roomId, requesterId)).willReturn(true);
         given(userRepository.findAllByIdIn(List.of(requesterId, existingMember.getId(), newMember.getId())))
             .willReturn(List.of(requester, existingMember, newMember));
-        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(roomId, existingMember.getId()))
-            .willReturn(true);
-        given(chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(roomId, newMember.getId()))
-            .willReturn(false);
+        given(chatRoomMemberRepository.findActiveUserIdsByChatRoomIdAndUserIdIn(
+            roomId,
+            List.of(requesterId, existingMember.getId(), newMember.getId())
+        )).willReturn(List.of(requesterId, existingMember.getId()));
 
         // when
         chatRoomMemberCommandService.inviteMembers(
@@ -82,7 +84,8 @@ class ChatRoomMemberCommandServiceTest extends ServiceTestSupport {
         );
 
         // then
-        verify(chatRoomMembershipService).ensureMember(eq(room), eq(newMember), any(LocalDateTime.class));
+        verify(chatRoomMembershipService, times(1))
+            .ensureMember(eq(room), eq(newMember), any(LocalDateTime.class));
         verify(chatRoomMembershipService, never()).ensureMember(eq(room), eq(requester), any(LocalDateTime.class));
         verify(chatRoomMembershipService, never()).ensureMember(eq(room), eq(existingMember), any(LocalDateTime.class));
     }
@@ -93,6 +96,23 @@ class ChatRoomMemberCommandServiceTest extends ServiceTestSupport {
         // given
         Integer roomId = 10;
         ChatRoom room = createRoom(roomId, ChatType.DIRECT);
+        given(chatRoomRepository.findById(roomId)).willReturn(Optional.of(room));
+
+        // when & then
+        assertErrorCode(
+            () -> chatRoomMemberCommandService.inviteMembers(100, roomId, List.of(200)),
+            CANNOT_INVITE_IN_NON_GROUP_ROOM
+        );
+
+        verify(userRepository, never()).findAllByIdIn(any());
+    }
+
+    @Test
+    @DisplayName("CLUB_GROUP 채팅방에는 초대할 수 없다")
+    void inviteMembersToClubGroupRoomFails() {
+        // given
+        Integer roomId = 10;
+        ChatRoom room = createRoom(roomId, ChatType.CLUB_GROUP);
         given(chatRoomRepository.findById(roomId)).willReturn(Optional.of(room));
 
         // when & then
@@ -149,7 +169,9 @@ class ChatRoomMemberCommandServiceTest extends ServiceTestSupport {
         ChatRoom room = switch (type) {
             case DIRECT -> ChatRoom.directOf();
             case GROUP -> ChatRoom.groupOf();
-            case CLUB_GROUP -> throw new IllegalArgumentException("Use fixture for CLUB_GROUP");
+            case CLUB_GROUP -> ChatRoom.clubGroupOf(
+                ClubFixture.createWithId(UniversityFixture.createWithId(1), 77, "BCSD")
+            );
         };
         ReflectionTestUtils.setField(room, "id", id);
         return room;

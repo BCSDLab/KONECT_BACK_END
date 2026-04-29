@@ -11,7 +11,9 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,10 +85,13 @@ public class ChatRoomMemberCommandService {
             throw CustomException.of(NOT_FOUND_USER);
         }
 
+        Set<Integer> existingActiveUserIds = new LinkedHashSet<>(
+            chatRoomMemberRepository.findActiveUserIdsByChatRoomIdAndUserIdIn(roomId, requestedUserIds)
+        );
         LocalDateTime joinedAt = LocalDateTime.now();
         requestedUsers.stream()
             .filter(user -> !user.getId().equals(requesterId))
-            .filter(user -> !chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(roomId, user.getId()))
+            .filter(user -> !existingActiveUserIds.contains(user.getId()))
             .forEach(user -> chatRoomMembershipService.ensureMember(room, user, joinedAt));
     }
 

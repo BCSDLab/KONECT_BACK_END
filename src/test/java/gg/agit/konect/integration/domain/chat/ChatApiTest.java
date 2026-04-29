@@ -1729,6 +1729,21 @@ class ChatApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("userIds에 null이 포함되면 validation 에러를 반환한다")
+        void inviteMembersWithNullUserIdFails() throws Exception {
+            mockLoginUser(memberUser.getId());
+            List<Integer> userIds = new ArrayList<>();
+            userIds.add(null);
+
+            performPost(
+                "/chats/rooms/" + groupRoom.getId() + "/members",
+                new ChatRoomMembersInviteRequest(userIds)
+            )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_BODY"));
+        }
+
+        @Test
         @DisplayName("이미 참여 중인 멤버와 자기 자신과 중복 userId는 무시한다")
         void inviteMembersIgnoresExistingSelfAndDuplicateUsers() throws Exception {
             mockLoginUser(memberUser.getId());
