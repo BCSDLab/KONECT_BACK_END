@@ -152,7 +152,9 @@ class ChatServiceTest extends ServiceTestSupport {
         );
         ChatRoomMemberCommandService chatRoomMemberCommandService = new ChatRoomMemberCommandService(
             chatRoomRepository,
-            chatRoomMemberRepository
+            chatRoomMemberRepository,
+            userRepository,
+            chatRoomMembershipService
         );
         ChatRoomMembershipService chatRoomMembershipForCreation = new ChatRoomMembershipService(
             chatRoomRepository,
