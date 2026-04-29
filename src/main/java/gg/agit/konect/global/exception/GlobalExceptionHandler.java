@@ -1,11 +1,14 @@
 package gg.agit.konect.global.exception;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
@@ -47,6 +50,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         "cookie",
         "proxy-authorization",
         "set-cookie"
+    );
+    private static final List<String> SENSITIVE_QUERY_PARAMETER_NAMES = List.of(
+        "access_token",
+        "client_secret",
+        "code",
+        "password",
+        "refresh_token",
+        "token"
     );
 
     @ExceptionHandler(CustomException.class)
@@ -301,7 +312,42 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (queryString == null) {
             return " - ";
         }
-        return queryString;
+        return getLoggableQueryString(queryString);
+    }
+
+    private String getLoggableQueryString(String queryString) {
+        StringJoiner loggableQueryString = new StringJoiner("&");
+        for (String parameter : queryString.split("&", -1)) {
+            loggableQueryString.add(getLoggableQueryParameter(parameter));
+        }
+        return loggableQueryString.toString();
+    }
+
+    private String getLoggableQueryParameter(String parameter) {
+        int delimiterIndex = parameter.indexOf('=');
+        String parameterName = delimiterIndex >= 0
+            ? parameter.substring(0, delimiterIndex)
+            : parameter;
+
+        if (!isSensitiveQueryParameter(parameterName)) {
+            return parameter;
+        }
+
+        return parameterName + "=" + MASKED_HEADER_VALUE;
+    }
+
+    private boolean isSensitiveQueryParameter(String parameterName) {
+        String decodedParameterName = decodeQueryParameterName(parameterName);
+        return SENSITIVE_QUERY_PARAMETER_NAMES.stream()
+            .anyMatch(sensitiveParameterName -> sensitiveParameterName.equalsIgnoreCase(decodedParameterName));
+    }
+
+    private String decodeQueryParameterName(String parameterName) {
+        try {
+            return URLDecoder.decode(parameterName, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return parameterName;
+        }
     }
 
     private String getRequestBody(HttpServletRequest request) {

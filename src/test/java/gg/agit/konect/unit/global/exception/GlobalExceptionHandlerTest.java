@@ -46,6 +46,10 @@ class GlobalExceptionHandlerTest {
         request.addHeader("Authorization", "Bearer secret-token");
         request.addHeader("Cookie", "session=secret-cookie");
         request.addHeader("X-Request-ID", "request-1");
+        request.setQueryString(
+            "access%5Ftoken=encoded-query-secret&access_token=query-secret&code=oauth-code&name=KONECT"
+                + "&token=repeat-secret-one&token=repeat-secret-two"
+        );
         request.setContent("""
             {"name":"KONECT"}
             """.getBytes());
@@ -63,6 +67,14 @@ class GlobalExceptionHandlerTest {
             .contains("X-Request-ID=request-1")
             .doesNotContain("secret-token")
             .doesNotContain("secret-cookie")
+            .contains(
+                "Query String: access%5Ftoken=***&access_token=***&code=***&name=KONECT&token=***&token=***"
+            )
+            .doesNotContain("encoded-query-secret")
+            .doesNotContain("query-secret")
+            .doesNotContain("oauth-code")
+            .doesNotContain("repeat-secret-one")
+            .doesNotContain("repeat-secret-two")
             .contains("Body: {\"name\":\"KONECT\"}");
     }
 
