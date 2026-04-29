@@ -11,7 +11,6 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
 
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -77,16 +76,16 @@ public class ChatRoomMemberCommandService {
         validateGroupRoomForInvite(room);
         validateActiveRequester(roomId, requesterId);
 
-        List<Integer> requestedUserIds = userIds.stream()
+        List<Integer> distinctUserIds = userIds.stream()
             .distinct()
             .toList();
-        List<User> requestedUsers = userRepository.findAllByIdIn(requestedUserIds);
-        if (requestedUsers.size() != requestedUserIds.size()) {
+        List<User> requestedUsers = userRepository.findAllByIdIn(distinctUserIds);
+        if (requestedUsers.size() != distinctUserIds.size()) {
             throw CustomException.of(NOT_FOUND_USER);
         }
 
-        Set<Integer> existingActiveUserIds = new LinkedHashSet<>(
-            chatRoomMemberRepository.findActiveUserIdsByChatRoomIdAndUserIdIn(roomId, requestedUserIds)
+        Set<Integer> existingActiveUserIds = Set.copyOf(
+            chatRoomMemberRepository.findActiveUserIdsByChatRoomIdAndUserIdIn(roomId, distinctUserIds)
         );
         LocalDateTime joinedAt = LocalDateTime.now();
         requestedUsers.stream()
