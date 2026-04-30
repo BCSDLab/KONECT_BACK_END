@@ -62,7 +62,7 @@ class ChatMessageReadServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("Admin viewer sees other admin messages in a system admin room as mine")
+    @DisplayName("어드민은 SYSTEM_ADMIN 문의방에서 다른 어드민 메시지도 내 메시지로 조회한다")
     void getAdminSystemDirectChatRoomMessagesMarksOtherAdminMessagesAsMine() {
         // given
         User viewerAdmin = createUser(99, "viewer admin", UserRole.ADMIN);
@@ -106,7 +106,7 @@ class ChatMessageReadServiceTest extends ServiceTestSupport {
     }
 
     @Test
-    @DisplayName("Normal user still sees admin messages in a direct room as opponent messages")
+    @DisplayName("일반 사용자는 direct 방의 어드민 메시지를 상대 메시지로 조회한다")
     void getDirectChatRoomMessagesKeepsAdminMessagesAsOpponentForNormalUser() {
         // given
         User normalUser = createUser(20, "normal user", UserRole.USER);

@@ -32,7 +32,11 @@ public record ChatMessageDetailResponse(
     @Schema(description = "미확인 인원 수(그룹채팅에서 제공)", example = "3", requiredMode = NOT_REQUIRED)
     Integer unreadCount,
 
-    @Schema(description = "내가 보낸 메시지 여부", example = "true", requiredMode = REQUIRED)
+    @Schema(
+        description = "내가 보낸 메시지 여부(SYSTEM_ADMIN 문의방을 admin이 조회할 때는 admin 발신 메시지를 모두 true로 반환)",
+        example = "true",
+        requiredMode = REQUIRED
+    )
     Boolean isMine
 ) {
 }
