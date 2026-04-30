@@ -49,7 +49,7 @@ public class ChatMessageReadService {
         Integer maskedAdminId = getMaskedAdminId(user, members);
 
         return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
-            visibleMessageFrom, sortedReadBaselines, maskedAdminId);
+            visibleMessageFrom, sortedReadBaselines, maskedAdminId, false);
     }
 
     public ChatMessagePageResponse getAdminSystemDirectChatRoomMessages(
@@ -67,7 +67,7 @@ public class ChatMessageReadService {
         Integer maskedAdminId = getMaskedAdminId(user, members);
 
         return buildDirectChatRoomMessages(user, roomId, page, limit, readAt,
-            visibleMessageFrom, sortedReadBaselines, maskedAdminId);
+            visibleMessageFrom, sortedReadBaselines, maskedAdminId, true);
     }
 
     public ChatMessagePageResponse getClubMessagesByRoom(
@@ -159,7 +159,8 @@ public class ChatMessageReadService {
         LocalDateTime readAt,
         LocalDateTime visibleMessageFrom,
         List<LocalDateTime> sortedReadBaselines,
-        Integer maskedAdminId
+        Integer maskedAdminId,
+        boolean isAdminViewingSystemRoom
     ) {
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId, visibleMessageFrom, pageable);
@@ -169,7 +170,7 @@ public class ChatMessageReadService {
                 Integer senderId = maskedAdminId != null
                     ? resolveDirectSenderId(message, maskedAdminId)
                     : message.getSender().getId();
-                boolean isMine = message.isSentBy(user.getId());
+                boolean isMine = isOwnDirectMessage(user, message, isAdminViewingSystemRoom);
                 boolean isRead = isMine || !message.getCreatedAt().isAfter(readAt);
                 int unreadCount = countUnreadSince(message.getCreatedAt(), sortedReadBaselines);
                 return new ChatMessageDetailResponse(
@@ -193,6 +194,13 @@ public class ChatMessageReadService {
             null,
             responseMessages
         );
+    }
+
+    private boolean isOwnDirectMessage(User user, ChatMessage message, boolean isAdminViewingSystemRoom) {
+        if (isAdminViewingSystemRoom && user.isAdmin()) {
+            return message.getSender().isAdmin();
+        }
+        return message.isSentBy(user.getId());
     }
 
     private List<LocalDateTime> toSortedReadBaselines(List<ChatRoomMember> members) {
