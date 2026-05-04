@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -44,6 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger RUNTIME_ERROR_LOGGER = LoggerFactory.getLogger("runtime.error");
+    private static final String REQUEST_ID_MDC_KEY = "requestId";
     private static final String MASKED_HEADER_VALUE = "***";
     private static final List<String> SENSITIVE_HEADER_NAMES = List.of(
         "authorization",
@@ -203,27 +205,37 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleException(HttpServletRequest request, Exception e) {
-        StackTraceElement origin = e.getStackTrace()[0];
-
         String uri = String.format("%s %s", request.getMethod(), request.getRequestURI());
         String exception = e.getClass().getSimpleName();
-        String location = String.format("%s:%d", origin.getFileName(), origin.getLineNumber());
+        String location = getExceptionLocation(e);
         String message = e.getMessage();
+        String requestId = getRequestId();
 
         String slackMessage = String.format(
             """
+                Request ID: `%s`
                 URI: `%s`
                 Location: `%s`
                 Exception: `%s`
                 ```%s```
                 """,
-            uri, location, exception, message
+            requestId, uri, location, exception, message
         );
 
         RUNTIME_ERROR_LOGGER.error(slackMessage);
-        requestDebugLogging(request);
+        requestDebugLogging(request, requestId);
 
         return buildErrorResponse(ApiResponseCode.UNEXPECTED_SERVER_ERROR);
+    }
+
+    private String getExceptionLocation(Exception e) {
+        StackTraceElement[] stackTrace = e.getStackTrace();
+        if (stackTrace == null || stackTrace.length == 0) {
+            return "unknown:0";
+        }
+
+        StackTraceElement origin = stackTrace[0];
+        return String.format("%s:%d", origin.getFileName(), origin.getLineNumber());
     }
 
     private ResponseEntity<Object> buildErrorResponse(ApiResponseCode errorCode) {
@@ -272,17 +284,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorTraceId
     ) {
         log.warn("[{}] {} | errorTraceId={}", httpStatus, errorMessage, errorTraceId);
-        requestDebugLogging(request);
+        requestDebugLogging(request, getRequestId());
     }
 
-    private void requestDebugLogging(HttpServletRequest request) {
+    private void requestDebugLogging(HttpServletRequest request, String requestId) {
         if (!log.isDebugEnabled()) {
             return;
         }
-        log.debug("Request: {} {}", request.getMethod(), request.getRequestURI());
-        log.debug("Headers: {}", getLoggableHeaders(request));
-        log.debug("Query String: {}", getQueryString(request));
-        log.debug("Body: {}", getRequestBody(request));
+        log.debug("Request [requestId: {}]: {} {}", requestId, request.getMethod(), request.getRequestURI());
+        log.debug("Headers [requestId: {}]: {}", requestId, getLoggableHeaders(request));
+        log.debug("Query String [requestId: {}]: {}", requestId, getQueryString(request));
+        log.debug("Body [requestId: {}]: {}", requestId, getRequestBody(request));
+    }
+
+    private String getRequestId() {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        if (requestId == null) {
+            return " - ";
+        }
+        return requestId;
     }
 
     private Map<String, Object> getLoggableHeaders(HttpServletRequest request) {
