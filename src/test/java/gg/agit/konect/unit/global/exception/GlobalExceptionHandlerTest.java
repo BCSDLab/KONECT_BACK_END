@@ -103,6 +103,26 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(output)
             .doesNotContain("Request [requestId:")
-            .doesNotContain("Body: {\"name\":\"KONECT\"}");
+            .doesNotContain("Body [requestId:");
+    }
+
+    @Test
+    @DisplayName("스택트레이스가 비어 있는 예외도 2차 예외 없이 처리한다")
+    void handlesUnexpectedExceptionWithoutStackTrace(CapturedOutput output) {
+        // given
+        MDC.put("requestId", "request-empty-stack");
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/clubs");
+        RuntimeException exception = new RuntimeException("boom");
+        exception.setStackTrace(new StackTraceElement[0]);
+
+        // when
+        var response = handler.handleException(request, exception);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(output)
+            .contains("Request ID: `request-empty-stack`")
+            .contains("Location: `unknown:0`");
     }
 }

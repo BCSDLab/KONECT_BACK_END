@@ -205,11 +205,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleException(HttpServletRequest request, Exception e) {
-        StackTraceElement origin = e.getStackTrace()[0];
-
         String uri = String.format("%s %s", request.getMethod(), request.getRequestURI());
         String exception = e.getClass().getSimpleName();
-        String location = String.format("%s:%d", origin.getFileName(), origin.getLineNumber());
+        String location = getExceptionLocation(e);
         String message = e.getMessage();
         String requestId = getRequestId();
 
@@ -228,6 +226,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         requestDebugLogging(request, requestId);
 
         return buildErrorResponse(ApiResponseCode.UNEXPECTED_SERVER_ERROR);
+    }
+
+    private String getExceptionLocation(Exception e) {
+        StackTraceElement[] stackTrace = e.getStackTrace();
+        if (stackTrace.length == 0) {
+            return "unknown:0";
+        }
+
+        StackTraceElement origin = stackTrace[0];
+        return String.format("%s:%d", origin.getFileName(), origin.getLineNumber());
     }
 
     private ResponseEntity<Object> buildErrorResponse(ApiResponseCode errorCode) {
