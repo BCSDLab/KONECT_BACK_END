@@ -125,4 +125,28 @@ class GlobalExceptionHandlerTest {
             .contains("Request ID: `request-empty-stack`")
             .contains("Location: `unknown:0`");
     }
+
+    @Test
+    @DisplayName("스택트레이스가 null인 예외도 2차 예외 없이 처리한다")
+    void handlesUnexpectedExceptionWithNullStackTrace(CapturedOutput output) {
+        // given
+        MDC.put("requestId", "request-null-stack");
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/clubs");
+        RuntimeException exception = new RuntimeException("boom") {
+            @Override
+            public StackTraceElement[] getStackTrace() {
+                return null;
+            }
+        };
+
+        // when
+        var response = handler.handleException(request, exception);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(output)
+            .contains("Request ID: `request-null-stack`")
+            .contains("Location: `unknown:0`");
+    }
 }

@@ -230,7 +230,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private String getExceptionLocation(Exception e) {
         StackTraceElement[] stackTrace = e.getStackTrace();
-        if (stackTrace.length == 0) {
+        if (stackTrace == null || stackTrace.length == 0) {
             return "unknown:0";
         }
 
