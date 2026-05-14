@@ -12,7 +12,7 @@ public final class SecurityPaths {
         "/error",
         "/slack/events",
         "/auth/oauth/google/drive/callback",
-        "/website/**"
+        "/konect/**"
     };
 
     public static final String[] DENY_PATHS = {};
