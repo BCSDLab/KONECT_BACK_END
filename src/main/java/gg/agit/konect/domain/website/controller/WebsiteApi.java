@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,7 +19,9 @@ import gg.agit.konect.domain.website.dto.WebsiteHomeResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 
+@Validated
 @Tag(name = "(Public) Website: 웹사이트 공개 정보")
 @RequestMapping("/website")
 public interface WebsiteApi {
@@ -55,6 +58,6 @@ public interface WebsiteApi {
         """)
     @GetMapping("/clubs/recent")
     ResponseEntity<WebsiteClubsResponse> getRecentClubs(
-        @RequestParam(name = "clubIds") List<Integer> clubIds
+        @RequestParam(name = "clubIds") @Size(min = 1, max = 100) List<Integer> clubIds
     );
 }

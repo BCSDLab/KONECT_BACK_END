@@ -9,7 +9,7 @@ import gg.agit.konect.domain.website.model.WebsiteUniversitySummary;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record WebsiteHomeResponse(
-    @Schema(description = "대학 수", example = "28", requiredMode = REQUIRED)
+    @Schema(description = "검색 결과 대학 수", example = "28", requiredMode = REQUIRED)
     Integer totalUniversityCount,
 
     @Schema(description = "대학 목록", requiredMode = REQUIRED)

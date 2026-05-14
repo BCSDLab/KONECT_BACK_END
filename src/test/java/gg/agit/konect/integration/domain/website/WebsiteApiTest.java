@@ -7,6 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -81,6 +85,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
             persist(createClub(university, "ZEST", ClubCategory.PERFORMANCE));
             persistMember(bcsd, "회원1", "2024000001");
             persistMember(bcsd, "회원2", "2024000002");
+            withdraw(persistMember(bcsd, "탈퇴회원", "2024000004"));
             persistMember(study, "회원3", "2024000003");
             clearPersistenceContext();
 
@@ -161,6 +166,19 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.clubs[0].name").value("두 번째"))
                 .andExpect(jsonPath("$.clubs[1].name").value("첫 번째"));
         }
+
+        @Test
+        @DisplayName("최근 본 동아리 ID가 100개를 초과하면 400을 반환한다")
+        void getRecentClubsRejectsTooManyClubIds() throws Exception {
+            // given
+            String clubIds = IntStream.rangeClosed(1, 101)
+                .mapToObj(String::valueOf)
+                .collect(Collectors.joining(","));
+
+            // when & then
+            performGet("/website/clubs/recent?clubIds=" + clubIds)
+                .andExpect(status().isBadRequest());
+        }
     }
 
     private Club createClub(University university, String name, ClubCategory category) {
@@ -178,8 +196,13 @@ class WebsiteApiTest extends IntegrationTestSupport {
             .build();
     }
 
-    private void persistMember(Club club, String name, String studentNumber) {
+    private User persistMember(Club club, String name, String studentNumber) {
         User user = persist(UserFixture.createUser(club.getUniversity(), name, studentNumber));
         persist(ClubMemberFixture.createMember(club, user));
+        return user;
+    }
+
+    private void withdraw(User user) {
+        user.withdraw(LocalDateTime.now());
     }
 }

@@ -143,7 +143,10 @@ public class WebsiteQueryRepository {
         List<Tuple> rows = jpaQueryFactory
             .select(clubMember.club.id, memberCount)
             .from(clubMember)
-            .where(clubMember.club.id.in(clubIds))
+            .where(
+                clubMember.club.id.in(clubIds),
+                clubMember.user.deletedAt.isNull()
+            )
             .groupBy(clubMember.club.id)
             .fetch();
 

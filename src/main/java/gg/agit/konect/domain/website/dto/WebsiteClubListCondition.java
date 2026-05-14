@@ -1,7 +1,6 @@
 package gg.agit.konect.domain.website.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
-import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,11 +8,11 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 public record WebsiteClubListCondition(
-    @Schema(description = "페이지 번호", example = "1", requiredMode = REQUIRED)
+    @Schema(description = "페이지 번호", example = "1", requiredMode = NOT_REQUIRED)
     @Min(1)
     Integer page,
 
-    @Schema(description = "페이지 크기", example = "12", requiredMode = REQUIRED)
+    @Schema(description = "페이지 크기", example = "12", requiredMode = NOT_REQUIRED)
     @Min(1)
     @Max(100)
     Integer limit,
