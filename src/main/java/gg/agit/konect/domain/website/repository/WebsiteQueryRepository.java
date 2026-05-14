@@ -26,7 +26,6 @@ import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.website.model.WebsiteUniversitySummary;
-import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -168,11 +167,12 @@ public class WebsiteQueryRepository {
     }
 
     private void addUniversitySearchCondition(BooleanBuilder condition, String query) {
-        if (StringUtils.isEmpty(query)) {
+        if (query == null || query.isBlank()) {
             return;
         }
 
-        condition.and(university.koreanName.lower().contains(query.trim().toLowerCase()));
+        String normalizedQuery = query.trim().toLowerCase();
+        condition.and(university.koreanName.lower().contains(normalizedQuery));
     }
 
     private void addUniversityRegionCondition(BooleanBuilder condition, UniversityRegion region) {
@@ -184,11 +184,12 @@ public class WebsiteQueryRepository {
     }
 
     private void addClubSearchCondition(BooleanBuilder condition, String query) {
-        if (StringUtils.isEmpty(query)) {
+        if (query == null || query.isBlank()) {
             return;
         }
 
-        BooleanExpression nameContains = club.name.lower().contains(query.trim().toLowerCase());
+        String normalizedQuery = query.trim().toLowerCase();
+        BooleanExpression nameContains = club.name.lower().contains(normalizedQuery);
         condition.and(nameContains);
     }
 }

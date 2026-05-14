@@ -179,6 +179,22 @@ class WebsiteApiTest extends IntegrationTestSupport {
             performGet("/website/clubs/recent?clubIds=" + clubIds)
                 .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("최근 본 동아리 ID가 비어 있으면 400을 반환한다")
+        void getRecentClubsRejectsEmptyClubIds() throws Exception {
+            // when & then
+            performGet("/website/clubs/recent?clubIds=")
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("최근 본 동아리 ID가 없으면 400을 반환한다")
+        void getRecentClubsRejectsMissingClubIds() throws Exception {
+            // when & then
+            performGet("/website/clubs/recent")
+                .andExpect(status().isBadRequest());
+        }
     }
 
     private Club createClub(University university, String name, ClubCategory category) {
