@@ -1,0 +1,2 @@
+ALTER TABLE university
+    ADD COLUMN region VARCHAR(50) NOT NULL DEFAULT 'UNKNOWN' AFTER campus;
