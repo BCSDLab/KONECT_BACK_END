@@ -3,6 +3,7 @@ package gg.agit.konect.support.fixture;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import gg.agit.konect.domain.university.enums.Campus;
+import gg.agit.konect.domain.university.enums.UniversityRegion;
 import gg.agit.konect.domain.university.model.University;
 
 public class UniversityFixture {
@@ -12,9 +13,14 @@ public class UniversityFixture {
     }
 
     public static University create(String koreanName, Campus campus) {
+        return create(koreanName, campus, UniversityRegion.CHUNGCHEONG);
+    }
+
+    public static University create(String koreanName, Campus campus, UniversityRegion region) {
         return University.builder()
             .koreanName(koreanName)
             .campus(campus)
+            .region(region)
             .build();
     }
 
