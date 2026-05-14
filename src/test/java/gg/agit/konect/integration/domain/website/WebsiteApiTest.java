@@ -30,7 +30,7 @@ import gg.agit.konect.support.fixture.UserFixture;
 class WebsiteApiTest extends IntegrationTestSupport {
 
     @Nested
-    @DisplayName("GET /website/home - 웹사이트 메인")
+    @DisplayName("GET /konect/home - 웹사이트 메인")
     class GetHome {
 
         @Test
@@ -53,7 +53,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             // when & then
-            performGet("/website/home?query=한국&region=CHUNGCHEONG")
+            performGet("/konect/home?query=한국&region=CHUNGCHEONG")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalUniversityCount").value(1))
                 .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"))
@@ -68,7 +68,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
     }
 
     @Nested
-    @DisplayName("GET /website/universities/{universityId}/clubs - 대학별 동아리")
+    @DisplayName("GET /konect/universities/{universityId}/clubs - 대학별 동아리")
     class GetUniversityClubs {
 
         @Test
@@ -90,7 +90,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             // when & then
-            performGet("/website/universities/" + university.getId()
+            performGet("/konect/universities/" + university.getId()
                 + "/clubs?page=1&limit=10&query=BCSD&category=ACADEMIC")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.university.name").value("한국기술교육대학교"))
@@ -106,13 +106,13 @@ class WebsiteApiTest extends IntegrationTestSupport {
         @DisplayName("존재하지 않는 대학이면 404를 반환한다")
         void getUniversityClubsNotFound() throws Exception {
             // when & then
-            performGet("/website/universities/99999/clubs")
+            performGet("/konect/universities/99999/clubs")
                 .andExpect(status().isNotFound());
         }
     }
 
     @Nested
-    @DisplayName("GET /website/clubs/{clubId} - 동아리 상세")
+    @DisplayName("GET /konect/clubs/{clubId} - 동아리 상세")
     class GetClubDetail {
 
         @Test
@@ -130,7 +130,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             // when & then
-            performGet("/website/clubs/" + club.getId())
+            performGet("/konect/clubs/" + club.getId())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("ZEST"))
                 .andExpect(jsonPath("$.categoryName").value("공연"))
@@ -143,7 +143,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
     }
 
     @Nested
-    @DisplayName("GET /website/clubs/recent - 최근 본 동아리")
+    @DisplayName("GET /konect/clubs/recent - 최근 본 동아리")
     class GetRecentClubs {
 
         @Test
@@ -160,7 +160,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
             clearPersistenceContext();
 
             // when & then
-            performGet("/website/clubs/recent?clubIds=" + second.getId() + "," + first.getId())
+            performGet("/konect/clubs/recent?clubIds=" + second.getId() + "," + first.getId())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.clubs", hasSize(2)))
                 .andExpect(jsonPath("$.clubs[0].name").value("두 번째"))
@@ -176,7 +176,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .collect(Collectors.joining(","));
 
             // when & then
-            performGet("/website/clubs/recent?clubIds=" + clubIds)
+            performGet("/konect/clubs/recent?clubIds=" + clubIds)
                 .andExpect(status().isBadRequest());
         }
 
@@ -184,7 +184,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
         @DisplayName("최근 본 동아리 ID가 비어 있으면 400을 반환한다")
         void getRecentClubsRejectsEmptyClubIds() throws Exception {
             // when & then
-            performGet("/website/clubs/recent?clubIds=")
+            performGet("/konect/clubs/recent?clubIds=")
                 .andExpect(status().isBadRequest());
         }
 
@@ -192,7 +192,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
         @DisplayName("최근 본 동아리 ID가 없으면 400을 반환한다")
         void getRecentClubsRejectsMissingClubIds() throws Exception {
             // when & then
-            performGet("/website/clubs/recent")
+            performGet("/konect/clubs/recent")
                 .andExpect(status().isBadRequest());
         }
     }

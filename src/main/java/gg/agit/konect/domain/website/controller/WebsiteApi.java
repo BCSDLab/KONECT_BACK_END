@@ -23,7 +23,7 @@ import jakarta.validation.constraints.Size;
 
 @Validated
 @Tag(name = "(Public) Website: 웹사이트 공개 정보")
-@RequestMapping("/website")
+@RequestMapping("/konect")
 public interface WebsiteApi {
 
     @Operation(summary = "웹사이트 메인 화면 정보를 조회한다.", description = """
