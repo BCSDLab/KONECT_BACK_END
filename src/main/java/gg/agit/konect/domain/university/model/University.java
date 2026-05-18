@@ -50,11 +50,15 @@ public class University {
     @Column(name = "region", nullable = false)
     private UniversityRegion region;
 
+    @Column(name = "logo_image_url")
+    private String logoImageUrl;
+
     @Builder
-    private University(Integer id, String koreanName, Campus campus, UniversityRegion region) {
+    private University(Integer id, String koreanName, Campus campus, UniversityRegion region, String logoImageUrl) {
         this.id = id;
         this.koreanName = koreanName;
         this.campus = campus;
         this.region = region;
+        this.logoImageUrl = logoImageUrl;
     }
 }
