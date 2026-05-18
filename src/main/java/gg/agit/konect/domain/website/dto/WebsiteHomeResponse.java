@@ -16,6 +16,7 @@ public record WebsiteHomeResponse(
     List<UniversityResponse> universities
 ) {
 
+    @Schema(name = "WebsiteHomeUniversityResponse")
     public record UniversityResponse(
         @Schema(description = "대학 고유 ID", example = "1", requiredMode = REQUIRED)
         Integer id,
@@ -32,6 +33,13 @@ public record WebsiteHomeResponse(
         @Schema(description = "지역명", example = "충청도", requiredMode = REQUIRED)
         String regionName,
 
+        @Schema(
+            description = "대학 로고 이미지 URL",
+            example = "https://example.com/koreatech-logo.png",
+            requiredMode = REQUIRED
+        )
+        String imageUrl,
+
         @Schema(description = "등록 동아리 수", example = "31", requiredMode = REQUIRED)
         Long clubCount
     ) {
@@ -42,6 +50,7 @@ public record WebsiteHomeResponse(
                 summary.campusName(),
                 summary.region(),
                 summary.regionName(),
+                summary.imageUrl(),
                 summary.clubCount()
             );
         }
