@@ -16,7 +16,11 @@ import gg.agit.konect.domain.website.dto.WebsiteClubDetailResponse;
 import gg.agit.konect.domain.website.dto.WebsiteClubListCondition;
 import gg.agit.konect.domain.website.dto.WebsiteClubsResponse;
 import gg.agit.konect.domain.website.dto.WebsiteHomeResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -30,6 +34,25 @@ public interface WebsiteApi {
         로그인 없이 접근 가능한 웹사이트 메인 정보입니다.
         대학 검색 결과와 대학별 등록 동아리 수를 반환합니다.
         """)
+    @ApiResponse(responseCode = "200", content = @Content(
+        schema = @Schema(implementation = WebsiteHomeResponse.class),
+        examples = @ExampleObject(value = """
+            {
+              "totalUniversityCount": 1,
+              "universities": [
+                {
+                  "id": 1,
+                  "name": "한국기술교육대학교",
+                  "campusName": "본교",
+                  "region": "CHUNGCHEONG",
+                  "regionName": "충청도",
+                  "imageUrl": "https://example.com/koreatech-logo.png",
+                  "clubCount": 31
+                }
+              ]
+            }
+            """)
+    ))
     @GetMapping("/home")
     ResponseEntity<WebsiteHomeResponse> getHome(
         @RequestParam(name = "query", required = false) String query,
