@@ -80,6 +80,26 @@ class UploadApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("대학교 이미지를 업로드하면 university 경로에 저장한다")
+        void uploadUniversityImageSuccess() throws Exception {
+            // given
+            byte[] pngBytes = createPngBytes(8, 8);
+            MockMultipartFile file = imageFile("university.png", "image/png", pngBytes);
+
+            // when
+            MvcResult result = uploadImage(file, UploadTarget.UNIVERSITY)
+                .andExpect(status().isOk())
+                .andReturn();
+
+            // then
+            String responseBody = result.getResponse().getContentAsString();
+            String key = JsonPath.read(responseBody, "$.key");
+
+            assertThat(key).startsWith("test/university/");
+            assertThat(key).endsWith(".png");
+        }
+
+        @Test
         @DisplayName("jpeg 이미지를 업로드하면 원본 형태로 저장한다")
         void uploadJpegImageSuccess() throws Exception {
             // given

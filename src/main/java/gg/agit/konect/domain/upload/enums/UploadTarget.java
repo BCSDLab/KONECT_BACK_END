@@ -10,6 +10,7 @@ public enum UploadTarget {
     BANK("은행"),
     COUNCIL("총학생회"),
     USER("사용자"),
+    UNIVERSITY("대학교"),
     ;
 
     private final String description;

@@ -105,6 +105,26 @@ class UploadServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("uploadImage는 UNIVERSITY target을 university 경로로 저장한다")
+    void uploadImageBuildsUniversityKeyPath() {
+        // given
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "university.png",
+            "image/png",
+            "png-data".getBytes(StandardCharsets.UTF_8)
+        );
+
+        // when
+        ImageUploadResponse response = uploadService.uploadImage(file, UploadTarget.UNIVERSITY);
+
+        // then
+        assertThat(response.key()).matches(
+            "konect/university/\\d{4}-\\d{2}-\\d{2}-[0-9a-f\\-]{36}\\.png"
+        );
+    }
+
+    @Test
     @DisplayName("uploadImage는 leading slash prefix를 제거하고 trailing slash를 보정한다")
     void uploadImageNormalizesPrefixWithLeadingSlash() {
         // given
