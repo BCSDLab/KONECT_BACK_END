@@ -34,6 +34,7 @@ public record WebsiteClubsResponse(
     List<ClubResponse> clubs
 ) {
 
+    @Schema(name = "WebsiteClubsUniversityResponse")
     public record UniversityResponse(
         @Schema(description = "대학 고유 ID", example = "1", requiredMode = REQUIRED)
         Integer id,

@@ -16,6 +16,7 @@ public record WebsiteHomeResponse(
     List<UniversityResponse> universities
 ) {
 
+    @Schema(name = "WebsiteHomeUniversityResponse")
     public record UniversityResponse(
         @Schema(description = "대학 고유 ID", example = "1", requiredMode = REQUIRED)
         Integer id,
