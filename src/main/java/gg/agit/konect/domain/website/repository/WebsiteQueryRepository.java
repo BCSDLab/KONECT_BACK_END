@@ -46,7 +46,7 @@ public class WebsiteQueryRepository {
                 university.koreanName,
                 university.campus,
                 university.region,
-                university.logoImageUrl,
+                university.imageUrl,
                 clubCount
             )
             .from(university)
@@ -57,7 +57,7 @@ public class WebsiteQueryRepository {
                 university.koreanName,
                 university.campus,
                 university.region,
-                university.logoImageUrl
+                university.imageUrl
             )
             .orderBy(university.koreanName.asc(), university.campus.asc())
             .fetch();
@@ -69,7 +69,7 @@ public class WebsiteQueryRepository {
                 row.get(university.campus).getDisplayName(),
                 row.get(university.region),
                 row.get(university.region).getDisplayName(),
-                row.get(university.logoImageUrl),
+                row.get(university.imageUrl),
                 row.get(clubCount)
             ))
             .toList();

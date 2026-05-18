@@ -20,12 +20,12 @@ public class UniversityFixture {
         return create(koreanName, campus, region, null);
     }
 
-    public static University create(String koreanName, Campus campus, UniversityRegion region, String logoImageUrl) {
+    public static University create(String koreanName, Campus campus, UniversityRegion region, String imageUrl) {
         return University.builder()
             .koreanName(koreanName)
             .campus(campus)
             .region(region)
-            .logoImageUrl(logoImageUrl)
+            .imageUrl(imageUrl)
             .build();
     }
 

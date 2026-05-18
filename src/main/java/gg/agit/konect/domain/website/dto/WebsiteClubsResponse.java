@@ -55,7 +55,7 @@ public record WebsiteClubsResponse(
             example = "https://example.com/koreatech-logo.png",
             requiredMode = REQUIRED
         )
-        String logoImageUrl
+        String imageUrl
     ) {
         public static UniversityResponse from(University university) {
             if (university == null) {
@@ -68,7 +68,7 @@ public record WebsiteClubsResponse(
                 university.getCampus().getDisplayName(),
                 university.getRegion(),
                 university.getRegion().getDisplayName(),
-                university.getLogoImageUrl()
+                university.getImageUrl()
             );
         }
     }

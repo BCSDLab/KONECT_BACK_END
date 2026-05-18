@@ -37,7 +37,7 @@ public record WebsiteHomeResponse(
             example = "https://example.com/koreatech-logo.png",
             requiredMode = REQUIRED
         )
-        String logoImageUrl,
+        String imageUrl,
 
         @Schema(description = "등록 동아리 수", example = "31", requiredMode = REQUIRED)
         Long clubCount
@@ -49,7 +49,7 @@ public record WebsiteHomeResponse(
                 summary.campusName(),
                 summary.region(),
                 summary.regionName(),
-                summary.logoImageUrl(),
+                summary.imageUrl(),
                 summary.clubCount()
             );
         }
