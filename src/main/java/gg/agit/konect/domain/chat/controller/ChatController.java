@@ -2,6 +2,7 @@ package gg.agit.konect.domain.chat.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,11 +15,14 @@ import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersInviteRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
 import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
 import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
+import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.global.auth.annotation.UserId;
 import jakarta.validation.Valid;
@@ -31,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class ChatController implements ChatApi {
 
     private final ChatService chatService;
+    private final ChatRoomMembershipService chatRoomMembershipService;
 
     @Override
     public ResponseEntity<ChatRoomResponse> createOrGetChatRoom(
@@ -140,11 +145,30 @@ public class ChatController implements ChatApi {
     }
 
     @Override
+    public ResponseEntity<Void> inviteMembers(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @Valid @RequestBody ChatRoomMembersInviteRequest request,
+        @UserId Integer userId
+    ) {
+        chatService.inviteMembers(userId, chatRoomId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
     public ResponseEntity<ChatRoomResponse> createGroupChatRoom(
         @Valid @RequestBody ChatRoomCreateRequest.Group request,
         @UserId Integer userId
     ) {
         ChatRoomResponse response = chatService.createGroupChatRoom(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/rooms/{chatRoomId}/members")
+    public ResponseEntity<ChatRoomMembersResponse> getChatRoomMembers(
+        @PathVariable Integer chatRoomId,
+        @UserId Integer userId) {
+        ChatRoomMembersResponse response = chatRoomMembershipService.getChatRoomMembers(chatRoomId, userId);
         return ResponseEntity.ok(response);
     }
 }

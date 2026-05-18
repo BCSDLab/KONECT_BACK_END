@@ -10,6 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Duration;
 
+import gg.agit.konect.domain.chat.enums.ChatType;
+import gg.agit.konect.domain.chat.model.ChatRoom;
+import gg.agit.konect.domain.chat.model.ChatRoomMember;
+import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.enums.ClubPosition;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -21,6 +26,7 @@ import gg.agit.konect.domain.user.enums.Provider;
 import gg.agit.konect.domain.user.dto.SignupRequest;
 import gg.agit.konect.domain.user.model.UnRegisteredUser;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.event.UserRegisteredEvent;
 import gg.agit.konect.domain.user.service.RefreshTokenService;
 import gg.agit.konect.domain.user.service.SignupTokenService;
 import gg.agit.konect.domain.user.repository.UnRegisteredUserRepository;
@@ -40,6 +46,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.List;
@@ -47,6 +55,7 @@ import java.util.List;
 import jakarta.servlet.http.Cookie;
 
 @DisplayName("회원가입 API 테스트")
+@RecordApplicationEvents
 class UserSignupApiTest extends IntegrationTestSupport {
 
     @Autowired
@@ -60,6 +69,15 @@ class UserSignupApiTest extends IntegrationTestSupport {
 
     @Autowired
     private ClubMemberRepository clubMemberRepository;
+
+    @Autowired
+    private ChatRoomRepository chatRoomRepository;
+
+    @Autowired
+    private ChatRoomMemberRepository chatRoomMemberRepository;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     @MockitoBean
     private SignupTokenService signupTokenService;
@@ -119,6 +137,8 @@ class UserSignupApiTest extends IntegrationTestSupport {
             assertThat(savedUser).isNotNull();
             assertThat(savedUser.getName()).isEqualTo("홍길동");
             assertThat(savedUser.getEmail()).isEqualTo(email);
+            assertThat(applicationEvents.stream(UserRegisteredEvent.class))
+                .contains(UserRegisteredEvent.from(email, Provider.GOOGLE.name()));
             assertSignupTokenConsumedOnce();
         }
 
@@ -162,6 +182,10 @@ class UserSignupApiTest extends IntegrationTestSupport {
             ClubMember clubMember = clubMemberRepository.getByClubIdAndUserId(club.getId(), savedUser.getId());
             assertThat(clubMember.getClubPosition()).isEqualTo(ClubPosition.MEMBER);
 
+            ChatRoom clubRoom = chatRoomRepository.findByClubId(club.getId()).orElseThrow();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndUserId(clubRoom.getId(), savedUser.getId()))
+                .isTrue();
+
             // PreMember는 삭제되었는지 확인
             List<ClubPreMember> remainingPreMembers = clubPreMemberRepository.findAllByClubId(club.getId());
             assertThat(remainingPreMembers).isEmpty();
@@ -187,6 +211,9 @@ class UserSignupApiTest extends IntegrationTestSupport {
                 .clubPosition(ClubPosition.PRESIDENT)
                 .build();
             persist(preMemberPresident);
+            ChatRoom existingClubRoom = persist(ChatRoom.clubGroupOf(club));
+            User managedExistingPresident = entityManager.find(User.class, existingPresident.getId());
+            persist(ChatRoomMember.of(existingClubRoom, managedExistingPresident, existingClubRoom.getCreatedAt()));
             clearPersistenceContext();
 
             // 기존 회장이 존재하는지 확인
@@ -212,6 +239,50 @@ class UserSignupApiTest extends IntegrationTestSupport {
             assertThat(clubMemberRepository.findPresidentByClubId(club.getId())).isPresent();
             assertThat(clubMemberRepository.findPresidentByClubId(club.getId()).get().getUser().getId())
                 .isEqualTo(savedUser.getId());
+            ChatRoom clubRoom = chatRoomRepository.findByClubId(club.getId()).orElseThrow();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndUserId(clubRoom.getId(), savedUser.getId()))
+                .isTrue();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndUserId(
+                clubRoom.getId(),
+                existingPresident.getId()
+            ))
+                .isFalse();
+            assertSignupTokenConsumedOnce();
+        }
+
+        @Test
+        @DisplayName("회원가입 시 운영자가 있으면 환영 direct 메시지와 마지막 메시지를 저장한다")
+        void signupSendsWelcomeMessageWhenAdminExists() throws Exception {
+            // given
+            User admin = persist(UserFixture.createAdmin(university));
+            String email = "welcome@koreatech.ac.kr";
+            String studentNumber = "2021136010";
+
+            UnRegisteredUser unRegisteredUser = UnRegisteredUserFixture.createGoogle(email);
+            persist(unRegisteredUser);
+            clearPersistenceContext();
+
+            SignupRequest request = new SignupRequest("환영대상", university.getId(), studentNumber, true);
+            stubSignupTokenClaims(email);
+
+            // when
+            performSignup(request)
+                .andExpect(status().isOk());
+
+            // then
+            clearPersistenceContext();
+            User savedUser = findSavedUser(studentNumber);
+            assertThat(savedUser).isNotNull();
+
+            ChatRoom welcomeRoom = chatRoomRepository.findByTwoUsers(admin.getId(), savedUser.getId(), ChatType.DIRECT)
+                .orElseThrow();
+            assertThat(welcomeRoom.getLastMessageContent())
+                .isEqualTo("KONECT에 오신 것을 환영합니다. 궁금한 점이 있으면 언제든 문의해 주세요.");
+            assertThat(welcomeRoom.getLastMessageSentAt()).isNotNull();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndUserId(welcomeRoom.getId(), admin.getId()))
+                .isTrue();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndUserId(welcomeRoom.getId(), savedUser.getId()))
+                .isTrue();
             assertSignupTokenConsumedOnce();
         }
 

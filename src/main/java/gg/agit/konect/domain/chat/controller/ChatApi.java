@@ -16,6 +16,8 @@ import gg.agit.konect.domain.chat.dto.ChatMessagePageResponse;
 import gg.agit.konect.domain.chat.dto.ChatMessageSendRequest;
 import gg.agit.konect.domain.chat.dto.ChatMuteResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersInviteRequest;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.dto.ChatRoomsSummaryResponse;
@@ -23,6 +25,7 @@ import gg.agit.konect.domain.chat.dto.ChatSearchResponse;
 import gg.agit.konect.domain.chat.enums.ChatInviteSortBy;
 import gg.agit.konect.global.auth.annotation.UserId;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -136,6 +139,7 @@ public interface ChatApi {
         - 채팅방에 진입하면 읽지 않은 메시지를 자동으로 읽음 처리합니다.
         - 최신 메시지가 먼저 오도록 정렬됩니다 (DESC).
         - isMine 필드로 내가 보낸 메시지인지 구분할 수 있습니다.
+        - SYSTEM_ADMIN 문의방을 admin이 조회하는 경우 admin 발신 메시지는 모두 isMine=true로 반환됩니다.
         - 채팅방 참여자만 메시지를 조회할 수 있습니다.
         - 일반 유저는 자신이 참여한 채팅방만 조회할 수 있습니다.
         - 어드민은 모든 어드민 채팅방을 조회할 수 있습니다.
@@ -250,6 +254,28 @@ public interface ChatApi {
         @UserId Integer userId
     );
 
+    @Operation(summary = "그룹 채팅방에 멤버를 초대한다.", description = """
+        ## 설명
+        - 일반 그룹 채팅방의 기존 멤버가 여러 유저를 추가 초대합니다.
+        
+        ## 로직
+        - 방장 여부와 관계없이 현재 참여 중인 멤버라면 초대할 수 있습니다.
+        - 1:1 채팅방과 동아리 채팅방에는 초대할 수 없습니다.
+        - 이미 참여 중인 멤버, 요청자 자신, 중복 userId는 무시합니다.
+        
+        ## 에러
+        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
+        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
+        - CANNOT_INVITE_IN_NON_GROUP_ROOM (400): 일반 그룹 채팅방에서만 초대할 수 있습니다.
+        - NOT_FOUND_USER (404): 유저를 찾을 수 없습니다.
+        """)
+    @PostMapping("/rooms/{chatRoomId}/members")
+    ResponseEntity<Void> inviteMembers(
+        @PathVariable(value = "chatRoomId") Integer chatRoomId,
+        @Valid @RequestBody ChatRoomMembersInviteRequest request,
+        @UserId Integer userId
+    );
+
     @Operation(summary = "그룹 채팅방을 생성한다.", description = """
         ## 설명
         - 여러 유저를 초대하여 그룹 채팅방을 생성합니다.
@@ -265,6 +291,25 @@ public interface ChatApi {
     @PostMapping("/rooms/group")
     ResponseEntity<ChatRoomResponse> createGroupChatRoom(
         @Valid @RequestBody ChatRoomCreateRequest.Group request,
+        @UserId Integer userId
+    );
+
+    @Operation(summary = "채팅방 멤버 목록 조회", description = """
+        ## 설명
+        - 특정 채팅방의 모든 멤버 목록을 조회합니다.
+        
+        ## 로직
+        - 채팅방에 참여 중인 멤버만 조회할 수 있습니다.
+        - 나간 멤버(leftAt이 설정된 멤버)는 목록에 포함되지 않습니다.
+        - 각 멤버의 userId, 이름, 프로필 이미지, 방장 여부, 참여 시간을 반환합니다.
+        
+        ## 에러
+        - FORBIDDEN_CHAT_ROOM_ACCESS (403): 채팅방에 접근할 권한이 없습니다.
+        - NOT_FOUND_CHAT_ROOM (404): 채팅방을 찾을 수 없습니다.
+        """)
+    @GetMapping("/rooms/{chatRoomId}/members")
+    ResponseEntity<ChatRoomMembersResponse> getChatRoomMembers(
+        @Parameter(description = "채팅방 ID") @PathVariable Integer chatRoomId,
         @UserId Integer userId
     );
 }

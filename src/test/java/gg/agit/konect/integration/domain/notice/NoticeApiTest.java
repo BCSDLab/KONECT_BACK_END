@@ -1,5 +1,6 @@
 package gg.agit.konect.integration.domain.notice;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -91,6 +92,23 @@ class NoticeApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.councilNotices", hasSize(1)))
                 .andExpect(jsonPath("$.councilNotices[0].title").value("우리 대학 공지"));
         }
+
+        @Test
+        @DisplayName("공지 목록 조회는 읽음 이력을 생성하지 않는다")
+        void getNoticesDoesNotCreateReadHistory() throws Exception {
+            // given
+            Council council = persist(CouncilFixture.create(university));
+            CouncilNotice notice = persist(CouncilNoticeFixture.create(council));
+            clearPersistenceContext();
+
+            // when
+            performGet(NOTICES_ENDPOINT + "?page=1&limit=10")
+                .andExpect(status().isOk());
+
+            // then
+            Number readHistoryCount = countReadHistory(user.getId(), notice.getId());
+            assertThat(readHistoryCount.longValue()).isZero();
+        }
     }
 
     @Nested
@@ -127,16 +145,8 @@ class NoticeApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk());
 
             // then
-            Number readHistoryCount = (Number)entityManager.createNativeQuery("""
-                    select count(*)
-                    from council_notice_read_history
-                    where user_id = ? and council_notice_id = ?
-                    """)
-                .setParameter(1, user.getId())
-                .setParameter(2, notice.getId())
-                .getSingleResult();
-
-            org.assertj.core.api.Assertions.assertThat(readHistoryCount.longValue()).isEqualTo(1L);
+            Number readHistoryCount = countReadHistory(user.getId(), notice.getId());
+            assertThat(readHistoryCount.longValue()).isEqualTo(1L);
         }
 
         @Test
@@ -291,5 +301,16 @@ class NoticeApiTest extends IntegrationTestSupport {
             .setParameter(10, "09:00 - 18:00")
             .setParameter(11, universityId)
             .executeUpdate();
+    }
+
+    private Number countReadHistory(Integer userId, Integer noticeId) {
+        return (Number)entityManager.createNativeQuery("""
+                select count(*)
+                from council_notice_read_history
+                where user_id = ? and council_notice_id = ?
+                """)
+            .setParameter(1, userId)
+            .setParameter(2, noticeId)
+            .getSingleResult();
     }
 }

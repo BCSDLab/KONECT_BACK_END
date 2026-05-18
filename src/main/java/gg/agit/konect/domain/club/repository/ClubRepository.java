@@ -3,6 +3,7 @@ package gg.agit.konect.domain.club.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -41,6 +42,22 @@ public interface ClubRepository extends Repository<Club, Integer> {
     }
 
     List<Club> findAll();
+
+    boolean existsById(Integer id);
+
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+        UPDATE Club c
+        SET c.googleSheetId = :googleSheetId,
+            c.sheetColumnMapping = :sheetColumnMapping,
+            c.updatedAt = CURRENT_TIMESTAMP
+        WHERE c.id = :clubId
+        """)
+    int updateSheetRegistration(
+        @Param(value = "clubId") Integer clubId,
+        @Param(value = "googleSheetId") String googleSheetId,
+        @Param(value = "sheetColumnMapping") String sheetColumnMapping
+    );
 
     Club save(Club club);
 

@@ -1,13 +1,18 @@
 package gg.agit.konect.integration.domain.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.repository.ClubMemberRepository;
 import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.user.enums.Provider;
+import gg.agit.konect.domain.user.event.UserWithdrawnEvent;
 import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.user.model.UserOAuthAccount;
 import gg.agit.konect.domain.user.repository.UserRepository;
+import gg.agit.konect.infrastructure.oauth.AppleTokenRevocationService;
 import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.ClubFixture;
 import gg.agit.konect.support.fixture.ClubMemberFixture;
@@ -19,10 +24,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.LocalDateTime;
 
 @DisplayName("회원 탈퇴 API 테스트")
+@RecordApplicationEvents
 class UserWithdrawApiTest extends IntegrationTestSupport {
 
     @Autowired
@@ -30,6 +39,12 @@ class UserWithdrawApiTest extends IntegrationTestSupport {
 
     @Autowired
     private ClubMemberRepository clubMemberRepository;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
+
+    @MockitoBean
+    private AppleTokenRevocationService appleTokenRevocationService;
 
     private University university;
     private Club club;
@@ -82,6 +97,32 @@ class UserWithdrawApiTest extends IntegrationTestSupport {
             User withdrawnUser = entityManager.find(User.class, user.getId());
             assertThat(withdrawnUser).isNotNull();
             assertThat(withdrawnUser.getDeletedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Apple OAuth 계정이 있으면 탈퇴 시 토큰을 revoke하고 탈퇴 이벤트를 발행한다")
+        void withdrawWithAppleOAuthRevokesTokenAndPublishesEvent() throws Exception {
+            // given
+            User user = persist(UserFixture.createUser(university, "애플회원", "2021136010"));
+            persist(UserOAuthAccount.of(
+                user,
+                Provider.APPLE,
+                "apple-provider-id",
+                "apple@konect.test",
+                "apple-refresh-token"
+            ));
+            clearPersistenceContext();
+
+            mockLoginUser(user.getId());
+
+            // when
+            performDelete("/users/withdraw")
+                .andExpect(status().isNoContent());
+
+            // then
+            verify(appleTokenRevocationService).revoke("apple-refresh-token");
+            assertThat(applicationEvents.stream(UserWithdrawnEvent.class))
+                .contains(UserWithdrawnEvent.from(user.getEmail(), Provider.APPLE.name()));
         }
 
         @Test

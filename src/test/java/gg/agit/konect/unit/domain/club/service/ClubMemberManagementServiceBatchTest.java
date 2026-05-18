@@ -27,6 +27,7 @@ import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.club.service.ClubMemberManagementService;
 import gg.agit.konect.domain.club.service.ClubPermissionValidator;
 import gg.agit.konect.domain.university.enums.Campus;
+import gg.agit.konect.domain.university.enums.UniversityRegion;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.repository.UserRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
@@ -70,6 +71,7 @@ class ClubMemberManagementServiceBatchTest {
             .id(1)
             .koreanName("Test University")
             .campus(Campus.MAIN)
+            .region(UniversityRegion.CHUNGCHEONG)
             .build();
 
         club = Club.builder()

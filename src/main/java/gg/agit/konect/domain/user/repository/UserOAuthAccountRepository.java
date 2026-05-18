@@ -101,8 +101,15 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
         FROM UserOAuthAccount uoa
         WHERE uoa.user.deletedAt IS NOT NULL
         AND uoa.user.deletedAt <= :expiredAt
+        AND (
+            uoa.provider <> :appleProvider
+            OR uoa.appleRefreshToken IS NULL
+        )
         """)
-    int deleteAllByWithdrawnUsersBefore(@Param("expiredAt") LocalDateTime expiredAt);
+    int deleteRevokedExpiredWithdrawnOAuthAccountsBefore(
+        @Param("expiredAt") LocalDateTime expiredAt,
+        @Param("appleProvider") Provider appleProvider
+    );
 
     @Query("""
         SELECT (COUNT(uoa) > 0)
@@ -122,7 +129,7 @@ public interface UserOAuthAccountRepository extends JpaRepository<UserOAuthAccou
         JOIN FETCH uoa.user user
         WHERE uoa.provider = :provider
         AND user.deletedAt IS NOT NULL
-        AND user.deletedAt < :threshold
+        AND user.deletedAt <= :threshold
         AND uoa.appleRefreshToken IS NOT NULL
         """)
     List<UserOAuthAccount> findAppleAccountsToRevoke(

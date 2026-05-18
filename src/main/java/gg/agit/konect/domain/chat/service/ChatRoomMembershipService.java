@@ -2,6 +2,7 @@ package gg.agit.konect.domain.chat.service;
 
 import static gg.agit.konect.global.code.ApiResponseCode.FORBIDDEN_CHAT_ROOM_ACCESS;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
+import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
+import gg.agit.konect.domain.chat.dto.ChatRoomMemberResponse;
+import gg.agit.konect.domain.chat.dto.ChatRoomMembersResponse;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
 import gg.agit.konect.domain.club.model.Club;
@@ -38,6 +41,47 @@ public class ChatRoomMembershipService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final UserRepository userRepository;
+    private final ChatRoomSystemAdminService chatRoomSystemAdminService;
+
+    @Transactional(readOnly = true)
+    public ChatRoomMembersResponse getChatRoomMembers(Integer chatRoomId, Integer currentUserId) {
+        User currentUser = userRepository.findById(currentUserId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_USER));
+
+        // 채팅방 존재 여부 먼저 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+            .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+
+        validateMembership(chatRoom, currentUser);
+
+        List<ChatRoomMember> members = chatRoomMemberRepository.findActiveMembersByChatRoomId(chatRoomId);
+
+        return new ChatRoomMembersResponse(members.stream()
+            .filter(member -> member.getUser().getDeletedAt() == null)
+            .map(this::toMemberResponse)
+            .toList());
+    }
+
+    private void validateMembership(ChatRoom chatRoom, User currentUser) {
+        // 어드민은 시스템 어드민 방의 멤버를 조회할 수 있음
+        if (currentUser.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(chatRoom.getId())) {
+            return;
+        }
+
+        if (!chatRoomMemberRepository.existsActiveByChatRoomIdAndUserId(chatRoom.getId(), currentUser.getId())) {
+            throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
+        }
+    }
+
+    private ChatRoomMemberResponse toMemberResponse(ChatRoomMember member) {
+        return new ChatRoomMemberResponse(
+            member.getUser().getId(),
+            member.getUser().getName(),
+            member.getUser().getImageUrl(),
+            member.isOwner(),
+            member.getCreatedAt()
+        );
+    }
 
     @Transactional
     public void addClubMember(ClubMember clubMember) {
@@ -67,7 +111,7 @@ public class ChatRoomMembershipService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateDirectRoomLastReadAt(Integer roomId, User user, LocalDateTime readAt, ChatRoom room) {
         // 어드민이 SYSTEM_ADMIN 방의 메시지를 읽으면 SYSTEM_ADMIN의 lastReadAt을 업데이트
-        if (user.isAdmin() && isSystemAdminRoom(roomId)) {
+        if (user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(roomId)) {
             chatRoomMemberRepository.updateLastReadAtIfOlder(roomId, SYSTEM_ADMIN_ID, readAt);
             return;
         }
@@ -81,6 +125,11 @@ public class ChatRoomMembershipService {
     public void ensureClubRoomMember(Integer roomId, Integer userId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CHAT_ROOM));
+        ensureClubRoomMember(room, userId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void ensureClubRoomMember(ChatRoom room, Integer userId) {
         if (!room.isGroupRoom() || room.getClub() == null) {
             throw CustomException.of(NOT_FOUND_CHAT_ROOM);
         }
@@ -104,7 +153,8 @@ public class ChatRoomMembershipService {
             });
     }
 
-    private void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {
+    @Transactional
+    public void ensureMember(ChatRoom room, User user, LocalDateTime baseline) {
         chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
             .ifPresentOrElse(member -> {
                 LocalDateTime lastReadAt = member.getLastReadAt();
@@ -112,6 +162,26 @@ public class ChatRoomMembershipService {
                     member.updateLastReadAt(baseline);
                 }
             }, () -> saveRoomMemberIgnoringDuplicate(room, user, baseline));
+    }
+
+    @Transactional
+    public void ensureDirectRoomRequester(ChatRoom room, User user, LocalDateTime joinedAt) {
+        if (shouldSkipSystemAdminMembership(room, user)) {
+            return;
+        }
+
+        chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), user.getId())
+            .ifPresentOrElse(member -> {
+                if (member.hasLeft()) {
+                    member.reopenDirectRoom(LocalDateTime.now());
+                    return;
+                }
+
+                LocalDateTime lastReadAt = member.getLastReadAt();
+                if (lastReadAt == null || lastReadAt.isBefore(joinedAt)) {
+                    member.updateLastReadAt(joinedAt);
+                }
+            }, () -> saveRoomMemberIgnoringDuplicate(room, user, joinedAt));
     }
 
     private void saveRoomMemberIgnoringDuplicate(ChatRoom room, User user, LocalDateTime baseline) {
@@ -133,18 +203,17 @@ public class ChatRoomMembershipService {
 
         // 어드민은 SYSTEM_ADMIN 방의 메시지를 조회할 수 있지만, 멤버로 추가되지는 않는다
         // (멤버가 추가되면 findByTwoUsers에서 해당 방을 찾지 못해 채팅방이 중복 생성됨)
-        if (user.isAdmin() && isSystemAdminRoom(room.getId())) {
+        if (user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(room.getId())) {
             return;
         }
 
         throw CustomException.of(FORBIDDEN_CHAT_ROOM_ACCESS);
     }
 
-    private boolean isSystemAdminRoom(Integer roomId) {
-        List<Object[]> memberIds = chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(roomId));
-        return memberIds.stream()
-            .map(row -> (Integer)row[1])
-            .anyMatch(userId -> userId.equals(SYSTEM_ADMIN_ID));
+    private boolean shouldSkipSystemAdminMembership(ChatRoom room, User user) {
+        // 문의방은 SYSTEM_ADMIN + 일반 사용자 2인 구조를 전제로 재사용(findByTwoUsers)되므로,
+        // 생성/재오픈 경로에서도 일반 ADMIN을 멤버로 추가하면 안 된다.
+        return user.isAdmin() && chatRoomSystemAdminService.isSystemAdminRoom(room.getId());
     }
 
     private boolean isDuplicateKeyException(DataIntegrityViolationException e) {

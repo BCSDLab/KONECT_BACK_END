@@ -11,7 +11,8 @@ public final class SecurityPaths {
         "/swagger-resources/**",
         "/error",
         "/slack/events",
-        "/auth/oauth/google/drive/callback"
+        "/auth/oauth/google/drive/callback",
+        "/konect/**"
     };
 
     public static final String[] DENY_PATHS = {};

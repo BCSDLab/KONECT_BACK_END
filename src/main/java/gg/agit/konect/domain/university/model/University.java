@@ -5,6 +5,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.university.enums.Campus;
+import gg.agit.konect.domain.university.enums.UniversityRegion;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
@@ -44,10 +45,21 @@ public class University {
     @Column(name = "campus", nullable = false)
     private Campus campus;
 
+    @NotNull
+    @Enumerated(value = STRING)
+    @Column(name = "region", nullable = false)
+    private UniversityRegion region;
+
+    @NotNull
+    @Column(name = "image_url", nullable = false)
+    private String imageUrl;
+
     @Builder
-    private University(Integer id, String koreanName, Campus campus) {
+    private University(Integer id, String koreanName, Campus campus, UniversityRegion region, String imageUrl) {
         this.id = id;
         this.koreanName = koreanName;
         this.campus = campus;
+        this.region = region;
+        this.imageUrl = imageUrl;
     }
 }

@@ -3,6 +3,7 @@ package gg.agit.konect.global.logging;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.slf4j.MDC;
 import org.springframework.beans.factory.ObjectProvider;
@@ -15,7 +16,6 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,6 +32,10 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final String REQUEST_ID = "requestId";
     private static final String REQUEST_ID_HEADER = "X-Request-ID";
+    private static final int MAX_REQUEST_ID_LENGTH = 128;
+    // 응답 헤더와 로그에 그대로 남는 값이므로 제어 문자와 과도한 길이는 허용하지 않는다.
+    private static final Pattern REQUEST_ID_PATTERN = Pattern.compile(
+        "[A-Za-z0-9._-]{1," + MAX_REQUEST_ID_LENGTH + "}");
 
     private final ObjectProvider<PathMatcher> pathMatcherProvider;
     private final LoggingProperties properties;
@@ -45,8 +49,9 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             return;
         }
 
-        var cachedRequest = new ContentCachingRequestWrapper(request);
-        var cachedResponse = new ContentCachingResponseWrapper(response);
+        HttpServletRequest wrappedRequest = request instanceof ContentCachingRequestWrapper
+            ? request
+            : new ContentCachingRequestWrapper(request);
         StopWatch stopWatch = new StopWatch();
         String requestId = getRequestId(httpRequest);
         String method = httpRequest.getMethod();
@@ -54,15 +59,15 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         try {
             MDC.put(REQUEST_ID, requestId);
+            response.setHeader(REQUEST_ID_HEADER, requestId);
             stopWatch.start();
             log.info("request start [requestId: {}, uri: {} {}]", requestId, method, uri);
-            chain.doFilter(cachedRequest, cachedResponse);
+            chain.doFilter(wrappedRequest, response);
         } finally {
             stopWatch.stop();
             log.info("request end [requestId: {}, uri: {} {}, time: {}ms, status: {}]",
-                requestId, method, uri, stopWatch.getTotalTimeMillis(), cachedResponse.getStatus());
+                requestId, method, uri, stopWatch.getTotalTimeMillis(), response.getStatus());
             MDC.remove(REQUEST_ID);
-            cachedResponse.copyBodyToResponse();
         }
     }
 
@@ -80,8 +85,16 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private String getRequestId(HttpServletRequest httpRequest) {
         String requestId = httpRequest.getHeader(REQUEST_ID_HEADER);
         if (ObjectUtils.isEmpty(requestId)) {
-            return UUID.randomUUID().toString().replace("-", "");
+            return generateRequestId();
         }
-        return requestId;
+        String trimmedRequestId = requestId.trim();
+        if (!REQUEST_ID_PATTERN.matcher(trimmedRequestId).matches()) {
+            return generateRequestId();
+        }
+        return trimmedRequestId;
+    }
+
+    private String generateRequestId() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 }

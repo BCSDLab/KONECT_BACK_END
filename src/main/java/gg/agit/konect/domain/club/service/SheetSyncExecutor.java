@@ -11,7 +11,6 @@ import java.util.Map;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,7 +63,6 @@ public class SheetSyncExecutor {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Async("sheetSyncTaskExecutor")
-    @Transactional(readOnly = true)
     public void executeWithSort(Integer clubId, ClubSheetSortKey sortKey, boolean ascending) {
         Club club = clubRepository.getById(clubId);
         String spreadsheetId = club.getGoogleSheetId();

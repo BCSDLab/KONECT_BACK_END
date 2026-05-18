@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -132,4 +133,19 @@ public interface StudyTimeRankingRepository extends Repository<StudyTimeRanking,
     List<StudyTimeRanking> findAll();
 
     void save(StudyTimeRanking studyTimeRanking);
+
+    @Modifying
+    @Query("""
+        UPDATE StudyTimeRanking r
+        SET r.dailySeconds = 0
+        """)
+    int resetDailySeconds();
+
+    @Modifying
+    @Query("""
+        UPDATE StudyTimeRanking r
+        SET r.dailySeconds = 0,
+            r.monthlySeconds = 0
+        """)
+    int resetDailyAndMonthlySeconds();
 }

@@ -1,15 +1,19 @@
 package gg.agit.konect.global.exception;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -41,6 +45,22 @@ import lombok.extern.slf4j.Slf4j;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger RUNTIME_ERROR_LOGGER = LoggerFactory.getLogger("runtime.error");
+    private static final String REQUEST_ID_MDC_KEY = "requestId";
+    private static final String MASKED_HEADER_VALUE = "***";
+    private static final List<String> SENSITIVE_HEADER_NAMES = List.of(
+        "authorization",
+        "cookie",
+        "proxy-authorization",
+        "set-cookie"
+    );
+    private static final List<String> SENSITIVE_QUERY_PARAMETER_NAMES = List.of(
+        "access_token",
+        "client_secret",
+        "code",
+        "password",
+        "refresh_token",
+        "token"
+    );
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Object> handleCustomException(
@@ -185,26 +205,37 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleException(HttpServletRequest request, Exception e) {
-        StackTraceElement origin = e.getStackTrace()[0];
-
         String uri = String.format("%s %s", request.getMethod(), request.getRequestURI());
         String exception = e.getClass().getSimpleName();
-        String location = String.format("%s:%d", origin.getFileName(), origin.getLineNumber());
+        String location = getExceptionLocation(e);
         String message = e.getMessage();
+        String requestId = getRequestId();
 
         String slackMessage = String.format(
             """
+                Request ID: `%s`
                 URI: `%s`
                 Location: `%s`
                 Exception: `%s`
                 ```%s```
                 """,
-            uri, location, exception, message
+            requestId, uri, location, exception, message
         );
 
         RUNTIME_ERROR_LOGGER.error(slackMessage);
+        requestDebugLogging(request, requestId);
 
         return buildErrorResponse(ApiResponseCode.UNEXPECTED_SERVER_ERROR);
+    }
+
+    private String getExceptionLocation(Exception e) {
+        StackTraceElement[] stackTrace = e.getStackTrace();
+        if (stackTrace == null || stackTrace.length == 0) {
+            return "unknown:0";
+        }
+
+        StackTraceElement origin = stackTrace[0];
+        return String.format("%s:%d", origin.getFileName(), origin.getLineNumber());
     }
 
     private ResponseEntity<Object> buildErrorResponse(ApiResponseCode errorCode) {
@@ -253,20 +284,47 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorTraceId
     ) {
         log.warn("[{}] {} | errorTraceId={}", httpStatus, errorMessage, errorTraceId);
-        log.debug("Request: {} {}", request.getMethod(), request.getRequestURI());
-        log.debug("Headers: {}", getHeaders(request));
-        log.debug("Query String: {}", getQueryString(request));
-        log.debug("Body: {}", getRequestBody(request));
+        requestDebugLogging(request, getRequestId());
     }
 
-    private Map<String, Object> getHeaders(HttpServletRequest request) {
+    private void requestDebugLogging(HttpServletRequest request, String requestId) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug("Request [requestId: {}]: {} {}", requestId, request.getMethod(), request.getRequestURI());
+        log.debug("Headers [requestId: {}]: {}", requestId, getLoggableHeaders(request));
+        log.debug("Query String [requestId: {}]: {}", requestId, getQueryString(request));
+        log.debug("Body [requestId: {}]: {}", requestId, getRequestBody(request));
+    }
+
+    private String getRequestId() {
+        String requestId = MDC.get(REQUEST_ID_MDC_KEY);
+        if (requestId == null) {
+            return " - ";
+        }
+        return requestId;
+    }
+
+    private Map<String, Object> getLoggableHeaders(HttpServletRequest request) {
         Map<String, Object> headerMap = new HashMap<>();
         Enumeration<String> headerArray = request.getHeaderNames();
         while (headerArray.hasMoreElements()) {
             String headerName = headerArray.nextElement();
-            headerMap.put(headerName, request.getHeader(headerName));
+            headerMap.put(headerName, getLoggableHeaderValue(request, headerName));
         }
         return headerMap;
+    }
+
+    private String getLoggableHeaderValue(HttpServletRequest request, String headerName) {
+        if (isSensitiveHeader(headerName)) {
+            return MASKED_HEADER_VALUE;
+        }
+        return request.getHeader(headerName);
+    }
+
+    private boolean isSensitiveHeader(String headerName) {
+        return SENSITIVE_HEADER_NAMES.stream()
+            .anyMatch(sensitiveHeaderName -> sensitiveHeaderName.equalsIgnoreCase(headerName));
     }
 
     private String getQueryString(HttpServletRequest httpRequest) {
@@ -274,7 +332,42 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (queryString == null) {
             return " - ";
         }
-        return queryString;
+        return getLoggableQueryString(queryString);
+    }
+
+    private String getLoggableQueryString(String queryString) {
+        StringJoiner loggableQueryString = new StringJoiner("&");
+        for (String parameter : queryString.split("&", -1)) {
+            loggableQueryString.add(getLoggableQueryParameter(parameter));
+        }
+        return loggableQueryString.toString();
+    }
+
+    private String getLoggableQueryParameter(String parameter) {
+        int delimiterIndex = parameter.indexOf('=');
+        String parameterName = delimiterIndex >= 0
+            ? parameter.substring(0, delimiterIndex)
+            : parameter;
+
+        if (!isSensitiveQueryParameter(parameterName)) {
+            return parameter;
+        }
+
+        return parameterName + "=" + MASKED_HEADER_VALUE;
+    }
+
+    private boolean isSensitiveQueryParameter(String parameterName) {
+        String decodedParameterName = decodeQueryParameterName(parameterName);
+        return SENSITIVE_QUERY_PARAMETER_NAMES.stream()
+            .anyMatch(sensitiveParameterName -> sensitiveParameterName.equalsIgnoreCase(decodedParameterName));
+    }
+
+    private String decodeQueryParameterName(String parameterName) {
+        try {
+            return URLDecoder.decode(parameterName, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return parameterName;
+        }
     }
 
     private String getRequestBody(HttpServletRequest request) {

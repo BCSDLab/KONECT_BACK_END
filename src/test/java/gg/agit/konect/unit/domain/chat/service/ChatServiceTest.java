@@ -12,6 +12,7 @@ import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_CHAT_ROOM;
 import static gg.agit.konect.global.code.ApiResponseCode.NOT_FOUND_USER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -25,10 +26,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
@@ -43,15 +44,27 @@ import gg.agit.konect.domain.chat.dto.ChatRoomCreateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomNameUpdateRequest;
 import gg.agit.konect.domain.chat.dto.ChatRoomResponse;
 import gg.agit.konect.domain.chat.enums.ChatType;
+import gg.agit.konect.domain.chat.event.AdminChatReceivedEvent;
 import gg.agit.konect.domain.chat.model.ChatMessage;
 import gg.agit.konect.domain.chat.model.ChatRoom;
 import gg.agit.konect.domain.chat.model.ChatRoomMember;
-import gg.agit.konect.domain.chat.repository.ChatInviteQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatMessageRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomMemberRepository;
+import gg.agit.konect.domain.chat.repository.ChatRoomQueryRepository;
 import gg.agit.konect.domain.chat.repository.ChatRoomRepository;
+import gg.agit.konect.domain.chat.service.ChatDirectRoomAccessService;
+import gg.agit.konect.domain.chat.service.ChatInviteService;
+import gg.agit.konect.domain.chat.service.ChatMessageReadService;
+import gg.agit.konect.domain.chat.service.ChatMessagePageResolver;
+import gg.agit.konect.domain.chat.service.ChatMessageSendService;
 import gg.agit.konect.domain.chat.service.ChatPresenceService;
+import gg.agit.konect.domain.chat.service.ChatRoomAccessService;
+import gg.agit.konect.domain.chat.service.ChatRoomCreationService;
+import gg.agit.konect.domain.chat.service.ChatRoomMemberCommandService;
 import gg.agit.konect.domain.chat.service.ChatRoomMembershipService;
+import gg.agit.konect.domain.chat.service.ChatRoomSummaryService;
+import gg.agit.konect.domain.chat.service.ChatRoomSystemAdminService;
+import gg.agit.konect.domain.chat.service.ChatSearchService;
 import gg.agit.konect.domain.chat.service.ChatService;
 import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubMember;
@@ -77,6 +90,9 @@ class ChatServiceTest extends ServiceTestSupport {
     private ChatRoomRepository chatRoomRepository;
 
     @Mock
+    private ChatRoomQueryRepository chatRoomQueryRepository;
+
+    @Mock
     private ChatMessageRepository chatMessageRepository;
 
     @Mock
@@ -89,9 +105,6 @@ class ChatServiceTest extends ServiceTestSupport {
     private ClubMemberRepository clubMemberRepository;
 
     @Mock
-    private ChatInviteQueryRepository chatInviteQueryRepository;
-
-    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -101,13 +114,101 @@ class ChatServiceTest extends ServiceTestSupport {
     private ChatRoomMembershipService chatRoomMembershipService;
 
     @Mock
+    private ChatRoomSummaryService chatRoomSummaryService;
+
+    @Mock
+    private ChatSearchService chatSearchService;
+
+    @Mock
+    private ChatInviteService chatInviteService;
+
+    @Mock
+    private ChatRoomSystemAdminService chatRoomSystemAdminService;
+
+    @Mock
     private NotificationService notificationService;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks
     private ChatService chatService;
+
+    @BeforeEach
+    void setUp() {
+        ChatDirectRoomAccessService chatDirectRoomAccessService =
+            new ChatDirectRoomAccessService(chatRoomMemberRepository);
+        ChatMessagePageResolver chatMessagePageResolver = new ChatMessagePageResolver(
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            clubMemberRepository,
+            chatRoomSystemAdminService
+        );
+        ChatRoomAccessService chatRoomAccessService = new ChatRoomAccessService(
+            chatRoomMemberRepository,
+            userRepository,
+            chatRoomMembershipService,
+            chatRoomSystemAdminService,
+            chatDirectRoomAccessService
+        );
+        ChatRoomMemberCommandService chatRoomMemberCommandService = new ChatRoomMemberCommandService(
+            chatRoomRepository,
+            chatRoomMemberRepository,
+            userRepository,
+            chatRoomMembershipService
+        );
+        ChatRoomMembershipService chatRoomMembershipForCreation = new ChatRoomMembershipService(
+            chatRoomRepository,
+            chatRoomMemberRepository,
+            clubMemberRepository,
+            userRepository,
+            chatRoomSystemAdminService
+        );
+        ChatRoomCreationService chatRoomCreationService = new ChatRoomCreationService(
+            chatRoomRepository,
+            chatRoomMemberRepository,
+            userRepository,
+            chatRoomMembershipForCreation
+        );
+        ChatMessageSendService chatMessageSendService = new ChatMessageSendService(
+            chatRoomRepository,
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            clubMemberRepository,
+            userRepository,
+            chatRoomSystemAdminService,
+            chatDirectRoomAccessService,
+            notificationService,
+            eventPublisher
+        );
+        ChatMessageReadService chatMessageReadService = new ChatMessageReadService(
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            chatRoomSystemAdminService,
+            chatDirectRoomAccessService
+        );
+        chatService = new ChatService(
+            chatRoomRepository,
+            chatRoomQueryRepository,
+            chatMessageRepository,
+            chatRoomMemberRepository,
+            notificationMuteSettingRepository,
+            clubMemberRepository,
+            userRepository,
+            chatPresenceService,
+            chatRoomMembershipService,
+            chatRoomMemberCommandService,
+            chatRoomSummaryService,
+            chatSearchService,
+            chatInviteService,
+            chatMessageReadService,
+            chatMessagePageResolver,
+            chatRoomAccessService,
+            chatRoomCreationService,
+            chatRoomSystemAdminService,
+            chatDirectRoomAccessService,
+            chatMessageSendService
+        );
+    }
 
     @Test
     @DisplayName("createOrGetChatRoom은 자기 자신과의 direct room 생성을 거부한다")
@@ -181,11 +282,7 @@ class ChatServiceTest extends ServiceTestSupport {
             .willReturn(Optional.empty());
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(room.getId(), targetUserId))
             .willReturn(Optional.empty());
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(room.getId())))
-            .willReturn(List.of(
-                new Object[] {room.getId(), SYSTEM_ADMIN_ID, room.getCreatedAt()},
-                new Object[] {room.getId(), targetUserId, room.getCreatedAt()}
-            ));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(room.getId())).willReturn(true);
 
         // when
         ChatRoomResponse response = chatService.createOrGetChatRoom(adminUserId,
@@ -416,6 +513,7 @@ class ChatServiceTest extends ServiceTestSupport {
         // then
         assertThat(response.isMuted()).isTrue();
         assertThat(setting.getIsMuted()).isTrue();
+        verify(userRepository, times(1)).getById(userId);
         verify(notificationMuteSettingRepository).save(setting);
     }
 
@@ -764,30 +862,102 @@ class ChatServiceTest extends ServiceTestSupport {
             LocalDateTime.of(2026, 4, 11, 10, 0));
         ChatRoomMember targetMember = createRoomMember(systemAdminRoom, targetUser, false,
             LocalDateTime.of(2026, 4, 11, 10, 0));
-        ChatMessage message = createMessage(100, systemAdminRoom, admin, "문의",
-            LocalDateTime.of(2026, 4, 11, 10, 1));
+        ReflectionTestUtils.setField(systemAdminMember, "visibleMessageFrom",
+            LocalDateTime.of(2026, 4, 11, 10, 5));
+        ReflectionTestUtils.setField(targetMember, "visibleMessageFrom",
+            LocalDateTime.of(2026, 4, 11, 10, 7));
+        systemAdminMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 7));
+        targetMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 3));
+        ChatMessage adminMessage = createMessage(100, systemAdminRoom, admin, "관리자 답변",
+            LocalDateTime.of(2026, 4, 11, 10, 6));
+        ChatMessage userMessage = createMessage(101, systemAdminRoom, targetUser, "사용자 문의",
+            LocalDateTime.of(2026, 4, 11, 10, 8));
 
         given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
         given(userRepository.getById(adminId)).willReturn(admin);
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(systemAdminRoom.getId())))
-            .willReturn(List.of(
-                new Object[] {systemAdminRoom.getId(), SYSTEM_ADMIN_ID, systemAdminRoom.getCreatedAt()},
-                new Object[] {systemAdminRoom.getId(), 20, systemAdminRoom.getCreatedAt()}
-            ));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(systemAdminRoom.getId())).willReturn(true);
+        given(chatRoomSystemAdminService.findSystemAdminMember(List.of(systemAdminMember, targetMember)))
+            .willReturn(systemAdminMember);
         given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
             .willReturn(List.of(systemAdminMember, targetMember));
-        given(chatMessageRepository.findByChatRoomId(eq(systemAdminRoom.getId()), nullable(LocalDateTime.class),
+        given(chatMessageRepository.findByChatRoomId(eq(systemAdminRoom.getId()),
+            eq(systemAdminMember.getVisibleMessageFrom()),
             eq(PageRequest.of(0, 20))))
-            .willReturn(new PageImpl<>(List.of(message), PageRequest.of(0, 20), 1));
+            .willReturn(new PageImpl<>(List.of(adminMessage, userMessage), PageRequest.of(0, 20), 2));
 
         // when
         ChatMessagePageResponse response = chatService.getMessages(adminId, systemAdminRoom.getId(), 1, 20);
 
         // then
-        assertThat(response.messages()).hasSize(1);
+        assertThat(response.messages())
+            .extracting(
+                ChatMessageDetailResponse::senderId,
+                ChatMessageDetailResponse::content,
+                ChatMessageDetailResponse::unreadCount,
+                ChatMessageDetailResponse::isMine
+            )
+            .containsExactly(
+                tuple(adminId, "관리자 답변", 0, true),
+                tuple(targetUser.getId(), "사용자 문의", 2, false)
+            );
         verify(chatRoomMembershipService).updateLastReadAt(eq(systemAdminRoom.getId()), eq(SYSTEM_ADMIN_ID),
             any(LocalDateTime.class));
         verify(chatPresenceService).recordPresence(systemAdminRoom.getId(), adminId);
+    }
+
+    @Test
+    @DisplayName("getMessages는 일반 사용자의 system admin 방 조회에서 가시 범위와 sender masking을 적용한다")
+    void getMessagesAppliesVisibilityAndSenderMaskingForUserInSystemAdminRoom() {
+        // given
+        Integer userId = 20;
+        Integer adminId = 99;
+        User user = createUser(userId, "사용자", UserRole.USER);
+        User admin = createUser(adminId, "관리자", UserRole.ADMIN);
+        User systemAdmin = createUser(SYSTEM_ADMIN_ID, "시스템관리자", UserRole.ADMIN);
+        ChatRoom systemAdminRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember userMember = createRoomMember(systemAdminRoom, user, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember systemAdminMember = createRoomMember(systemAdminRoom, systemAdmin, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ReflectionTestUtils.setField(userMember, "visibleMessageFrom", LocalDateTime.of(2026, 4, 11, 10, 5));
+        ReflectionTestUtils.setField(systemAdminMember, "visibleMessageFrom",
+            LocalDateTime.of(2026, 4, 11, 10, 7));
+        userMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 7));
+        systemAdminMember.updateLastReadAt(LocalDateTime.of(2026, 4, 11, 10, 3));
+        ChatMessage adminMessage = createMessage(100, systemAdminRoom, admin, "관리자 답변",
+            LocalDateTime.of(2026, 4, 11, 10, 6));
+        ChatMessage userMessage = createMessage(101, systemAdminRoom, user, "사용자 문의",
+            LocalDateTime.of(2026, 4, 11, 10, 8));
+
+        given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
+        given(userRepository.getById(userId)).willReturn(user);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(systemAdminRoom.getId(), userId))
+            .willReturn(Optional.of(userMember));
+        given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
+            .willReturn(List.of(systemAdminMember, userMember));
+        given(chatMessageRepository.findByChatRoomId(eq(systemAdminRoom.getId()),
+            eq(userMember.getVisibleMessageFrom()),
+            eq(PageRequest.of(0, 20))))
+            .willReturn(new PageImpl<>(List.of(adminMessage, userMessage), PageRequest.of(0, 20), 2));
+
+        // when
+        ChatMessagePageResponse response = chatService.getMessages(userId, systemAdminRoom.getId(), 1, 20);
+
+        // then
+        assertThat(response.messages())
+            .extracting(
+                ChatMessageDetailResponse::senderId,
+                ChatMessageDetailResponse::content,
+                ChatMessageDetailResponse::unreadCount,
+                ChatMessageDetailResponse::isMine
+            )
+            .containsExactly(
+                tuple(SYSTEM_ADMIN_ID, "관리자 답변", 0, false),
+                tuple(userId, "사용자 문의", 2, true)
+            );
+        verify(chatRoomMembershipService).updateDirectRoomLastReadAt(eq(systemAdminRoom.getId()), eq(user),
+            any(LocalDateTime.class), eq(systemAdminRoom));
+        verify(chatPresenceService).recordPresence(systemAdminRoom.getId(), userId);
     }
 
     // ===== sendMessage =====
@@ -825,6 +995,9 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomId(directRoom.getId()))
             .willReturn(List.of(senderMember, receiverMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            directRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
         given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(directRoom.getId()), eq(senderId),
             any(LocalDateTime.class)))
             .willReturn(1);
@@ -844,6 +1017,44 @@ class ChatServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    @DisplayName("sendMessage는 이미 더 최신 메시지가 있으면 room 마지막 메시지 메타데이터를 덮어쓰지 않는다")
+    void sendMessageDoesNotOverwriteRoomMetadataWhenNewerMessageAlreadyExists() {
+        Integer senderId = 10;
+        Integer receiverId = 20;
+        User sender = createUser(senderId, "보낸이", UserRole.USER);
+        User receiver = createUser(receiverId, "받는이", UserRole.USER);
+        ChatRoom directRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember senderMember = createRoomMember(directRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember receiverMember = createRoomMember(directRoom, receiver, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, directRoom, sender, "older",
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        ReflectionTestUtils.setField(directRoom, "lastMessageContent", "newer");
+        ReflectionTestUtils.setField(directRoom, "lastMessageSentAt", LocalDateTime.of(2026, 4, 11, 10, 2));
+
+        given(chatRoomRepository.findById(directRoom.getId())).willReturn(Optional.of(directRoom));
+        given(userRepository.getById(senderId)).willReturn(sender);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(directRoom.getId(), senderId))
+            .willReturn(Optional.of(senderMember));
+        given(chatRoomMemberRepository.findByChatRoomId(directRoom.getId()))
+            .willReturn(List.of(senderMember, receiverMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            directRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(0);
+        given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(directRoom.getId()), eq(senderId),
+            any(LocalDateTime.class)))
+            .willReturn(1);
+
+        chatService.sendMessage(senderId, directRoom.getId(), new ChatMessageSendRequest("older"));
+
+        assertThat(directRoom.getLastMessageContent()).isEqualTo("newer");
+        assertThat(directRoom.getLastMessageSentAt()).isEqualTo(LocalDateTime.of(2026, 4, 11, 10, 2));
+    }
+
+    @Test
     @DisplayName("sendMessage는 group room에서 메시지를 저장하고 그룹 알림을 보낸다")
     void sendMessageInGroupRoomSavesMessageAndSendsGroupNotification() {
         // given
@@ -860,6 +1071,9 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(groupRoom.getId(), senderId))
             .willReturn(Optional.of(senderMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            groupRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
         given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(groupRoom.getId()), eq(senderId),
             any(LocalDateTime.class)))
             .willReturn(1);
@@ -926,6 +1140,9 @@ class ChatServiceTest extends ServiceTestSupport {
         given(chatRoomMemberRepository.findByChatRoomIdAndUserId(clubRoom.getId(), senderId))
             .willReturn(Optional.of(senderRoomMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            clubRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
         given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(clubRoom.getId()), eq(senderId),
             any(LocalDateTime.class)))
             .willReturn(1);
@@ -943,6 +1160,51 @@ class ChatServiceTest extends ServiceTestSupport {
             eq(clubRoom.getId()), eq(senderId), eq("BCSD"), eq("보낸이"), eq("hello"),
             any(List.class)
         );
+    }
+
+    @Test
+    @DisplayName("sendMessage는 일반 사용자가 SYSTEM_ADMIN 방에 보내면 관리자 문의 이벤트를 발행한다")
+    void sendMessageByUserInSystemAdminRoomPublishesAdminChatEvent() {
+        // given
+        Integer senderId = 20;
+        String content = "문의합니다";
+        User sender = createUser(senderId, "사용자", UserRole.USER);
+        User systemAdmin = createUser(SYSTEM_ADMIN_ID, "시스템관리자", UserRole.ADMIN);
+        ChatRoom systemAdminRoom = createRoom(1, ChatType.DIRECT, LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember senderMember = createRoomMember(systemAdminRoom, sender, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatRoomMember systemAdminMember = createRoomMember(systemAdminRoom, systemAdmin, false,
+            LocalDateTime.of(2026, 4, 11, 10, 0));
+        ChatMessage savedMessage = createMessage(100, systemAdminRoom, sender, content,
+            LocalDateTime.of(2026, 4, 11, 10, 1));
+
+        given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
+        given(userRepository.getById(senderId)).willReturn(sender);
+        given(chatRoomMemberRepository.findByChatRoomIdAndUserId(systemAdminRoom.getId(), senderId))
+            .willReturn(Optional.of(senderMember));
+        given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
+            .willReturn(List.of(systemAdminMember, senderMember));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            systemAdminRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
+        given(chatRoomMemberRepository.updateLastReadAtIfOlder(eq(systemAdminRoom.getId()), eq(senderId),
+            any(LocalDateTime.class)))
+            .willReturn(1);
+
+        // when
+        chatService.sendMessage(senderId, systemAdminRoom.getId(), new ChatMessageSendRequest(content));
+
+        // then
+        ArgumentCaptor<AdminChatReceivedEvent> eventCaptor = ArgumentCaptor.forClass(AdminChatReceivedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue())
+            .extracting(
+                AdminChatReceivedEvent::senderId,
+                AdminChatReceivedEvent::senderName,
+                AdminChatReceivedEvent::content
+            )
+            .containsExactly(senderId, sender.getName(), content);
     }
 
     @Test
@@ -964,14 +1226,13 @@ class ChatServiceTest extends ServiceTestSupport {
 
         given(chatRoomRepository.findById(systemAdminRoom.getId())).willReturn(Optional.of(systemAdminRoom));
         given(userRepository.getById(adminId)).willReturn(admin);
-        given(chatRoomMemberRepository.findRoomMemberIdsByChatRoomIds(List.of(systemAdminRoom.getId())))
-            .willReturn(List.of(
-                new Object[] {systemAdminRoom.getId(), SYSTEM_ADMIN_ID, systemAdminRoom.getCreatedAt()},
-                new Object[] {systemAdminRoom.getId(), targetUserId, systemAdminRoom.getCreatedAt()}
-            ));
+        given(chatRoomSystemAdminService.isSystemAdminRoom(systemAdminRoom.getId())).willReturn(true);
         given(chatRoomMemberRepository.findByChatRoomId(systemAdminRoom.getId()))
             .willReturn(List.of(systemAdminMember, targetMember));
         given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+        given(chatRoomRepository.updateLastMessageIfLatest(
+            systemAdminRoom.getId(), savedMessage.getId(), savedMessage.getContent(), savedMessage.getCreatedAt()
+        )).willReturn(1);
 
         // when
         ChatMessageDetailResponse response = chatService.sendMessage(adminId, systemAdminRoom.getId(),
@@ -988,6 +1249,7 @@ class ChatServiceTest extends ServiceTestSupport {
         // 비관리자에게 알림이 전송되어야 한다
         verify(notificationService).sendChatNotification(eq(targetUserId), eq(systemAdminRoom.getId()), eq("관리자"),
             eq("문의"));
+        verify(eventPublisher, never()).publishEvent(any(AdminChatReceivedEvent.class));
     }
 
     // ===== toggleMute additional =====

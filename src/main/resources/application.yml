@@ -1,3 +1,12 @@
+logging:
+  ignored-url-patterns:
+    - /**/api-docs/**
+    - /**/swagger-ui/**
+    - /error
+    - /favicon.ico
+    - /actuator/**
+    - /notifications/inbox/stream
+
 spring:
   application:
     name: konect-backend
@@ -7,7 +16,6 @@ spring:
     import:
       - classpath:application-db.yml
       - classpath:application-infrastructure.yml
-      - classpath:application-monitoring.yml
       - classpath:application-security.yml
       - optional:file:.env.${spring.profiles.active}[.properties]
   servlet:

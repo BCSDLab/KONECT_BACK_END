@@ -25,6 +25,7 @@ public enum ApiResponseCode {
     CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "자기 자신을 강퇴할 수 없습니다."),
     CANNOT_KICK_ROOM_OWNER(HttpStatus.BAD_REQUEST, "방장은 강퇴할 수 없습니다."),
     CANNOT_KICK_IN_NON_GROUP_ROOM(HttpStatus.BAD_REQUEST, "그룹 채팅방에서만 강퇴할 수 있습니다."),
+    CANNOT_INVITE_IN_NON_GROUP_ROOM(HttpStatus.BAD_REQUEST, "일반 그룹 채팅방에서만 초대할 수 있습니다."),
     INVALID_CHAT_ROOM_CREATE_REQUEST(HttpStatus.BAD_REQUEST, "clubId 또는 targetUserId 중 하나만 전달해야 합니다."),
     CANNOT_CHANGE_OWN_POSITION(HttpStatus.BAD_REQUEST, "자기 자신의 직책은 변경할 수 없습니다."),
     CANNOT_DELETE_CLUB_PRESIDENT(HttpStatus.BAD_REQUEST, "동아리 회장인 경우 회장을 양도하고 탈퇴해야 합니다."),
