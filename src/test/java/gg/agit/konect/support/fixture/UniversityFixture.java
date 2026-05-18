@@ -8,6 +8,8 @@ import gg.agit.konect.domain.university.model.University;
 
 public class UniversityFixture {
 
+    private static final String DEFAULT_IMAGE_URL = "https://example.com/university.png";
+
     public static University create() {
         return create("한국기술교육대학교", Campus.MAIN);
     }
@@ -17,7 +19,7 @@ public class UniversityFixture {
     }
 
     public static University create(String koreanName, Campus campus, UniversityRegion region) {
-        return create(koreanName, campus, region, null);
+        return create(koreanName, campus, region, DEFAULT_IMAGE_URL);
     }
 
     public static University create(String koreanName, Campus campus, UniversityRegion region, String imageUrl) {

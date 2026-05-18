@@ -50,7 +50,8 @@ public class University {
     @Column(name = "region", nullable = false)
     private UniversityRegion region;
 
-    @Column(name = "image_url")
+    @NotNull
+    @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
     @Builder
