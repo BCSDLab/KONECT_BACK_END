@@ -48,7 +48,14 @@ public record WebsiteClubsResponse(
         UniversityRegion region,
 
         @Schema(description = "지역명", example = "충청도", requiredMode = REQUIRED)
-        String regionName
+        String regionName,
+
+        @Schema(
+            description = "대학 로고 이미지 URL",
+            example = "https://example.com/koreatech-logo.png",
+            requiredMode = REQUIRED
+        )
+        String logoImageUrl
     ) {
         public static UniversityResponse from(University university) {
             if (university == null) {
@@ -60,7 +67,8 @@ public record WebsiteClubsResponse(
                 university.getKoreanName(),
                 university.getCampus().getDisplayName(),
                 university.getRegion(),
-                university.getRegion().getDisplayName()
+                university.getRegion().getDisplayName(),
+                university.getLogoImageUrl()
             );
         }
     }

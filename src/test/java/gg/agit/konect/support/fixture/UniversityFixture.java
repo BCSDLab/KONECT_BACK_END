@@ -17,10 +17,15 @@ public class UniversityFixture {
     }
 
     public static University create(String koreanName, Campus campus, UniversityRegion region) {
+        return create(koreanName, campus, region, null);
+    }
+
+    public static University create(String koreanName, Campus campus, UniversityRegion region, String logoImageUrl) {
         return University.builder()
             .koreanName(koreanName)
             .campus(campus)
             .region(region)
+            .logoImageUrl(logoImageUrl)
             .build();
     }
 

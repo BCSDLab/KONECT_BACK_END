@@ -8,6 +8,7 @@ public record WebsiteUniversitySummary(
     String campusName,
     UniversityRegion region,
     String regionName,
+    String logoImageUrl,
     Long clubCount
 ) {
 }

@@ -40,7 +40,8 @@ class WebsiteApiTest extends IntegrationTestSupport {
             University koreatech = persist(UniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
-                UniversityRegion.CHUNGCHEONG
+                UniversityRegion.CHUNGCHEONG,
+                "https://example.com/koreatech-logo.png"
             ));
             University seoul = persist(UniversityFixture.create(
                 "서울대학교",
@@ -60,6 +61,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.universities[0].campusName").value("본교"))
                 .andExpect(jsonPath("$.universities[0].region").value("CHUNGCHEONG"))
                 .andExpect(jsonPath("$.universities[0].regionName").value("충청도"))
+                .andExpect(jsonPath("$.universities[0].logoImageUrl").value("https://example.com/koreatech-logo.png"))
                 .andExpect(jsonPath("$.universities[0].clubCount").value(2));
 
             verify(loginCheckInterceptor, never()).preHandle(any(), any(), any());
@@ -78,7 +80,8 @@ class WebsiteApiTest extends IntegrationTestSupport {
             University university = persist(UniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
-                UniversityRegion.CHUNGCHEONG
+                UniversityRegion.CHUNGCHEONG,
+                "https://example.com/koreatech-logo.png"
             ));
             Club bcsd = persist(createClub(university, "BCSD Lab", ClubCategory.ACADEMIC));
             Club study = persist(createClub(university, "경영전략연구회", ClubCategory.ACADEMIC));
@@ -94,6 +97,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 + "/clubs?page=1&limit=10&query=BCSD&category=ACADEMIC")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.university.name").value("한국기술교육대학교"))
+                .andExpect(jsonPath("$.university.logoImageUrl").value("https://example.com/koreatech-logo.png"))
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.clubs", hasSize(1)))
                 .andExpect(jsonPath("$.clubs[0].name").value("BCSD Lab"))

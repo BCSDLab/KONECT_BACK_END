@@ -41,11 +41,24 @@ public class WebsiteQueryRepository {
         NumberExpression<Long> clubCount = club.id.countDistinct();
 
         List<Tuple> rows = jpaQueryFactory
-            .select(university.id, university.koreanName, university.campus, university.region, clubCount)
+            .select(
+                university.id,
+                university.koreanName,
+                university.campus,
+                university.region,
+                university.logoImageUrl,
+                clubCount
+            )
             .from(university)
             .leftJoin(club).on(club.university.id.eq(university.id))
             .where(condition)
-            .groupBy(university.id, university.koreanName, university.campus, university.region)
+            .groupBy(
+                university.id,
+                university.koreanName,
+                university.campus,
+                university.region,
+                university.logoImageUrl
+            )
             .orderBy(university.koreanName.asc(), university.campus.asc())
             .fetch();
 
@@ -56,6 +69,7 @@ public class WebsiteQueryRepository {
                 row.get(university.campus).getDisplayName(),
                 row.get(university.region),
                 row.get(university.region).getDisplayName(),
+                row.get(university.logoImageUrl),
                 row.get(clubCount)
             ))
             .toList();
