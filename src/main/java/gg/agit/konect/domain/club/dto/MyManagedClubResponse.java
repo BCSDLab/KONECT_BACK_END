@@ -18,6 +18,9 @@ public record MyManagedClubResponse(
     @Schema(description = "동아리 이름", example = "BCSD", requiredMode = REQUIRED)
     String clubName,
 
+    @Schema(description = "동아리 주제", example = "코딩", requiredMode = REQUIRED)
+    String topic,
+
     @Schema(description = "회원 이름", example = "배진호", requiredMode = REQUIRED)
     String name,
 
@@ -33,6 +36,7 @@ public record MyManagedClubResponse(
             club.getId(),
             club.getImageUrl(),
             club.getName(),
+            club.getTopic(),
             user.getName(),
             user.getStudentNumber(),
             clubMember.getClubPosition().getDescription()
@@ -44,6 +48,7 @@ public record MyManagedClubResponse(
             club.getId(),
             club.getImageUrl(),
             club.getName(),
+            club.getTopic(),
             user.getName(),
             user.getStudentNumber(),
             ClubPosition.PRESIDENT.getDescription()

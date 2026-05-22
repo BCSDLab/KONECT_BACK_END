@@ -110,7 +110,8 @@ class ClubServiceTest extends ServiceTestSupport {
             "상세 소개",
             "https://example.com/club.png",
             "학생회관 101호",
-            ClubCategory.ACADEMIC
+            ClubCategory.ACADEMIC,
+            "코딩"
         );
         Club savedClub = request.toEntity(presidentUser.getUniversity());
         ReflectionTestUtils.setField(savedClub, "id", 100);
@@ -148,6 +149,7 @@ class ClubServiceTest extends ServiceTestSupport {
 
         assertThat(response.id()).isEqualTo(savedClub.getId());
         assertThat(response.presidentUserId()).isEqualTo(presidentUserId);
+        assertThat(response.topic()).isEqualTo("코딩");
         assertThat(response.isMember()).isFalse();
         assertThat(response.isApplied()).isFalse();
         assertThat(response.recruitment().status()).isEqualTo(RecruitmentStatus.CLOSED);
@@ -166,7 +168,8 @@ class ClubServiceTest extends ServiceTestSupport {
             "상세 소개",
             "https://example.com/club.png",
             "학생회관 101호",
-            ClubCategory.ACADEMIC
+            ClubCategory.ACADEMIC,
+            "코딩"
         );
         given(userRepository.getById(userId)).willReturn(user);
 
@@ -188,6 +191,7 @@ class ClubServiceTest extends ServiceTestSupport {
             "대기 동아리",
             "https://example.com/club-1.png",
             "학술",
+            "코딩",
             "설명",
             RecruitmentStatus.ONGOING,
             false,
@@ -198,6 +202,7 @@ class ClubServiceTest extends ServiceTestSupport {
             "가입 동아리",
             "https://example.com/club-2.png",
             "학술",
+            "코딩",
             "설명",
             RecruitmentStatus.ONGOING,
             false,
@@ -462,7 +467,7 @@ class ClubServiceTest extends ServiceTestSupport {
             UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, "", false);
         ClubSummaryInfo club = new ClubSummaryInfo(
-            101, "동아리", "https://example.com/club.png", "학술", "설명",
+            101, "동아리", "https://example.com/club.png", "학술", "코딩", "설명",
             RecruitmentStatus.ONGOING, false, null
         );
         Page<ClubSummaryInfo> page = new PageImpl<>(List.of(club), PageRequest.of(0, 10), 1);
@@ -592,7 +597,7 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer userId = 10;
         Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), clubId, "BCSD");
         User user = UserFixture.createUserWithId(userId, "매니저", UserRole.USER);
-        ClubBasicInfoUpdateRequest request = new ClubBasicInfoUpdateRequest("새 이름", ClubCategory.SPORTS);
+        ClubBasicInfoUpdateRequest request = new ClubBasicInfoUpdateRequest("새 이름", ClubCategory.SPORTS, "축구");
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubRepository.getById(clubId)).willReturn(club);
@@ -604,6 +609,7 @@ class ClubServiceTest extends ServiceTestSupport {
         verify(clubPermissionValidator).validateManagerAccess(clubId, user);
         assertThat(club.getName()).isEqualTo("새 이름");
         assertThat(club.getClubCategory()).isEqualTo(ClubCategory.SPORTS);
+        assertThat(club.getTopic()).isEqualTo("축구");
     }
 
     @Test
@@ -613,7 +619,7 @@ class ClubServiceTest extends ServiceTestSupport {
         Integer clubId = 1;
         Integer userId = 10;
         User user = UserFixture.createUserWithId(userId, "일반 회원", UserRole.USER);
-        ClubBasicInfoUpdateRequest request = new ClubBasicInfoUpdateRequest("새 이름", ClubCategory.SPORTS);
+        ClubBasicInfoUpdateRequest request = new ClubBasicInfoUpdateRequest("새 이름", ClubCategory.SPORTS, "축구");
 
         given(userRepository.getById(userId)).willReturn(user);
         given(clubRepository.getById(clubId)).willReturn(
@@ -800,11 +806,11 @@ class ClubServiceTest extends ServiceTestSupport {
             UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, "", false);
         ClubSummaryInfo nullIdClub = new ClubSummaryInfo(
-            null, "null id 동아리", "https://example.com/null.png", "학술", "설명",
+            null, "null id 동아리", "https://example.com/null.png", "학술", "코딩", "설명",
             RecruitmentStatus.ONGOING, false, null
         );
         ClubSummaryInfo validClub = new ClubSummaryInfo(
-            200, "정상 동아리", "https://example.com/valid.png", "학술", "설명",
+            200, "정상 동아리", "https://example.com/valid.png", "학술", "코딩", "설명",
             RecruitmentStatus.ONGOING, false, null
         );
         Page<ClubSummaryInfo> page = new PageImpl<>(List.of(nullIdClub, validClub), PageRequest.of(0, 10), 2);
@@ -897,11 +903,11 @@ class ClubServiceTest extends ServiceTestSupport {
             UserRole.USER);
         ClubCondition condition = new ClubCondition(1, 10, "", false);
         ClubSummaryInfo club1 = new ClubSummaryInfo(
-            101, "동아리1", "https://example.com/1.png", "학술", "설명",
+            101, "동아리1", "https://example.com/1.png", "학술", "코딩", "설명",
             RecruitmentStatus.ONGOING, false, null
         );
         ClubSummaryInfo club2 = new ClubSummaryInfo(
-            102, "동아리2", "https://example.com/2.png", "학술", "설명",
+            102, "동아리2", "https://example.com/2.png", "학술", "코딩", "설명",
             RecruitmentStatus.ONGOING, false, null
         );
         Page<ClubSummaryInfo> page = new PageImpl<>(List.of(club1, club2), PageRequest.of(0, 10), 2);

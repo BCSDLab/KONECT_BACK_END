@@ -51,6 +51,9 @@ public class Club extends BaseEntity {
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
+    @Column(name = "topic", length = 20, nullable = false)
+    private String topic;
+
     @Column(name = "description", length = 20, nullable = false)
     private String description;
 
@@ -105,6 +108,7 @@ public class Club extends BaseEntity {
         ClubCategory clubCategory,
         University university,
         String name,
+        String topic,
         String description,
         String introduce,
         String imageUrl,
@@ -122,6 +126,7 @@ public class Club extends BaseEntity {
         this.clubCategory = clubCategory;
         this.university = university;
         this.name = name;
+        this.topic = topic;
         this.description = description;
         this.introduce = introduce;
         this.imageUrl = imageUrl;
@@ -144,6 +149,7 @@ public class Club extends BaseEntity {
             .imageUrl(request.imageUrl())
             .location(request.location())
             .clubCategory(request.clubCategory())
+            .topic(request.topic())
             .university(university)
             .build();
     }
@@ -173,9 +179,10 @@ public class Club extends BaseEntity {
         this.introduce = introduce;
     }
 
-    public void updateBasicInfo(String name, ClubCategory clubCategory) {
+    public void updateBasicInfo(String name, ClubCategory clubCategory, String topic) {
         this.name = name;
         this.clubCategory = clubCategory;
+        this.topic = topic;
     }
 
     public void updateSettings(

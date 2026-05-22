@@ -167,7 +167,7 @@ public class ClubService {
 
         clubPermissionValidator.validateManagerAccess(clubId, user);
 
-        club.updateBasicInfo(request.name(), request.clubCategory());
+        club.updateBasicInfo(request.name(), request.clubCategory(), request.topic());
     }
 
     public ClubMembershipsResponse getJoinedClubs(Integer userId) {
