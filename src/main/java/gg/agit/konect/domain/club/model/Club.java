@@ -54,6 +54,9 @@ public class Club extends BaseEntity {
     @Column(name = "topic", length = 20, nullable = false)
     private String topic;
 
+    @Column(name = "emoji", length = 20)
+    private String emoji;
+
     @Column(name = "description", length = 20, nullable = false)
     private String description;
 
@@ -109,6 +112,7 @@ public class Club extends BaseEntity {
         University university,
         String name,
         String topic,
+        String emoji,
         String description,
         String introduce,
         String imageUrl,
@@ -127,6 +131,7 @@ public class Club extends BaseEntity {
         this.university = university;
         this.name = name;
         this.topic = topic;
+        this.emoji = emoji;
         this.description = description;
         this.introduce = introduce;
         this.imageUrl = imageUrl;

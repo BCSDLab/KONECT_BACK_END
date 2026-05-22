@@ -111,7 +111,8 @@ class ClubServiceTest extends ServiceTestSupport {
             "https://example.com/club.png",
             "학생회관 101호",
             ClubCategory.ACADEMIC,
-            "코딩"
+            "코딩",
+            null
         );
         Club savedClub = request.toEntity(presidentUser.getUniversity());
         ReflectionTestUtils.setField(savedClub, "id", 100);
@@ -169,7 +170,8 @@ class ClubServiceTest extends ServiceTestSupport {
             "https://example.com/club.png",
             "학생회관 101호",
             ClubCategory.ACADEMIC,
-            "코딩"
+            "코딩",
+            null
         );
         given(userRepository.getById(userId)).willReturn(user);
 

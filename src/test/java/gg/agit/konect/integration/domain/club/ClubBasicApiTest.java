@@ -8,10 +8,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import gg.agit.konect.domain.club.dto.ClubCreateRequest;
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.user.model.User;
 import gg.agit.konect.support.IntegrationTestSupport;
@@ -25,6 +27,9 @@ class ClubBasicApiTest extends IntegrationTestSupport {
     private University university;
     private User normalUser;
     private User adminUser;
+
+    @Autowired
+    private ClubRepository clubRepository;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -153,7 +158,8 @@ class ClubBasicApiTest extends IntegrationTestSupport {
                 "https://example.com/image.png",
                 "학생회관 201호",
                 ClubCategory.ACADEMIC,
-                "코딩"
+                "코딩",
+                "💻"
             );
 
             // when & then
@@ -163,6 +169,10 @@ class ClubBasicApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.topic").value("코딩"))
                 .andExpect(jsonPath("$.presidentName").value("새회장"))
                 .andExpect(jsonPath("$.memberCount").value(1));
+
+            clearPersistenceContext();
+            Club savedClub = clubRepository.findAll().getFirst();
+            org.assertj.core.api.Assertions.assertThat(savedClub.getEmoji()).isEqualTo("💻");
         }
 
         @Test
@@ -179,7 +189,8 @@ class ClubBasicApiTest extends IntegrationTestSupport {
                 "https://example.com/image.png",
                 "학생회관 201호",
                 ClubCategory.ACADEMIC,
-                "코딩"
+                "코딩",
+                null
             );
 
             // when & then

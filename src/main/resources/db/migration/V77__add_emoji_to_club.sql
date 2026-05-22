@@ -1,0 +1,2 @@
+ALTER TABLE club
+    ADD COLUMN emoji VARCHAR(20) NULL AFTER topic;

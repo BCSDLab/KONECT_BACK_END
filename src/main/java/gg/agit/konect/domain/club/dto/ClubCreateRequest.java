@@ -47,7 +47,11 @@ public record ClubCreateRequest(
     @Schema(description = "동아리 주제", example = "코딩", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "동아리 주제는 필수 입력입니다.")
     @Size(max = 20, message = "동아리 주제는 20자 이하여야 합니다.")
-    String topic
+    String topic,
+
+    @Schema(description = "동아리 텍스트 이모지", example = "💻")
+    @Size(max = 20, message = "동아리 이모지는 20자 이하여야 합니다.")
+    String emoji
 ) {
     public Club toEntity(University university) {
         return Club.builder()
@@ -58,6 +62,7 @@ public record ClubCreateRequest(
             .location(location)
             .clubCategory(clubCategory)
             .topic(topic)
+            .emoji(emoji)
             .university(university)
             .isRecruitmentEnabled(false)
             .isApplicationEnabled(true)
