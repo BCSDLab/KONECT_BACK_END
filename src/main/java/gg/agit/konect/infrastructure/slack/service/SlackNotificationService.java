@@ -1,6 +1,7 @@
 package gg.agit.konect.infrastructure.slack.service;
 
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.ADMIN_CHAT_RECEIVED;
+import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.CLUB_REGISTRATION_REQUEST;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.INQUIRY;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.SHEET_SYNC_FAILED;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_REGISTER;
@@ -8,6 +9,7 @@ import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USE
 
 import org.springframework.stereotype.Service;
 
+import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
 import gg.agit.konect.domain.club.event.SheetSyncFailedEvent;
 import gg.agit.konect.infrastructure.slack.client.SlackClient;
 import gg.agit.konect.infrastructure.slack.config.SlackProperties;
@@ -35,6 +37,20 @@ public class SlackNotificationService {
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }
 
+    public void notifyClubRegistrationRequest(ClubRegistrationRequestedEvent event) {
+        String message = CLUB_REGISTRATION_REQUEST.format(
+            event.universityName(),
+            event.clubName(),
+            event.clubCategory().getDescription(),
+            event.topic(),
+            event.emoji(),
+            event.description(),
+            formatMediaUrls(event),
+            event.introduce()
+        );
+        slackClient.sendMessage(message, slackProperties.webhooks().event());
+    }
+
     public void notifyAdminChatReceived(String senderName, String content) {
         String message = ADMIN_CHAT_RECEIVED.format(senderName, content);
         slackClient.sendMessage(message, slackProperties.webhooks().event());
@@ -49,5 +65,11 @@ public class SlackNotificationService {
             event.reason()
         );
         slackClient.sendMessage(message, slackProperties.webhooks().error());
+    }
+
+    private String formatMediaUrls(ClubRegistrationRequestedEvent event) {
+        return String.join("\n", event.mediaUrls().stream()
+            .map(url -> "- " + url)
+            .toList());
     }
 }

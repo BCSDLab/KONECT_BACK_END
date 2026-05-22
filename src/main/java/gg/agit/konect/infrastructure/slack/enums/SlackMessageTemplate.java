@@ -21,6 +21,21 @@ public enum SlackMessageTemplate {
         > %s
         """
     ),
+    CLUB_REGISTRATION_REQUEST(
+        """
+        *:sparkles: 신규 동아리 등록 요청이 도착했습니다.*
+        대학교: %s
+        동아리명: %s
+        분과: %s
+        주제: %s
+        이모지: %s
+        한 줄 소개: %s
+        사진 및 영상:
+        %s
+        동아리 소개:
+        > %s
+        """
+    ),
     ADMIN_CHAT_RECEIVED(
         """
         *:speech_balloon: 새로운 채팅이 도착했습니다.*
