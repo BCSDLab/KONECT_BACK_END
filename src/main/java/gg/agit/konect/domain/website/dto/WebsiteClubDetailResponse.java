@@ -45,6 +45,7 @@ public record WebsiteClubDetailResponse(
     Recruitment recruitment
 ) {
 
+    @Schema(name = "WebsiteClubDetailUniversityResponse")
     public record University(
         @Schema(description = "대학 고유 ID", example = "1", requiredMode = REQUIRED)
         Integer id,
@@ -59,7 +60,17 @@ public record WebsiteClubDetailResponse(
         UniversityRegion region,
 
         @Schema(description = "지역명", example = "충청도", requiredMode = REQUIRED)
-        String regionName
+        String regionName,
+
+        @Schema(
+            description = "대학 로고 이미지 URL",
+            example = "https://example.com/koreatech-logo.png",
+            requiredMode = REQUIRED
+        )
+        String imageUrl,
+
+        @Schema(description = "대학에 등록된 동아리 수", example = "28", requiredMode = REQUIRED)
+        Long clubCount
     ) {
     }
 
@@ -95,7 +106,7 @@ public record WebsiteClubDetailResponse(
         }
     }
 
-    public static WebsiteClubDetailResponse of(Club club, Long memberCount) {
+    public static WebsiteClubDetailResponse of(Club club, Long memberCount, Long universityClubCount) {
         return new WebsiteClubDetailResponse(
             club.getId(),
             club.getName(),
@@ -111,7 +122,9 @@ public record WebsiteClubDetailResponse(
                 club.getUniversity().getKoreanName(),
                 club.getUniversity().getCampus().getDisplayName(),
                 club.getUniversity().getRegion(),
-                club.getUniversity().getRegion().getDisplayName()
+                club.getUniversity().getRegion().getDisplayName(),
+                club.getUniversity().getImageUrl(),
+                universityClubCount
             ),
             Recruitment.from(club)
         );

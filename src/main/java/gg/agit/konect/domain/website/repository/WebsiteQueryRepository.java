@@ -125,6 +125,16 @@ public class WebsiteQueryRepository {
         return categoryCounts;
     }
 
+    public Long countClubsByUniversityId(Integer universityId) {
+        Long count = jpaQueryFactory
+            .select(club.count())
+            .from(club)
+            .where(createClubCondition(universityId, null, null))
+            .fetchOne();
+
+        return count == null ? 0 : count;
+    }
+
     public Optional<Club> findClub(Integer clubId) {
         return Optional.ofNullable(jpaQueryFactory
             .selectFrom(club)

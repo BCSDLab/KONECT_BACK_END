@@ -126,9 +126,11 @@ class WebsiteApiTest extends IntegrationTestSupport {
             University university = persist(UniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
-                UniversityRegion.CHUNGCHEONG
+                UniversityRegion.CHUNGCHEONG,
+                "https://example.com/koreatech-logo.png"
             ));
             Club club = persist(createClub(university, "ZEST", ClubCategory.PERFORMANCE));
+            persist(createClub(university, "BCSD Lab", ClubCategory.ACADEMIC));
             persist(ClubRecruitmentFixture.createAlwaysRecruiting(club));
             persistMember(club, "회장", "2024000004");
             clearPersistenceContext();
@@ -140,6 +142,8 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.categoryName").value("공연"))
                 .andExpect(jsonPath("$.university.name").value("한국기술교육대학교"))
                 .andExpect(jsonPath("$.university.region").value("CHUNGCHEONG"))
+                .andExpect(jsonPath("$.university.imageUrl").value("https://example.com/koreatech-logo.png"))
+                .andExpect(jsonPath("$.university.clubCount").value(2))
                 .andExpect(jsonPath("$.memberCount").value(1))
                 .andExpect(jsonPath("$.recruitment.isAlwaysRecruiting").value(true))
                 .andExpect(jsonPath("$.recruitment.content").value("상시 모집 공고 내용입니다."));
