@@ -63,8 +63,9 @@ public class WebsiteService {
         Club club = websiteQueryRepository.findClub(clubId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB));
         Long memberCount = websiteQueryRepository.countMembersByClubIds(List.of(clubId)).getOrDefault(clubId, 0L);
+        Long universityClubCount = websiteQueryRepository.countClubsByUniversityId(club.getUniversity().getId());
 
-        return WebsiteClubDetailResponse.of(club, memberCount);
+        return WebsiteClubDetailResponse.of(club, memberCount, universityClubCount);
     }
 
     public WebsiteClubsResponse getRecentClubs(List<Integer> clubIds) {
