@@ -49,7 +49,7 @@ public record ClubRegistrationRequest(
         arraySchema = @Schema(description = "사진 및 영상 URL 목록", requiredMode = REQUIRED)
     )
     List<@NotBlank(message = "사진 및 영상 URL은 비어 있을 수 없습니다.")
-        @Size(max = 255, message = "사진 및 영상 URL은 255자 이하여야 합니다.") String> mediaUrls,
+    @Size(max = 255, message = "사진 및 영상 URL은 255자 이하여야 합니다.") String> mediaUrls,
 
     @NotBlank(message = "동아리 소개는 필수 입력입니다.")
     @Size(max = 2000, message = "동아리 소개는 2000자 이하여야 합니다.")
