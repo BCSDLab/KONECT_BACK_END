@@ -77,6 +77,7 @@ class ClubMemberManagementServiceBatchTest {
         club = Club.builder()
             .id(clubId)
             .name("Test Club")
+            .topic("코딩")
             .university(university)
             .build();
     }

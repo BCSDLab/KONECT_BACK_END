@@ -26,6 +26,9 @@ public record WebsiteClubDetailResponse(
     @Schema(description = "분과명", example = "학술", requiredMode = REQUIRED)
     String categoryName,
 
+    @Schema(description = "동아리 주제", example = "코딩", requiredMode = REQUIRED)
+    String topic,
+
     @Schema(description = "한 줄 소개", example = "테스트 동아리 소개", requiredMode = REQUIRED)
     String description,
 
@@ -113,6 +116,7 @@ public record WebsiteClubDetailResponse(
             club.getImageUrl(),
             club.getClubCategory(),
             club.getClubCategory().getDescription(),
+            club.getTopic(),
             club.getDescription(),
             club.getIntroduce(),
             club.getLocation(),

@@ -26,6 +26,9 @@ public record ClubMembershipsResponse(
         @Schema(description = "동아리 분과", example = "학술", requiredMode = REQUIRED)
         String categoryName,
 
+        @Schema(description = "동아리 주제", example = "코딩", requiredMode = REQUIRED)
+        String topic,
+
         @Schema(description = "직책", example = "회장", requiredMode = REQUIRED)
         String position
     ) {
@@ -35,6 +38,7 @@ public record ClubMembershipsResponse(
                 clubMember.getClub().getName(),
                 clubMember.getClub().getImageUrl(),
                 clubMember.getClub().getClubCategory().getDescription(),
+                clubMember.getClub().getTopic(),
                 clubMember.getClubPosition().getDescription()
             );
         }
@@ -45,6 +49,7 @@ public record ClubMembershipsResponse(
                 club.getName(),
                 club.getImageUrl(),
                 club.getClubCategory().getDescription(),
+                club.getTopic(),
                 ClubPosition.PRESIDENT.getDescription()
             );
         }

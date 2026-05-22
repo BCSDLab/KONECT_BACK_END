@@ -9,6 +9,7 @@ public record ClubSummaryInfo(
     String name,
     String imageUrl,
     String categoryName,
+    String topic,
     String description,
     RecruitmentStatus status,
     Boolean isAlwaysRecruiting,

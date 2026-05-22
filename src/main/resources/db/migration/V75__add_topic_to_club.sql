@@ -1,0 +1,2 @@
+ALTER TABLE club
+    ADD COLUMN topic VARCHAR(20) NOT NULL DEFAULT '기타' AFTER name;

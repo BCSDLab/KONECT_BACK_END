@@ -30,6 +30,9 @@ public record ClubAppliedClubsResponse(
         @Schema(description = "동아리 분과", example = "학술", requiredMode = REQUIRED)
         String categoryName,
 
+        @Schema(description = "동아리 주제", example = "코딩", requiredMode = REQUIRED)
+        String topic,
+
         @Schema(description = "가입 신청 일시", example = "2025-01-13T10:30:00", requiredMode = REQUIRED)
         LocalDateTime appliedAt
     ) {
@@ -39,6 +42,7 @@ public record ClubAppliedClubsResponse(
                 clubApply.getClub().getName(),
                 clubApply.getClub().getImageUrl(),
                 clubApply.getClub().getClubCategory().getDescription(),
+                clubApply.getClub().getTopic(),
                 clubApply.getCreatedAt()
             );
         }
