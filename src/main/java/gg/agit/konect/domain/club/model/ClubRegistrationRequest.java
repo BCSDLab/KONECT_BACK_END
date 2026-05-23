@@ -4,18 +4,19 @@ import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.global.model.BaseEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -62,9 +63,9 @@ public class ClubRegistrationRequest extends BaseEntity {
     @Column(name = "full_introduction", columnDefinition = "TEXT", nullable = false)
     private String fullIntroduction;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "image_urls", columnDefinition = "JSON")
-    private List<String> imageUrls;
+    @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC")
+    private List<ClubRegistrationRequestImage> images = new ArrayList<>();
 
     @NotNull
     @Enumerated(value = STRING)
@@ -81,7 +82,6 @@ public class ClubRegistrationRequest extends BaseEntity {
         String clubEmoji,
         String shortDescription,
         String fullIntroduction,
-        List<String> imageUrls,
         RegistrationStatus status
     ) {
         this.id = id;
@@ -92,8 +92,18 @@ public class ClubRegistrationRequest extends BaseEntity {
         this.clubEmoji = clubEmoji;
         this.shortDescription = shortDescription;
         this.fullIntroduction = fullIntroduction;
-        this.imageUrls = imageUrls;
         this.status = status != null ? status : RegistrationStatus.PENDING;
+    }
+
+    public void addImages(List<String> imageUrls) {
+        for (int i = 0; i < imageUrls.size(); i++) {
+            ClubRegistrationRequestImage image = ClubRegistrationRequestImage.builder()
+                .request(this)
+                .imageUrl(imageUrls.get(i))
+                .displayOrder(i)
+                .build();
+            this.images.add(image);
+        }
     }
 
     public enum RegistrationStatus {
