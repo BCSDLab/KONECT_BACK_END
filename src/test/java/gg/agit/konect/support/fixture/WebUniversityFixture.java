@@ -4,7 +4,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import gg.agit.konect.domain.university.enums.Campus;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.web.model.WebUniversity;
+import gg.agit.konect.domain.website.model.WebUniversity;
 
 public class WebUniversityFixture {
 

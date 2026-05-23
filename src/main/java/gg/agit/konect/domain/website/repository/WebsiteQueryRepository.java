@@ -1,7 +1,7 @@
 package gg.agit.konect.domain.website.repository;
 
-import static gg.agit.konect.domain.web.model.QWebClub.webClub;
-import static gg.agit.konect.domain.web.model.QWebUniversity.webUniversity;
+import static gg.agit.konect.domain.website.model.QWebClub.webClub;
+import static gg.agit.konect.domain.website.model.QWebUniversity.webUniversity;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,8 +21,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.web.model.WebClub;
-import gg.agit.konect.domain.web.model.WebUniversity;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.domain.website.model.WebsiteUniversitySummary;
 import lombok.RequiredArgsConstructor;
 

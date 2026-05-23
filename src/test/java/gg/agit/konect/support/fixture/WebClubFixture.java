@@ -3,8 +3,8 @@ package gg.agit.konect.support.fixture;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.domain.web.model.WebClub;
-import gg.agit.konect.domain.web.model.WebUniversity;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 
 public class WebClubFixture {
 

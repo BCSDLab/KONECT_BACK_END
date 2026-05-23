@@ -4,8 +4,8 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.web.model.WebClub;
-import gg.agit.konect.domain.web.model.WebUniversity;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record WebsiteClubDetailResponse(
