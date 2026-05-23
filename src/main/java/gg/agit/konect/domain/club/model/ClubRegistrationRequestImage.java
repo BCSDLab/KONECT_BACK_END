@@ -53,4 +53,16 @@ public class ClubRegistrationRequestImage extends BaseEntity {
         this.imageUrl = imageUrl;
         this.displayOrder = displayOrder;
     }
+
+    public static class ClubRegistrationRequestImageBuilder {
+
+        @Override
+        public String toString() {
+            return "ClubRegistrationRequestImage.ClubRegistrationRequestImageBuilder("
+                + "id=" + id
+                + ", imageUrl=" + imageUrl
+                + ", displayOrder=" + displayOrder
+                + ")";
+        }
+    }
 }
