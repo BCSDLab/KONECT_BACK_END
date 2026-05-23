@@ -1,12 +1,13 @@
 package gg.agit.konect.domain.club.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
+import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
 import gg.agit.konect.domain.club.model.ClubRegistrationRequest;
 import gg.agit.konect.domain.club.repository.ClubRegistrationRequestRepository;
-import gg.agit.konect.infrastructure.slack.service.SlackNotificationService;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -15,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class ClubRegistrationRequestService {
 
     private final ClubRegistrationRequestRepository clubRegistrationRequestRepository;
-    private final SlackNotificationService slackNotificationService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public void register(ClubRegistrationRequestDto request) {
         ClubRegistrationRequest entity = ClubRegistrationRequest.builder()
@@ -35,16 +36,6 @@ public class ClubRegistrationRequestService {
         }
 
         ClubRegistrationRequest saved = clubRegistrationRequestRepository.save(entity);
-
-        slackNotificationService.notifyClubRegistrationRequest(
-            saved.getId(),
-            request.universityName(),
-            request.clubName(),
-            request.clubCategory().getDescription(),
-            request.clubTopic(),
-            request.clubEmoji(),
-            request.shortDescription(),
-            request.imageUrls() != null ? request.imageUrls().size() : 0
-        );
+        applicationEventPublisher.publishEvent(ClubRegistrationRequestedEvent.from(saved));
     }
 }

@@ -30,7 +30,27 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
 
         // when & then
         performPost("/clubs/registration-requests", request)
-            .andExpect(status().isOk());
+            .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("사진 및 영상이 없어도 동아리 등록 요청을 보낼 수 있다")
+    void registerClubWithoutImages() throws Exception {
+        // given
+        ClubRegistrationRequestDto request = new ClubRegistrationRequestDto(
+            "한국기술교육대학교",
+            "BCSD Lab",
+            ClubCategory.ACADEMIC,
+            "코딩",
+            "💻",
+            "코딩 동아리입니다.",
+            "상세한 동아리 소개 내용입니다.",
+            null
+        );
+
+        // when & then
+        performPost("/clubs/registration-requests", request)
+            .andExpect(status().isCreated());
     }
 
     @Test

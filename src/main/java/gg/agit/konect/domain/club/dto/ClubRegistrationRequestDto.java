@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.club.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.List;
@@ -46,8 +47,11 @@ public record ClubRegistrationRequestDto(
     @Size(max = 2000, message = "동아리 소개는 최대 2000자입니다.")
     String fullIntroduction,
 
-    @Schema(description = "사진 및 영상 URL 목록 (최대 5개)", example = "[\"https://example.com/image1.jpg\"]", requiredMode = REQUIRED)
-    @NotNull(message = "사진 및 영상은 필수입니다.")
+    @Schema(
+        description = "사진 및 영상 URL 목록 (최대 5개)",
+        example = "[\"https://example.com/image1.jpg\"]",
+        requiredMode = NOT_REQUIRED
+    )
     @Size(max = 5, message = "사진 및 영상은 최대 5개까지 업로드 가능합니다.")
     List<String> imageUrls
 ) {

@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.website.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.Arrays;
@@ -14,7 +15,7 @@ import gg.agit.konect.domain.website.model.WebUniversity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record WebsiteClubsResponse(
-    @Schema(description = "대학 정보", requiredMode = REQUIRED)
+    @Schema(description = "대학 정보", requiredMode = NOT_REQUIRED)
     UniversityResponse university,
 
     @Schema(description = "전체 동아리 수", example = "28", requiredMode = REQUIRED)
