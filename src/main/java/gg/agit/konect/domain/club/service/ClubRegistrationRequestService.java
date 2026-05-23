@@ -26,9 +26,13 @@ public class ClubRegistrationRequestService {
             .clubEmoji(request.clubEmoji())
             .shortDescription(request.shortDescription())
             .fullIntroduction(request.fullIntroduction())
-            .imageUrls(request.imageUrls())
             .status(ClubRegistrationRequest.RegistrationStatus.PENDING)
             .build();
+
+        // 이미지 추가
+        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+            entity.addImages(request.imageUrls());
+        }
 
         ClubRegistrationRequest saved = clubRegistrationRequestRepository.save(entity);
 
