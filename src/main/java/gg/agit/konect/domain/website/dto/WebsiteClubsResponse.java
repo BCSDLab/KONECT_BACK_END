@@ -4,14 +4,13 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.data.domain.Page;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.web.model.WebClub;
+import gg.agit.konect.domain.web.model.WebUniversity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record WebsiteClubsResponse(
@@ -58,7 +57,7 @@ public record WebsiteClubsResponse(
         )
         String imageUrl
     ) {
-        public static UniversityResponse from(University university) {
+        public static UniversityResponse from(WebUniversity university) {
             if (university == null) {
                 return null;
             }
@@ -109,12 +108,9 @@ public record WebsiteClubsResponse(
         String topic,
 
         @Schema(description = "한 줄 소개", example = "테스트 동아리 소개", requiredMode = REQUIRED)
-        String description,
-
-        @Schema(description = "등록 회원 수", example = "31", requiredMode = REQUIRED)
-        Long memberCount
+        String description
     ) {
-        public static ClubResponse of(Club club, Long memberCount) {
+        public static ClubResponse from(WebClub club) {
             return new ClubResponse(
                 club.getId(),
                 club.getName(),
@@ -122,17 +118,15 @@ public record WebsiteClubsResponse(
                 club.getClubCategory(),
                 club.getClubCategory().getDescription(),
                 club.getTopic(),
-                club.getDescription(),
-                memberCount
+                club.getDescription()
             );
         }
     }
 
     public static WebsiteClubsResponse of(
-        University university,
-        Page<Club> page,
-        Map<Integer, Long> memberCounts,
-        Map<ClubCategory, Long> categoryCounts
+        WebUniversity university,
+        Page<WebClub> page,
+        java.util.Map<ClubCategory, Long> categoryCounts
     ) {
         return new WebsiteClubsResponse(
             UniversityResponse.from(university),
@@ -140,30 +134,30 @@ public record WebsiteClubsResponse(
             page.getTotalPages(),
             page.getNumber() + 1,
             createCategories(categoryCounts),
-            createClubs(page.getContent(), memberCounts)
+            createClubs(page.getContent())
         );
     }
 
-    public static WebsiteClubsResponse recent(List<Club> clubs, Map<Integer, Long> memberCounts) {
+    public static WebsiteClubsResponse recent(List<WebClub> clubs) {
         return new WebsiteClubsResponse(
             null,
             (long)clubs.size(),
             1,
             1,
             List.of(),
-            createClubs(clubs, memberCounts)
+            createClubs(clubs)
         );
     }
 
-    private static List<CategoryCountResponse> createCategories(Map<ClubCategory, Long> categoryCounts) {
+    private static List<CategoryCountResponse> createCategories(java.util.Map<ClubCategory, Long> categoryCounts) {
         return Arrays.stream(ClubCategory.values())
             .map(category -> CategoryCountResponse.of(category, categoryCounts.getOrDefault(category, 0L)))
             .toList();
     }
 
-    private static List<ClubResponse> createClubs(List<Club> clubs, Map<Integer, Long> memberCounts) {
+    private static List<ClubResponse> createClubs(List<WebClub> clubs) {
         return clubs.stream()
-            .map(club -> ClubResponse.of(club, memberCounts.getOrDefault(club.getId(), 0L)))
+            .map(ClubResponse::from)
             .toList();
     }
 }

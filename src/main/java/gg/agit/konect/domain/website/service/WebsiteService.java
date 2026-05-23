@@ -12,9 +12,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.web.model.WebClub;
+import gg.agit.konect.domain.web.model.WebUniversity;
 import gg.agit.konect.domain.website.dto.WebsiteClubDetailResponse;
 import gg.agit.konect.domain.website.dto.WebsiteClubListCondition;
 import gg.agit.konect.domain.website.dto.WebsiteClubsResponse;
@@ -37,52 +37,44 @@ public class WebsiteService {
     }
 
     public WebsiteClubsResponse getUniversityClubs(Integer universityId, WebsiteClubListCondition condition) {
-        University university = websiteQueryRepository.findUniversity(universityId)
+        WebUniversity university = websiteQueryRepository.findUniversity(universityId)
             .orElseThrow(() -> CustomException.of(UNIVERSITY_NOT_FOUND));
         PageRequest pageable = PageRequest.of(condition.page() - 1, condition.limit());
 
-        Page<Club> clubs = websiteQueryRepository.findClubs(
+        Page<WebClub> clubs = websiteQueryRepository.findClubs(
             universityId,
             condition.query(),
             condition.category(),
             pageable
         );
-        List<Integer> clubIds = clubs.getContent().stream()
-            .map(Club::getId)
-            .toList();
 
         return WebsiteClubsResponse.of(
             university,
             clubs,
-            websiteQueryRepository.countMembersByClubIds(clubIds),
             websiteQueryRepository.countClubCategories(universityId, condition.query())
         );
     }
 
     public WebsiteClubDetailResponse getClubDetail(Integer clubId) {
-        Club club = websiteQueryRepository.findClub(clubId)
+        WebClub club = websiteQueryRepository.findClub(clubId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB));
-        Long memberCount = websiteQueryRepository.countMembersByClubIds(List.of(clubId)).getOrDefault(clubId, 0L);
         Long universityClubCount = websiteQueryRepository.countClubsByUniversityId(club.getUniversity().getId());
 
-        return WebsiteClubDetailResponse.of(club, memberCount, universityClubCount);
+        return WebsiteClubDetailResponse.of(club, universityClubCount);
     }
 
     public WebsiteClubsResponse getRecentClubs(List<Integer> clubIds) {
         List<Integer> distinctClubIds = clubIds.stream()
             .distinct()
             .toList();
-        List<Club> clubs = websiteQueryRepository.findClubs(distinctClubIds);
+        List<WebClub> clubs = websiteQueryRepository.findClubs(distinctClubIds);
         Map<Integer, Integer> order = createOrder(clubIds);
 
-        List<Club> sortedClubs = clubs.stream()
+        List<WebClub> sortedClubs = clubs.stream()
             .sorted(Comparator.comparingInt(club -> order.getOrDefault(club.getId(), Integer.MAX_VALUE)))
             .toList();
 
-        return WebsiteClubsResponse.recent(
-            sortedClubs,
-            websiteQueryRepository.countMembersByClubIds(distinctClubIds)
-        );
+        return WebsiteClubsResponse.recent(sortedClubs);
     }
 
     private Map<Integer, Integer> createOrder(List<Integer> clubIds) {

@@ -2,12 +2,10 @@ package gg.agit.konect.domain.website.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.time.LocalDateTime;
-
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.domain.club.model.Club;
-import gg.agit.konect.domain.club.model.ClubRecruitment;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
+import gg.agit.konect.domain.web.model.WebClub;
+import gg.agit.konect.domain.web.model.WebUniversity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record WebsiteClubDetailResponse(
@@ -38,14 +36,8 @@ public record WebsiteClubDetailResponse(
     @Schema(description = "활동 위치", example = "학생회관 101호", requiredMode = REQUIRED)
     String location,
 
-    @Schema(description = "등록 회원 수", example = "31", requiredMode = REQUIRED)
-    Long memberCount,
-
     @Schema(description = "대학 정보", requiredMode = REQUIRED)
-    University university,
-
-    @Schema(description = "모집 정보", requiredMode = REQUIRED)
-    Recruitment recruitment
+    University university
 ) {
 
     @Schema(name = "WebsiteClubDetailUniversityResponse")
@@ -77,39 +69,8 @@ public record WebsiteClubDetailResponse(
     ) {
     }
 
-    public record Recruitment(
-        @Schema(description = "모집 활성화 여부", example = "true", requiredMode = REQUIRED)
-        Boolean isRecruitmentEnabled,
-
-        @Schema(description = "상시 모집 여부", example = "false", requiredMode = REQUIRED)
-        Boolean isAlwaysRecruiting,
-
-        @Schema(description = "모집 시작 일시", requiredMode = REQUIRED)
-        LocalDateTime startAt,
-
-        @Schema(description = "모집 마감 일시", requiredMode = REQUIRED)
-        LocalDateTime endAt,
-
-        @Schema(description = "모집 공고 내용", requiredMode = REQUIRED)
-        String content
-    ) {
-        private static Recruitment from(Club club) {
-            ClubRecruitment recruitment = club.getClubRecruitment();
-            if (recruitment == null) {
-                return new Recruitment(club.getIsRecruitmentEnabled(), false, null, null, null);
-            }
-
-            return new Recruitment(
-                club.getIsRecruitmentEnabled(),
-                recruitment.getIsAlwaysRecruiting(),
-                recruitment.getStartAt(),
-                recruitment.getEndAt(),
-                recruitment.getContent()
-            );
-        }
-    }
-
-    public static WebsiteClubDetailResponse of(Club club, Long memberCount, Long universityClubCount) {
+    public static WebsiteClubDetailResponse of(WebClub club, Long universityClubCount) {
+        WebUniversity university = club.getUniversity();
         return new WebsiteClubDetailResponse(
             club.getId(),
             club.getName(),
@@ -120,17 +81,15 @@ public record WebsiteClubDetailResponse(
             club.getDescription(),
             club.getIntroduce(),
             club.getLocation(),
-            memberCount,
             new University(
-                club.getUniversity().getId(),
-                club.getUniversity().getKoreanName(),
-                club.getUniversity().getCampus().getDisplayName(),
-                club.getUniversity().getRegion(),
-                club.getUniversity().getRegion().getDisplayName(),
-                club.getUniversity().getImageUrl(),
+                university.getId(),
+                university.getKoreanName(),
+                university.getCampus().getDisplayName(),
+                university.getRegion(),
+                university.getRegion().getDisplayName(),
+                university.getImageUrl(),
                 universityClubCount
-            ),
-            Recruitment.from(club)
+            )
         );
     }
 }
