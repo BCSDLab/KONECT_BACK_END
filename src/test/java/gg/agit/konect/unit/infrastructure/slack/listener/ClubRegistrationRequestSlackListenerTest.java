@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -40,7 +42,8 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             event.topic(),
             event.emoji(),
             event.description(),
-            event.imageCount()
+            event.fullIntroduction(),
+            event.imageUrls()
         );
     }
 
@@ -59,7 +62,8 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
                 event.topic(),
                 event.emoji(),
                 event.description(),
-                event.imageCount()
+                event.fullIntroduction(),
+                event.imageUrls()
             );
 
         // when & then
@@ -76,7 +80,8 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             "코딩",
             "💻",
             "코딩 동아리입니다.",
-            1
+            "상세한 동아리 소개 내용입니다.",
+            List.of("https://example.com/image1.jpg")
         );
     }
 }
