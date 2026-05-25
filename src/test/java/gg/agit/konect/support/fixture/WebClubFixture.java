@@ -22,9 +22,6 @@ public class WebClubFixture {
             .location("학생회관 101호")
             .clubCategory(category)
             .topic("코딩")
-            .isRecruitmentEnabled(false)
-            .isApplicationEnabled(false)
-            .isFeeRequired(false)
             .build();
     }
 

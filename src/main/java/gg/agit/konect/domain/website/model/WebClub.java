@@ -58,39 +58,6 @@ public class WebClub extends BaseEntity {
     @Column(name = "location", length = 255, nullable = false)
     private String location;
 
-    @Column(name = "fee_amount", length = 100)
-    private String feeAmount;
-
-    @Column(name = "fee_bank", length = 100)
-    private String feeBank;
-
-    @Column(name = "fee_account_number", length = 100)
-    private String feeAccountNumber;
-
-    @Column(name = "fee_account_holder", length = 100)
-    private String feeAccountHolder;
-
-    @Column(name = "is_fee_required")
-    private Boolean isFeeRequired;
-
-    @Column(name = "is_recruitment_enabled")
-    private Boolean isRecruitmentEnabled;
-
-    @Column(name = "is_application_enabled")
-    private Boolean isApplicationEnabled;
-
-    @Column(name = "google_sheet_id", length = 255)
-    private String googleSheetId;
-
-    @Column(name = "sheet_column_mapping", columnDefinition = "JSON")
-    private String sheetColumnMapping;
-
-    @Column(name = "drive_folder_id", length = 255)
-    private String driveFolderId;
-
-    @Column(name = "template_spreadsheet_id", length = 255)
-    private String templateSpreadsheetId;
-
     @Builder
     private WebClub(
         Integer id,
@@ -101,18 +68,7 @@ public class WebClub extends BaseEntity {
         String description,
         String introduce,
         String imageUrl,
-        String location,
-        String feeAmount,
-        String feeBank,
-        String feeAccountNumber,
-        String feeAccountHolder,
-        Boolean isFeeRequired,
-        Boolean isRecruitmentEnabled,
-        Boolean isApplicationEnabled,
-        String googleSheetId,
-        String sheetColumnMapping,
-        String driveFolderId,
-        String templateSpreadsheetId
+        String location
     ) {
         this.id = id;
         this.clubCategory = clubCategory;
@@ -123,16 +79,5 @@ public class WebClub extends BaseEntity {
         this.introduce = introduce;
         this.imageUrl = imageUrl;
         this.location = location;
-        this.feeAmount = feeAmount;
-        this.feeBank = feeBank;
-        this.feeAccountNumber = feeAccountNumber;
-        this.feeAccountHolder = feeAccountHolder;
-        this.isFeeRequired = isFeeRequired;
-        this.isRecruitmentEnabled = isRecruitmentEnabled;
-        this.isApplicationEnabled = isApplicationEnabled;
-        this.googleSheetId = googleSheetId;
-        this.sheetColumnMapping = sheetColumnMapping;
-        this.driveFolderId = driveFolderId;
-        this.templateSpreadsheetId = templateSpreadsheetId;
     }
 }

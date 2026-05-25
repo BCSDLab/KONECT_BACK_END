@@ -1,0 +1,12 @@
+ALTER TABLE web_club
+    DROP COLUMN fee_amount,
+    DROP COLUMN fee_bank,
+    DROP COLUMN fee_account_number,
+    DROP COLUMN fee_account_holder,
+    DROP COLUMN is_fee_required,
+    DROP COLUMN is_recruitment_enabled,
+    DROP COLUMN is_application_enabled,
+    DROP COLUMN google_sheet_id,
+    DROP COLUMN sheet_column_mapping,
+    DROP COLUMN drive_folder_id,
+    DROP COLUMN template_spreadsheet_id;
