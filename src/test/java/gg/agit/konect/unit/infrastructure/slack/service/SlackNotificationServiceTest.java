@@ -58,22 +58,23 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         verify(slackClient).sendMessage(messageCaptor.capture(), eq(EVENT_WEBHOOK_URL));
         assertThat(messageCaptor.getValue()).isEqualTo(
             """
-                *:sparkles: 새 동아리 등록 요청이 도착했어요*
-                > `요청 #1`  💻 *BCSD Lab*
+                :sparkles: *새 동아리 등록 요청이 도착했어요*
                 
-                :school: *대학교*  한국기술교육대학교
-                :label: *분과*  학술
-                :dart: *주제*  코딩
+                :school: *대학교* : *`한국기술교육대학교`*
+                💻 *동아리* : *`BCSD Lab`*
+                :label: *분과* : *`학술`*
+                :dart: *주제* : *`코딩`*
+                :art: *요청 이모지* : *`💻`*
                 
                 :memo: *한 줄 소개*
-                > 코딩 동아리입니다.
+                ```코딩 동아리입니다.```
                 
                 :page_facing_up: *상세 소개*
-                > 상세한 동아리 소개 내용입니다.
+                ```상세한 동아리 소개 내용입니다.```
                 
-                :paperclip: *첨부 이미지*  2개
-                > 1. https://example.com/image1.jpg
-                > 2. https://example.com/image2.jpg
+                :paperclip: *첨부 이미지*
+                ```https://example.com/image1.jpg
+                https://example.com/image2.jpg```
                 """
         );
     }

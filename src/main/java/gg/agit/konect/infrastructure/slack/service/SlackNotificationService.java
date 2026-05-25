@@ -66,34 +66,26 @@ public class SlackNotificationService {
         List<String> imageUrls
     ) {
         String message = CLUB_REGISTRATION_REQUEST.format(
-            requestId,
+            universityName,
             emoji,
             clubName,
-            universityName,
             category,
             topic,
-            formatBlockQuote(description),
-            formatBlockQuote(fullIntroduction),
-            imageUrls.size(),
+            emoji,
+            description,
+            fullIntroduction,
             formatImageUrls(imageUrls)
         );
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }
 
-    private String formatBlockQuote(String text) {
-        return "> " + text.replace(System.lineSeparator(), System.lineSeparator() + "> ");
-    }
-
     private String formatImageUrls(List<String> imageUrls) {
         if (imageUrls.isEmpty()) {
-            return "> 없음";
+            return "없음";
         }
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < imageUrls.size(); i++) {
-            builder.append("> ")
-                .append(i + 1)
-                .append(". ")
-                .append(imageUrls.get(i));
+            builder.append(imageUrls.get(i));
             if (i < imageUrls.size() - 1) {
                 builder.append(System.lineSeparator());
             }
