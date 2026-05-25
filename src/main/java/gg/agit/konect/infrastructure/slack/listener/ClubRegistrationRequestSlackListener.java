@@ -30,7 +30,8 @@ public class ClubRegistrationRequestSlackListener {
                 event.topic(),
                 event.emoji(),
                 event.description(),
-                event.imageCount()
+                event.fullIntroduction(),
+                event.imageUrls()
             );
         } catch (RuntimeException e) {
             log.warn("Failed to send club registration request Slack notification. requestId={}", event.requestId(), e);

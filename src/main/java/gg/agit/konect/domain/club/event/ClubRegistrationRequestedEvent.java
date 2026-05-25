@@ -1,5 +1,7 @@
 package gg.agit.konect.domain.club.event;
 
+import java.util.List;
+
 import gg.agit.konect.domain.club.model.ClubRegistrationRequest;
 
 public record ClubRegistrationRequestedEvent(
@@ -10,7 +12,8 @@ public record ClubRegistrationRequestedEvent(
     String topic,
     String emoji,
     String description,
-    int imageCount
+    String fullIntroduction,
+    List<String> imageUrls
 ) {
 
     public static ClubRegistrationRequestedEvent from(ClubRegistrationRequest request) {
@@ -22,7 +25,14 @@ public record ClubRegistrationRequestedEvent(
             request.getClubTopic(),
             request.getClubEmoji(),
             request.getShortDescription(),
-            request.getImages().size()
+            request.getFullIntroduction(),
+            request.getImages().stream()
+                .map(image -> image.getImageUrl())
+                .toList()
         );
+    }
+
+    public int imageCount() {
+        return imageUrls.size();
     }
 }

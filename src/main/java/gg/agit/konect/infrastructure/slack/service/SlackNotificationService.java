@@ -7,6 +7,8 @@ import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.SHE
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_REGISTER;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_WITHDRAWAL;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import gg.agit.konect.domain.club.event.SheetSyncFailedEvent;
@@ -60,18 +62,42 @@ public class SlackNotificationService {
         String topic,
         String emoji,
         String description,
-        int imageCount
+        String fullIntroduction,
+        List<String> imageUrls
     ) {
         String message = CLUB_REGISTRATION_REQUEST.format(
             requestId,
-            universityName,
+            emoji,
             clubName,
+            universityName,
             category,
             topic,
-            emoji,
-            description,
-            imageCount
+            formatBlockQuote(description),
+            formatBlockQuote(fullIntroduction),
+            imageUrls.size(),
+            formatImageUrls(imageUrls)
         );
         slackClient.sendMessage(message, slackProperties.webhooks().event());
+    }
+
+    private String formatBlockQuote(String text) {
+        return "> " + text.replace(System.lineSeparator(), System.lineSeparator() + "> ");
+    }
+
+    private String formatImageUrls(List<String> imageUrls) {
+        if (imageUrls.isEmpty()) {
+            return "> 없음";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < imageUrls.size(); i++) {
+            builder.append("> ")
+                .append(i + 1)
+                .append(". ")
+                .append(imageUrls.get(i));
+            if (i < imageUrls.size() - 1) {
+                builder.append(System.lineSeparator());
+            }
+        }
+        return builder.toString();
     }
 }
