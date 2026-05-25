@@ -152,15 +152,13 @@ class ClubBasicApiTest extends IntegrationTestSupport {
                 "상세 소개",
                 "https://example.com/image.png",
                 "학생회관 201호",
-                ClubCategory.ACADEMIC,
-                "코딩"
+                ClubCategory.ACADEMIC
             );
 
             // when & then
             performPost("/clubs", request)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("새 동아리"))
-                .andExpect(jsonPath("$.topic").value("코딩"))
                 .andExpect(jsonPath("$.presidentName").value("새회장"))
                 .andExpect(jsonPath("$.memberCount").value(1));
         }
@@ -178,8 +176,7 @@ class ClubBasicApiTest extends IntegrationTestSupport {
                 "상세 소개",
                 "https://example.com/image.png",
                 "학생회관 201호",
-                ClubCategory.ACADEMIC,
-                "코딩"
+                ClubCategory.ACADEMIC
             );
 
             // when & then

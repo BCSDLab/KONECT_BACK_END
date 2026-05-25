@@ -42,12 +42,7 @@ public record ClubCreateRequest(
 
     @Schema(description = "동아리 분과", example = "ACADEMIC", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "동아리 분과는 필수입니다.")
-    ClubCategory clubCategory,
-
-    @Schema(description = "동아리 주제", example = "코딩", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "동아리 주제는 필수 입력입니다.")
-    @Size(max = 20, message = "동아리 주제는 20자 이하여야 합니다.")
-    String topic
+    ClubCategory clubCategory
 ) {
     public Club toEntity(University university) {
         return Club.builder()
@@ -57,7 +52,6 @@ public record ClubCreateRequest(
             .imageUrl(imageUrl)
             .location(location)
             .clubCategory(clubCategory)
-            .topic(topic)
             .university(university)
             .isRecruitmentEnabled(false)
             .isApplicationEnabled(true)

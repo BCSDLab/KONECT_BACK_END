@@ -180,7 +180,6 @@ public class ClubQueryRepository {
                     club.getName(),
                     club.getImageUrl(),
                     club.getClubCategory().getDescription(),
-                    club.getTopic(),
                     club.getDescription(),
                     status,
                     isAlwaysRecruiting,
