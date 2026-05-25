@@ -1,4 +1,4 @@
-package gg.agit.konect.domain.web.model;
+package gg.agit.konect.domain.website.model;
 
 import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;

@@ -1,6 +1,7 @@
 package gg.agit.konect.infrastructure.slack.service;
 
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.ADMIN_CHAT_RECEIVED;
+import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.CLUB_REGISTRATION_REQUEST;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.INQUIRY;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.SHEET_SYNC_FAILED;
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_REGISTER;
@@ -49,5 +50,28 @@ public class SlackNotificationService {
             event.reason()
         );
         slackClient.sendMessage(message, slackProperties.webhooks().error());
+    }
+
+    public void notifyClubRegistrationRequest(
+        Integer requestId,
+        String universityName,
+        String clubName,
+        String category,
+        String topic,
+        String emoji,
+        String description,
+        int imageCount
+    ) {
+        String message = CLUB_REGISTRATION_REQUEST.format(
+            requestId,
+            universityName,
+            clubName,
+            category,
+            topic,
+            emoji,
+            description,
+            imageCount
+        );
+        slackClient.sendMessage(message, slackProperties.webhooks().event());
     }
 }

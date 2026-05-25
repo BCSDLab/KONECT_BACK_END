@@ -13,12 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.web.model.WebClub;
-import gg.agit.konect.domain.web.model.WebUniversity;
 import gg.agit.konect.domain.website.dto.WebsiteClubDetailResponse;
 import gg.agit.konect.domain.website.dto.WebsiteClubListCondition;
 import gg.agit.konect.domain.website.dto.WebsiteClubsResponse;
 import gg.agit.konect.domain.website.dto.WebsiteHomeResponse;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.domain.website.model.WebsiteUniversitySummary;
 import gg.agit.konect.domain.website.repository.WebsiteQueryRepository;
 import gg.agit.konect.global.exception.CustomException;
