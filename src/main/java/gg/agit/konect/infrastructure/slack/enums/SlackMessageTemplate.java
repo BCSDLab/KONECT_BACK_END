@@ -40,21 +40,22 @@ public enum SlackMessageTemplate {
     ),
     CLUB_REGISTRATION_REQUEST(
         """
-            *:sparkles: 새 동아리 등록 요청이 도착했어요*
-            > `요청 #%s`  %s *%s*
+            :sparkles: *새 동아리 등록 요청이 도착했어요*
             
-            :school: *대학교*  %s
-            :label: *분과*  %s
-            :dart: *주제*  %s
+            :school: *대학교* : *`%s`*
+            %s *동아리* : *`%s`*
+            :label: *분과* : *`%s`*
+            :dart: *주제* : *`%s`*
+            :art: *요청 이모지* : *`%s`*
             
             :memo: *한 줄 소개*
-            %s
+            ```%s```
             
             :page_facing_up: *상세 소개*
-            %s
+            ```%s```
             
-            :paperclip: *첨부 이미지*  %d개
-            %s
+            :paperclip: *첨부 이미지*
+            ```%s```
             """
     ),
     ;
