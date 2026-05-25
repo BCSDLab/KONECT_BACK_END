@@ -44,9 +44,6 @@ public record ClubsResponse(
         @Schema(description = "동아리 분과", example = "학술", requiredMode = REQUIRED)
         String categoryName,
 
-        @Schema(description = "동아리 주제", example = "코딩", requiredMode = REQUIRED)
-        String topic,
-
         @Schema(description = "동아리 소개", example = "즐겁게 일하고 열심히 노는 IT 특성화 동아리", requiredMode = REQUIRED)
         String description,
 
@@ -73,7 +70,6 @@ public record ClubsResponse(
                 clubSummaryInfo.name(),
                 clubSummaryInfo.imageUrl(),
                 clubSummaryInfo.categoryName(),
-                clubSummaryInfo.topic(),
                 clubSummaryInfo.description(),
                 clubSummaryInfo.status(),
                 isPendingApproval,

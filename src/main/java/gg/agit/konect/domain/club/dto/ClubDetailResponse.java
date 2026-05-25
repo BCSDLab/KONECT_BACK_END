@@ -46,9 +46,6 @@ public record ClubDetailResponse(
     @Schema(description = "동아리 분과", example = "학술", requiredMode = REQUIRED)
     String categoryName,
 
-    @Schema(description = "동아리 주제", example = "코딩", requiredMode = REQUIRED)
-    String topic,
-
     @Schema(description = "동아리 인원 수", example = "30", requiredMode = REQUIRED)
     Integer memberCount,
 
@@ -109,7 +106,6 @@ public record ClubDetailResponse(
             club.getIntroduce(),
             club.getImageUrl(),
             club.getClubCategory().getDescription(),
-            club.getTopic(),
             memberCount,
             InnerRecruitment.from(clubRecruitment, club.getIsRecruitmentEnabled()),
             presidentUser.getId(),
