@@ -88,10 +88,15 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
             2,
             "현재 동아리명",
             "요청 동아리명",
+            "문화",
             "학술",
+            "현재 소개",
             "수정 소개",
+            "https://example.com/current-logo.png",
             "https://example.com/logo.png",
+            "학생회관 101호",
             "학생회관 102호",
+            "현재 상세 소개 내용입니다.",
             "수정 상세 소개 내용입니다."
         );
 
@@ -104,20 +109,27 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
                 
                 :receipt: *요청 ID* : *`1`*
                 :id: *동아리 ID* : *`2`*
-                :bookmark: *현재 동아리명* : *`현재 동아리명`*
-                :bookmark_tabs: *요청 동아리명* : *`요청 동아리명`*
-                :label: *요청 분과* : *`학술`*
+                :bookmark: *동아리명* : *`현재 동아리명`* → *`요청 동아리명`*
+                :label: *분과* : *`문화`* → *`학술`*
                 
-                :memo: *요청 한 줄 소개*
+                :memo: *한 줄 소개*
+                ```현재 소개```
+                →
                 ```수정 소개```
                 
-                :frame_with_picture: *요청 로고 이미지*
+                :frame_with_picture: *로고 이미지*
+                ```https://example.com/current-logo.png```
+                →
                 ```https://example.com/logo.png```
                 
-                :round_pushpin: *요청 위치*
+                :round_pushpin: *위치*
+                ```학생회관 101호```
+                →
                 ```학생회관 102호```
                 
-                :page_facing_up: *요청 상세 소개*
+                :page_facing_up: *상세 소개*
+                ```현재 상세 소개 내용입니다.```
+                →
                 ```수정 상세 소개 내용입니다.```
                 """
         );

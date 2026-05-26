@@ -7,11 +7,16 @@ public record ClubInformationUpdateRequestedEvent(
     Integer clubId,
     String currentClubName,
     String requestedClubName,
-    String category,
-    String description,
-    String imageUrl,
-    String location,
-    String fullIntroduction
+    String currentCategory,
+    String requestedCategory,
+    String currentDescription,
+    String requestedDescription,
+    String currentImageUrl,
+    String requestedImageUrl,
+    String currentLocation,
+    String requestedLocation,
+    String currentFullIntroduction,
+    String requestedFullIntroduction
 ) {
 
     public static ClubInformationUpdateRequestedEvent from(ClubInformationUpdateRequest request) {
@@ -20,10 +25,15 @@ public record ClubInformationUpdateRequestedEvent(
             request.getClub().getId(),
             request.getClub().getName(),
             request.getClubName(),
+            request.getClub().getClubCategory().getDescription(),
             request.getClubCategory().getDescription(),
+            request.getClub().getDescription(),
             request.getShortDescription(),
+            request.getClub().getImageUrl(),
             request.getImageUrl(),
+            request.getClub().getLocation(),
             request.getLocation(),
+            request.getClub().getIntroduce(),
             request.getFullIntroduction()
         );
     }

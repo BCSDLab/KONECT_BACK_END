@@ -87,11 +87,16 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             event.clubId(),
             event.currentClubName(),
             event.requestedClubName(),
-            event.category(),
-            event.description(),
-            event.imageUrl(),
-            event.location(),
-            event.fullIntroduction()
+            event.currentCategory(),
+            event.requestedCategory(),
+            event.currentDescription(),
+            event.requestedDescription(),
+            event.currentImageUrl(),
+            event.requestedImageUrl(),
+            event.currentLocation(),
+            event.requestedLocation(),
+            event.currentFullIntroduction(),
+            event.requestedFullIntroduction()
         );
     }
 
@@ -107,11 +112,16 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
                 event.clubId(),
                 event.currentClubName(),
                 event.requestedClubName(),
-                event.category(),
-                event.description(),
-                event.imageUrl(),
-                event.location(),
-                event.fullIntroduction()
+                event.currentCategory(),
+                event.requestedCategory(),
+                event.currentDescription(),
+                event.requestedDescription(),
+                event.currentImageUrl(),
+                event.requestedImageUrl(),
+                event.currentLocation(),
+                event.requestedLocation(),
+                event.currentFullIntroduction(),
+                event.requestedFullIntroduction()
             );
 
         // when & then
@@ -139,10 +149,15 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             2,
             "현재 동아리명",
             "요청 동아리명",
+            "문화",
             "학술",
+            "현재 소개",
             "수정 소개",
+            "https://example.com/current-logo.png",
             "https://example.com/logo.png",
+            "학생회관 101호",
             "학생회관 102호",
+            "현재 상세 소개 내용입니다.",
             "수정 상세 소개 내용입니다."
         );
     }

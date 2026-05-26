@@ -136,10 +136,15 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
         assertThat(event.clubId()).isEqualTo(club.getId());
         assertThat(event.currentClubName()).isEqualTo(club.getName());
         assertThat(event.requestedClubName()).isEqualTo(request.clubName());
-        assertThat(event.category()).isEqualTo(request.clubCategory().getDescription());
-        assertThat(event.description()).isEqualTo(request.shortDescription());
-        assertThat(event.imageUrl()).isEqualTo(request.imageUrl());
-        assertThat(event.location()).isEqualTo(request.location());
-        assertThat(event.fullIntroduction()).isEqualTo(request.fullIntroduction());
+        assertThat(event.currentCategory()).isEqualTo(club.getClubCategory().getDescription());
+        assertThat(event.requestedCategory()).isEqualTo(request.clubCategory().getDescription());
+        assertThat(event.currentDescription()).isEqualTo(club.getDescription());
+        assertThat(event.requestedDescription()).isEqualTo(request.shortDescription());
+        assertThat(event.currentImageUrl()).isEqualTo(club.getImageUrl());
+        assertThat(event.requestedImageUrl()).isEqualTo(request.imageUrl());
+        assertThat(event.currentLocation()).isEqualTo(club.getLocation());
+        assertThat(event.requestedLocation()).isEqualTo(request.location());
+        assertThat(event.currentFullIntroduction()).isEqualTo(club.getIntroduce());
+        assertThat(event.requestedFullIntroduction()).isEqualTo(request.fullIntroduction());
     }
 }
