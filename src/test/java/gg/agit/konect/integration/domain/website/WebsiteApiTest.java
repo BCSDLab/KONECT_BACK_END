@@ -53,6 +53,15 @@ class WebsiteApiTest extends IntegrationTestSupport {
             performGet("/konect/home?query=한국&region=CHUNGCHEONG")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.regions", hasSize(8)))
+                .andExpect(jsonPath("$.regions[0].region").value("GANGWON"))
+                .andExpect(jsonPath("$.regions[1].region").value("GYEONGGI"))
+                .andExpect(jsonPath("$.regions[2].region").value("GYEONGSANG"))
+                .andExpect(jsonPath("$.regions[3].region").value("SEOUL"))
+                .andExpect(jsonPath("$.regions[4].region").value("JEOLLA"))
+                .andExpect(jsonPath("$.regions[5].region").value("JEJU"))
+                .andExpect(jsonPath("$.regions[6].region").value("CHUNGCHEONG"))
+                .andExpect(jsonPath("$.regions[7].region").value("UNKNOWN"))
                 .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"))
                 .andExpect(jsonPath("$.universities[0].campusName").value("본교"))
                 .andExpect(jsonPath("$.universities[0].region").value("CHUNGCHEONG"))
@@ -94,8 +103,13 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.clubs", hasSize(1)))
                 .andExpect(jsonPath("$.clubs[0].name").value("BCSD Lab"))
-                .andExpect(jsonPath("$.categories[0].category").value("ACADEMIC"))
-                .andExpect(jsonPath("$.categories[0].count").value(1));
+                .andExpect(jsonPath("$.categories[0].category").value("PERFORMANCE"))
+                .andExpect(jsonPath("$.categories[1].category").value("SPORTS"))
+                .andExpect(jsonPath("$.categories[2].category").value("RELIGION"))
+                .andExpect(jsonPath("$.categories[3].category").value("HOBBY"))
+                .andExpect(jsonPath("$.categories[4].category").value("ACADEMIC"))
+                .andExpect(jsonPath("$.categories[4].count").value(1))
+                .andExpect(jsonPath("$.categories[5].category").value("JUNIOR"));
         }
 
         @Test

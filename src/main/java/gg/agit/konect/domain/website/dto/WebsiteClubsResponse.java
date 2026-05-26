@@ -3,7 +3,6 @@ package gg.agit.konect.domain.website.dto;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -156,7 +155,7 @@ public record WebsiteClubsResponse(
     }
 
     private static List<CategoryCountResponse> createCategories(java.util.Map<ClubCategory, Long> categoryCounts) {
-        return Arrays.stream(ClubCategory.values())
+        return ClubCategory.sortedForDisplay().stream()
             .map(category -> CategoryCountResponse.of(category, categoryCounts.getOrDefault(category, 0L)))
             .toList();
     }
