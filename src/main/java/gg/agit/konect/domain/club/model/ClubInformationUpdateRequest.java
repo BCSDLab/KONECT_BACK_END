@@ -29,6 +29,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Getter
+@ToString
 @Entity
 @Table(name = "club_information_update_request")
 @NoArgsConstructor(access = PROTECTED)

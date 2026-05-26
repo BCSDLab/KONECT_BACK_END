@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS club_information_update_request
     created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
     updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
+    CONSTRAINT chk_club_information_update_request_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
     FOREIGN KEY (web_club_id) REFERENCES web_club (id)
 ) COMMENT '동아리 정보 수정 요청';
 
