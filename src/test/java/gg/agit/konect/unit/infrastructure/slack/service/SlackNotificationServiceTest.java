@@ -59,19 +59,19 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         assertThat(messageCaptor.getValue()).isEqualTo(
             """
                 :sparkles: *새 동아리 등록 요청이 도착했어요*
-
+                
                 :school: *대학교* : *`한국기술교육대학교`*
                 💻 *동아리* : *`BCSD Lab`*
                 :label: *분과* : *`학술`*
                 :dart: *주제* : *`코딩`*
                 :art: *요청 이모지* : *`💻`*
-
+                
                 :memo: *한 줄 소개*
                 ```코딩 동아리입니다.```
-
+                
                 :page_facing_up: *상세 소개*
                 ```상세한 동아리 소개 내용입니다.```
-
+                
                 :paperclip: *첨부 이미지*
                 ```https://example.com/image1.jpg
                 https://example.com/image2.jpg```
@@ -109,7 +109,7 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         assertThat(messageCaptor.getValue()).isEqualTo(
             """
                 :pencil2: *동아리 정보 수정 요청이 도착했어요*
-
+                
                 :receipt: *요청 ID* : *`1`*
                 :id: *동아리 ID* : *`2`*
                 :school: *대학교* : *`한국기술교육대학교`* → *`한국기술교육대학교`*
@@ -117,20 +117,20 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
                 :label: *분과* : *`문화`* → *`학술`*
                 :dart: *주제* : *`코딩`* → *`AI`*
                 :art: *요청 이모지* : *`🤖`*
-
+                
                 :memo: *한 줄 소개*
                 ```현재 소개```
                 →
                 ```수정 소개```
-
+                
                 :page_facing_up: *상세 소개*
                 ```현재 상세 소개 내용입니다.```
                 →
                 ```수정 상세 소개 내용입니다.```
-
+                
                 :frame_with_picture: *현재 대표 이미지*
                 ```https://example.com/current-logo.png```
-
+                
                 :paperclip: *요청 첨부 이미지*
                 ```https://example.com/image1.jpg```
                 """
