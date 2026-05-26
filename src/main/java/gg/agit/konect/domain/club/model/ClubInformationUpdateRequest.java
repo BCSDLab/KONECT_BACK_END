@@ -6,6 +6,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
+import gg.agit.konect.domain.website.model.WebClub;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,8 +36,8 @@ public class ClubInformationUpdateRequest extends BaseEntity {
     @NotNull
     @ToString.Exclude
     @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "club_id", nullable = false)
-    private Club club;
+    @JoinColumn(name = "web_club_id", nullable = false)
+    private WebClub club;
 
     @NotNull
     @Column(name = "club_name", length = 50, nullable = false)
@@ -71,7 +72,7 @@ public class ClubInformationUpdateRequest extends BaseEntity {
     @Builder
     private ClubInformationUpdateRequest(
         Integer id,
-        Club club,
+        WebClub club,
         String clubName,
         ClubCategory clubCategory,
         String shortDescription,

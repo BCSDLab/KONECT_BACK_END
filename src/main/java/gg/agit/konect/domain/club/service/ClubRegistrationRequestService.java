@@ -8,12 +8,14 @@ import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.event.ClubInformationUpdateRequestedEvent;
 import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubInformationUpdateRequest;
 import gg.agit.konect.domain.club.model.ClubRegistrationRequest;
 import gg.agit.konect.domain.club.repository.ClubInformationUpdateRequestRepository;
 import gg.agit.konect.domain.club.repository.ClubRegistrationRequestRepository;
-import gg.agit.konect.domain.club.repository.ClubRepository;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.repository.WebsiteQueryRepository;
+import gg.agit.konect.global.code.ApiResponseCode;
+import gg.agit.konect.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -23,7 +25,7 @@ public class ClubRegistrationRequestService {
 
     private final ClubRegistrationRequestRepository clubRegistrationRequestRepository;
     private final ClubInformationUpdateRequestRepository clubInformationUpdateRequestRepository;
-    private final ClubRepository clubRepository;
+    private final WebsiteQueryRepository websiteQueryRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public void register(ClubRegistrationRequestDto request) {
@@ -48,7 +50,8 @@ public class ClubRegistrationRequestService {
     }
 
     public void requestInformationUpdate(Integer clubId, ClubInformationUpdateRequestDto request) {
-        Club club = clubRepository.getById(clubId);
+        WebClub club = websiteQueryRepository.findClub(clubId)
+            .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
         ClubInformationUpdateRequest entity = ClubInformationUpdateRequest.builder()
             .club(club)
             .clubName(request.clubName())

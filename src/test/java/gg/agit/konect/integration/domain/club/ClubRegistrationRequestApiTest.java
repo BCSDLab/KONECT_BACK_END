@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
 import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.domain.club.model.Club;
-import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.support.IntegrationTestSupport;
-import gg.agit.konect.support.fixture.ClubFixture;
-import gg.agit.konect.support.fixture.UniversityFixture;
+import gg.agit.konect.support.fixture.WebClubFixture;
+import gg.agit.konect.support.fixture.WebUniversityFixture;
 
 class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
 
@@ -130,8 +130,8 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
     @DisplayName("비로그인 사용자도 기존 동아리 정보 수정 요청을 보낼 수 있다")
     void requestClubInformationUpdateWithoutLogin() throws Exception {
         // given
-        University university = persist(UniversityFixture.create());
-        Club club = persist(ClubFixture.create(university));
+        WebUniversity university = persist(WebUniversityFixture.create());
+        WebClub club = persist(WebClubFixture.create(university));
         ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
 
         // when & then
@@ -154,8 +154,8 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
     @DisplayName("동아리 정보 수정 요청 필수값이 없으면 400을 반환한다")
     void requestClubInformationUpdateWithMissingFields() throws Exception {
         // given
-        University university = persist(UniversityFixture.create());
-        Club club = persist(ClubFixture.create(university));
+        WebUniversity university = persist(WebUniversityFixture.create());
+        WebClub club = persist(WebClubFixture.create(university));
         ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
             "",
             ClubCategory.ACADEMIC,

@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,16 +20,16 @@ import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.club.event.ClubInformationUpdateRequestedEvent;
 import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.club.model.ClubInformationUpdateRequest;
 import gg.agit.konect.domain.club.model.ClubRegistrationRequest;
 import gg.agit.konect.domain.club.repository.ClubInformationUpdateRequestRepository;
 import gg.agit.konect.domain.club.repository.ClubRegistrationRequestRepository;
-import gg.agit.konect.domain.club.repository.ClubRepository;
 import gg.agit.konect.domain.club.service.ClubRegistrationRequestService;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.repository.WebsiteQueryRepository;
 import gg.agit.konect.support.ServiceTestSupport;
-import gg.agit.konect.support.fixture.ClubFixture;
-import gg.agit.konect.support.fixture.UniversityFixture;
+import gg.agit.konect.support.fixture.WebClubFixture;
+import gg.agit.konect.support.fixture.WebUniversityFixture;
 
 class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
 
@@ -39,7 +40,7 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
     private ClubInformationUpdateRequestRepository clubInformationUpdateRequestRepository;
 
     @Mock
-    private ClubRepository clubRepository;
+    private WebsiteQueryRepository websiteQueryRepository;
 
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
@@ -100,7 +101,12 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
     @DisplayName("동아리 정보 수정 요청 저장 후 Slack 알림 이벤트를 발행한다")
     void requestInformationUpdatePublishesClubInformationUpdateRequestedEvent() {
         // given
-        Club club = ClubFixture.createWithId(UniversityFixture.createWithId(1), 1, "현재 동아리명");
+        WebClub club = WebClubFixture.createWithId(
+            1,
+            WebUniversityFixture.createWithId(1),
+            "현재 동아리명",
+            ClubCategory.HOBBY
+        );
         ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
             "요청 동아리명",
             ClubCategory.ACADEMIC,
@@ -119,7 +125,7 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
             .location(request.location())
             .fullIntroduction(request.fullIntroduction())
             .build();
-        given(clubRepository.getById(club.getId())).willReturn(club);
+        given(websiteQueryRepository.findClub(club.getId())).willReturn(Optional.of(club));
         given(clubInformationUpdateRequestRepository.save(any(ClubInformationUpdateRequest.class))).willReturn(saved);
 
         // when
