@@ -158,11 +158,13 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         WebClub club = persist(WebClubFixture.create(university));
         ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
             "",
+            "BCSD Lab",
             ClubCategory.ACADEMIC,
+            "코딩",
+            "💻",
             "수정 소개",
-            "https://example.com/logo.png",
-            "학생회관 102호",
-            "수정 상세 소개입니다."
+            "수정 상세 소개입니다.",
+            List.of()
         );
 
         // when & then
@@ -172,12 +174,14 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
 
     private ClubInformationUpdateRequestDto createInformationUpdateRequest() {
         return new ClubInformationUpdateRequestDto(
+            "한국기술교육대학교",
             "BCSD Lab",
             ClubCategory.ACADEMIC,
+            "코딩",
+            "💻",
             "수정 소개",
-            "https://example.com/logo.png",
-            "학생회관 102호",
-            "수정 상세 소개입니다."
+            "수정 상세 소개입니다.",
+            List.of("https://example.com/image1.jpg")
         );
     }
 }

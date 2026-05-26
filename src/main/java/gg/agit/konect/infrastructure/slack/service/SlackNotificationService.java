@@ -83,34 +83,40 @@ public class SlackNotificationService {
     public void notifyClubInformationUpdateRequest(
         Integer requestId,
         Integer clubId,
+        String currentUniversityName,
+        String requestedUniversityName,
         String currentClubName,
         String requestedClubName,
         String currentCategory,
         String requestedCategory,
+        String currentTopic,
+        String requestedTopic,
+        String requestedEmoji,
         String currentDescription,
         String requestedDescription,
-        String currentImageUrl,
-        String requestedImageUrl,
-        String currentLocation,
-        String requestedLocation,
         String currentFullIntroduction,
-        String requestedFullIntroduction
+        String requestedFullIntroduction,
+        String currentImageUrl,
+        List<String> requestedImageUrls
     ) {
         String message = CLUB_INFORMATION_UPDATE_REQUEST.format(
             requestId,
             clubId,
+            currentUniversityName,
+            requestedUniversityName,
             currentClubName,
             requestedClubName,
             currentCategory,
             requestedCategory,
+            currentTopic,
+            requestedTopic,
+            requestedEmoji,
             currentDescription,
             requestedDescription,
-            currentImageUrl,
-            requestedImageUrl,
-            currentLocation,
-            requestedLocation,
             currentFullIntroduction,
-            requestedFullIntroduction
+            requestedFullIntroduction,
+            currentImageUrl,
+            formatImageUrls(requestedImageUrls)
         );
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }

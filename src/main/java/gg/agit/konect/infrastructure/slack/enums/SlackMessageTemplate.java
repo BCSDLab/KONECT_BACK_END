@@ -41,19 +41,19 @@ public enum SlackMessageTemplate {
     CLUB_REGISTRATION_REQUEST(
         """
             :sparkles: *새 동아리 등록 요청이 도착했어요*
-            
+
             :school: *대학교* : *`%s`*
             %s *동아리* : *`%s`*
             :label: *분과* : *`%s`*
             :dart: *주제* : *`%s`*
             :art: *요청 이모지* : *`%s`*
-            
+
             :memo: *한 줄 소개*
             ```%s```
-            
+
             :page_facing_up: *상세 소개*
             ```%s```
-            
+
             :paperclip: *첨부 이미지*
             ```%s```
             """
@@ -61,30 +61,29 @@ public enum SlackMessageTemplate {
     CLUB_INFORMATION_UPDATE_REQUEST(
         """
             :pencil2: *동아리 정보 수정 요청이 도착했어요*
-            
+
             :receipt: *요청 ID* : *`%s`*
             :id: *동아리 ID* : *`%s`*
+            :school: *대학교* : *`%s`* → *`%s`*
             :bookmark: *동아리명* : *`%s`* → *`%s`*
             :label: *분과* : *`%s`* → *`%s`*
-            
+            :dart: *주제* : *`%s`* → *`%s`*
+            :art: *요청 이모지* : *`%s`*
+
             :memo: *한 줄 소개*
             ```%s```
             →
             ```%s```
-            
-            :frame_with_picture: *로고 이미지*
-            ```%s```
-            →
-            ```%s```
-            
-            :round_pushpin: *위치*
-            ```%s```
-            →
-            ```%s```
-            
+
             :page_facing_up: *상세 소개*
             ```%s```
             →
+            ```%s```
+
+            :frame_with_picture: *현재 대표 이미지*
+            ```%s```
+
+            :paperclip: *요청 첨부 이미지*
             ```%s```
             """
     ),

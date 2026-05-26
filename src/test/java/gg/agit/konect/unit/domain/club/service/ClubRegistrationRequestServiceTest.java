@@ -108,23 +108,27 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
             ClubCategory.HOBBY
         );
         ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
+            "한국기술교육대학교",
             "요청 동아리명",
             ClubCategory.ACADEMIC,
+            "AI",
+            "🤖",
             "수정 소개",
-            "https://example.com/logo.png",
-            "학생회관 102호",
-            "수정 상세 소개입니다."
+            "수정 상세 소개입니다.",
+            List.of("https://example.com/image1.jpg")
         );
         ClubInformationUpdateRequest saved = ClubInformationUpdateRequest.builder()
             .id(10)
             .club(club)
+            .universityName(request.universityName())
             .clubName(request.clubName())
             .clubCategory(request.clubCategory())
+            .clubTopic(request.clubTopic())
+            .clubEmoji(request.clubEmoji())
             .shortDescription(request.shortDescription())
-            .imageUrl(request.imageUrl())
-            .location(request.location())
             .fullIntroduction(request.fullIntroduction())
             .build();
+        saved.addImages(request.imageUrls());
         given(websiteQueryRepository.findClub(club.getId())).willReturn(Optional.of(club));
         given(clubInformationUpdateRequestRepository.save(any(ClubInformationUpdateRequest.class))).willReturn(saved);
 
@@ -140,17 +144,20 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
         ClubInformationUpdateRequestedEvent event = eventCaptor.getValue();
         assertThat(event.requestId()).isEqualTo(saved.getId());
         assertThat(event.clubId()).isEqualTo(club.getId());
+        assertThat(event.currentUniversityName()).isEqualTo(club.getUniversity().getKoreanName());
+        assertThat(event.requestedUniversityName()).isEqualTo(request.universityName());
         assertThat(event.currentClubName()).isEqualTo(club.getName());
         assertThat(event.requestedClubName()).isEqualTo(request.clubName());
         assertThat(event.currentCategory()).isEqualTo(club.getClubCategory().getDescription());
         assertThat(event.requestedCategory()).isEqualTo(request.clubCategory().getDescription());
+        assertThat(event.currentTopic()).isEqualTo(club.getTopic());
+        assertThat(event.requestedTopic()).isEqualTo(request.clubTopic());
+        assertThat(event.requestedEmoji()).isEqualTo(request.clubEmoji());
         assertThat(event.currentDescription()).isEqualTo(club.getDescription());
         assertThat(event.requestedDescription()).isEqualTo(request.shortDescription());
-        assertThat(event.currentImageUrl()).isEqualTo(club.getImageUrl());
-        assertThat(event.requestedImageUrl()).isEqualTo(request.imageUrl());
-        assertThat(event.currentLocation()).isEqualTo(club.getLocation());
-        assertThat(event.requestedLocation()).isEqualTo(request.location());
         assertThat(event.currentFullIntroduction()).isEqualTo(club.getIntroduce());
         assertThat(event.requestedFullIntroduction()).isEqualTo(request.fullIntroduction());
+        assertThat(event.currentImageUrl()).isEqualTo(club.getImageUrl());
+        assertThat(event.requestedImageUrls()).containsExactlyElementsOf(request.imageUrls());
     }
 }

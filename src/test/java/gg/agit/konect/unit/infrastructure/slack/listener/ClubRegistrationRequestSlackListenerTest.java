@@ -85,18 +85,21 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
         verify(slackNotificationService).notifyClubInformationUpdateRequest(
             event.requestId(),
             event.clubId(),
+            event.currentUniversityName(),
+            event.requestedUniversityName(),
             event.currentClubName(),
             event.requestedClubName(),
             event.currentCategory(),
             event.requestedCategory(),
+            event.currentTopic(),
+            event.requestedTopic(),
+            event.requestedEmoji(),
             event.currentDescription(),
             event.requestedDescription(),
-            event.currentImageUrl(),
-            event.requestedImageUrl(),
-            event.currentLocation(),
-            event.requestedLocation(),
             event.currentFullIntroduction(),
-            event.requestedFullIntroduction()
+            event.requestedFullIntroduction(),
+            event.currentImageUrl(),
+            event.requestedImageUrls()
         );
     }
 
@@ -110,18 +113,21 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             .notifyClubInformationUpdateRequest(
                 event.requestId(),
                 event.clubId(),
+                event.currentUniversityName(),
+                event.requestedUniversityName(),
                 event.currentClubName(),
                 event.requestedClubName(),
                 event.currentCategory(),
                 event.requestedCategory(),
+                event.currentTopic(),
+                event.requestedTopic(),
+                event.requestedEmoji(),
                 event.currentDescription(),
                 event.requestedDescription(),
-                event.currentImageUrl(),
-                event.requestedImageUrl(),
-                event.currentLocation(),
-                event.requestedLocation(),
                 event.currentFullIntroduction(),
-                event.requestedFullIntroduction()
+                event.requestedFullIntroduction(),
+                event.currentImageUrl(),
+                event.requestedImageUrls()
             );
 
         // when & then
@@ -147,18 +153,21 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
         return new ClubInformationUpdateRequestedEvent(
             1,
             2,
+            "한국기술교육대학교",
+            "한국기술교육대학교",
             "현재 동아리명",
             "요청 동아리명",
             "문화",
             "학술",
+            "코딩",
+            "AI",
+            "🤖",
             "현재 소개",
             "수정 소개",
-            "https://example.com/current-logo.png",
-            "https://example.com/logo.png",
-            "학생회관 101호",
-            "학생회관 102호",
             "현재 상세 소개 내용입니다.",
-            "수정 상세 소개 내용입니다."
+            "수정 상세 소개 내용입니다.",
+            "https://example.com/current-logo.png",
+            List.of("https://example.com/image1.jpg")
         );
     }
 }

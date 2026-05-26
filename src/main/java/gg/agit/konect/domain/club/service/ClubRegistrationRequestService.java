@@ -54,14 +54,19 @@ public class ClubRegistrationRequestService {
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
         ClubInformationUpdateRequest entity = ClubInformationUpdateRequest.builder()
             .club(club)
+            .universityName(request.universityName())
             .clubName(request.clubName())
             .clubCategory(request.clubCategory())
+            .clubTopic(request.clubTopic())
+            .clubEmoji(request.clubEmoji())
             .shortDescription(request.shortDescription())
-            .imageUrl(request.imageUrl())
-            .location(request.location())
             .fullIntroduction(request.fullIntroduction())
             .status(ClubInformationUpdateRequest.UpdateRequestStatus.PENDING)
             .build();
+
+        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+            entity.addImages(request.imageUrls());
+        }
 
         ClubInformationUpdateRequest saved = clubInformationUpdateRequestRepository.save(entity);
         applicationEventPublisher.publishEvent(ClubInformationUpdateRequestedEvent.from(saved));

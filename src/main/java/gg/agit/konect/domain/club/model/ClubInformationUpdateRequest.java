@@ -1,9 +1,13 @@
 package gg.agit.konect.domain.club.model;
 
+import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.website.model.WebClub;
@@ -15,6 +19,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -40,6 +46,10 @@ public class ClubInformationUpdateRequest extends BaseEntity {
     private WebClub club;
 
     @NotNull
+    @Column(name = "university_name", nullable = false)
+    private String universityName;
+
+    @NotNull
     @Column(name = "club_name", length = 50, nullable = false)
     private String clubName;
 
@@ -49,20 +59,24 @@ public class ClubInformationUpdateRequest extends BaseEntity {
     private ClubCategory clubCategory;
 
     @NotNull
-    @Column(name = "short_description", length = 25, nullable = false)
+    @Column(name = "club_topic", length = 20, nullable = false)
+    private String clubTopic;
+
+    @NotNull
+    @Column(name = "club_emoji", length = 10, nullable = false)
+    private String clubEmoji;
+
+    @NotNull
+    @Column(name = "short_description", length = 30, nullable = false)
     private String shortDescription;
-
-    @NotNull
-    @Column(name = "image_url", length = 255, nullable = false)
-    private String imageUrl;
-
-    @NotNull
-    @Column(name = "location", length = 255, nullable = false)
-    private String location;
 
     @NotNull
     @Column(name = "full_introduction", columnDefinition = "TEXT", nullable = false)
     private String fullIntroduction;
+
+    @OneToMany(mappedBy = "request", cascade = ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC")
+    private List<ClubInformationUpdateRequestImage> images = new ArrayList<>();
 
     @NotNull
     @Enumerated(value = STRING)
@@ -73,23 +87,36 @@ public class ClubInformationUpdateRequest extends BaseEntity {
     private ClubInformationUpdateRequest(
         Integer id,
         WebClub club,
+        String universityName,
         String clubName,
         ClubCategory clubCategory,
+        String clubTopic,
+        String clubEmoji,
         String shortDescription,
-        String imageUrl,
-        String location,
         String fullIntroduction,
         UpdateRequestStatus status
     ) {
         this.id = id;
         this.club = club;
+        this.universityName = universityName;
         this.clubName = clubName;
         this.clubCategory = clubCategory;
+        this.clubTopic = clubTopic;
+        this.clubEmoji = clubEmoji;
         this.shortDescription = shortDescription;
-        this.imageUrl = imageUrl;
-        this.location = location;
         this.fullIntroduction = fullIntroduction;
         this.status = status != null ? status : UpdateRequestStatus.PENDING;
+    }
+
+    public void addImages(List<String> imageUrls) {
+        for (int i = 0; i < imageUrls.size(); i++) {
+            ClubInformationUpdateRequestImage image = ClubInformationUpdateRequestImage.builder()
+                .request(this)
+                .imageUrl(imageUrls.get(i))
+                .displayOrder(i)
+                .build();
+            this.images.add(image);
+        }
     }
 
     public enum UpdateRequestStatus {

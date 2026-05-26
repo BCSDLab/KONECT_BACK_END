@@ -46,18 +46,21 @@ public class ClubRegistrationRequestSlackListener {
             slackNotificationService.notifyClubInformationUpdateRequest(
                 event.requestId(),
                 event.clubId(),
+                event.currentUniversityName(),
+                event.requestedUniversityName(),
                 event.currentClubName(),
                 event.requestedClubName(),
                 event.currentCategory(),
                 event.requestedCategory(),
+                event.currentTopic(),
+                event.requestedTopic(),
+                event.requestedEmoji(),
                 event.currentDescription(),
                 event.requestedDescription(),
-                event.currentImageUrl(),
-                event.requestedImageUrl(),
-                event.currentLocation(),
-                event.requestedLocation(),
                 event.currentFullIntroduction(),
-                event.requestedFullIntroduction()
+                event.requestedFullIntroduction(),
+                event.currentImageUrl(),
+                event.requestedImageUrls()
             );
         } catch (RuntimeException e) {
             log.warn(

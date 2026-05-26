@@ -59,19 +59,19 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         assertThat(messageCaptor.getValue()).isEqualTo(
             """
                 :sparkles: *새 동아리 등록 요청이 도착했어요*
-                
+
                 :school: *대학교* : *`한국기술교육대학교`*
                 💻 *동아리* : *`BCSD Lab`*
                 :label: *분과* : *`학술`*
                 :dart: *주제* : *`코딩`*
                 :art: *요청 이모지* : *`💻`*
-                
+
                 :memo: *한 줄 소개*
                 ```코딩 동아리입니다.```
-                
+
                 :page_facing_up: *상세 소개*
                 ```상세한 동아리 소개 내용입니다.```
-                
+
                 :paperclip: *첨부 이미지*
                 ```https://example.com/image1.jpg
                 https://example.com/image2.jpg```
@@ -86,18 +86,21 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         slackNotificationService.notifyClubInformationUpdateRequest(
             1,
             2,
+            "한국기술교육대학교",
+            "한국기술교육대학교",
             "현재 동아리명",
             "요청 동아리명",
             "문화",
             "학술",
+            "코딩",
+            "AI",
+            "🤖",
             "현재 소개",
             "수정 소개",
-            "https://example.com/current-logo.png",
-            "https://example.com/logo.png",
-            "학생회관 101호",
-            "학생회관 102호",
             "현재 상세 소개 내용입니다.",
-            "수정 상세 소개 내용입니다."
+            "수정 상세 소개 내용입니다.",
+            "https://example.com/current-logo.png",
+            List.of("https://example.com/image1.jpg")
         );
 
         // then
@@ -106,31 +109,30 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         assertThat(messageCaptor.getValue()).isEqualTo(
             """
                 :pencil2: *동아리 정보 수정 요청이 도착했어요*
-                
+
                 :receipt: *요청 ID* : *`1`*
                 :id: *동아리 ID* : *`2`*
+                :school: *대학교* : *`한국기술교육대학교`* → *`한국기술교육대학교`*
                 :bookmark: *동아리명* : *`현재 동아리명`* → *`요청 동아리명`*
                 :label: *분과* : *`문화`* → *`학술`*
-                
+                :dart: *주제* : *`코딩`* → *`AI`*
+                :art: *요청 이모지* : *`🤖`*
+
                 :memo: *한 줄 소개*
                 ```현재 소개```
                 →
                 ```수정 소개```
-                
-                :frame_with_picture: *로고 이미지*
-                ```https://example.com/current-logo.png```
-                →
-                ```https://example.com/logo.png```
-                
-                :round_pushpin: *위치*
-                ```학생회관 101호```
-                →
-                ```학생회관 102호```
-                
+
                 :page_facing_up: *상세 소개*
                 ```현재 상세 소개 내용입니다.```
                 →
                 ```수정 상세 소개 내용입니다.```
+
+                :frame_with_picture: *현재 대표 이미지*
+                ```https://example.com/current-logo.png```
+
+                :paperclip: *요청 첨부 이미지*
+                ```https://example.com/image1.jpg```
                 """
         );
     }
