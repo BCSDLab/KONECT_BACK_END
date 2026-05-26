@@ -126,7 +126,7 @@ public class WebsiteQueryRepository {
         Long count = jpaQueryFactory
             .select(webClub.count())
             .from(webClub)
-            .where(webClub.university.id.eq(universityId))
+            .where(createClubCondition(universityId, null, null))
             .fetchOne();
 
         return count == null ? 0 : count;

@@ -51,6 +51,7 @@ public class WebsiteService {
         return WebsiteClubsResponse.of(
             university,
             clubs,
+            websiteQueryRepository.countClubsByUniversityId(universityId),
             websiteQueryRepository.countClubCategories(universityId, condition.query())
         );
     }

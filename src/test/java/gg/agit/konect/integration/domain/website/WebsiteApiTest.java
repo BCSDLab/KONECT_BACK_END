@@ -70,7 +70,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
     class GetUniversityClubs {
 
         @Test
-        @DisplayName("검색어와 분과로 동아리 목록을 조회하고 분과별 개수를 함께 반환한다")
+        @DisplayName("검색어와 분과로 동아리 목록을 조회하고 대학 전체 동아리 수를 함께 반환한다")
         void getUniversityClubsWithFilters() throws Exception {
             // given
             WebUniversity university = persist(WebUniversityFixture.create(
@@ -90,6 +90,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.university.name").value("한국기술교육대학교"))
                 .andExpect(jsonPath("$.university.imageUrl").value("https://example.com/koreatech-logo.png"))
+                .andExpect(jsonPath("$.university.clubCount").value(3))
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.clubs", hasSize(1)))
                 .andExpect(jsonPath("$.clubs[0].name").value("BCSD Lab"))
