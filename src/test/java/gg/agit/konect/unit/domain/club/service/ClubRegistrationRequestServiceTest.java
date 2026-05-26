@@ -15,12 +15,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.context.ApplicationEventPublisher;
 
-import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
+import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.club.event.ClubInformationUpdateRequestedEvent;
 import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
-import gg.agit.konect.domain.club.model.ClubInformationUpdateRequest;
+import gg.agit.konect.domain.club.model.ClubInformationUpdateRequestEntity;
 import gg.agit.konect.domain.club.model.ClubRegistrationRequest;
 import gg.agit.konect.domain.club.repository.ClubInformationUpdateRequestRepository;
 import gg.agit.konect.domain.club.repository.ClubRegistrationRequestRepository;
@@ -107,7 +107,7 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
             "현재 동아리명",
             ClubCategory.HOBBY
         );
-        ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
+        ClubInformationUpdateRequest request = new ClubInformationUpdateRequest(
             "한국기술교육대학교",
             "요청 동아리명",
             ClubCategory.ACADEMIC,
@@ -117,7 +117,7 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
             "수정 상세 소개입니다.",
             List.of("https://example.com/image1.jpg")
         );
-        ClubInformationUpdateRequest saved = ClubInformationUpdateRequest.builder()
+        ClubInformationUpdateRequestEntity saved = ClubInformationUpdateRequestEntity.builder()
             .id(10)
             .club(club)
             .universityName(request.universityName())
@@ -130,7 +130,8 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
             .build();
         saved.addImages(request.imageUrls());
         given(websiteQueryRepository.findClub(club.getId())).willReturn(Optional.of(club));
-        given(clubInformationUpdateRequestRepository.save(any(ClubInformationUpdateRequest.class))).willReturn(saved);
+        given(clubInformationUpdateRequestRepository.save(any(ClubInformationUpdateRequestEntity.class)))
+            .willReturn(saved);
 
         // when
         clubRegistrationRequestService.requestInformationUpdate(club.getId(), request);

@@ -31,7 +31,7 @@ public class ClubInformationUpdateRequestImage extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "request_id", nullable = false)
-    private ClubInformationUpdateRequest request;
+    private ClubInformationUpdateRequestEntity request;
 
     @NotNull
     @Column(name = "image_url", length = 500, nullable = false)
@@ -44,7 +44,7 @@ public class ClubInformationUpdateRequestImage extends BaseEntity {
     @Builder
     private ClubInformationUpdateRequestImage(
         Integer id,
-        ClubInformationUpdateRequest request,
+        ClubInformationUpdateRequestEntity request,
         String imageUrl,
         Integer displayOrder
     ) {

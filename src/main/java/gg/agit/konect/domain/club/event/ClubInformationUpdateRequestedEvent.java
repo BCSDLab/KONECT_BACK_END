@@ -2,7 +2,7 @@ package gg.agit.konect.domain.club.event;
 
 import java.util.List;
 
-import gg.agit.konect.domain.club.model.ClubInformationUpdateRequest;
+import gg.agit.konect.domain.club.model.ClubInformationUpdateRequestEntity;
 
 public record ClubInformationUpdateRequestedEvent(
     Integer requestId,
@@ -24,7 +24,7 @@ public record ClubInformationUpdateRequestedEvent(
     List<String> requestedImageUrls
 ) {
 
-    public static ClubInformationUpdateRequestedEvent from(ClubInformationUpdateRequest request) {
+    public static ClubInformationUpdateRequestedEvent from(ClubInformationUpdateRequestEntity request) {
         return new ClubInformationUpdateRequestedEvent(
             request.getId(),
             request.getClub().getId(),

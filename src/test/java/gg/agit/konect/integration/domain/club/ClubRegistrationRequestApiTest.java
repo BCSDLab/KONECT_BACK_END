@@ -7,7 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
+import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequest;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.website.model.WebClub;
@@ -132,7 +132,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         // given
         WebUniversity university = persist(WebUniversityFixture.create());
         WebClub club = persist(WebClubFixture.create(university));
-        ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
+        ClubInformationUpdateRequest request = createInformationUpdateRequest();
 
         // when & then
         performPost("/clubs/" + club.getId() + "/information-update-requests", request)
@@ -143,7 +143,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
     @DisplayName("존재하지 않는 동아리에 대한 정보 수정 요청은 404를 반환한다")
     void requestClubInformationUpdateWithUnknownClub() throws Exception {
         // given
-        ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
+        ClubInformationUpdateRequest request = createInformationUpdateRequest();
 
         // when & then
         performPost("/clubs/" + Integer.MAX_VALUE + "/information-update-requests", request)
@@ -156,7 +156,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         // given
         WebUniversity university = persist(WebUniversityFixture.create());
         WebClub club = persist(WebClubFixture.create(university));
-        ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
+        ClubInformationUpdateRequest request = new ClubInformationUpdateRequest(
             "",
             "BCSD Lab",
             ClubCategory.ACADEMIC,
@@ -172,8 +172,8 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
             .andExpect(status().isBadRequest());
     }
 
-    private ClubInformationUpdateRequestDto createInformationUpdateRequest() {
-        return new ClubInformationUpdateRequestDto(
+    private ClubInformationUpdateRequest createInformationUpdateRequest() {
+        return new ClubInformationUpdateRequest(
             "한국기술교육대학교",
             "BCSD Lab",
             ClubCategory.ACADEMIC,
