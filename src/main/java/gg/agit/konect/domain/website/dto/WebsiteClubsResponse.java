@@ -56,9 +56,12 @@ public record WebsiteClubsResponse(
             example = "https://example.com/koreatech-logo.png",
             requiredMode = REQUIRED
         )
-        String imageUrl
+        String imageUrl,
+
+        @Schema(description = "대학 전체 동아리 수", example = "28", requiredMode = REQUIRED)
+        Long clubCount
     ) {
-        public static UniversityResponse from(WebUniversity university) {
+        public static UniversityResponse of(WebUniversity university, Long clubCount) {
             if (university == null) {
                 return null;
             }
@@ -69,7 +72,8 @@ public record WebsiteClubsResponse(
                 university.getCampus().getDisplayName(),
                 university.getRegion(),
                 university.getRegion().getDisplayName(),
-                university.getImageUrl()
+                university.getImageUrl(),
+                clubCount
             );
         }
     }
@@ -127,10 +131,11 @@ public record WebsiteClubsResponse(
     public static WebsiteClubsResponse of(
         WebUniversity university,
         Page<WebClub> page,
+        Long universityClubCount,
         java.util.Map<ClubCategory, Long> categoryCounts
     ) {
         return new WebsiteClubsResponse(
-            UniversityResponse.from(university),
+            UniversityResponse.of(university, universityClubCount),
             page.getTotalElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
