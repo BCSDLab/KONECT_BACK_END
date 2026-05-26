@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.service.ClubRegistrationRequestService;
 import gg.agit.konect.global.auth.annotation.PublicApi;
@@ -48,7 +48,7 @@ public class ClubRegistrationRequestController implements ClubRegistrationReques
     @PublicApi
     public ResponseEntity<Void> requestClubInformationUpdate(
         @PathVariable(name = "clubId") Integer clubId,
-        @Valid @RequestBody ClubInformationUpdateRequest request
+        @Valid @RequestBody ClubInformationUpdateRequestDto request
     ) {
         clubRegistrationRequestService.requestInformationUpdate(clubId, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();

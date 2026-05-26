@@ -4,11 +4,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequest;
+import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.event.ClubInformationUpdateRequestedEvent;
 import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
-import gg.agit.konect.domain.club.model.ClubInformationUpdateRequestEntity;
+import gg.agit.konect.domain.club.model.ClubInformationUpdateRequest;
 import gg.agit.konect.domain.club.model.ClubRegistrationRequest;
 import gg.agit.konect.domain.club.repository.ClubInformationUpdateRequestRepository;
 import gg.agit.konect.domain.club.repository.ClubRegistrationRequestRepository;
@@ -49,10 +49,10 @@ public class ClubRegistrationRequestService {
         applicationEventPublisher.publishEvent(ClubRegistrationRequestedEvent.from(saved));
     }
 
-    public void requestInformationUpdate(Integer clubId, ClubInformationUpdateRequest request) {
+    public void requestInformationUpdate(Integer clubId, ClubInformationUpdateRequestDto request) {
         WebClub club = websiteQueryRepository.findClub(clubId)
             .orElseThrow(() -> CustomException.of(ApiResponseCode.NOT_FOUND_CLUB));
-        ClubInformationUpdateRequestEntity entity = ClubInformationUpdateRequestEntity.builder()
+        ClubInformationUpdateRequest entity = ClubInformationUpdateRequest.builder()
             .club(club)
             .universityName(request.universityName())
             .clubName(request.clubName())
@@ -61,14 +61,14 @@ public class ClubRegistrationRequestService {
             .clubEmoji(request.clubEmoji())
             .shortDescription(request.shortDescription())
             .fullIntroduction(request.fullIntroduction())
-            .status(ClubInformationUpdateRequestEntity.UpdateRequestStatus.PENDING)
+            .status(ClubInformationUpdateRequest.UpdateRequestStatus.PENDING)
             .build();
 
         if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
             entity.addImages(request.imageUrls());
         }
 
-        ClubInformationUpdateRequestEntity saved = clubInformationUpdateRequestRepository.save(entity);
+        ClubInformationUpdateRequest saved = clubInformationUpdateRequestRepository.save(entity);
         applicationEventPublisher.publishEvent(ClubInformationUpdateRequestedEvent.from(saved));
     }
 }

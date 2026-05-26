@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Schema(name = "ClubInformationUpdateRequest", description = "동아리 정보 수정 요청")
-public record ClubInformationUpdateRequest(
+public record ClubInformationUpdateRequestDto(
 
     @Schema(description = "대학교 명", example = "한국기술교육대학교", requiredMode = REQUIRED)
     @NotBlank(message = "대학교 명은 필수입니다.")

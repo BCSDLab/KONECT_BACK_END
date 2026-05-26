@@ -33,7 +33,7 @@ import lombok.ToString;
 @Entity
 @Table(name = "club_information_update_request")
 @NoArgsConstructor(access = PROTECTED)
-public class ClubInformationUpdateRequestEntity extends BaseEntity {
+public class ClubInformationUpdateRequest extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -85,7 +85,7 @@ public class ClubInformationUpdateRequestEntity extends BaseEntity {
     private UpdateRequestStatus status;
 
     @Builder
-    private ClubInformationUpdateRequestEntity(
+    private ClubInformationUpdateRequest(
         Integer id,
         WebClub club,
         String universityName,
