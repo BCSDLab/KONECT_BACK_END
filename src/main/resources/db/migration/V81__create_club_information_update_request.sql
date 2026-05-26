@@ -25,5 +25,6 @@ CREATE TABLE IF NOT EXISTS club_information_update_request_image
     created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
     updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
+    CONSTRAINT uq_club_information_update_request_image_order UNIQUE (request_id, display_order),
     FOREIGN KEY (request_id) REFERENCES club_information_update_request (id) ON DELETE CASCADE
 ) COMMENT '동아리 정보 수정 요청 이미지';

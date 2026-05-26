@@ -146,7 +146,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
 
         // when & then
-        performPost("/clubs/999999/information-update-requests", request)
+        performPost("/clubs/" + Integer.MAX_VALUE + "/information-update-requests", request)
             .andExpect(status().isNotFound());
     }
 
