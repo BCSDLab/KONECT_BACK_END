@@ -41,20 +41,43 @@ public enum SlackMessageTemplate {
     CLUB_REGISTRATION_REQUEST(
         """
             :sparkles: *새 동아리 등록 요청이 도착했어요*
-            
+
             :school: *대학교* : *`%s`*
             %s *동아리* : *`%s`*
             :label: *분과* : *`%s`*
             :dart: *주제* : *`%s`*
             :art: *요청 이모지* : *`%s`*
-            
+
             :memo: *한 줄 소개*
             ```%s```
-            
+
             :page_facing_up: *상세 소개*
             ```%s```
-            
+
             :paperclip: *첨부 이미지*
+            ```%s```
+            """
+    ),
+    CLUB_INFORMATION_UPDATE_REQUEST(
+        """
+            :pencil2: *동아리 정보 수정 요청이 도착했어요*
+
+            :receipt: *요청 ID* : *`%s`*
+            :id: *동아리 ID* : *`%s`*
+            :bookmark: *현재 동아리명* : *`%s`*
+            :bookmark_tabs: *요청 동아리명* : *`%s`*
+            :label: *요청 분과* : *`%s`*
+
+            :memo: *요청 한 줄 소개*
+            ```%s```
+
+            :frame_with_picture: *요청 로고 이미지*
+            ```%s```
+
+            :round_pushpin: *요청 위치*
+            ```%s```
+
+            :page_facing_up: *요청 상세 소개*
             ```%s```
             """
     ),

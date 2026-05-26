@@ -59,19 +59,19 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         assertThat(messageCaptor.getValue()).isEqualTo(
             """
                 :sparkles: *새 동아리 등록 요청이 도착했어요*
-                
+
                 :school: *대학교* : *`한국기술교육대학교`*
                 💻 *동아리* : *`BCSD Lab`*
                 :label: *분과* : *`학술`*
                 :dart: *주제* : *`코딩`*
                 :art: *요청 이모지* : *`💻`*
-                
+
                 :memo: *한 줄 소개*
                 ```코딩 동아리입니다.```
-                
+
                 :page_facing_up: *상세 소개*
                 ```상세한 동아리 소개 내용입니다.```
-                
+
                 :paperclip: *첨부 이미지*
                 ```https://example.com/image1.jpg
                 https://example.com/image2.jpg```
@@ -79,4 +79,47 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
         );
     }
 
+    @Test
+    @DisplayName("동아리 정보 수정 요청 Slack 메시지를 마크다운과 이모지로 구성한다")
+    void notifyClubInformationUpdateRequestFormatsSlackMessageWithMarkdownAndEmoji() {
+        // when
+        slackNotificationService.notifyClubInformationUpdateRequest(
+            1,
+            2,
+            "현재 동아리명",
+            "요청 동아리명",
+            "학술",
+            "수정 소개",
+            "https://example.com/logo.png",
+            "학생회관 102호",
+            "수정 상세 소개 내용입니다."
+        );
+
+        // then
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(slackClient).sendMessage(messageCaptor.capture(), eq(EVENT_WEBHOOK_URL));
+        assertThat(messageCaptor.getValue()).isEqualTo(
+            """
+                :pencil2: *동아리 정보 수정 요청이 도착했어요*
+
+                :receipt: *요청 ID* : *`1`*
+                :id: *동아리 ID* : *`2`*
+                :bookmark: *현재 동아리명* : *`현재 동아리명`*
+                :bookmark_tabs: *요청 동아리명* : *`요청 동아리명`*
+                :label: *요청 분과* : *`학술`*
+
+                :memo: *요청 한 줄 소개*
+                ```수정 소개```
+
+                :frame_with_picture: *요청 로고 이미지*
+                ```https://example.com/logo.png```
+
+                :round_pushpin: *요청 위치*
+                ```학생회관 102호```
+
+                :page_facing_up: *요청 상세 소개*
+                ```수정 상세 소개 내용입니다.```
+                """
+        );
+    }
 }

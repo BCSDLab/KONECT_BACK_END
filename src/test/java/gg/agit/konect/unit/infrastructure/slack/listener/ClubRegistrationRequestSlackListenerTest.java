@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import gg.agit.konect.domain.club.event.ClubInformationUpdateRequestedEvent;
 import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
 import gg.agit.konect.infrastructure.slack.listener.ClubRegistrationRequestSlackListener;
 import gg.agit.konect.infrastructure.slack.service.SlackNotificationService;
@@ -71,6 +72,53 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             .doesNotThrowAnyException();
     }
 
+    @Test
+    @DisplayName("동아리 정보 수정 요청 이벤트를 Slack 알림 서비스에 위임한다")
+    void handleClubInformationUpdateRequestedDelegatesToSlackService() {
+        // given
+        ClubInformationUpdateRequestedEvent event = createInformationUpdateEvent();
+
+        // when
+        clubRegistrationRequestSlackListener.handleClubInformationUpdateRequested(event);
+
+        // then
+        verify(slackNotificationService).notifyClubInformationUpdateRequest(
+            event.requestId(),
+            event.clubId(),
+            event.currentClubName(),
+            event.requestedClubName(),
+            event.category(),
+            event.description(),
+            event.imageUrl(),
+            event.location(),
+            event.fullIntroduction()
+        );
+    }
+
+    @Test
+    @DisplayName("동아리 정보 수정 요청 Slack 알림 실패를 삼킨다")
+    void handleClubInformationUpdateRequestedSwallowsExceptions() {
+        // given
+        ClubInformationUpdateRequestedEvent event = createInformationUpdateEvent();
+        doThrow(new RuntimeException("slack error"))
+            .when(slackNotificationService)
+            .notifyClubInformationUpdateRequest(
+                event.requestId(),
+                event.clubId(),
+                event.currentClubName(),
+                event.requestedClubName(),
+                event.category(),
+                event.description(),
+                event.imageUrl(),
+                event.location(),
+                event.fullIntroduction()
+            );
+
+        // when & then
+        assertThatCode(() -> clubRegistrationRequestSlackListener.handleClubInformationUpdateRequested(event))
+            .doesNotThrowAnyException();
+    }
+
     private ClubRegistrationRequestedEvent createEvent() {
         return new ClubRegistrationRequestedEvent(
             1,
@@ -82,6 +130,20 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             "코딩 동아리입니다.",
             "상세한 동아리 소개 내용입니다.",
             List.of("https://example.com/image1.jpg")
+        );
+    }
+
+    private ClubInformationUpdateRequestedEvent createInformationUpdateEvent() {
+        return new ClubInformationUpdateRequestedEvent(
+            1,
+            2,
+            "현재 동아리명",
+            "요청 동아리명",
+            "학술",
+            "수정 소개",
+            "https://example.com/logo.png",
+            "학생회관 102호",
+            "수정 상세 소개 내용입니다."
         );
     }
 }

@@ -4,10 +4,16 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
+import gg.agit.konect.domain.club.event.ClubInformationUpdateRequestedEvent;
 import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
+import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.club.model.ClubInformationUpdateRequest;
 import gg.agit.konect.domain.club.model.ClubRegistrationRequest;
+import gg.agit.konect.domain.club.repository.ClubInformationUpdateRequestRepository;
 import gg.agit.konect.domain.club.repository.ClubRegistrationRequestRepository;
+import gg.agit.konect.domain.club.repository.ClubRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -16,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 public class ClubRegistrationRequestService {
 
     private final ClubRegistrationRequestRepository clubRegistrationRequestRepository;
+    private final ClubInformationUpdateRequestRepository clubInformationUpdateRequestRepository;
+    private final ClubRepository clubRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public void register(ClubRegistrationRequestDto request) {
@@ -37,5 +45,22 @@ public class ClubRegistrationRequestService {
 
         ClubRegistrationRequest saved = clubRegistrationRequestRepository.save(entity);
         applicationEventPublisher.publishEvent(ClubRegistrationRequestedEvent.from(saved));
+    }
+
+    public void requestInformationUpdate(Integer clubId, ClubInformationUpdateRequestDto request) {
+        Club club = clubRepository.getById(clubId);
+        ClubInformationUpdateRequest entity = ClubInformationUpdateRequest.builder()
+            .club(club)
+            .clubName(request.clubName())
+            .clubCategory(request.clubCategory())
+            .shortDescription(request.shortDescription())
+            .imageUrl(request.imageUrl())
+            .location(request.location())
+            .fullIntroduction(request.fullIntroduction())
+            .status(ClubInformationUpdateRequest.UpdateRequestStatus.PENDING)
+            .build();
+
+        ClubInformationUpdateRequest saved = clubInformationUpdateRequestRepository.save(entity);
+        applicationEventPublisher.publishEvent(ClubInformationUpdateRequestedEvent.from(saved));
     }
 }

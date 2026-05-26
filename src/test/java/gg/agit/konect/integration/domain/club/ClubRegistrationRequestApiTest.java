@@ -7,9 +7,14 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import gg.agit.konect.domain.club.dto.ClubInformationUpdateRequestDto;
 import gg.agit.konect.domain.club.dto.ClubRegistrationRequestDto;
 import gg.agit.konect.domain.club.enums.ClubCategory;
+import gg.agit.konect.domain.club.model.Club;
+import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.fixture.ClubFixture;
+import gg.agit.konect.support.fixture.UniversityFixture;
 
 class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
 
@@ -119,5 +124,60 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         // when & then
         performPost("/clubs/registration-requests", request)
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("비로그인 사용자도 기존 동아리 정보 수정 요청을 보낼 수 있다")
+    void requestClubInformationUpdateWithoutLogin() throws Exception {
+        // given
+        University university = persist(UniversityFixture.create());
+        Club club = persist(ClubFixture.create(university));
+        ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
+
+        // when & then
+        performPost("/clubs/" + club.getId() + "/information-update-requests", request)
+            .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 동아리에 대한 정보 수정 요청은 404를 반환한다")
+    void requestClubInformationUpdateWithUnknownClub() throws Exception {
+        // given
+        ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
+
+        // when & then
+        performPost("/clubs/999999/information-update-requests", request)
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("동아리 정보 수정 요청 필수값이 없으면 400을 반환한다")
+    void requestClubInformationUpdateWithMissingFields() throws Exception {
+        // given
+        University university = persist(UniversityFixture.create());
+        Club club = persist(ClubFixture.create(university));
+        ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
+            "",
+            ClubCategory.ACADEMIC,
+            "수정 소개",
+            "https://example.com/logo.png",
+            "학생회관 102호",
+            "수정 상세 소개입니다."
+        );
+
+        // when & then
+        performPost("/clubs/" + club.getId() + "/information-update-requests", request)
+            .andExpect(status().isBadRequest());
+    }
+
+    private ClubInformationUpdateRequestDto createInformationUpdateRequest() {
+        return new ClubInformationUpdateRequestDto(
+            "BCSD Lab",
+            ClubCategory.ACADEMIC,
+            "수정 소개",
+            "https://example.com/logo.png",
+            "학생회관 102호",
+            "수정 상세 소개입니다."
+        );
     }
 }

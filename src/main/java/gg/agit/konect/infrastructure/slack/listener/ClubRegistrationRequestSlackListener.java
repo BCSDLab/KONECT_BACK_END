@@ -6,6 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import gg.agit.konect.domain.club.event.ClubInformationUpdateRequestedEvent;
 import gg.agit.konect.domain.club.event.ClubRegistrationRequestedEvent;
 import gg.agit.konect.infrastructure.slack.service.SlackNotificationService;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,30 @@ public class ClubRegistrationRequestSlackListener {
             );
         } catch (RuntimeException e) {
             log.warn("Failed to send club registration request Slack notification. requestId={}", event.requestId(), e);
+        }
+    }
+
+    @Async("slackTaskExecutor")
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    public void handleClubInformationUpdateRequested(ClubInformationUpdateRequestedEvent event) {
+        try {
+            slackNotificationService.notifyClubInformationUpdateRequest(
+                event.requestId(),
+                event.clubId(),
+                event.currentClubName(),
+                event.requestedClubName(),
+                event.category(),
+                event.description(),
+                event.imageUrl(),
+                event.location(),
+                event.fullIntroduction()
+            );
+        } catch (RuntimeException e) {
+            log.warn(
+                "Failed to send club information update request Slack notification. requestId={}",
+                event.requestId(),
+                e
+            );
         }
     }
 }
