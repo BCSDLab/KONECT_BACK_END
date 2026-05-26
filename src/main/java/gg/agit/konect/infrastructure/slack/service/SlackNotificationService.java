@@ -9,6 +9,7 @@ import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USE
 import static gg.agit.konect.infrastructure.slack.enums.SlackMessageTemplate.USER_WITHDRAWAL;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
@@ -102,23 +103,42 @@ public class SlackNotificationService {
         String message = CLUB_INFORMATION_UPDATE_REQUEST.format(
             requestId,
             clubId,
-            currentUniversityName,
-            requestedUniversityName,
-            currentClubName,
-            requestedClubName,
-            currentCategory,
-            requestedCategory,
-            currentTopic,
-            requestedTopic,
+            formatInlineChange(currentUniversityName, requestedUniversityName),
+            formatInlineChange(currentClubName, requestedClubName),
+            formatInlineChange(currentCategory, requestedCategory),
+            formatInlineChange(currentTopic, requestedTopic),
             requestedEmoji,
-            currentDescription,
-            requestedDescription,
-            currentFullIntroduction,
-            requestedFullIntroduction,
-            currentImageUrl,
-            formatImageUrls(requestedImageUrls)
+            formatBlockChange(currentDescription, requestedDescription),
+            formatBlockChange(currentFullIntroduction, requestedFullIntroduction),
+            formatBlockChange(currentImageUrl, formatImageUrls(requestedImageUrls))
         );
         slackClient.sendMessage(message, slackProperties.webhooks().event());
+    }
+
+    private String formatInlineChange(String currentValue, String requestedValue) {
+        if (Objects.equals(currentValue, requestedValue)) {
+            return wrapInline(currentValue);
+        }
+        return wrapInline(currentValue) + " → " + wrapInline(requestedValue);
+    }
+
+    private String wrapInline(String value) {
+        return "*`" + value + "`*";
+    }
+
+    private String formatBlockChange(String currentValue, String requestedValue) {
+        if (Objects.equals(currentValue, requestedValue)) {
+            return wrapBlock(currentValue);
+        }
+        return wrapBlock(currentValue)
+            + System.lineSeparator()
+            + "→"
+            + System.lineSeparator()
+            + wrapBlock(requestedValue);
+    }
+
+    private String wrapBlock(String value) {
+        return "```" + value + "```";
     }
 
     private String formatImageUrls(List<String> imageUrls) {

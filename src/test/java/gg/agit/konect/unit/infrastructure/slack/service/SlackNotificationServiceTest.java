@@ -112,7 +112,7 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
                 
                 :receipt: *요청 ID* : *`1`*
                 :id: *동아리 ID* : *`2`*
-                :school: *대학교* : *`한국기술교육대학교`* → *`한국기술교육대학교`*
+                :school: *대학교* : *`한국기술교육대학교`*
                 :bookmark: *동아리명* : *`현재 동아리명`* → *`요청 동아리명`*
                 :label: *분과* : *`문화`* → *`학술`*
                 :dart: *주제* : *`코딩`* → *`AI`*
@@ -128,10 +128,9 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
                 →
                 ```수정 상세 소개 내용입니다.```
                 
-                :frame_with_picture: *현재 대표 이미지*
+                :paperclip: *이미지*
                 ```https://example.com/current-logo.png```
-                
-                :paperclip: *요청 첨부 이미지*
+                →
                 ```https://example.com/image1.jpg```
                 """
         );

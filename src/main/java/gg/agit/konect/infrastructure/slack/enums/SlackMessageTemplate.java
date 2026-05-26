@@ -64,27 +64,20 @@ public enum SlackMessageTemplate {
             
             :receipt: *요청 ID* : *`%s`*
             :id: *동아리 ID* : *`%s`*
-            :school: *대학교* : *`%s`* → *`%s`*
-            :bookmark: *동아리명* : *`%s`* → *`%s`*
-            :label: *분과* : *`%s`* → *`%s`*
-            :dart: *주제* : *`%s`* → *`%s`*
+            :school: *대학교* : %s
+            :bookmark: *동아리명* : %s
+            :label: *분과* : %s
+            :dart: *주제* : %s
             :art: *요청 이모지* : *`%s`*
             
             :memo: *한 줄 소개*
-            ```%s```
-            →
-            ```%s```
+            %s
             
             :page_facing_up: *상세 소개*
-            ```%s```
-            →
-            ```%s```
+            %s
             
-            :frame_with_picture: *현재 대표 이미지*
-            ```%s```
-            
-            :paperclip: *요청 첨부 이미지*
-            ```%s```
+            :paperclip: *이미지*
+            %s
             """
     ),
     ;
