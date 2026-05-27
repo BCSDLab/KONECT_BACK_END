@@ -104,12 +104,14 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.clubs", hasSize(1)))
                 .andExpect(jsonPath("$.clubs[0].name").value("BCSD Lab"))
                 .andExpect(jsonPath("$.categories[0].category").value("PERFORMANCE"))
-                .andExpect(jsonPath("$.categories[1].category").value("SPORTS"))
-                .andExpect(jsonPath("$.categories[2].category").value("RELIGION"))
-                .andExpect(jsonPath("$.categories[3].category").value("HOBBY"))
-                .andExpect(jsonPath("$.categories[4].category").value("ACADEMIC"))
-                .andExpect(jsonPath("$.categories[4].count").value(1))
-                .andExpect(jsonPath("$.categories[5].category").value("JUNIOR"));
+                .andExpect(jsonPath("$.categories[1].category").value("SOCIAL_SERVICE"))
+                .andExpect(jsonPath("$.categories[2].category").value("EXHIBITION_CREATION"))
+                .andExpect(jsonPath("$.categories[3].category").value("RELIGION"))
+                .andExpect(jsonPath("$.categories[4].category").value("SPORTS"))
+                .andExpect(jsonPath("$.categories[5].category").value("HOBBY"))
+                .andExpect(jsonPath("$.categories[6].category").value("ACADEMIC"))
+                .andExpect(jsonPath("$.categories[6].count").value(1))
+                .andExpect(jsonPath("$.categories[7].category").value("ETC"));
         }
 
         @Test
