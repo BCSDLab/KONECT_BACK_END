@@ -9,3 +9,7 @@ WHERE club_category = 'JUNIOR';
 UPDATE club_registration_request
 SET club_category = 'ETC'
 WHERE club_category = 'JUNIOR';
+
+UPDATE club_information_update_request
+SET club_category = 'ETC'
+WHERE club_category = 'JUNIOR';
