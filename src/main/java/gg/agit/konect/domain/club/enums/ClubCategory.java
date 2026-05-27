@@ -7,7 +7,6 @@ import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@Getter
 @RequiredArgsConstructor
 public enum ClubCategory {
     PERFORMANCE("공연", 1),
@@ -19,12 +18,13 @@ public enum ClubCategory {
     ACADEMIC("학술", 7),
     ETC("기타", 8);
 
+    @Getter
     private final String description;
     private final int displayOrder;
 
     public static List<ClubCategory> sortedForDisplay() {
         return Arrays.stream(values())
-            .sorted(Comparator.comparingInt(ClubCategory::getDisplayOrder))
+            .sorted(Comparator.comparingInt(category -> category.displayOrder))
             .toList();
     }
 }

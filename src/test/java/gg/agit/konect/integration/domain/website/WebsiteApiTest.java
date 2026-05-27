@@ -1,5 +1,6 @@
 package gg.agit.konect.integration.domain.website;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -110,7 +111,8 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.categories[4].category").value("SPORTS"))
                 .andExpect(jsonPath("$.categories[5].category").value("HOBBY"))
                 .andExpect(jsonPath("$.categories[6].category").value("ACADEMIC"))
-                .andExpect(jsonPath("$.categories[6].count").value(1))
+                .andExpect(jsonPath("$.categories[?(@.category == 'ACADEMIC')].count")
+                    .value(contains(1)))
                 .andExpect(jsonPath("$.categories[7].category").value("ETC"));
         }
 
