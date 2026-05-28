@@ -1,5 +1,6 @@
 package gg.agit.konect.integration.domain.website;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -7,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,16 +16,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.enums.Campus;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.university.model.University;
-import gg.agit.konect.domain.user.model.User;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.support.IntegrationTestSupport;
-import gg.agit.konect.support.fixture.ClubMemberFixture;
-import gg.agit.konect.support.fixture.ClubRecruitmentFixture;
-import gg.agit.konect.support.fixture.UniversityFixture;
-import gg.agit.konect.support.fixture.UserFixture;
+import gg.agit.konect.support.fixture.WebClubFixture;
+import gg.agit.konect.support.fixture.WebUniversityFixture;
 
 class WebsiteApiTest extends IntegrationTestSupport {
 
@@ -37,26 +34,35 @@ class WebsiteApiTest extends IntegrationTestSupport {
         @DisplayName("로그인 없이 대학 목록과 등록 동아리 수를 조회한다")
         void getHomeWithoutLogin() throws Exception {
             // given
-            University koreatech = persist(UniversityFixture.create(
+            WebUniversity koreatech = persist(WebUniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
                 UniversityRegion.CHUNGCHEONG,
                 "https://example.com/koreatech-logo.png"
             ));
-            University seoul = persist(UniversityFixture.create(
+            WebUniversity seoul = persist(WebUniversityFixture.create(
                 "서울대학교",
                 Campus.MAIN,
                 UniversityRegion.SEOUL
             ));
-            persist(createClub(koreatech, "BCSD Lab", ClubCategory.ACADEMIC));
-            persist(createClub(koreatech, "COK", ClubCategory.SPORTS));
-            persist(createClub(seoul, "서울 동아리", ClubCategory.HOBBY));
+            persist(WebClubFixture.create(koreatech, "BCSD Lab", ClubCategory.ACADEMIC));
+            persist(WebClubFixture.create(koreatech, "COK", ClubCategory.SPORTS));
+            persist(WebClubFixture.create(seoul, "서울 동아리", ClubCategory.HOBBY));
             clearPersistenceContext();
 
             // when & then
             performGet("/konect/home?query=한국&region=CHUNGCHEONG")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.regions", hasSize(8)))
+                .andExpect(jsonPath("$.regions[0].region").value("GANGWON"))
+                .andExpect(jsonPath("$.regions[1].region").value("GYEONGGI"))
+                .andExpect(jsonPath("$.regions[2].region").value("GYEONGSANG"))
+                .andExpect(jsonPath("$.regions[3].region").value("SEOUL"))
+                .andExpect(jsonPath("$.regions[4].region").value("JEOLLA"))
+                .andExpect(jsonPath("$.regions[5].region").value("JEJU"))
+                .andExpect(jsonPath("$.regions[6].region").value("CHUNGCHEONG"))
+                .andExpect(jsonPath("$.regions[7].region").value("UNKNOWN"))
                 .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"))
                 .andExpect(jsonPath("$.universities[0].campusName").value("본교"))
                 .andExpect(jsonPath("$.universities[0].region").value("CHUNGCHEONG"))
@@ -74,22 +80,18 @@ class WebsiteApiTest extends IntegrationTestSupport {
     class GetUniversityClubs {
 
         @Test
-        @DisplayName("검색어와 분과로 동아리 목록을 조회하고 분과별 개수를 함께 반환한다")
+        @DisplayName("검색어와 분과로 동아리 목록을 조회하고 대학 전체 동아리 수를 함께 반환한다")
         void getUniversityClubsWithFilters() throws Exception {
             // given
-            University university = persist(UniversityFixture.create(
+            WebUniversity university = persist(WebUniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
                 UniversityRegion.CHUNGCHEONG,
                 "https://example.com/koreatech-logo.png"
             ));
-            Club bcsd = persist(createClub(university, "BCSD Lab", ClubCategory.ACADEMIC));
-            Club study = persist(createClub(university, "경영전략연구회", ClubCategory.ACADEMIC));
-            persist(createClub(university, "ZEST", ClubCategory.PERFORMANCE));
-            persistMember(bcsd, "회원1", "2024000001");
-            persistMember(bcsd, "회원2", "2024000002");
-            withdraw(persistMember(bcsd, "탈퇴회원", "2024000004"));
-            persistMember(study, "회원3", "2024000003");
+            persist(WebClubFixture.create(university, "BCSD Lab", ClubCategory.ACADEMIC));
+            persist(WebClubFixture.create(university, "경영전략연구회", ClubCategory.ACADEMIC));
+            persist(WebClubFixture.create(university, "ZEST", ClubCategory.PERFORMANCE));
             clearPersistenceContext();
 
             // when & then
@@ -98,12 +100,20 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.university.name").value("한국기술교육대학교"))
                 .andExpect(jsonPath("$.university.imageUrl").value("https://example.com/koreatech-logo.png"))
+                .andExpect(jsonPath("$.university.clubCount").value(3))
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.clubs", hasSize(1)))
                 .andExpect(jsonPath("$.clubs[0].name").value("BCSD Lab"))
-                .andExpect(jsonPath("$.clubs[0].memberCount").value(2))
-                .andExpect(jsonPath("$.categories[0].category").value("ACADEMIC"))
-                .andExpect(jsonPath("$.categories[0].count").value(1));
+                .andExpect(jsonPath("$.categories[0].category").value("PERFORMANCE"))
+                .andExpect(jsonPath("$.categories[1].category").value("SOCIAL_SERVICE"))
+                .andExpect(jsonPath("$.categories[2].category").value("EXHIBITION_CREATION"))
+                .andExpect(jsonPath("$.categories[3].category").value("RELIGION"))
+                .andExpect(jsonPath("$.categories[4].category").value("SPORTS"))
+                .andExpect(jsonPath("$.categories[5].category").value("HOBBY"))
+                .andExpect(jsonPath("$.categories[6].category").value("ACADEMIC"))
+                .andExpect(jsonPath("$.categories[?(@.category == 'ACADEMIC')].count")
+                    .value(contains(1)))
+                .andExpect(jsonPath("$.categories[7].category").value("ETC"));
         }
 
         @Test
@@ -120,19 +130,17 @@ class WebsiteApiTest extends IntegrationTestSupport {
     class GetClubDetail {
 
         @Test
-        @DisplayName("동아리 상세 소개와 모집 정보를 조회한다")
+        @DisplayName("동아리 상세 소개를 조회한다")
         void getClubDetailSuccess() throws Exception {
             // given
-            University university = persist(UniversityFixture.create(
+            WebUniversity university = persist(WebUniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
                 UniversityRegion.CHUNGCHEONG,
                 "https://example.com/koreatech-logo.png"
             ));
-            Club club = persist(createClub(university, "ZEST", ClubCategory.PERFORMANCE));
-            persist(createClub(university, "BCSD Lab", ClubCategory.ACADEMIC));
-            persist(ClubRecruitmentFixture.createAlwaysRecruiting(club));
-            persistMember(club, "회장", "2024000004");
+            WebClub club = persist(WebClubFixture.create(university, "ZEST", ClubCategory.PERFORMANCE));
+            persist(WebClubFixture.create(university, "BCSD Lab", ClubCategory.ACADEMIC));
             clearPersistenceContext();
 
             // when & then
@@ -140,13 +148,11 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("ZEST"))
                 .andExpect(jsonPath("$.categoryName").value("공연"))
+                .andExpect(jsonPath("$.topic").value("코딩"))
                 .andExpect(jsonPath("$.university.name").value("한국기술교육대학교"))
                 .andExpect(jsonPath("$.university.region").value("CHUNGCHEONG"))
                 .andExpect(jsonPath("$.university.imageUrl").value("https://example.com/koreatech-logo.png"))
-                .andExpect(jsonPath("$.university.clubCount").value(2))
-                .andExpect(jsonPath("$.memberCount").value(1))
-                .andExpect(jsonPath("$.recruitment.isAlwaysRecruiting").value(true))
-                .andExpect(jsonPath("$.recruitment.content").value("상시 모집 공고 내용입니다."));
+                .andExpect(jsonPath("$.university.clubCount").value(2));
         }
     }
 
@@ -158,13 +164,13 @@ class WebsiteApiTest extends IntegrationTestSupport {
         @DisplayName("요청한 동아리 ID 순서대로 카드 정보를 반환한다")
         void getRecentClubsKeepsRequestOrder() throws Exception {
             // given
-            University university = persist(UniversityFixture.create(
+            WebUniversity university = persist(WebUniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
                 UniversityRegion.CHUNGCHEONG
             ));
-            Club first = persist(createClub(university, "첫 번째", ClubCategory.ACADEMIC));
-            Club second = persist(createClub(university, "두 번째", ClubCategory.SPORTS));
+            WebClub first = persist(WebClubFixture.create(university, "첫 번째", ClubCategory.ACADEMIC));
+            WebClub second = persist(WebClubFixture.create(university, "두 번째", ClubCategory.SPORTS));
             clearPersistenceContext();
 
             // when & then
@@ -203,30 +209,5 @@ class WebsiteApiTest extends IntegrationTestSupport {
             performGet("/konect/clubs/recent")
                 .andExpect(status().isBadRequest());
         }
-    }
-
-    private Club createClub(University university, String name, ClubCategory category) {
-        return Club.builder()
-            .university(university)
-            .name(name)
-            .description("한 줄 소개")
-            .introduce("상세 소개입니다.")
-            .imageUrl("https://example.com/" + name + ".png")
-            .location("학생회관 101호")
-            .clubCategory(category)
-            .isRecruitmentEnabled(false)
-            .isApplicationEnabled(false)
-            .isFeeRequired(false)
-            .build();
-    }
-
-    private User persistMember(Club club, String name, String studentNumber) {
-        User user = persist(UserFixture.createUser(club.getUniversity(), name, studentNumber));
-        persist(ClubMemberFixture.createMember(club, user));
-        return user;
-    }
-
-    private void withdraw(User user) {
-        user.withdraw(LocalDateTime.now());
     }
 }

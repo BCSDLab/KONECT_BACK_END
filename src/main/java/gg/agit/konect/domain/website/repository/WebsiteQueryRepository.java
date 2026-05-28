@@ -1,9 +1,7 @@
 package gg.agit.konect.domain.website.repository;
 
-import static gg.agit.konect.domain.club.model.QClub.club;
-import static gg.agit.konect.domain.club.model.QClubMember.clubMember;
-import static gg.agit.konect.domain.club.model.QClubRecruitment.clubRecruitment;
-import static gg.agit.konect.domain.university.model.QUniversity.university;
+import static gg.agit.konect.domain.website.model.QWebClub.webClub;
+import static gg.agit.konect.domain.website.model.QWebUniversity.webUniversity;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,9 +20,9 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.domain.website.model.WebsiteUniversitySummary;
 import lombok.RequiredArgsConstructor;
 
@@ -38,51 +36,51 @@ public class WebsiteQueryRepository {
         BooleanBuilder condition = new BooleanBuilder();
         addUniversitySearchCondition(condition, query);
         addUniversityRegionCondition(condition, region);
-        NumberExpression<Long> clubCount = club.id.countDistinct();
+        NumberExpression<Long> clubCount = webClub.id.countDistinct();
 
         List<Tuple> rows = jpaQueryFactory
             .select(
-                university.id,
-                university.koreanName,
-                university.campus,
-                university.region,
-                university.imageUrl,
+                webUniversity.id,
+                webUniversity.koreanName,
+                webUniversity.campus,
+                webUniversity.region,
+                webUniversity.imageUrl,
                 clubCount
             )
-            .from(university)
-            .leftJoin(club).on(club.university.id.eq(university.id))
+            .from(webUniversity)
+            .leftJoin(webClub).on(webClub.university.id.eq(webUniversity.id))
             .where(condition)
             .groupBy(
-                university.id,
-                university.koreanName,
-                university.campus,
-                university.region,
-                university.imageUrl
+                webUniversity.id,
+                webUniversity.koreanName,
+                webUniversity.campus,
+                webUniversity.region,
+                webUniversity.imageUrl
             )
-            .orderBy(university.koreanName.asc(), university.campus.asc())
+            .orderBy(webUniversity.koreanName.asc(), webUniversity.campus.asc())
             .fetch();
 
         return rows.stream()
             .map(row -> new WebsiteUniversitySummary(
-                row.get(university.id),
-                row.get(university.koreanName),
-                row.get(university.campus).getDisplayName(),
-                row.get(university.region),
-                row.get(university.region).getDisplayName(),
-                row.get(university.imageUrl),
+                row.get(webUniversity.id),
+                row.get(webUniversity.koreanName),
+                row.get(webUniversity.campus).getDisplayName(),
+                row.get(webUniversity.region),
+                row.get(webUniversity.region).getDisplayName(),
+                row.get(webUniversity.imageUrl),
                 row.get(clubCount)
             ))
             .toList();
     }
 
-    public Optional<University> findUniversity(Integer universityId) {
+    public Optional<WebUniversity> findUniversity(Integer universityId) {
         return Optional.ofNullable(jpaQueryFactory
-            .selectFrom(university)
-            .where(university.id.eq(universityId))
+            .selectFrom(webUniversity)
+            .where(webUniversity.id.eq(universityId))
             .fetchOne());
     }
 
-    public Page<Club> findClubs(
+    public Page<WebClub> findClubs(
         Integer universityId,
         String query,
         ClubCategory category,
@@ -90,19 +88,18 @@ public class WebsiteQueryRepository {
     ) {
         BooleanBuilder condition = createClubCondition(universityId, query, category);
 
-        List<Club> clubs = jpaQueryFactory
-            .selectFrom(club)
-            .join(club.university, university).fetchJoin()
-            .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
+        List<WebClub> clubs = jpaQueryFactory
+            .selectFrom(webClub)
+            .join(webClub.university, webUniversity).fetchJoin()
             .where(condition)
-            .orderBy(club.name.asc(), club.id.asc())
+            .orderBy(webClub.name.asc(), webClub.id.asc())
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();
 
         Long total = jpaQueryFactory
-            .select(club.count())
-            .from(club)
+            .select(webClub.count())
+            .from(webClub)
             .where(condition)
             .fetchOne();
 
@@ -111,80 +108,57 @@ public class WebsiteQueryRepository {
 
     public Map<ClubCategory, Long> countClubCategories(Integer universityId, String query) {
         BooleanBuilder condition = createClubCondition(universityId, query, null);
-        NumberExpression<Long> clubCount = club.count();
+        NumberExpression<Long> clubCount = webClub.count();
 
         List<Tuple> rows = jpaQueryFactory
-            .select(club.clubCategory, clubCount)
-            .from(club)
+            .select(webClub.clubCategory, clubCount)
+            .from(webClub)
             .where(condition)
-            .groupBy(club.clubCategory)
+            .groupBy(webClub.clubCategory)
             .fetch();
 
         Map<ClubCategory, Long> categoryCounts = new LinkedHashMap<>();
-        rows.forEach(row -> categoryCounts.put(row.get(club.clubCategory), row.get(clubCount)));
+        rows.forEach(row -> categoryCounts.put(row.get(webClub.clubCategory), row.get(clubCount)));
         return categoryCounts;
     }
 
     public Long countClubsByUniversityId(Integer universityId) {
         Long count = jpaQueryFactory
-            .select(club.count())
-            .from(club)
+            .select(webClub.count())
+            .from(webClub)
             .where(createClubCondition(universityId, null, null))
             .fetchOne();
 
         return count == null ? 0 : count;
     }
 
-    public Optional<Club> findClub(Integer clubId) {
+    public Optional<WebClub> findClub(Integer clubId) {
         return Optional.ofNullable(jpaQueryFactory
-            .selectFrom(club)
-            .join(club.university, university).fetchJoin()
-            .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
-            .where(club.id.eq(clubId))
+            .selectFrom(webClub)
+            .join(webClub.university, webUniversity).fetchJoin()
+            .where(webClub.id.eq(clubId))
             .fetchOne());
     }
 
-    public List<Club> findClubs(List<Integer> clubIds) {
+    public List<WebClub> findClubs(List<Integer> clubIds) {
         if (clubIds.isEmpty()) {
             return List.of();
         }
 
         return jpaQueryFactory
-            .selectFrom(club)
-            .join(club.university, university).fetchJoin()
-            .leftJoin(club.clubRecruitment, clubRecruitment).fetchJoin()
-            .where(club.id.in(clubIds))
+            .selectFrom(webClub)
+            .join(webClub.university, webUniversity).fetchJoin()
+            .where(webClub.id.in(clubIds))
             .fetch();
-    }
-
-    public Map<Integer, Long> countMembersByClubIds(List<Integer> clubIds) {
-        if (clubIds.isEmpty()) {
-            return Map.of();
-        }
-        NumberExpression<Long> memberCount = clubMember.count();
-
-        List<Tuple> rows = jpaQueryFactory
-            .select(clubMember.club.id, memberCount)
-            .from(clubMember)
-            .where(
-                clubMember.club.id.in(clubIds),
-                clubMember.user.deletedAt.isNull()
-            )
-            .groupBy(clubMember.club.id)
-            .fetch();
-
-        Map<Integer, Long> memberCounts = new LinkedHashMap<>();
-        rows.forEach(row -> memberCounts.put(row.get(clubMember.club.id), row.get(memberCount)));
-        return memberCounts;
     }
 
     private BooleanBuilder createClubCondition(Integer universityId, String query, ClubCategory category) {
         BooleanBuilder condition = new BooleanBuilder();
 
-        condition.and(club.university.id.eq(universityId));
+        condition.and(webClub.university.id.eq(universityId));
         addClubSearchCondition(condition, query);
         if (category != null) {
-            condition.and(club.clubCategory.eq(category));
+            condition.and(webClub.clubCategory.eq(category));
         }
 
         return condition;
@@ -196,7 +170,7 @@ public class WebsiteQueryRepository {
         }
 
         String normalizedQuery = query.trim().toLowerCase();
-        condition.and(university.koreanName.lower().contains(normalizedQuery));
+        condition.and(webUniversity.koreanName.lower().contains(normalizedQuery));
     }
 
     private void addUniversityRegionCondition(BooleanBuilder condition, UniversityRegion region) {
@@ -204,7 +178,7 @@ public class WebsiteQueryRepository {
             return;
         }
 
-        condition.and(university.region.eq(region));
+        condition.and(webUniversity.region.eq(region));
     }
 
     private void addClubSearchCondition(BooleanBuilder condition, String query) {
@@ -213,7 +187,7 @@ public class WebsiteQueryRepository {
         }
 
         String normalizedQuery = query.trim().toLowerCase();
-        BooleanExpression nameContains = club.name.lower().contains(normalizedQuery);
+        BooleanExpression nameContains = webClub.name.lower().contains(normalizedQuery);
         condition.and(nameContains);
     }
 }

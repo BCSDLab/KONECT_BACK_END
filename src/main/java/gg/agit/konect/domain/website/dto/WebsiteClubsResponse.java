@@ -1,21 +1,20 @@
 package gg.agit.konect.domain.website.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.data.domain.Page;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
-import gg.agit.konect.domain.club.model.Club;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.website.model.WebClub;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record WebsiteClubsResponse(
-    @Schema(description = "대학 정보", requiredMode = REQUIRED)
+    @Schema(description = "대학 정보", requiredMode = NOT_REQUIRED)
     UniversityResponse university,
 
     @Schema(description = "전체 동아리 수", example = "28", requiredMode = REQUIRED)
@@ -56,9 +55,12 @@ public record WebsiteClubsResponse(
             example = "https://example.com/koreatech-logo.png",
             requiredMode = REQUIRED
         )
-        String imageUrl
+        String imageUrl,
+
+        @Schema(description = "대학 전체 동아리 수", example = "28", requiredMode = REQUIRED)
+        Long clubCount
     ) {
-        public static UniversityResponse from(University university) {
+        public static UniversityResponse of(WebUniversity university, Long clubCount) {
             if (university == null) {
                 return null;
             }
@@ -69,7 +71,8 @@ public record WebsiteClubsResponse(
                 university.getCampus().getDisplayName(),
                 university.getRegion(),
                 university.getRegion().getDisplayName(),
-                university.getImageUrl()
+                university.getImageUrl(),
+                clubCount
             );
         }
     }
@@ -105,61 +108,61 @@ public record WebsiteClubsResponse(
         @Schema(description = "분과명", example = "학술", requiredMode = REQUIRED)
         String categoryName,
 
-        @Schema(description = "한 줄 소개", example = "테스트 동아리 소개", requiredMode = REQUIRED)
-        String description,
+        @Schema(description = "동아리 주제", example = "코딩", requiredMode = REQUIRED)
+        String topic,
 
-        @Schema(description = "등록 회원 수", example = "31", requiredMode = REQUIRED)
-        Long memberCount
+        @Schema(description = "한 줄 소개", example = "테스트 동아리 소개", requiredMode = REQUIRED)
+        String description
     ) {
-        public static ClubResponse of(Club club, Long memberCount) {
+        public static ClubResponse from(WebClub club) {
             return new ClubResponse(
                 club.getId(),
                 club.getName(),
                 club.getImageUrl(),
                 club.getClubCategory(),
                 club.getClubCategory().getDescription(),
-                club.getDescription(),
-                memberCount
+                club.getTopic(),
+                club.getDescription()
             );
         }
     }
 
     public static WebsiteClubsResponse of(
-        University university,
-        Page<Club> page,
-        Map<Integer, Long> memberCounts,
-        Map<ClubCategory, Long> categoryCounts
+        WebUniversity university,
+        Page<WebClub> page,
+        Long universityClubCount,
+        java.util.Map<ClubCategory, Long> categoryCounts
     ) {
         return new WebsiteClubsResponse(
-            UniversityResponse.from(university),
+            UniversityResponse.of(university, universityClubCount),
             page.getTotalElements(),
             page.getTotalPages(),
             page.getNumber() + 1,
             createCategories(categoryCounts),
-            createClubs(page.getContent(), memberCounts)
+            createClubs(page.getContent())
         );
     }
 
-    public static WebsiteClubsResponse recent(List<Club> clubs, Map<Integer, Long> memberCounts) {
+    public static WebsiteClubsResponse recent(List<WebClub> clubs) {
         return new WebsiteClubsResponse(
             null,
             (long)clubs.size(),
             1,
             1,
             List.of(),
-            createClubs(clubs, memberCounts)
+            createClubs(clubs)
         );
     }
 
-    private static List<CategoryCountResponse> createCategories(Map<ClubCategory, Long> categoryCounts) {
-        return Arrays.stream(ClubCategory.values())
+    private static List<CategoryCountResponse> createCategories(java.util.Map<ClubCategory, Long> categoryCounts) {
+        return ClubCategory.sortedForDisplay().stream()
             .map(category -> CategoryCountResponse.of(category, categoryCounts.getOrDefault(category, 0L)))
             .toList();
     }
 
-    private static List<ClubResponse> createClubs(List<Club> clubs, Map<Integer, Long> memberCounts) {
+    private static List<ClubResponse> createClubs(List<WebClub> clubs) {
         return clubs.stream()
-            .map(club -> ClubResponse.of(club, memberCounts.getOrDefault(club.getId(), 0L)))
+            .map(ClubResponse::from)
             .toList();
     }
 }

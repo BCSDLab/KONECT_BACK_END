@@ -12,9 +12,23 @@ public record WebsiteHomeResponse(
     @Schema(description = "검색 결과 대학 수", example = "28", requiredMode = REQUIRED)
     Integer totalUniversityCount,
 
+    @Schema(description = "지역 목록", requiredMode = REQUIRED)
+    List<RegionResponse> regions,
+
     @Schema(description = "대학 목록", requiredMode = REQUIRED)
     List<UniversityResponse> universities
 ) {
+    public record RegionResponse(
+        @Schema(description = "지역 코드", example = "CHUNGCHEONG", requiredMode = REQUIRED)
+        UniversityRegion region,
+
+        @Schema(description = "지역명", example = "충청도", requiredMode = REQUIRED)
+        String regionName
+    ) {
+        public static RegionResponse from(UniversityRegion region) {
+            return new RegionResponse(region, region.getDisplayName());
+        }
+    }
 
     @Schema(name = "WebsiteHomeUniversityResponse")
     public record UniversityResponse(
@@ -59,9 +73,16 @@ public record WebsiteHomeResponse(
     public static WebsiteHomeResponse from(List<WebsiteUniversitySummary> summaries) {
         return new WebsiteHomeResponse(
             summaries.size(),
+            createRegions(),
             summaries.stream()
                 .map(UniversityResponse::from)
                 .toList()
         );
+    }
+
+    private static List<RegionResponse> createRegions() {
+        return UniversityRegion.sortedForDisplay().stream()
+            .map(RegionResponse::from)
+            .toList();
     }
 }
