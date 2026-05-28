@@ -1,5 +1,6 @@
 package gg.agit.konect.domain.university.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,7 +102,7 @@ public class UniversitySearchMatcher {
     private Set<String> getDefaultAliases(String universityName) {
         String withoutWhitespace = universityName.replaceAll("\\s", "");
         String withoutCampus = withoutWhitespace.replaceAll("(서울|세종|글로벌|ERICA|WISE)캠퍼스$", "");
-        Set<String> aliases = new java.util.HashSet<>();
+        Set<String> aliases = new HashSet<>();
 
         aliases.add(withoutWhitespace);
         aliases.add(withoutCampus);
