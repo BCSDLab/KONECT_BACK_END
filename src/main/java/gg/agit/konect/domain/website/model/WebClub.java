@@ -55,9 +55,6 @@ public class WebClub extends BaseEntity {
     @Column(name = "image_url", length = 255, nullable = false)
     private String imageUrl;
 
-    @Column(name = "location", length = 255, nullable = false)
-    private String location;
-
     @Builder
     private WebClub(
         Integer id,
@@ -67,8 +64,7 @@ public class WebClub extends BaseEntity {
         String topic,
         String description,
         String introduce,
-        String imageUrl,
-        String location
+        String imageUrl
     ) {
         this.id = id;
         this.clubCategory = clubCategory;
@@ -78,6 +74,5 @@ public class WebClub extends BaseEntity {
         this.description = description;
         this.introduce = introduce;
         this.imageUrl = imageUrl;
-        this.location = location;
     }
 }
