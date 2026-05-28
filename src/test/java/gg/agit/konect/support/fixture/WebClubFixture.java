@@ -19,7 +19,6 @@ public class WebClubFixture {
             .description("한 줄 소개")
             .introduce("상세 소개입니다.")
             .imageUrl("https://example.com/" + name + ".png")
-            .location("학생회관 101호")
             .clubCategory(category)
             .topic("코딩")
             .build();
