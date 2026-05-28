@@ -17,9 +17,14 @@ import lombok.RequiredArgsConstructor;
 public class UniversityService {
 
     private final UniversityRepository universityRepository;
+    private final UniversitySearchMatcher universitySearchMatcher;
 
-    public UniversitiesResponse getUniversities() {
+    public UniversitiesResponse getUniversities(String query) {
         List<University> universities = universityRepository.findAllByOrderByKoreanNameAsc();
-        return UniversitiesResponse.from(universities);
+        List<University> filteredUniversities = universities.stream()
+            .filter(university -> universitySearchMatcher.matches(university, query))
+            .toList();
+
+        return UniversitiesResponse.from(filteredUniversities);
     }
 }

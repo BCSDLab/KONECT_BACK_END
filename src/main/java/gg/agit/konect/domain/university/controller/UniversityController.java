@@ -16,8 +16,8 @@ public class UniversityController implements UniversityApi {
     private final UniversityService universityService;
 
     @Override
-    public ResponseEntity<UniversitiesResponse> getUniversities() {
-        UniversitiesResponse response = universityService.getUniversities();
+    public ResponseEntity<UniversitiesResponse> getUniversities(String query) {
+        UniversitiesResponse response = universityService.getUniversities(query);
         return ResponseEntity.ok(response);
     }
 }

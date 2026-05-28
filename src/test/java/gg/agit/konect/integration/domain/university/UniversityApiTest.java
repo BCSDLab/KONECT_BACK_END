@@ -48,7 +48,7 @@ class UniversityApiTest extends IntegrationTestSupport {
         }
 
         @Test
-        @DisplayName("동일한 이름이라도 캠퍼스가 다르면 각각 조회된다")
+        @DisplayName("동일한 이름이라도 캠퍼스가 다르면 각각 조회한다")
         void getUniversitiesWithSameNameDifferentCampus() throws Exception {
             // given
             persist(UniversityFixture.create("한국기술교육대학교", Campus.SECOND));
@@ -61,6 +61,58 @@ class UniversityApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.universities", hasSize(2)))
                 .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"))
                 .andExpect(jsonPath("$.universities[1].name").value("한국기술교육대학교"));
+        }
+
+        @Test
+        @DisplayName("query가 대학교 이름 초성이면 일치하는 대학 목록을 조회한다")
+        void getUniversitiesByChoseongQuery() throws Exception {
+            // given
+            persist(UniversityFixture.create("한국기술교육대학교", Campus.MAIN));
+            persist(UniversityFixture.create("서울과학기술대학교", Campus.MAIN));
+            persist(UniversityFixture.create("서울대학교", Campus.MAIN));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(UNIVERSITIES_ENDPOINT + "?query=ㅎㄱㄱㅅㄱㅇㄷㅎㄱ")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.universities", hasSize(1)))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"));
+        }
+
+        @Test
+        @DisplayName("query 초성에 겹자음이 포함되어도 풀어서 검색한다")
+        void getUniversitiesByChoseongQueryWithCompatibilityJamoCluster() throws Exception {
+            // given
+            persist(UniversityFixture.create("한국기술교육대학교", Campus.MAIN));
+            persist(UniversityFixture.create("서울과학기술대학교", Campus.MAIN));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(UNIVERSITIES_ENDPOINT + "?query=ㅎㄱㄳㄱㅇㄷㅎㄱ")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.universities", hasSize(1)))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"));
+        }
+
+        @Test
+        @DisplayName("query가 대학교 약칭이면 일치하는 대학 목록을 조회한다")
+        void getUniversitiesByAliasQuery() throws Exception {
+            // given
+            persist(UniversityFixture.create("한국기술교육대학교", Campus.MAIN));
+            persist(UniversityFixture.create("서울과학기술대학교", Campus.MAIN));
+            persist(UniversityFixture.create("서울대학교", Campus.MAIN));
+            clearPersistenceContext();
+
+            // when & then
+            performGet(UNIVERSITIES_ENDPOINT + "?query=한기대")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.universities", hasSize(1)))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"));
+
+            performGet(UNIVERSITIES_ENDPOINT + "?query=과기대")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.universities", hasSize(1)))
+                .andExpect(jsonPath("$.universities[0].name").value("서울과학기술대학교"));
         }
     }
 }
