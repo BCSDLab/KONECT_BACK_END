@@ -1,0 +1,2 @@
+ALTER TABLE web_club
+    MODIFY COLUMN location VARCHAR(255) NULL;
