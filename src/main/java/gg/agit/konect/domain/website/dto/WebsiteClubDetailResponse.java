@@ -33,9 +33,6 @@ public record WebsiteClubDetailResponse(
     @Schema(description = "상세 소개", requiredMode = REQUIRED)
     String introduce,
 
-    @Schema(description = "활동 위치", example = "학생회관 101호", requiredMode = REQUIRED)
-    String location,
-
     @Schema(description = "대학 정보", requiredMode = REQUIRED)
     University university
 ) {
@@ -80,7 +77,6 @@ public record WebsiteClubDetailResponse(
             club.getTopic(),
             club.getDescription(),
             club.getIntroduce(),
-            club.getLocation(),
             new University(
                 university.getId(),
                 university.getKoreanName(),
