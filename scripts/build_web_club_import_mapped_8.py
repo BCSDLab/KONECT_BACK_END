@@ -95,7 +95,8 @@ def sql_row(values):
 
 
 def compact_text(*values):
-    return " ".join(clean(value) for value in values if clean(value)).lower()
+    cleaned_values = [clean(value) for value in values]
+    return " ".join(value for value in cleaned_values if value).lower()
 
 
 def has_any(text, keywords):
@@ -298,10 +299,9 @@ def write_sql(rows, universities, source_to_university):
         f"SET @expected_web_university_count = {len(universities)};",
         f"SET @expected_web_club_count = {len(rows)};",
         "",
-        f"DROP TABLE IF EXISTS {BACKUP_CLUB};",
+        "-- Backup table creation intentionally fails if a previous backup already exists.",
         f"CREATE TABLE {BACKUP_CLUB} LIKE web_club;",
         f"INSERT INTO {BACKUP_CLUB} SELECT * FROM web_club;",
-        f"DROP TABLE IF EXISTS {BACKUP_UNIVERSITY};",
         f"CREATE TABLE {BACKUP_UNIVERSITY} LIKE web_university;",
         f"INSERT INTO {BACKUP_UNIVERSITY} SELECT * FROM web_university;",
         "",

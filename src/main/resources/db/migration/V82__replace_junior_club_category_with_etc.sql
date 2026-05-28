@@ -20,19 +20,23 @@ FROM club_information_update_request
 WHERE club_category = 'JUNIOR';
 
 UPDATE club
-SET club_category = 'ETC'
+SET club_category = 'ETC',
+    updated_at = updated_at
 WHERE club_category = 'JUNIOR';
 
 UPDATE web_club
-SET club_category = 'ETC'
+SET club_category = 'ETC',
+    updated_at = updated_at
 WHERE club_category = 'JUNIOR';
 
 UPDATE club_registration_request
-SET club_category = 'ETC'
+SET club_category = 'ETC',
+    updated_at = updated_at
 WHERE club_category = 'JUNIOR';
 
 UPDATE club_information_update_request
-SET club_category = 'ETC'
+SET club_category = 'ETC',
+    updated_at = updated_at
 WHERE club_category = 'JUNIOR';
 
 SELECT 'after' AS phase, 'club' AS table_name, COUNT(*) AS junior_count

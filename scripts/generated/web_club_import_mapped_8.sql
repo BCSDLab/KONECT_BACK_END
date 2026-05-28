@@ -5,10 +5,9 @@
 SET @expected_web_university_count = 154;
 SET @expected_web_club_count = 4725;
 
-DROP TABLE IF EXISTS web_club_backup_before_mapped_8;
+-- Backup table creation intentionally fails if a previous backup already exists.
 CREATE TABLE web_club_backup_before_mapped_8 LIKE web_club;
 INSERT INTO web_club_backup_before_mapped_8 SELECT * FROM web_club;
-DROP TABLE IF EXISTS web_university_backup_before_mapped_8;
 CREATE TABLE web_university_backup_before_mapped_8 LIKE web_university;
 INSERT INTO web_university_backup_before_mapped_8 SELECT * FROM web_university;
 
