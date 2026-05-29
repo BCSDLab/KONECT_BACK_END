@@ -73,6 +73,40 @@ class WebsiteApiTest extends IntegrationTestSupport {
             verify(loginCheckInterceptor, never()).preHandle(any(), any(), any());
             verify(authorizationInterceptor, never()).preHandle(any(), any(), any());
         }
+
+        @Test
+        @DisplayName("대학교 이름 초성과 약칭으로 웹사이트 대학 목록을 검색한다")
+        void getHomeSearchesUniversitiesByChoseongAndAlias() throws Exception {
+            // given
+            persist(WebUniversityFixture.create(
+                "한국기술교육대학교",
+                Campus.MAIN,
+                UniversityRegion.CHUNGCHEONG,
+                "https://example.com/koreatech-logo.png"
+            ));
+            persist(WebUniversityFixture.create(
+                "서울과학기술대학교",
+                Campus.MAIN,
+                UniversityRegion.SEOUL
+            ));
+            clearPersistenceContext();
+
+            // when & then
+            performGet("/konect/home?query=ㅎㄱㄳㄱㅇㄷㅎㄱ")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"));
+
+            performGet("/konect/home?query=한기대")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"));
+
+            performGet("/konect/home?query=과기대")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.universities[0].name").value("서울과학기술대학교"));
+        }
     }
 
     @Nested
