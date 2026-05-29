@@ -14,7 +14,6 @@ import java.io.ByteArrayOutputStream;
 
 import javax.imageio.ImageIO;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,24 +35,18 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 class UploadApiTest extends IntegrationTestSupport {
 
-    private static final int LOGIN_USER_ID = 2024001001;
     private static final int MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
     @MockitoBean
     private S3Client s3Client;
-
-    @BeforeEach
-    void setUp() throws Exception {
-        mockLoginUser(LOGIN_USER_ID);
-    }
 
     @Nested
     @DisplayName("POST /upload/image - 이미지 업로드")
     class UploadImage {
 
         @Test
-        @DisplayName("지원하는 이미지를 업로드하면 원본 확장자로 key와 CDN URL을 반환한다")
-        void uploadImageSuccess() throws Exception {
+        @DisplayName("로그인 없이 지원하는 이미지를 업로드하면 원본 확장자로 key와 CDN URL을 반환한다")
+        void uploadImageWithoutLoginSuccess() throws Exception {
             // given
             byte[] pngBytes = createPngBytes(8, 8);
             MockMultipartFile file = imageFile("club.png", "image/png", pngBytes);
