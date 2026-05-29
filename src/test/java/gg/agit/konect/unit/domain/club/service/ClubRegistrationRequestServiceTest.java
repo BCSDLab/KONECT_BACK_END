@@ -154,7 +154,7 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
         assertThat(event.requestedDescription()).isEqualTo(request.shortDescription());
         assertThat(event.currentFullIntroduction()).isEqualTo(club.getIntroduce());
         assertThat(event.requestedFullIntroduction()).isEqualTo(request.fullIntroduction());
-        assertThat(event.currentImageUrl()).isEqualTo(club.getImageUrl());
+        assertThat(event.currentCategoryEmoji()).isEqualTo(club.getCategoryEmoji());
         assertThat(event.requestedImageUrls()).containsExactlyElementsOf(request.imageUrls());
     }
 }

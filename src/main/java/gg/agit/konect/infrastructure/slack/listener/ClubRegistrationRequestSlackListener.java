@@ -58,7 +58,7 @@ public class ClubRegistrationRequestSlackListener {
                 event.requestedDescription(),
                 event.currentFullIntroduction(),
                 event.requestedFullIntroduction(),
-                event.currentImageUrl(),
+                event.currentCategoryEmoji(),
                 event.requestedImageUrls()
             );
         } catch (RuntimeException e) {
