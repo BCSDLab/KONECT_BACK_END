@@ -76,12 +76,16 @@ public class UniversitySearchMatcher {
     );
 
     public boolean matches(University university, String query) {
+        return matches(university.getKoreanName(), query);
+    }
+
+    public boolean matches(String universityName, String query) {
         if (!StringUtils.hasText(query)) {
             return true;
         }
 
         String normalizedQuery = normalize(query);
-        return getSearchTokens(university.getKoreanName())
+        return getSearchTokens(universityName)
             .anyMatch(token -> token.contains(normalizedQuery));
     }
 

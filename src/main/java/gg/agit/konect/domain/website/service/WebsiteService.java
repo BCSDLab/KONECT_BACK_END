@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.university.enums.UniversityRegion;
+import gg.agit.konect.domain.university.service.UniversitySearchMatcher;
 import gg.agit.konect.domain.website.dto.WebsiteClubDetailResponse;
 import gg.agit.konect.domain.website.dto.WebsiteClubListCondition;
 import gg.agit.konect.domain.website.dto.WebsiteClubsResponse;
@@ -30,9 +31,13 @@ import lombok.RequiredArgsConstructor;
 public class WebsiteService {
 
     private final WebsiteQueryRepository websiteQueryRepository;
+    private final UniversitySearchMatcher universitySearchMatcher;
 
     public WebsiteHomeResponse getHome(String query, UniversityRegion region) {
-        List<WebsiteUniversitySummary> summaries = websiteQueryRepository.findUniversitySummaries(query, region);
+        List<WebsiteUniversitySummary> summaries = websiteQueryRepository.findUniversitySummaries(null, region)
+            .stream()
+            .filter(summary -> universitySearchMatcher.matches(summary.name(), query))
+            .toList();
         return WebsiteHomeResponse.from(summaries);
     }
 
