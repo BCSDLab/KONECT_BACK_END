@@ -92,7 +92,6 @@ public class SlackNotificationService {
         String requestedCategory,
         String currentTopic,
         String requestedTopic,
-        String requestedEmoji,
         String currentDescription,
         String requestedDescription,
         String currentFullIntroduction,
@@ -107,7 +106,6 @@ public class SlackNotificationService {
             formatInlineChange(currentClubName, requestedClubName),
             formatInlineChange(currentCategory, requestedCategory),
             formatInlineChange(currentTopic, requestedTopic),
-            requestedEmoji,
             formatBlockChange(currentDescription, requestedDescription),
             formatBlockChange(currentFullIntroduction, requestedFullIntroduction),
             formatBlockChange(currentImageUrl, formatImageUrls(requestedImageUrls))

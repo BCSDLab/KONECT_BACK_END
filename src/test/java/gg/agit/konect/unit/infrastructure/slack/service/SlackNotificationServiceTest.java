@@ -94,7 +94,6 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
             "학술",
             "코딩",
             "AI",
-            "🤖",
             "현재 소개",
             "수정 소개",
             "현재 상세 소개 내용입니다.",
@@ -116,7 +115,6 @@ class SlackNotificationServiceTest extends ServiceTestSupport {
                 :bookmark: *동아리명* : *`현재 동아리명`* → *`요청 동아리명`*
                 :label: *분과* : *`문화`* → *`학술`*
                 :dart: *주제* : *`코딩`* → *`AI`*
-                :art: *요청 이모지* : *`🤖`*
                 
                 :memo: *한 줄 소개*
                 ```현재 소개```

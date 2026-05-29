@@ -31,11 +31,6 @@ public record ClubInformationUpdateRequestDto(
     @Size(max = 20, message = "동아리 주제는 최대 20자입니다.")
     String clubTopic,
 
-    @Schema(description = "동아리 이모지", example = "💻", requiredMode = REQUIRED)
-    @NotBlank(message = "동아리 이모지는 필수입니다.")
-    @Size(max = 10, message = "동아리 이모지는 최대 10자입니다.")
-    String clubEmoji,
-
     @Schema(
         description = "한 줄 소개 (최대 30자)",
         example = "코딩 동아리입니다.",
