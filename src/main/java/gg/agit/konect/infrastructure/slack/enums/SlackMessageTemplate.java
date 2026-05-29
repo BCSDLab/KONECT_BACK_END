@@ -68,7 +68,6 @@ public enum SlackMessageTemplate {
             :bookmark: *동아리명* : %s
             :label: *분과* : %s
             :dart: *주제* : %s
-            :art: *요청 이모지* : *`%s`*
             
             :memo: *한 줄 소개*
             %s

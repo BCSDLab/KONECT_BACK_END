@@ -64,10 +64,6 @@ public class ClubInformationUpdateRequest extends BaseEntity {
     private String clubTopic;
 
     @NotNull
-    @Column(name = "club_emoji", length = 10, nullable = false)
-    private String clubEmoji;
-
-    @NotNull
     @Column(name = "short_description", length = 30, nullable = false)
     private String shortDescription;
 
@@ -92,7 +88,6 @@ public class ClubInformationUpdateRequest extends BaseEntity {
         String clubName,
         ClubCategory clubCategory,
         String clubTopic,
-        String clubEmoji,
         String shortDescription,
         String fullIntroduction,
         UpdateRequestStatus status
@@ -103,7 +98,6 @@ public class ClubInformationUpdateRequest extends BaseEntity {
         this.clubName = clubName;
         this.clubCategory = clubCategory;
         this.clubTopic = clubTopic;
-        this.clubEmoji = clubEmoji;
         this.shortDescription = shortDescription;
         this.fullIntroduction = fullIntroduction;
         this.status = status != null ? status : UpdateRequestStatus.PENDING;

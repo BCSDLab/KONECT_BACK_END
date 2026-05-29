@@ -58,7 +58,6 @@ public class ClubRegistrationRequestService {
             .clubName(request.clubName())
             .clubCategory(request.clubCategory())
             .clubTopic(request.clubTopic())
-            .clubEmoji(request.clubEmoji())
             .shortDescription(request.shortDescription())
             .fullIntroduction(request.fullIntroduction())
             .status(ClubInformationUpdateRequest.UpdateRequestStatus.PENDING)

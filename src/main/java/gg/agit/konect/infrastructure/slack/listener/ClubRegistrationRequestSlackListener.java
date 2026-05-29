@@ -54,7 +54,6 @@ public class ClubRegistrationRequestSlackListener {
                 event.requestedCategory(),
                 event.currentTopic(),
                 event.requestedTopic(),
-                event.requestedEmoji(),
                 event.currentDescription(),
                 event.requestedDescription(),
                 event.currentFullIntroduction(),

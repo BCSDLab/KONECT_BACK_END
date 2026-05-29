@@ -112,7 +112,6 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
             "요청 동아리명",
             ClubCategory.ACADEMIC,
             "AI",
-            "🤖",
             "수정 소개",
             "수정 상세 소개입니다.",
             List.of("https://example.com/image1.jpg")
@@ -124,7 +123,6 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
             .clubName(request.clubName())
             .clubCategory(request.clubCategory())
             .clubTopic(request.clubTopic())
-            .clubEmoji(request.clubEmoji())
             .shortDescription(request.shortDescription())
             .fullIntroduction(request.fullIntroduction())
             .build();
@@ -152,7 +150,6 @@ class ClubRegistrationRequestServiceTest extends ServiceTestSupport {
         assertThat(event.requestedCategory()).isEqualTo(request.clubCategory().getDescription());
         assertThat(event.currentTopic()).isEqualTo(club.getTopic());
         assertThat(event.requestedTopic()).isEqualTo(request.clubTopic());
-        assertThat(event.requestedEmoji()).isEqualTo(request.clubEmoji());
         assertThat(event.currentDescription()).isEqualTo(club.getDescription());
         assertThat(event.requestedDescription()).isEqualTo(request.shortDescription());
         assertThat(event.currentFullIntroduction()).isEqualTo(club.getIntroduce());
