@@ -99,8 +99,8 @@ public record WebsiteClubsResponse(
         @Schema(description = "동아리명", example = "BCSD Lab", requiredMode = REQUIRED)
         String name,
 
-        @Schema(description = "동아리 로고 이미지 URL", requiredMode = REQUIRED)
-        String imageUrl,
+        @Schema(description = "동아리 분과 이모지", requiredMode = REQUIRED)
+        String categoryEmoji,
 
         @Schema(description = "분과 코드", example = "ACADEMIC", requiredMode = REQUIRED)
         ClubCategory category,
@@ -118,7 +118,7 @@ public record WebsiteClubsResponse(
             return new ClubResponse(
                 club.getId(),
                 club.getName(),
-                club.getImageUrl(),
+                club.getCategoryEmoji(),
                 club.getClubCategory(),
                 club.getClubCategory().getDescription(),
                 club.getTopic(),

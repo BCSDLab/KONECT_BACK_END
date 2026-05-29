@@ -19,7 +19,7 @@ public record ClubInformationUpdateRequestedEvent(
     String requestedDescription,
     String currentFullIntroduction,
     String requestedFullIntroduction,
-    String currentImageUrl,
+    String currentCategoryEmoji,
     List<String> requestedImageUrls
 ) {
 
@@ -39,7 +39,7 @@ public record ClubInformationUpdateRequestedEvent(
             request.getShortDescription(),
             request.getClub().getIntroduce(),
             request.getFullIntroduction(),
-            request.getClub().getImageUrl(),
+            request.getClub().getCategoryEmoji(),
             request.getImages().stream()
                 .map(image -> image.getImageUrl())
                 .toList()

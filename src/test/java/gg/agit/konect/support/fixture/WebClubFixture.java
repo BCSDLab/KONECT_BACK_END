@@ -18,7 +18,7 @@ public class WebClubFixture {
             .name(name)
             .description("한 줄 소개")
             .introduce("상세 소개입니다.")
-            .imageUrl("https://example.com/" + name + ".png")
+            .categoryEmoji("📚")
             .clubCategory(category)
             .topic("코딩")
             .build();
