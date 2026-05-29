@@ -10,9 +10,12 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import gg.agit.konect.global.ratelimit.annotation.RateLimit;
 import gg.agit.konect.global.ratelimit.exception.RateLimitExceededException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -103,6 +106,7 @@ public class RateLimitAspect {
         for (int i = 0; i < paramNames.length; i++) {
             context.setVariable(paramNames[i], args[i]);
         }
+        context.setVariable("clientIp", resolveClientIp());
 
         try {
             Object result = parser.parseExpression(keyExpression).getValue(context);
@@ -113,5 +117,14 @@ public class RateLimitAspect {
                 keyExpression, methodKey, e.getMessage());
             return RATE_LIMIT_KEY_PREFIX + methodKey;
         }
+    }
+
+    private String resolveClientIp() {
+        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
+            return "unknown";
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        return request.getRemoteAddr();
     }
 }

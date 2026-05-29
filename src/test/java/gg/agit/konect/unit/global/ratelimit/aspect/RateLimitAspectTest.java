@@ -19,8 +19,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
@@ -151,6 +154,43 @@ class RateLimitAspectTest {
             eq(Collections.singletonList("ratelimit:test.method")),
             any(String.class)
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    @DisplayName("clientIp 표현식 사용 시 현재 요청 IP로 키를 생성한다")
+    void usesCurrentRequestRemoteAddrForClientIpExpression() throws Throwable {
+        // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("203.0.113.10");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        given(rateLimit.maxRequests()).willReturn(10);
+        given(rateLimit.timeWindowSeconds()).willReturn(60);
+        given(rateLimit.keyExpression()).willReturn("#clientIp");
+        given(joinPoint.getSignature()).willReturn(methodSignature);
+        given(methodSignature.getDeclaringTypeName()).willReturn("test");
+        given(methodSignature.getName()).willReturn("method");
+        given(methodSignature.getParameterNames()).willReturn(new String[0]);
+        given(joinPoint.getArgs()).willReturn(new Object[0]);
+        given(joinPoint.proceed()).willReturn(null);
+
+        when(redisTemplate.execute(any(DefaultRedisScript.class), any(List.class), any(String.class)))
+            .thenReturn(1L);
+
+        try {
+            // when
+            rateLimitAspect.around(joinPoint, rateLimit);
+
+            // then
+            verify(redisTemplate).execute(
+                any(DefaultRedisScript.class),
+                eq(Collections.singletonList("ratelimit:test.method:203.0.113.10")),
+                any(String.class)
+            );
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
     }
 
 }

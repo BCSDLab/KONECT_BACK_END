@@ -13,7 +13,6 @@ import gg.agit.konect.domain.upload.enums.UploadTarget;
 import gg.agit.konect.global.auth.annotation.PublicApi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 
 @Tag(name = "(Normal) Upload: 업로드", description = "업로드 API")
 @RequestMapping("/upload")
@@ -35,7 +34,6 @@ public interface UploadApi {
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PublicApi
     ResponseEntity<ImageUploadResponse> uploadImage(
-        HttpServletRequest request,
         @RequestPart("file") MultipartFile file,
         @RequestParam(value = "target") UploadTarget target
     );
