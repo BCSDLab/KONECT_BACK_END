@@ -34,6 +34,7 @@ public class WebsiteService {
     private final UniversitySearchMatcher universitySearchMatcher;
 
     public WebsiteHomeResponse getHome(String query, UniversityRegion region) {
+        // 초성/약칭 검색은 SQL로 표현하기 어려워 전체 대학을 조회한 뒤 UniversitySearchMatcher로 필터링한다.
         List<WebsiteUniversitySummary> summaries = websiteQueryRepository.findUniversitySummaries(null, region)
             .stream()
             .filter(summary -> universitySearchMatcher.matches(summary.name(), query))
