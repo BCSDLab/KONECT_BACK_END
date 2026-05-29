@@ -52,8 +52,8 @@ public class WebClub extends BaseEntity {
     @Column(name = "introduce", columnDefinition = "TEXT", nullable = false)
     private String introduce;
 
-    @Column(name = "image_url", length = 255, nullable = false)
-    private String imageUrl;
+    @Column(name = "category_emoji", length = 255, nullable = false)
+    private String categoryEmoji;
 
     @Builder
     private WebClub(
@@ -64,7 +64,7 @@ public class WebClub extends BaseEntity {
         String topic,
         String description,
         String introduce,
-        String imageUrl
+        String categoryEmoji
     ) {
         this.id = id;
         this.clubCategory = clubCategory;
@@ -73,6 +73,6 @@ public class WebClub extends BaseEntity {
         this.topic = topic;
         this.description = description;
         this.introduce = introduce;
-        this.imageUrl = imageUrl;
+        this.categoryEmoji = categoryEmoji;
     }
 }

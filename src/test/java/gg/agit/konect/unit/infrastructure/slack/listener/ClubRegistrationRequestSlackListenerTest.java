@@ -97,7 +97,7 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             event.requestedDescription(),
             event.currentFullIntroduction(),
             event.requestedFullIntroduction(),
-            event.currentImageUrl(),
+            event.currentCategoryEmoji(),
             event.requestedImageUrls()
         );
     }
@@ -124,7 +124,7 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
                 event.requestedDescription(),
                 event.currentFullIntroduction(),
                 event.requestedFullIntroduction(),
-                event.currentImageUrl(),
+                event.currentCategoryEmoji(),
                 event.requestedImageUrls()
             );
 
