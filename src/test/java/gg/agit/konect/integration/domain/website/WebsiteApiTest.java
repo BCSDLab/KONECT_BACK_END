@@ -73,6 +73,40 @@ class WebsiteApiTest extends IntegrationTestSupport {
             verify(loginCheckInterceptor, never()).preHandle(any(), any(), any());
             verify(authorizationInterceptor, never()).preHandle(any(), any(), any());
         }
+
+        @Test
+        @DisplayName("대학교 이름 초성과 약칭으로 웹사이트 대학 목록을 검색한다")
+        void getHomeSearchesUniversitiesByChoseongAndAlias() throws Exception {
+            // given
+            persist(WebUniversityFixture.create(
+                "한국기술교육대학교",
+                Campus.MAIN,
+                UniversityRegion.CHUNGCHEONG,
+                "https://example.com/koreatech-logo.png"
+            ));
+            persist(WebUniversityFixture.create(
+                "서울과학기술대학교",
+                Campus.MAIN,
+                UniversityRegion.SEOUL
+            ));
+            clearPersistenceContext();
+
+            // when & then
+            performGet("/konect/home?query=ㅎㄱㄳㄱㅇㄷㅎㄱ")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"));
+
+            performGet("/konect/home?query=한기대")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.universities[0].name").value("한국기술교육대학교"));
+
+            performGet("/konect/home?query=과기대")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalUniversityCount").value(1))
+                .andExpect(jsonPath("$.universities[0].name").value("서울과학기술대학교"));
+        }
     }
 
     @Nested
@@ -104,6 +138,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.clubs", hasSize(1)))
                 .andExpect(jsonPath("$.clubs[0].name").value("BCSD Lab"))
+                .andExpect(jsonPath("$.clubs[0].categoryEmoji").value("📚"))
                 .andExpect(jsonPath("$.categories[0].category").value("PERFORMANCE"))
                 .andExpect(jsonPath("$.categories[1].category").value("SOCIAL_SERVICE"))
                 .andExpect(jsonPath("$.categories[2].category").value("EXHIBITION_CREATION"))
@@ -147,6 +182,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
             performGet("/konect/clubs/" + club.getId())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("ZEST"))
+                .andExpect(jsonPath("$.categoryEmoji").value("📚"))
                 .andExpect(jsonPath("$.categoryName").value("공연"))
                 .andExpect(jsonPath("$.topic").value("코딩"))
                 .andExpect(jsonPath("$.university.name").value("한국기술교육대학교"))
@@ -178,6 +214,7 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.clubs", hasSize(2)))
                 .andExpect(jsonPath("$.clubs[0].name").value("두 번째"))
+                .andExpect(jsonPath("$.clubs[0].categoryEmoji").value("📚"))
                 .andExpect(jsonPath("$.clubs[1].name").value("첫 번째"));
         }
 

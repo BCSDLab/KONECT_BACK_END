@@ -92,12 +92,11 @@ public class SlackNotificationService {
         String requestedCategory,
         String currentTopic,
         String requestedTopic,
-        String requestedEmoji,
         String currentDescription,
         String requestedDescription,
         String currentFullIntroduction,
         String requestedFullIntroduction,
-        String currentImageUrl,
+        String currentCategoryEmoji,
         List<String> requestedImageUrls
     ) {
         String message = CLUB_INFORMATION_UPDATE_REQUEST.format(
@@ -107,10 +106,9 @@ public class SlackNotificationService {
             formatInlineChange(currentClubName, requestedClubName),
             formatInlineChange(currentCategory, requestedCategory),
             formatInlineChange(currentTopic, requestedTopic),
-            requestedEmoji,
             formatBlockChange(currentDescription, requestedDescription),
             formatBlockChange(currentFullIntroduction, requestedFullIntroduction),
-            formatBlockChange(currentImageUrl, formatImageUrls(requestedImageUrls))
+            formatBlockChange(currentCategoryEmoji, formatImageUrls(requestedImageUrls))
         );
         slackClient.sendMessage(message, slackProperties.webhooks().event());
     }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,7 +15,6 @@ import java.io.ByteArrayOutputStream;
 
 import javax.imageio.ImageIO;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,24 +36,18 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 class UploadApiTest extends IntegrationTestSupport {
 
-    private static final int LOGIN_USER_ID = 2024001001;
     private static final int MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
     @MockitoBean
     private S3Client s3Client;
-
-    @BeforeEach
-    void setUp() throws Exception {
-        mockLoginUser(LOGIN_USER_ID);
-    }
 
     @Nested
     @DisplayName("POST /upload/image - 이미지 업로드")
     class UploadImage {
 
         @Test
-        @DisplayName("지원하는 이미지를 업로드하면 원본 확장자로 key와 CDN URL을 반환한다")
-        void uploadImageSuccess() throws Exception {
+        @DisplayName("로그인 없이 지원하는 이미지를 업로드하면 원본 확장자로 key와 CDN URL을 반환한다")
+        void uploadImageWithoutLoginSuccess() throws Exception {
             // given
             byte[] pngBytes = createPngBytes(8, 8);
             MockMultipartFile file = imageFile("club.png", "image/png", pngBytes);
@@ -327,6 +321,27 @@ class UploadApiTest extends IntegrationTestSupport {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("FAILED_UPLOAD_FILE"));
         }
+
+        @Test
+        @DisplayName("같은 IP에서 1시간에 60개를 초과해 업로드하면 429를 반환한다")
+        void uploadImageRateLimitExceededFails() throws Exception {
+            // given
+            String clientIp = "203.0.113.10";
+            byte[] pngBytes = createPngBytes(8, 8);
+
+            // when
+            for (int i = 0; i < 60; i++) {
+                uploadImage(imageFile("club.png", "image/png", pngBytes), UploadTarget.CLUB, clientIp)
+                    .andExpect(status().isOk());
+            }
+
+            // then
+            uploadImage(imageFile("club.png", "image/png", pngBytes), UploadTarget.CLUB, clientIp)
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("TOO_MANY_REQUESTS"));
+
+            verify(s3Client, times(60)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        }
     }
 
     private ResultActions uploadImage(MockMultipartFile file, UploadTarget target) throws Exception {
@@ -338,6 +353,18 @@ class UploadApiTest extends IntegrationTestSupport {
             multipart("/upload/image")
                 .file(file)
                 .param("target", target)
+        );
+    }
+
+    private ResultActions uploadImage(MockMultipartFile file, UploadTarget target, String remoteAddr) throws Exception {
+        return mockMvc.perform(
+            multipart("/upload/image")
+                .file(file)
+                .param("target", target.name())
+                .with(request -> {
+                    request.setRemoteAddr(remoteAddr);
+                    return request;
+                })
         );
     }
 

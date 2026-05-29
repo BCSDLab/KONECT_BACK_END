@@ -161,7 +161,6 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
             "BCSD Lab",
             ClubCategory.ACADEMIC,
             "코딩",
-            "💻",
             "수정 소개",
             "수정 상세 소개입니다.",
             List.of()
@@ -178,7 +177,6 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
             "BCSD Lab",
             ClubCategory.ACADEMIC,
             "코딩",
-            "💻",
             "수정 소개",
             "수정 상세 소개입니다.",
             List.of("https://example.com/image1.jpg")

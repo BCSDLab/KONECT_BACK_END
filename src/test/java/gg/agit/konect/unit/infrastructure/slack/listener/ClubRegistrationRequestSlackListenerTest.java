@@ -93,12 +93,11 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             event.requestedCategory(),
             event.currentTopic(),
             event.requestedTopic(),
-            event.requestedEmoji(),
             event.currentDescription(),
             event.requestedDescription(),
             event.currentFullIntroduction(),
             event.requestedFullIntroduction(),
-            event.currentImageUrl(),
+            event.currentCategoryEmoji(),
             event.requestedImageUrls()
         );
     }
@@ -121,12 +120,11 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
                 event.requestedCategory(),
                 event.currentTopic(),
                 event.requestedTopic(),
-                event.requestedEmoji(),
                 event.currentDescription(),
                 event.requestedDescription(),
                 event.currentFullIntroduction(),
                 event.requestedFullIntroduction(),
-                event.currentImageUrl(),
+                event.currentCategoryEmoji(),
                 event.requestedImageUrls()
             );
 
@@ -161,7 +159,6 @@ class ClubRegistrationRequestSlackListenerTest extends ServiceTestSupport {
             "학술",
             "코딩",
             "AI",
-            "🤖",
             "현재 소개",
             "수정 소개",
             "현재 상세 소개 내용입니다.",
