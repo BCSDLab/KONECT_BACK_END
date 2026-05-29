@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -320,6 +321,27 @@ class UploadApiTest extends IntegrationTestSupport {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("FAILED_UPLOAD_FILE"));
         }
+
+        @Test
+        @DisplayName("같은 IP에서 1시간에 60개를 초과해 업로드하면 429를 반환한다")
+        void uploadImageRateLimitExceededFails() throws Exception {
+            // given
+            String clientIp = "203.0.113.10";
+            byte[] pngBytes = createPngBytes(8, 8);
+
+            // when
+            for (int i = 0; i < 60; i++) {
+                uploadImage(imageFile("club.png", "image/png", pngBytes), UploadTarget.CLUB, clientIp)
+                    .andExpect(status().isOk());
+            }
+
+            // then
+            uploadImage(imageFile("club.png", "image/png", pngBytes), UploadTarget.CLUB, clientIp)
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("TOO_MANY_REQUESTS"));
+
+            verify(s3Client, times(60)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        }
     }
 
     private ResultActions uploadImage(MockMultipartFile file, UploadTarget target) throws Exception {
@@ -331,6 +353,18 @@ class UploadApiTest extends IntegrationTestSupport {
             multipart("/upload/image")
                 .file(file)
                 .param("target", target)
+        );
+    }
+
+    private ResultActions uploadImage(MockMultipartFile file, UploadTarget target, String remoteAddr) throws Exception {
+        return mockMvc.perform(
+            multipart("/upload/image")
+                .file(file)
+                .param("target", target.name())
+                .with(request -> {
+                    request.setRemoteAddr(remoteAddr);
+                    return request;
+                })
         );
     }
 
