@@ -2,6 +2,7 @@ package gg.agit.konect.domain.university.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -58,7 +59,9 @@ public class UniversitySearchMatcher {
 
     private Stream<String> getSearchTokens(String universityName, List<String> managedKeywords) {
         Set<String> aliases = getDefaultAliases(universityName);
-        aliases.addAll(managedKeywords);
+        if (managedKeywords != null) {
+            aliases.addAll(managedKeywords);
+        }
 
         List<String> normalizedAliases = aliases.stream()
             .map(this::normalize)
@@ -97,7 +100,7 @@ public class UniversitySearchMatcher {
     private String normalize(String value) {
         return expandCompatibilityJamoClusters(value)
             .replaceAll("\\s", "")
-            .toLowerCase();
+            .toLowerCase(Locale.ROOT);
     }
 
     private String expandCompatibilityJamoClusters(String value) {

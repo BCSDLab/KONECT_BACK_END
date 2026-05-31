@@ -8,6 +8,7 @@ CREATE TABLE university_search_keyword
     created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP                            NOT NULL,
     updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 
+    CONSTRAINT chk_university_search_keyword_keyword_type CHECK (keyword_type IN ('ALIAS', 'ENGLISH_ALIAS')),
     CONSTRAINT fk_university_search_keyword_university FOREIGN KEY (university_id) REFERENCES university (id),
     CONSTRAINT uq_university_search_keyword_university_keyword UNIQUE (university_id, normalized_keyword)
 );
