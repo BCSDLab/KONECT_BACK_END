@@ -152,6 +152,33 @@ class WebsiteApiTest extends IntegrationTestSupport {
         }
 
         @Test
+        @DisplayName("sortBy=CATEGORY이면 분과 표시 순서와 동아리명 순서로 정렬한다")
+        void getUniversityClubsSortedByCategory() throws Exception {
+            // given
+            WebUniversity university = persist(WebUniversityFixture.create(
+                "Koreatech",
+                Campus.MAIN,
+                UniversityRegion.CHUNGCHEONG
+            ));
+            persist(WebClubFixture.create(university, "Zeta", ClubCategory.ACADEMIC));
+            persist(WebClubFixture.create(university, "Alpha", ClubCategory.ACADEMIC));
+            persist(WebClubFixture.create(university, "Runner", ClubCategory.SPORTS));
+            persist(WebClubFixture.create(university, "Band", ClubCategory.PERFORMANCE));
+            clearPersistenceContext();
+
+            // when & then
+            performGet("/konect/universities/" + university.getId() + "/clubs?sortBy=CATEGORY")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clubs[*].name", contains("Band", "Runner", "Alpha", "Zeta")))
+                .andExpect(jsonPath("$.clubs[*].category", contains(
+                    "PERFORMANCE",
+                    "SPORTS",
+                    "ACADEMIC",
+                    "ACADEMIC"
+                )));
+        }
+
+        @Test
         @DisplayName("존재하지 않는 대학이면 404를 반환한다")
         void getUniversityClubsNotFound() throws Exception {
             // when & then
