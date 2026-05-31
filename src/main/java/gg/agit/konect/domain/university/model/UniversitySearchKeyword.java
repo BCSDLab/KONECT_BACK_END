@@ -20,6 +20,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Getter
@@ -40,6 +41,7 @@ public class UniversitySearchKeyword extends BaseEntity {
     private Integer id;
 
     @NotNull
+    @ToString.Exclude
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "university_id", nullable = false)
     private University university;
