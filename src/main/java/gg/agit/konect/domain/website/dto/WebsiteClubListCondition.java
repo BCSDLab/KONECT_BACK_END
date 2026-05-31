@@ -21,14 +21,23 @@ public record WebsiteClubListCondition(
     String query,
 
     @Schema(description = "동아리 분과", example = "ACADEMIC", requiredMode = NOT_REQUIRED)
-    ClubCategory category
+    ClubCategory category,
+
+    @Schema(
+        description = "동아리 목록 정렬 기준 (NAME: 가나다, CATEGORY: 분과)",
+        example = "NAME",
+        requiredMode = NOT_REQUIRED
+    )
+    WebsiteClubSortBy sortBy
 ) {
 
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_LIMIT = 12;
+    private static final WebsiteClubSortBy DEFAULT_SORT_BY = WebsiteClubSortBy.NAME;
 
     public WebsiteClubListCondition {
         page = page == null ? DEFAULT_PAGE : page;
         limit = limit == null ? DEFAULT_LIMIT : limit;
+        sortBy = sortBy == null ? DEFAULT_SORT_BY : sortBy;
     }
 }

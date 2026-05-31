@@ -51,6 +51,7 @@ public class WebsiteService {
             universityId,
             condition.query(),
             condition.category(),
+            condition.sortBy(),
             pageable
         );
 
