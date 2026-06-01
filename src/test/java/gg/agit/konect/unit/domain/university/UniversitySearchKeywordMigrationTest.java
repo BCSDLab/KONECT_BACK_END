@@ -1,8 +1,6 @@
 package gg.agit.konect.unit.domain.university;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -95,17 +93,20 @@ class UniversitySearchKeywordMigrationTest {
     }
 
     @Test
-    void failWhenSeedTargetUniversityIsMissing() throws Exception {
-        JdbcTemplate jdbcTemplate = createJdbcTemplate("seedMissingUniversity");
+    void seedOnlyExistingUniversities() throws Exception {
+        JdbcTemplate jdbcTemplate = createJdbcTemplate("seedPartialUniversity");
         createUniversityTable(jdbcTemplate);
-        insertUniversities(jdbcTemplate, SEEDED_UNIVERSITY_NAMES.stream()
-            .filter(universityName -> !universityName.equals("한국기술교육대학교"))
-            .toList());
+        insertUniversities(jdbcTemplate, List.of("한국기술교육대학교"));
         executeMigration(jdbcTemplate, "db/migration/V86__create_university_search_keyword.sql");
 
-        assertThatThrownBy(() ->
-            executeMigration(jdbcTemplate, "db/migration/V87__seed_university_search_keywords.sql"))
-            .isInstanceOf(Exception.class);
+        executeMigration(jdbcTemplate, "db/migration/V87__seed_university_search_keywords.sql");
+
+        Integer keywordCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM university_search_keyword",
+            Integer.class
+        );
+
+        assertThat(keywordCount).isEqualTo(3);
     }
 
     private JdbcTemplate createJdbcTemplate(String databaseName) {

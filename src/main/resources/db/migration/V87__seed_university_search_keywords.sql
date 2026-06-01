@@ -60,4 +60,4 @@ FROM (
     UNION ALL SELECT '해군사관학교' AS university_name, '해사' AS keyword, '해사' AS normalized_keyword, 'ALIAS' AS keyword_type
     UNION ALL SELECT '홍익대학교' AS university_name, '홍대' AS keyword, '홍대' AS normalized_keyword, 'ALIAS' AS keyword_type
 ) expected_keyword
-LEFT JOIN university ON university.korean_name = expected_keyword.university_name;
+JOIN university ON university.korean_name = expected_keyword.university_name;
