@@ -120,6 +120,36 @@ class UniversitySearchKeywordMigrationTest {
         assertThat(keywords).containsExactlyInAnyOrder("한기대", "코리아텍", "koreatech");
     }
 
+    @Test
+    void moveUniversitySearchKeywordsToWebUniversity() throws Exception {
+        JdbcTemplate jdbcTemplate = createJdbcTemplate("moveToWebUniversity");
+        createUniversityTable(jdbcTemplate);
+        createWebUniversityTable(jdbcTemplate);
+        insertUniversities(jdbcTemplate, List.of("한국기술교육대학교"));
+        insertWebUniversities(jdbcTemplate, List.of("한국기술교육대학교", "포항공과대학교"));
+
+        executeMigration(jdbcTemplate, "db/migration/V86__create_university_search_keyword.sql");
+        executeMigration(jdbcTemplate, "db/migration/V87__seed_university_search_keywords.sql");
+        executeMigration(jdbcTemplate, "db/migration/V88__move_university_search_keywords_to_web_university.sql");
+
+        Integer keywordCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM university_search_keyword",
+            Integer.class
+        );
+        List<String> postechKeywords = jdbcTemplate.queryForList(
+            """
+                SELECT keyword.keyword
+                FROM university_search_keyword keyword
+                JOIN web_university university ON university.id = keyword.university_id
+                WHERE university.korean_name = '포항공과대학교'
+                """,
+            String.class
+        );
+
+        assertThat(keywordCount).isEqualTo(6);
+        assertThat(postechKeywords).containsExactlyInAnyOrder("포공", "포스텍", "postech");
+    }
+
     private JdbcTemplate createJdbcTemplate(String databaseName) {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("org.h2.Driver");
@@ -139,9 +169,25 @@ class UniversitySearchKeywordMigrationTest {
             """);
     }
 
+    private void createWebUniversityTable(JdbcTemplate jdbcTemplate) {
+        jdbcTemplate.execute("""
+            CREATE TABLE web_university
+            (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                korean_name VARCHAR(255) NOT NULL
+            )
+            """);
+    }
+
     private void insertUniversities(JdbcTemplate jdbcTemplate, List<String> universityNames) {
         for (String universityName : universityNames) {
             jdbcTemplate.update("INSERT INTO university (korean_name) VALUES (?)", universityName);
+        }
+    }
+
+    private void insertWebUniversities(JdbcTemplate jdbcTemplate, List<String> universityNames) {
+        for (String universityName : universityNames) {
+            jdbcTemplate.update("INSERT INTO web_university (korean_name) VALUES (?)", universityName);
         }
     }
 

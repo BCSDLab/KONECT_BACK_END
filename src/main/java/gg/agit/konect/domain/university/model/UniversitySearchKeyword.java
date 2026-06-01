@@ -6,6 +6,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
 import gg.agit.konect.domain.university.enums.UniversitySearchKeywordType;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.global.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,7 +45,7 @@ public class UniversitySearchKeyword extends BaseEntity {
     @ToString.Exclude
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "university_id", nullable = false)
-    private University university;
+    private WebUniversity university;
 
     @NotNull
     @Column(name = "keyword", length = 100, nullable = false)
@@ -62,7 +63,7 @@ public class UniversitySearchKeyword extends BaseEntity {
     @Builder
     private UniversitySearchKeyword(
         Integer id,
-        University university,
+        WebUniversity university,
         String keyword,
         String normalizedKeyword,
         UniversitySearchKeywordType keywordType
