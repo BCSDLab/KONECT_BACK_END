@@ -108,6 +108,23 @@ class UniversitySearchKeywordMigrationTest {
             .isInstanceOf(Exception.class);
     }
 
+    @Test
+    void seedExistingUniversitySearchKeywords() throws Exception {
+        JdbcTemplate jdbcTemplate = createJdbcTemplate("seedExistingUniversity");
+        createUniversityTable(jdbcTemplate);
+        insertUniversities(jdbcTemplate, List.of("한국기술교육대학교"));
+        executeMigration(jdbcTemplate, "db/migration/V86__create_university_search_keyword.sql");
+
+        executeMigration(jdbcTemplate, "db/migration/V88__seed_existing_university_search_keywords.sql");
+
+        Integer keywordCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM university_search_keyword",
+            Integer.class
+        );
+
+        assertThat(keywordCount).isEqualTo(3);
+    }
+
     private JdbcTemplate createJdbcTemplate(String databaseName) {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("org.h2.Driver");
