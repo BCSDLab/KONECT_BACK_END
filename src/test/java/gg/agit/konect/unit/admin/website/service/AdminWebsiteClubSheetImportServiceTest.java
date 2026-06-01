@@ -129,4 +129,42 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
         ));
         verifyNoInteractions(googleSheetsService);
     }
+
+    @Test
+    void confirmImportSkipsExistingClubNameCaseInsensitively() {
+        WebUniversity university = WebUniversity.builder()
+            .id(UNIVERSITY_ID)
+            .koreanName("한국기술교육대학교")
+            .campus(Campus.MAIN)
+            .region(UniversityRegion.CHUNGCHEONG)
+            .imageUrl("https://example.com/logo.png")
+            .build();
+
+        List<AdminWebsiteClubSheetImportConfirmRequest.ConfirmClub> clubs = List.of(
+            new AdminWebsiteClubSheetImportConfirmRequest.ConfirmClub(
+                5,
+                "BCSD",
+                ClubCategory.ACADEMIC,
+                "개발",
+                "IT 동아리입니다.",
+                "IT 동아리입니다.",
+                "💻",
+                true
+            )
+        );
+
+        given(webUniversityRepository.getById(UNIVERSITY_ID)).willReturn(university);
+        given(webClubRepository.findExistingNamesByUniversityId(eq(UNIVERSITY_ID), anySet()))
+            .willReturn(Set.of("bcsd"));
+
+        AdminWebsiteClubSheetImportResponse response = service.confirmImport(UNIVERSITY_ID, clubs);
+
+        assertThat(response.importedCount()).isZero();
+        assertThat(response.skippedCount()).isEqualTo(1);
+        assertThat(response.warnings()).singleElement()
+            .asString()
+            .contains("BCSD");
+        verify(webClubRepository, org.mockito.Mockito.never()).saveAll(org.mockito.ArgumentMatchers.anyList());
+        verifyNoInteractions(googleSheetsService);
+    }
 }

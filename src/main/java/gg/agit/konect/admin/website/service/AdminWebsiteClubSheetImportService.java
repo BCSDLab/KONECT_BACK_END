@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -115,6 +116,9 @@ public class AdminWebsiteClubSheetImportService {
         Set<String> existingNames = requestNames.isEmpty()
             ? Set.of()
             : webClubRepository.findExistingNamesByUniversityId(universityId, requestNames);
+        Set<String> normalizedExistingNames = existingNames.stream()
+            .map(name -> name.toLowerCase(Locale.ROOT))
+            .collect(Collectors.toSet());
 
         Set<String> seenNames = new LinkedHashSet<>();
         List<WebClub> clubsToSave = new ArrayList<>();
@@ -130,7 +134,7 @@ public class AdminWebsiteClubSheetImportService {
                 warnings.add(String.format("%d행: 요청 안에서 중복된 동아리명 '%s'을 제외했습니다.", club.rowNumber(), name));
                 continue;
             }
-            if (existingNames.contains(name)) {
+            if (normalizedExistingNames.contains(normalizedName)) {
                 warnings.add(String.format("%d행: 이미 등록된 동아리명 '%s'을 제외했습니다.", club.rowNumber(), name));
                 continue;
             }
@@ -231,7 +235,7 @@ public class AdminWebsiteClubSheetImportService {
                 .body(String.class);
 
             JsonNode root = objectMapper.readTree(response);
-            String rawJson = root.path("content").get(0).path("text").asText();
+            String rawJson = extractClaudeText(root, response);
             return parseClaudeResult(rawJson);
         } catch (Exception e) {
             log.error("Failed to analyze website club import sheet with Claude.", e);
@@ -286,6 +290,19 @@ public class AdminWebsiteClubSheetImportService {
         } catch (IOException e) {
             throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
         }
+    }
+
+    private String extractClaudeText(JsonNode root, String response) {
+        JsonNode content = root.path("content");
+        if (!content.isArray() || content.isEmpty()) {
+            throw new IllegalArgumentException("Claude API returned empty content. response=" + response);
+        }
+
+        String text = content.get(0).path("text").asText();
+        if (text.isBlank()) {
+            throw new IllegalArgumentException("Claude API returned blank text. response=" + response);
+        }
+        return text;
     }
 
     private AnalyzedClubSheet parseClaudeResult(String rawJson) throws IOException {
