@@ -10,9 +10,11 @@ import org.junit.jupiter.api.Test;
 
 import gg.agit.konect.domain.university.enums.Campus;
 import gg.agit.konect.domain.university.model.University;
+import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.support.IntegrationTestSupport;
 import gg.agit.konect.support.fixture.UniversitySearchKeywordFixture;
 import gg.agit.konect.support.fixture.UniversityFixture;
+import gg.agit.konect.support.fixture.WebUniversityFixture;
 
 class UniversityApiTest extends IntegrationTestSupport {
 
@@ -103,8 +105,10 @@ class UniversityApiTest extends IntegrationTestSupport {
             University koreatech = persist(UniversityFixture.create("한국기술교육대학교", Campus.MAIN));
             University seoulTech = persist(UniversityFixture.create("서울과학기술대학교", Campus.MAIN));
             persist(UniversityFixture.create("서울대학교", Campus.MAIN));
-            persist(UniversitySearchKeywordFixture.createAlias(koreatech, "한기대"));
-            persist(UniversitySearchKeywordFixture.createAlias(seoulTech, "과기대"));
+            WebUniversity webKoreatech = persist(WebUniversityFixture.create(koreatech.getKoreanName(), Campus.MAIN));
+            WebUniversity webSeoulTech = persist(WebUniversityFixture.create(seoulTech.getKoreanName(), Campus.MAIN));
+            persist(UniversitySearchKeywordFixture.createAlias(webKoreatech, "한기대"));
+            persist(UniversitySearchKeywordFixture.createAlias(webSeoulTech, "과기대"));
             clearPersistenceContext();
 
             // when & then

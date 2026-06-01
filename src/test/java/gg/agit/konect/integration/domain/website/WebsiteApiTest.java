@@ -18,11 +18,9 @@ import org.junit.jupiter.api.Test;
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.university.enums.Campus;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
-import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.website.model.WebClub;
 import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.support.IntegrationTestSupport;
-import gg.agit.konect.support.fixture.UniversityFixture;
 import gg.agit.konect.support.fixture.UniversitySearchKeywordFixture;
 import gg.agit.konect.support.fixture.WebClubFixture;
 import gg.agit.konect.support.fixture.WebUniversityFixture;
@@ -81,23 +79,13 @@ class WebsiteApiTest extends IntegrationTestSupport {
         @DisplayName("대학교 이름 초성과 약칭으로 웹사이트 대학 목록을 검색한다")
         void getHomeSearchesUniversitiesByChoseongAndAlias() throws Exception {
             // given
-            University koreatech = persist(UniversityFixture.create(
-                "한국기술교육대학교",
-                Campus.MAIN,
-                UniversityRegion.CHUNGCHEONG
-            ));
-            University seoulTech = persist(UniversityFixture.create(
-                "서울과학기술대학교",
-                Campus.MAIN,
-                UniversityRegion.SEOUL
-            ));
-            persist(WebUniversityFixture.create(
+            WebUniversity koreatech = persist(WebUniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
                 UniversityRegion.CHUNGCHEONG,
                 "https://example.com/koreatech-logo.png"
             ));
-            persist(WebUniversityFixture.create(
+            WebUniversity seoulTech = persist(WebUniversityFixture.create(
                 "서울과학기술대학교",
                 Campus.MAIN,
                 UniversityRegion.SEOUL

@@ -3,12 +3,12 @@ package gg.agit.konect.support.fixture;
 import java.util.Locale;
 
 import gg.agit.konect.domain.university.enums.UniversitySearchKeywordType;
-import gg.agit.konect.domain.university.model.University;
 import gg.agit.konect.domain.university.model.UniversitySearchKeyword;
+import gg.agit.konect.domain.website.model.WebUniversity;
 
 public class UniversitySearchKeywordFixture {
 
-    public static UniversitySearchKeyword createAlias(University university, String keyword) {
+    public static UniversitySearchKeyword createAlias(WebUniversity university, String keyword) {
         return UniversitySearchKeyword.builder()
             .university(university)
             .keyword(keyword)
