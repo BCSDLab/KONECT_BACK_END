@@ -1,3 +1,5 @@
+-- Seed keywords only for universities that already exist in each environment.
+-- This migration can be retried after flyway repair without duplicating existing keywords.
 INSERT INTO university_search_keyword (university_id, keyword, normalized_keyword, keyword_type)
 SELECT university.id, expected_keyword.keyword, expected_keyword.normalized_keyword, expected_keyword.keyword_type
 FROM (
@@ -60,4 +62,7 @@ FROM (
     UNION ALL SELECT '해군사관학교' AS university_name, '해사' AS keyword, '해사' AS normalized_keyword, 'ALIAS' AS keyword_type
     UNION ALL SELECT '홍익대학교' AS university_name, '홍대' AS keyword, '홍대' AS normalized_keyword, 'ALIAS' AS keyword_type
 ) expected_keyword
-LEFT JOIN university ON university.korean_name = expected_keyword.university_name;
+JOIN university ON university.korean_name = expected_keyword.university_name
+ON DUPLICATE KEY UPDATE
+    keyword = VALUES(keyword),
+    keyword_type = VALUES(keyword_type);
