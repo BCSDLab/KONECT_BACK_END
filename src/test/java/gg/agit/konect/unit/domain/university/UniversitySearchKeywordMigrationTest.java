@@ -1,7 +1,6 @@
 package gg.agit.konect.unit.domain.university;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -95,27 +94,13 @@ class UniversitySearchKeywordMigrationTest {
     }
 
     @Test
-    void failWhenSeedTargetUniversityIsMissing() throws Exception {
-        JdbcTemplate jdbcTemplate = createJdbcTemplate("seedMissingUniversity");
-        createUniversityTable(jdbcTemplate);
-        insertUniversities(jdbcTemplate, SEEDED_UNIVERSITY_NAMES.stream()
-            .filter(universityName -> !universityName.equals("한국기술교육대학교"))
-            .toList());
-        executeMigration(jdbcTemplate, "db/migration/V86__create_university_search_keyword.sql");
-
-        assertThatThrownBy(() ->
-            executeMigration(jdbcTemplate, "db/migration/V87__seed_university_search_keywords.sql"))
-            .isInstanceOf(Exception.class);
-    }
-
-    @Test
-    void seedExistingUniversitySearchKeywords() throws Exception {
-        JdbcTemplate jdbcTemplate = createJdbcTemplate("seedExistingUniversity");
+    void seedOnlyExistingUniversitySearchKeywords() throws Exception {
+        JdbcTemplate jdbcTemplate = createJdbcTemplate("seedOnlyExistingUniversity");
         createUniversityTable(jdbcTemplate);
         insertUniversities(jdbcTemplate, List.of("한국기술교육대학교"));
         executeMigration(jdbcTemplate, "db/migration/V86__create_university_search_keyword.sql");
 
-        executeMigration(jdbcTemplate, "db/migration/V88__seed_existing_university_search_keywords.sql");
+        executeMigration(jdbcTemplate, "db/migration/V87__seed_university_search_keywords.sql");
 
         Integer keywordCount = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM university_search_keyword",
