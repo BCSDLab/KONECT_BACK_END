@@ -1,14 +1,18 @@
-ALTER TABLE university_search_keyword
-    DROP FOREIGN KEY fk_university_search_keyword_university;
+CREATE TABLE university_search_keyword_web_university_seed
+(
+    university_id      INT          NOT NULL,
+    keyword            VARCHAR(100) NOT NULL,
+    normalized_keyword VARCHAR(100) NOT NULL,
+    keyword_type       VARCHAR(50)  NOT NULL,
 
-DELETE FROM university_search_keyword;
-
-ALTER TABLE university_search_keyword
-    ADD CONSTRAINT fk_university_search_keyword_web_university
-        FOREIGN KEY (university_id) REFERENCES web_university (id);
+    CONSTRAINT fk_university_search_keyword_seed_web_university
+        FOREIGN KEY (university_id) REFERENCES web_university (id),
+    CONSTRAINT uq_university_search_keyword_seed_university_keyword
+        UNIQUE (university_id, normalized_keyword)
+);
 
 -- Search keywords are used by the public website, so seed them from web_university.
-INSERT INTO university_search_keyword (university_id, keyword, normalized_keyword, keyword_type)
+INSERT INTO university_search_keyword_web_university_seed (university_id, keyword, normalized_keyword, keyword_type)
 SELECT web_university.id, expected_keyword.keyword, expected_keyword.normalized_keyword, expected_keyword.keyword_type
 FROM (
     SELECT '가톨릭대학교' AS university_name, '가대' AS keyword, '가대' AS normalized_keyword, 'ALIAS' AS keyword_type
@@ -73,4 +77,20 @@ FROM (
 JOIN web_university ON web_university.korean_name = expected_keyword.university_name
 ON DUPLICATE KEY UPDATE
     keyword = VALUES(keyword),
+    normalized_keyword = VALUES(normalized_keyword),
     keyword_type = VALUES(keyword_type);
+
+ALTER TABLE university_search_keyword
+    DROP FOREIGN KEY fk_university_search_keyword_university;
+
+DELETE FROM university_search_keyword;
+
+ALTER TABLE university_search_keyword
+    ADD CONSTRAINT fk_university_search_keyword_web_university
+        FOREIGN KEY (university_id) REFERENCES web_university (id);
+
+INSERT INTO university_search_keyword (university_id, keyword, normalized_keyword, keyword_type)
+SELECT university_id, keyword, normalized_keyword, keyword_type
+FROM university_search_keyword_web_university_seed;
+
+DROP TABLE university_search_keyword_web_university_seed;
