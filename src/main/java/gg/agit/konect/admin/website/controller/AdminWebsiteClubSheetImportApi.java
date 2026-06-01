@@ -19,9 +19,9 @@ import jakarta.validation.Valid;
 public interface AdminWebsiteClubSheetImportApi {
 
     @Operation(
-        summary = "Google Sheets 동아리 등록 양식을 분석하고 미리보기 JSON을 반환한다.",
+        summary = "Google Sheets 동아리 등록 양식을 읽고 미리보기 JSON을 반환한다.",
         description = """
-            작성 시트의 동아리 목록을 읽고 Claude Haiku로 KONECT 웹사이트용 동아리 JSON을 생성합니다.
+            고정된 작성 시트 양식의 A~F 컬럼을 읽어 KONECT 웹사이트용 동아리 JSON을 생성합니다.
             이 API는 DB에 저장하지 않고, 사용자가 확인/수정할 수 있는 중간 결과만 반환합니다.
             """
     )

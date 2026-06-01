@@ -5,17 +5,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
@@ -31,18 +26,17 @@ import gg.agit.konect.domain.website.repository.WebClubRepository;
 import gg.agit.konect.domain.website.repository.WebUniversityRepository;
 import gg.agit.konect.global.code.ApiResponseCode;
 import gg.agit.konect.global.exception.CustomException;
-import gg.agit.konect.infrastructure.claude.config.ClaudeProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AdminWebsiteClubSheetImportService {
 
-    private static final String API_URL = "https://api.anthropic.com/v1/messages";
-    private static final String ANTHROPIC_VERSION = "2023-06-01";
-    private static final String MODEL = "claude-haiku-4-5-20251001";
     private static final String INPUT_SHEET_RANGE = "'작성 시트'!A1:F1000";
-    private static final int MAX_TOKENS = 4096;
+    private static final String HEADER_NAME = "동아리명";
+    private static final String EXAMPLE_PREFIX = "예시)";
     private static final int DEFAULT_HEADER_INDEX = 3;
     private static final int NAME_MAX_LENGTH = 50;
     private static final int TOPIC_MAX_LENGTH = 20;
@@ -56,27 +50,8 @@ public class AdminWebsiteClubSheetImportService {
     private static final int DESCRIPTION_COLUMN_INDEX = 5;
 
     private final Sheets googleSheetsService;
-    private final ClaudeProperties claudeProperties;
-    private final ObjectMapper objectMapper;
-    private final RestClient restClient;
     private final WebUniversityRepository webUniversityRepository;
     private final WebClubRepository webClubRepository;
-
-    public AdminWebsiteClubSheetImportService(
-        Sheets googleSheetsService,
-        ClaudeProperties claudeProperties,
-        ObjectMapper objectMapper,
-        RestClient.Builder restClientBuilder,
-        WebUniversityRepository webUniversityRepository,
-        WebClubRepository webClubRepository
-    ) {
-        this.googleSheetsService = googleSheetsService;
-        this.claudeProperties = claudeProperties;
-        this.objectMapper = objectMapper;
-        this.restClient = restClientBuilder.build();
-        this.webUniversityRepository = webUniversityRepository;
-        this.webClubRepository = webClubRepository;
-    }
 
     public AdminWebsiteClubSheetImportPreviewResponse previewClubs(
         Integer universityId,
@@ -84,12 +59,11 @@ public class AdminWebsiteClubSheetImportService {
     ) {
         webUniversityRepository.getById(universityId);
         String spreadsheetId = SpreadsheetUrlParser.extractId(spreadsheetUrl);
-        List<RawClubRow> rows = readClubRows(spreadsheetId);
-        AnalyzedClubSheet analyzedSheet = analyzeRowsWithClaude(rows);
+        SheetClubImportPlan importPlan = buildImportPlan(readClubRows(spreadsheetId));
         return AdminWebsiteClubSheetImportPreviewResponse.of(
             universityId,
-            analyzedSheet.clubs(),
-            analyzedSheet.warnings()
+            importPlan.clubs(),
+            importPlan.warnings()
         );
     }
 
@@ -164,6 +138,71 @@ public class AdminWebsiteClubSheetImportService {
         );
     }
 
+    private SheetClubImportPlan buildImportPlan(List<RawClubRow> rows) {
+        List<AdminWebsiteClubSheetImportPreviewResponse.PreviewClub> clubs = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        for (RawClubRow row : rows) {
+            String name = limit(row.name(), NAME_MAX_LENGTH);
+            if (name.isBlank() || name.startsWith(EXAMPLE_PREFIX)) {
+                continue;
+            }
+
+            ClubCategory category = resolveCategory(row.category(), row.customCategory());
+            String topic = limit(requiredText(row.topic(), "기타"), TOPIC_MAX_LENGTH);
+            String categoryEmoji = limit(
+                requiredText(row.categoryEmoji(), emojiOf(category)),
+                CATEGORY_EMOJI_MAX_LENGTH
+            );
+            String description = limit(
+                requiredText(row.description(), name + " 동아리입니다."),
+                DESCRIPTION_MAX_LENGTH
+            );
+
+            addWarnings(row, category, topic, categoryEmoji, description, warnings);
+            clubs.add(new AdminWebsiteClubSheetImportPreviewResponse.PreviewClub(
+                row.rowNumber(),
+                name,
+                category,
+                topic,
+                description,
+                description,
+                categoryEmoji,
+                true
+            ));
+        }
+
+        if (clubs.isEmpty()) {
+            warnings.add("가져올 동아리 행이 없습니다.");
+        }
+        return new SheetClubImportPlan(clubs, warnings);
+    }
+
+    private void addWarnings(
+        RawClubRow row,
+        ClubCategory category,
+        String topic,
+        String categoryEmoji,
+        String description,
+        List<String> warnings
+    ) {
+        if (row.category().isBlank()) {
+            warnings.add(String.format("%d행: 동아리 분과가 비어 있어 기타로 처리했습니다.", row.rowNumber()));
+        }
+        if (category == ClubCategory.ETC && !row.category().isBlank() && row.customCategory().isBlank()) {
+            warnings.add(String.format("%d행: 기타 분과 상세 내용이 비어 있습니다.", row.rowNumber()));
+        }
+        if (row.topic().isBlank()) {
+            warnings.add(String.format("%d행: 동아리 주제가 비어 있어 '%s'(으)로 처리했습니다.", row.rowNumber(), topic));
+        }
+        if (row.categoryEmoji().isBlank()) {
+            warnings.add(String.format("%d행: 대표 이모지가 비어 있어 '%s'(으)로 처리했습니다.", row.rowNumber(), categoryEmoji));
+        }
+        if (row.description().isBlank()) {
+            warnings.add(String.format("%d행: 한 줄 소개가 비어 있어 '%s'(으)로 처리했습니다.", row.rowNumber(), description));
+        }
+    }
+
     private List<RawClubRow> readClubRows(String spreadsheetId) {
         try {
             ValueRange response = googleSheetsService.spreadsheets().values()
@@ -205,160 +244,24 @@ public class AdminWebsiteClubSheetImportService {
 
     private int findHeaderIndex(List<List<Object>> values) {
         for (int i = 0; i < values.size(); i++) {
-            if ("동아리명".equals(cell(values.get(i), 0))) {
+            if (HEADER_NAME.equals(cell(values.get(i), NAME_COLUMN_INDEX))) {
                 return i;
             }
         }
         return DEFAULT_HEADER_INDEX;
     }
 
-    private AnalyzedClubSheet analyzeRowsWithClaude(List<RawClubRow> rows) {
-        if (rows.isEmpty()) {
-            return new AnalyzedClubSheet(List.of(), List.of("분석할 동아리 행이 없습니다."));
-        }
-
-        String prompt = buildPrompt(rows);
-        Map<String, Object> request = Map.of(
-            "model", MODEL,
-            "max_tokens", MAX_TOKENS,
-            "messages", List.of(Map.of("role", "user", "content", prompt))
-        );
-
-        try {
-            String response = restClient.post()
-                .uri(API_URL)
-                .header("x-api-key", claudeProperties.apiKey())
-                .header("anthropic-version", ANTHROPIC_VERSION)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(String.class);
-
-            JsonNode root = objectMapper.readTree(response);
-            String rawJson = extractClaudeText(root, response);
-            return parseClaudeResult(rawJson);
-        } catch (Exception e) {
-            log.error("Failed to analyze website club import sheet with Claude.", e);
-            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
-        }
-    }
-
-    private String buildPrompt(List<RawClubRow> rows) {
-        try {
-            String rowsJson = objectMapper.writeValueAsString(rows);
-            return """
-                You normalize Korean university club registration sheet rows for KONECT.
-
-                Respond ONLY with JSON:
-                {
-                  "clubs": [
-                    {
-                      "rowNumber": 5,
-                      "name": "BCSD",
-                      "clubCategory": "ACADEMIC",
-                      "topic": "개발",
-                      "description": "30자 이내 한 줄 소개",
-                      "introduce": "서비스에 표시할 상세 소개",
-                      "categoryEmoji": "💻"
-                    }
-                  ],
-                  "warnings": ["row-specific warning in Korean"]
-                }
-
-                Club category enum mapping:
-                - 공연분과 -> PERFORMANCE
-                - 사회/봉사분과 -> SOCIAL_SERVICE
-                - 전시/창작분과 -> EXHIBITION_CREATION
-                - 종교분과 -> RELIGION
-                - 체육(운동)분과 -> SPORTS
-                - 취미분과 -> HOBBY
-                - 학술분과 -> ACADEMIC
-                - 기타분과, 기타, unknown -> ETC
-
-                Rules:
-                - Skip example rows and blank rows.
-                - Keep name within 50 characters.
-                - Keep topic within 20 characters.
-                - Keep description within 30 Korean characters. If blank, create one from name/topic/category.
-                - introduce is required. If no detailed content is available, reuse description.
-                - categoryEmoji is required. If blank or unsuitable, choose one relevant emoji.
-                - Add warnings for missing or corrected important fields.
-
-                Rows:
-                %s
-                """.formatted(rowsJson);
-        } catch (IOException e) {
-            throw CustomException.of(ApiResponseCode.FAILED_SYNC_GOOGLE_SHEET);
-        }
-    }
-
-    private String extractClaudeText(JsonNode root, String response) {
-        JsonNode content = root.path("content");
-        if (!content.isArray() || content.isEmpty()) {
-            throw new IllegalArgumentException("Claude API returned empty content. response=" + response);
-        }
-
-        String text = content.get(0).path("text").asText();
-        if (text.isBlank()) {
-            throw new IllegalArgumentException("Claude API returned blank text. response=" + response);
-        }
-        return text;
-    }
-
-    private AnalyzedClubSheet parseClaudeResult(String rawJson) throws IOException {
-        String cleaned = extractJsonObject(rawJson);
-        JsonNode root = objectMapper.readTree(cleaned);
-        List<AdminWebsiteClubSheetImportPreviewResponse.PreviewClub> clubs = new ArrayList<>();
-        List<String> warnings = new ArrayList<>();
-
-        for (JsonNode warning : root.path("warnings")) {
-            warnings.add(warning.asText());
-        }
-
-        for (JsonNode clubNode : root.path("clubs")) {
-            String name = limit(requiredText(clubNode.path("name").asText(), ""), NAME_MAX_LENGTH);
-            if (name.isBlank() || name.startsWith("예시)")) {
-                continue;
-            }
-
-            ClubCategory category = resolveCategory(clubNode.path("clubCategory").asText());
-            String topic = limit(requiredText(clubNode.path("topic").asText(), "기타"), TOPIC_MAX_LENGTH);
-            String description = limit(
-                requiredText(clubNode.path("description").asText(), name + " 동아리입니다."),
-                DESCRIPTION_MAX_LENGTH
-            );
-            String introduce = requiredText(clubNode.path("introduce").asText(), description);
-            String categoryEmoji = limit(
-                requiredText(clubNode.path("categoryEmoji").asText(), emojiOf(category)),
-                CATEGORY_EMOJI_MAX_LENGTH
-            );
-
-            clubs.add(new AdminWebsiteClubSheetImportPreviewResponse.PreviewClub(
-                clubNode.path("rowNumber").asInt(0),
-                name,
-                category,
-                topic,
-                description,
-                introduce,
-                categoryEmoji,
-                true
-            ));
-        }
-
-        return new AnalyzedClubSheet(clubs, warnings);
-    }
-
-    private ClubCategory resolveCategory(String value) {
-        if (value == null || value.isBlank()) {
+    private ClubCategory resolveCategory(String categoryText, String customCategoryText) {
+        String normalized = requiredText(categoryText, customCategoryText);
+        if (normalized.isBlank()) {
             return ClubCategory.ETC;
         }
-        String normalized = value.trim();
         for (ClubCategory category : ClubCategory.values()) {
             if (category.name().equalsIgnoreCase(normalized)) {
                 return category;
             }
         }
-        return switch (normalized) {
+        return switch (normalized.trim()) {
             case "공연분과" -> ClubCategory.PERFORMANCE;
             case "사회/봉사분과" -> ClubCategory.SOCIAL_SERVICE;
             case "전시/창작분과" -> ClubCategory.EXHIBITION_CREATION;
@@ -386,16 +289,6 @@ public class AdminWebsiteClubSheetImportService {
             return value;
         }
         return value.substring(0, maxLength);
-    }
-
-    private static String extractJsonObject(String rawJson) {
-        String cleaned = rawJson == null ? "" : rawJson.trim();
-        int start = cleaned.indexOf('{');
-        int end = cleaned.lastIndexOf('}');
-        if (start < 0 || end < start) {
-            throw new IllegalArgumentException("No JSON object found");
-        }
-        return cleaned.substring(start, end + 1);
     }
 
     private static String emojiOf(ClubCategory category) {
@@ -430,7 +323,7 @@ public class AdminWebsiteClubSheetImportService {
         }
     }
 
-    private record AnalyzedClubSheet(
+    private record SheetClubImportPlan(
         List<AdminWebsiteClubSheetImportPreviewResponse.PreviewClub> clubs,
         List<String> warnings
     ) {
