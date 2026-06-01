@@ -121,8 +121,18 @@ class UniversitySearchKeywordMigrationTest {
             "SELECT COUNT(*) FROM university_search_keyword",
             Integer.class
         );
+        List<String> keywords = jdbcTemplate.queryForList(
+            """
+                SELECT keyword.keyword
+                FROM university_search_keyword keyword
+                JOIN university ON university.id = keyword.university_id
+                WHERE university.korean_name = '한국기술교육대학교'
+                """,
+            String.class
+        );
 
         assertThat(keywordCount).isEqualTo(3);
+        assertThat(keywords).containsExactlyInAnyOrder("한기대", "코리아텍", "koreatech");
     }
 
     private JdbcTemplate createJdbcTemplate(String databaseName) {

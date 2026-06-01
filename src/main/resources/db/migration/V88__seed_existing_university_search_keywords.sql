@@ -1,3 +1,5 @@
+-- V88 uses expected_keyword JOIN university to seed only universities that already exist.
+-- ON DUPLICATE KEY UPDATE keeps this corrective seed safe when keywords were partially inserted.
 INSERT INTO university_search_keyword (university_id, keyword, normalized_keyword, keyword_type)
 SELECT university.id, expected_keyword.keyword, expected_keyword.normalized_keyword, expected_keyword.keyword_type
 FROM (
