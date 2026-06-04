@@ -156,6 +156,7 @@ class RateLimitAspectTest {
             .satisfies(ex -> {
                 CustomException customEx = (CustomException)ex;
                 assertThat(customEx.getErrorCode()).isEqualTo(ApiResponseCode.TOO_MANY_REQUESTS);
+                assertThat(customEx.getDetail()).contains("60");
             });
     }
 
