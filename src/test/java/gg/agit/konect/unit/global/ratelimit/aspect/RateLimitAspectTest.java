@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -126,6 +127,36 @@ class RateLimitAspectTest {
             .satisfies(ex -> {
                 CustomException customEx = (CustomException)ex;
                 assertThat(customEx.getErrorCode()).isEqualTo(ApiResponseCode.TOO_MANY_REQUESTS);
+            });
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    @DisplayName("제한 초과 후 TTL 조회가 실패해도 기본 시간으로 429를 반환한다")
+    void throwsRateLimitExceptionWhenRemainingTimeLookupFails() {
+        // given
+        given(rateLimit.maxRequests()).willReturn(10);
+        given(rateLimit.timeWindowSeconds()).willReturn(60);
+        given(rateLimit.keyExpression()).willReturn("#userId");
+        given(joinPoint.getSignature()).willReturn(methodSignature);
+        given(methodSignature.getDeclaringTypeName()).willReturn("test");
+        given(methodSignature.getName()).willReturn("method");
+        given(methodSignature.getParameterNames()).willReturn(new String[] {"userId"});
+        given(joinPoint.getArgs()).willReturn(new Object[] {"user123"});
+
+        // 카운터 증가는 성공했으므로 제한 초과 상태는 유지하고, 남은 시간 조회 실패만 격리한다.
+        when(redisTemplate.execute(any(DefaultRedisScript.class), any(List.class), any(String.class)))
+            .thenReturn(11L);
+        given(redisTemplate.getExpire("ratelimit:test.method:user123"))
+            .willThrow(new QueryTimeoutException("Redis command timed out"));
+
+        // when & then
+        assertThatThrownBy(() -> rateLimitAspect.around(joinPoint, rateLimit))
+            .isInstanceOf(CustomException.class)
+            .satisfies(ex -> {
+                CustomException customEx = (CustomException)ex;
+                assertThat(customEx.getErrorCode()).isEqualTo(ApiResponseCode.TOO_MANY_REQUESTS);
+                assertThat(customEx.getDetail()).contains("60");
             });
     }
 
