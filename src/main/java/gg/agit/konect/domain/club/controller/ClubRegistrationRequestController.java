@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Club Registration", description = "동아리 등록 요청 API")
 @RestController
-@RequestMapping("/clubs")
+@RequestMapping("/konect/clubs")
 @RequiredArgsConstructor
 public class ClubRegistrationRequestController implements ClubRegistrationRequestApi {
 
