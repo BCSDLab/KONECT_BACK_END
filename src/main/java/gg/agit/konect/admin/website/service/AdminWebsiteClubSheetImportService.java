@@ -42,6 +42,7 @@ public class AdminWebsiteClubSheetImportService {
     private static final int TOPIC_MAX_LENGTH = 20;
     private static final int DESCRIPTION_MAX_LENGTH = 30;
     private static final int CATEGORY_EMOJI_MAX_LENGTH = 255;
+    private static final String EMPTY_INTRODUCE = "";
     private static final int NAME_COLUMN_INDEX = 0;
     private static final int CATEGORY_COLUMN_INDEX = 1;
     private static final int CUSTOM_CATEGORY_COLUMN_INDEX = 2;
@@ -119,7 +120,7 @@ public class AdminWebsiteClubSheetImportService {
                 .name(name)
                 .topic(limit(requiredText(club.topic(), "기타"), TOPIC_MAX_LENGTH))
                 .description(limit(requiredText(club.description(), name), DESCRIPTION_MAX_LENGTH))
-                .introduce(requiredText(club.introduce(), club.description()))
+                .introduce(optionalText(club.introduce()))
                 .categoryEmoji(limit(
                     requiredText(club.categoryEmoji(), emojiOf(club.clubCategory())),
                     CATEGORY_EMOJI_MAX_LENGTH
@@ -166,7 +167,7 @@ public class AdminWebsiteClubSheetImportService {
                 category,
                 topic,
                 description,
-                description,
+                EMPTY_INTRODUCE,
                 categoryEmoji,
                 true
             ));
@@ -282,6 +283,10 @@ public class AdminWebsiteClubSheetImportService {
 
     private static String requiredText(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private static String optionalText(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private static String limit(String value, int maxLength) {

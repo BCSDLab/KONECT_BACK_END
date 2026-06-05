@@ -33,7 +33,7 @@ public record AdminWebsiteClubSheetImportConfirmRequest(
         @Size(max = 30)
         String description,
 
-        @NotBlank
+        @NotNull
         String introduce,
 
         @NotBlank

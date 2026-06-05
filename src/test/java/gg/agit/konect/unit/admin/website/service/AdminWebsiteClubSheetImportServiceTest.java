@@ -95,6 +95,9 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
         assertThat(preview.clubs().get(1).topic()).isEqualTo("기타");
         assertThat(preview.clubs().get(1).categoryEmoji()).isEqualTo("⚽");
         assertThat(preview.clubs().get(1).description()).isEqualTo("농구동아리 동아리입니다.");
+        assertThat(preview.clubs())
+            .extracting(AdminWebsiteClubSheetImportPreviewResponse.PreviewClub::introduce)
+            .containsExactly("", "");
         assertThat(preview.warnings()).hasSize(3);
     }
 
@@ -121,7 +124,9 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
         assertThat(response.warnings()).anyMatch(warning -> warning.contains("농구동아리"));
         assertThat(response.warnings()).anyMatch(warning -> warning.contains("BCSD"));
         verify(webClubRepository).saveAll(org.mockito.ArgumentMatchers.<List<WebClub>>argThat(savedClubs ->
-            savedClubs.size() == 1 && savedClubs.getFirst().getName().equals("BCSD")
+            savedClubs.size() == 1
+                && savedClubs.getFirst().getName().equals("BCSD")
+                && savedClubs.getFirst().getIntroduce().isEmpty()
         ));
         verifyNoInteractions(googleSheetsService);
     }
@@ -168,7 +173,7 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
             category,
             "dev",
             "dev club",
-            "dev club",
+            "",
             "IT",
             enabled
         );

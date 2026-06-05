@@ -41,7 +41,7 @@ class AdminWebsiteClubSheetImportControllerTest extends ServiceTestSupport {
                     ClubCategory.ACADEMIC,
                     "dev",
                     "dev club",
-                    "dev club",
+                    "",
                     "IT",
                     true
                 )),
@@ -69,7 +69,7 @@ class AdminWebsiteClubSheetImportControllerTest extends ServiceTestSupport {
                     ClubCategory.ACADEMIC,
                     "dev",
                     "dev club",
-                    "dev club",
+                    "",
                     "IT",
                     true
                 )
