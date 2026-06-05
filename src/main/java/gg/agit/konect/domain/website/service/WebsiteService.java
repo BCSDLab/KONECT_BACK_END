@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import gg.agit.konect.domain.university.enums.UniversityRegion;
+import gg.agit.konect.domain.university.service.UniversitySearchKeywordReader;
 import gg.agit.konect.domain.university.service.UniversitySearchMatcher;
 import gg.agit.konect.domain.website.dto.WebsiteClubDetailResponse;
 import gg.agit.konect.domain.website.dto.WebsiteClubListCondition;
@@ -32,14 +33,26 @@ public class WebsiteService {
 
     private final WebsiteQueryRepository websiteQueryRepository;
     private final UniversitySearchMatcher universitySearchMatcher;
+    private final UniversitySearchKeywordReader universitySearchKeywordReader;
 
     public WebsiteHomeResponse getHome(String query, UniversityRegion region) {
-        // 초성/약칭 검색은 SQL로 표현하기 어려워 전체 대학을 조회한 뒤 UniversitySearchMatcher로 필터링한다.
         List<WebsiteUniversitySummary> summaries = websiteQueryRepository.findUniversitySummaries(null, region)
             .stream()
-            .filter(summary -> universitySearchMatcher.matches(summary.name(), query))
             .toList();
-        return WebsiteHomeResponse.from(summaries);
+        Map<String, List<String>> keywordsByUniversityName = universitySearchKeywordReader.getKeywordsByUniversityName(
+            summaries.stream()
+                .map(WebsiteUniversitySummary::name)
+                .toList()
+        );
+
+        List<WebsiteUniversitySummary> filteredSummaries = summaries.stream()
+            .filter(summary -> universitySearchMatcher.matches(
+                summary.name(),
+                query,
+                keywordsByUniversityName.getOrDefault(summary.name(), List.of())
+            ))
+            .toList();
+        return WebsiteHomeResponse.from(filteredSummaries);
     }
 
     public WebsiteClubsResponse getUniversityClubs(Integer universityId, WebsiteClubListCondition condition) {
@@ -51,6 +64,7 @@ public class WebsiteService {
             universityId,
             condition.query(),
             condition.category(),
+            condition.sortBy(),
             pageable
         );
 

@@ -71,10 +71,7 @@ public class RateLimitAspect {
 
         // 제한 초과 확인 - 초과 시에만 TTL 조회
         if (currentCount > maxRequests) {
-            Long remainingSeconds = redisTemplate.getExpire(key);
-            long remaining = remainingSeconds != null && remainingSeconds > 0
-                ? remainingSeconds
-                : timeWindowSeconds;
+            long remaining = resolveRemainingSeconds(key, timeWindowSeconds);
             throw RateLimitExceededException.withRemainingTime(remaining);
         }
 
@@ -126,5 +123,19 @@ public class RateLimitAspect {
 
         HttpServletRequest request = attributes.getRequest();
         return request.getRemoteAddr();
+    }
+
+    private long resolveRemainingSeconds(String key, int timeWindowSeconds) {
+        try {
+            Long remainingSeconds = redisTemplate.getExpire(key);
+            return remainingSeconds != null && remainingSeconds > 0
+                ? remainingSeconds
+                : timeWindowSeconds;
+        } catch (Exception e) {
+            // 제한 초과 판단은 이미 완료되었으므로 TTL 조회 실패만 기본 window 값으로 대체한다.
+            log.warn("Rate limit TTL lookup failed for key={}: {}. Using default remaining time.",
+                key, e.getMessage());
+            return timeWindowSeconds;
+        }
     }
 }

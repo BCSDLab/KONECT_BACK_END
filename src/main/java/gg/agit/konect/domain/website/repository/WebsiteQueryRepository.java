@@ -15,12 +15,15 @@ import org.springframework.stereotype.Repository;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import gg.agit.konect.domain.club.enums.ClubCategory;
 import gg.agit.konect.domain.university.enums.UniversityRegion;
+import gg.agit.konect.domain.website.dto.WebsiteClubSortBy;
 import gg.agit.konect.domain.website.model.WebClub;
 import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.domain.website.model.WebsiteUniversitySummary;
@@ -84,6 +87,7 @@ public class WebsiteQueryRepository {
         Integer universityId,
         String query,
         ClubCategory category,
+        WebsiteClubSortBy sortBy,
         PageRequest pageable
     ) {
         BooleanBuilder condition = createClubCondition(universityId, query, category);
@@ -92,7 +96,7 @@ public class WebsiteQueryRepository {
             .selectFrom(webClub)
             .join(webClub.university, webUniversity).fetchJoin()
             .where(condition)
-            .orderBy(webClub.name.asc(), webClub.id.asc())
+            .orderBy(createClubOrder(sortBy))
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();
@@ -104,6 +108,34 @@ public class WebsiteQueryRepository {
             .fetchOne();
 
         return new PageImpl<>(clubs, pageable, total == null ? 0 : total);
+    }
+
+    private OrderSpecifier<?>[] createClubOrder(WebsiteClubSortBy sortBy) {
+        if (sortBy == WebsiteClubSortBy.CATEGORY) {
+            return new OrderSpecifier<?>[] {
+                createCategoryOrder().asc(),
+                webClub.name.asc(),
+                webClub.id.asc()
+            };
+        }
+
+        return new OrderSpecifier<?>[] {
+            webClub.name.asc(),
+            webClub.id.asc()
+        };
+    }
+
+    private NumberExpression<Integer> createCategoryOrder() {
+        return new CaseBuilder()
+            .when(webClub.clubCategory.eq(ClubCategory.PERFORMANCE)).then(1)
+            .when(webClub.clubCategory.eq(ClubCategory.SOCIAL_SERVICE)).then(2)
+            .when(webClub.clubCategory.eq(ClubCategory.EXHIBITION_CREATION)).then(3)
+            .when(webClub.clubCategory.eq(ClubCategory.RELIGION)).then(4)
+            .when(webClub.clubCategory.eq(ClubCategory.SPORTS)).then(5)
+            .when(webClub.clubCategory.eq(ClubCategory.HOBBY)).then(6)
+            .when(webClub.clubCategory.eq(ClubCategory.ACADEMIC)).then(7)
+            .when(webClub.clubCategory.eq(ClubCategory.ETC)).then(8)
+            .otherwise(Integer.MAX_VALUE);
     }
 
     public Map<ClubCategory, Long> countClubCategories(Integer universityId, String query) {

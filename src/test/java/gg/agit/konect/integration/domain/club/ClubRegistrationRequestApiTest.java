@@ -34,7 +34,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         );
 
         // when & then
-        performPost("/clubs/registration-requests", request)
+        performPost("/konect/clubs/registration-requests", request)
             .andExpect(status().isCreated());
     }
 
@@ -54,7 +54,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         );
 
         // when & then
-        performPost("/clubs/registration-requests", request)
+        performPost("/konect/clubs/registration-requests", request)
             .andExpect(status().isCreated());
     }
 
@@ -74,7 +74,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         );
 
         // when & then
-        performPost("/clubs/registration-requests", request)
+        performPost("/konect/clubs/registration-requests", request)
             .andExpect(status().isBadRequest());
     }
 
@@ -101,7 +101,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         );
 
         // when & then
-        performPost("/clubs/registration-requests", request)
+        performPost("/konect/clubs/registration-requests", request)
             .andExpect(status().isBadRequest());
     }
 
@@ -122,7 +122,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         );
 
         // when & then
-        performPost("/clubs/registration-requests", request)
+        performPost("/konect/clubs/registration-requests", request)
             .andExpect(status().isBadRequest());
     }
 
@@ -135,7 +135,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
 
         // when & then
-        performPost("/clubs/" + club.getId() + "/information-update-requests", request)
+        performPost("/konect/clubs/" + club.getId() + "/information-update-requests", request)
             .andExpect(status().isCreated());
     }
 
@@ -146,7 +146,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         ClubInformationUpdateRequestDto request = createInformationUpdateRequest();
 
         // when & then
-        performPost("/clubs/" + Integer.MAX_VALUE + "/information-update-requests", request)
+        performPost("/konect/clubs/" + Integer.MAX_VALUE + "/information-update-requests", request)
             .andExpect(status().isNotFound());
     }
 
@@ -167,7 +167,7 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         );
 
         // when & then
-        performPost("/clubs/" + club.getId() + "/information-update-requests", request)
+        performPost("/konect/clubs/" + club.getId() + "/information-update-requests", request)
             .andExpect(status().isBadRequest());
     }
 

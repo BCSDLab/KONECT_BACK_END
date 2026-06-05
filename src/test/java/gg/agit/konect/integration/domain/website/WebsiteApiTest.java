@@ -21,6 +21,7 @@ import gg.agit.konect.domain.university.enums.UniversityRegion;
 import gg.agit.konect.domain.website.model.WebClub;
 import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.support.IntegrationTestSupport;
+import gg.agit.konect.support.fixture.UniversitySearchKeywordFixture;
 import gg.agit.konect.support.fixture.WebClubFixture;
 import gg.agit.konect.support.fixture.WebUniversityFixture;
 
@@ -78,17 +79,19 @@ class WebsiteApiTest extends IntegrationTestSupport {
         @DisplayName("대학교 이름 초성과 약칭으로 웹사이트 대학 목록을 검색한다")
         void getHomeSearchesUniversitiesByChoseongAndAlias() throws Exception {
             // given
-            persist(WebUniversityFixture.create(
+            WebUniversity koreatech = persist(WebUniversityFixture.create(
                 "한국기술교육대학교",
                 Campus.MAIN,
                 UniversityRegion.CHUNGCHEONG,
                 "https://example.com/koreatech-logo.png"
             ));
-            persist(WebUniversityFixture.create(
+            WebUniversity seoulTech = persist(WebUniversityFixture.create(
                 "서울과학기술대학교",
                 Campus.MAIN,
                 UniversityRegion.SEOUL
             ));
+            persist(UniversitySearchKeywordFixture.createAlias(koreatech, "한기대"));
+            persist(UniversitySearchKeywordFixture.createAlias(seoulTech, "과기대"));
             clearPersistenceContext();
 
             // when & then
@@ -149,6 +152,33 @@ class WebsiteApiTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.categories[?(@.category == 'ACADEMIC')].count")
                     .value(contains(1)))
                 .andExpect(jsonPath("$.categories[7].category").value("ETC"));
+        }
+
+        @Test
+        @DisplayName("sortBy=CATEGORY이면 분과 표시 순서와 동아리명 순서로 정렬한다")
+        void getUniversityClubsSortedByCategory() throws Exception {
+            // given
+            WebUniversity university = persist(WebUniversityFixture.create(
+                "Koreatech",
+                Campus.MAIN,
+                UniversityRegion.CHUNGCHEONG
+            ));
+            persist(WebClubFixture.create(university, "Zeta", ClubCategory.ACADEMIC));
+            persist(WebClubFixture.create(university, "Alpha", ClubCategory.ACADEMIC));
+            persist(WebClubFixture.create(university, "Runner", ClubCategory.SPORTS));
+            persist(WebClubFixture.create(university, "Band", ClubCategory.PERFORMANCE));
+            clearPersistenceContext();
+
+            // when & then
+            performGet("/konect/universities/" + university.getId() + "/clubs?sortBy=CATEGORY")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clubs[*].name", contains("Band", "Runner", "Alpha", "Zeta")))
+                .andExpect(jsonPath("$.clubs[*].category", contains(
+                    "PERFORMANCE",
+                    "SPORTS",
+                    "ACADEMIC",
+                    "ACADEMIC"
+                )));
         }
 
         @Test
