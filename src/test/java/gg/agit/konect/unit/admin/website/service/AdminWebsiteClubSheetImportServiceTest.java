@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -28,6 +29,7 @@ import gg.agit.konect.domain.website.model.WebClub;
 import gg.agit.konect.domain.website.model.WebUniversity;
 import gg.agit.konect.domain.website.repository.WebClubRepository;
 import gg.agit.konect.domain.website.repository.WebUniversityRepository;
+import gg.agit.konect.domain.website.service.WebsiteClubStatsReader;
 import gg.agit.konect.support.ServiceTestSupport;
 
 class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
@@ -52,6 +54,9 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
     @Mock
     private WebClubRepository webClubRepository;
 
+    @Mock
+    private WebsiteClubStatsReader websiteClubStatsReader;
+
     private AdminWebsiteClubSheetImportService service;
 
     @BeforeEach
@@ -59,7 +64,8 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
         service = new AdminWebsiteClubSheetImportService(
             googleSheetsService,
             webUniversityRepository,
-            webClubRepository
+            webClubRepository,
+            websiteClubStatsReader
         );
     }
 
@@ -148,6 +154,65 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
             .asString()
             .contains("BCSD");
         verify(webClubRepository, org.mockito.Mockito.never()).saveAll(org.mockito.ArgumentMatchers.anyList());
+        verifyNoInteractions(googleSheetsService);
+    }
+
+    @Test
+    void previewClubsDisablesSuspiciousRows() throws Exception {
+        given(webUniversityRepository.getById(UNIVERSITY_ID)).willReturn(university());
+        given(googleSheetsService.spreadsheets()).willReturn(spreadsheets);
+        given(spreadsheets.values()).willReturn(values);
+        given(values.get("sheet-id", "'작성 시트'!A1:F1000")).willReturn(getRequest);
+        given(getRequest.setValueRenderOption("FORMATTED_VALUE")).willReturn(getRequest);
+        given(getRequest.execute()).willReturn(new ValueRange().setValues(List.of(
+            List.of("title"),
+            List.of("description"),
+            List.of(),
+            List.of("동아리명", "동아리 분과", "기타 분과", "동아리 주제", "대표 이모지", "한 줄 소개"),
+            List.of("즐겁게 농구하는 중앙 농구 동아리입니다", "체육(운동)분과", "", "농구", "🏀", "농구 동아리"),
+            List.of("BCSD", "학술분과", "", "미확인", "IT", "개발 동아리"),
+            List.of("ZEST", "공연분과", "", "댄스", "🎭", "문의 https://example.com")
+        )));
+
+        AdminWebsiteClubSheetImportPreviewResponse preview = service.previewClubs(
+            UNIVERSITY_ID,
+            "https://docs.google.com/spreadsheets/d/sheet-id/edit"
+        );
+
+        assertThat(preview.clubs())
+            .extracting(AdminWebsiteClubSheetImportPreviewResponse.PreviewClub::enabled)
+            .containsExactly(false, false, false);
+        assertThat(preview.warnings())
+            .anyMatch(warning -> warning.contains("5행") && warning.contains("동아리명"))
+            .anyMatch(warning -> warning.contains("6행") && warning.contains("동아리 주제"))
+            .anyMatch(warning -> warning.contains("7행") && warning.contains("한 줄 소개"));
+    }
+
+    @Test
+    void confirmImportSkipsSuspiciousEnabledClub() {
+        given(webUniversityRepository.getById(UNIVERSITY_ID)).willReturn(university());
+        given(webClubRepository.findExistingNamesByUniversityId(eq(UNIVERSITY_ID), anySet())).willReturn(Set.of());
+
+        AdminWebsiteClubSheetImportResponse response = service.confirmImport(
+            UNIVERSITY_ID,
+            List.of(new AdminWebsiteClubSheetImportConfirmRequest.ConfirmClub(
+                5,
+                "즐겁게 농구하는 중앙 농구 동아리입니다",
+                ClubCategory.SPORTS,
+                "농구",
+                "농구 동아리",
+                "",
+                "🏀",
+                true
+            ))
+        );
+
+        assertThat(response.importedCount()).isZero();
+        assertThat(response.skippedCount()).isEqualTo(1);
+        assertThat(response.warnings()).singleElement()
+            .asString()
+            .contains("동아리명");
+        verify(webClubRepository, never()).saveAll(org.mockito.ArgumentMatchers.anyList());
         verifyNoInteractions(googleSheetsService);
     }
 
