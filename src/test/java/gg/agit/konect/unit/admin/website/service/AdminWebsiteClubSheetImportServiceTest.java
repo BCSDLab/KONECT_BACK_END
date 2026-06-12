@@ -14,6 +14,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
@@ -134,7 +136,33 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
                 && savedClubs.getFirst().getName().equals("BCSD")
                 && savedClubs.getFirst().getIntroduce().isEmpty()
         ));
+        verify(websiteClubStatsReader).invalidateUniversity(UNIVERSITY_ID);
         verifyNoInteractions(googleSheetsService);
+    }
+
+    @Test
+    void confirmImportInvalidatesStatsAfterTransactionCommit() {
+        List<AdminWebsiteClubSheetImportConfirmRequest.ConfirmClub> clubs = List.of(
+            confirmClub(5, "BCSD", ClubCategory.ACADEMIC, true)
+        );
+
+        given(webUniversityRepository.getById(UNIVERSITY_ID)).willReturn(university());
+        given(webClubRepository.findExistingNamesByUniversityId(eq(UNIVERSITY_ID), anySet()))
+            .willReturn(Set.of());
+        given(webClubRepository.saveAll(org.mockito.ArgumentMatchers.<List<WebClub>>any()))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.confirmImport(UNIVERSITY_ID, clubs);
+
+            verify(websiteClubStatsReader, never()).invalidateUniversity(UNIVERSITY_ID);
+            TransactionSynchronizationManager.getSynchronizations()
+                .forEach(TransactionSynchronization::afterCommit);
+            verify(websiteClubStatsReader).invalidateUniversity(UNIVERSITY_ID);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     @Test

@@ -6,11 +6,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
@@ -160,7 +162,7 @@ public class AdminWebsiteClubSheetImportService {
             ? List.of()
             : webClubRepository.saveAll(clubsToSave);
         if (!savedClubs.isEmpty()) {
-            websiteClubStatsReader.invalidateUniversity(universityId);
+            invalidateWebsiteStatsAfterCommit(universityId);
         }
 
         return AdminWebsiteClubSheetImportResponse.of(
@@ -242,6 +244,20 @@ public class AdminWebsiteClubSheetImportService {
         }
     }
 
+    private void invalidateWebsiteStatsAfterCommit(Integer universityId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            websiteClubStatsReader.invalidateUniversity(universityId);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                websiteClubStatsReader.invalidateUniversity(universityId);
+            }
+        });
+    }
+
     private List<String> validateClubContent(
         int rowNumber,
         String name,
@@ -267,12 +283,15 @@ public class AdminWebsiteClubSheetImportService {
             return false;
         }
         String normalized = name.trim();
+        // Header/label fragments mean a sheet row or intro column leaked into the name field.
         return HEADER_NAME.equals(normalized)
             || normalized.contains("한 줄 소개")
             || normalized.contains("상세소개")
+            // Sentence-like names usually came from one-line introductions rather than club names.
             || normalized.contains("동아리입니다")
             || normalized.endsWith("입니다.")
             || normalized.endsWith("합니다.")
+            // Contact handles and placeholders are not stable display names.
             || URL_OR_SNS_PATTERN.matcher(normalized).matches()
             || PHONE_NUMBER_PATTERN.matcher(normalized).matches()
             || isPlaceholder(normalized);

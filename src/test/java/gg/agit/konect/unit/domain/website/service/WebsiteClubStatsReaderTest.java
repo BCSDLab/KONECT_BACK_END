@@ -1,11 +1,20 @@
 package gg.agit.konect.unit.domain.website.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,5 +74,34 @@ class WebsiteClubStatsReaderTest extends ServiceTestSupport {
 
         assertThat(refreshedCount).isEqualTo(4L);
         verify(websiteQueryRepository, times(2)).countClubsByUniversityId(UNIVERSITY_ID);
+    }
+
+    @Test
+    void invalidateUniversityIsSafeUnderConcurrentAccess() {
+        given(websiteQueryRepository.countClubCategories(eq(UNIVERSITY_ID), anyString()))
+            .willReturn(Map.of(ClubCategory.ACADEMIC, 2L));
+        ExecutorService executor = Executors.newFixedThreadPool(8);
+        List<Future<?>> futures = new ArrayList<>();
+
+        try {
+            for (int i = 0; i < 4; i++) {
+                futures.add(executor.submit(() -> {
+                    for (int j = 0; j < 100; j++) {
+                        websiteClubStatsReader.getCategoryCounts(UNIVERSITY_ID, "query" + j);
+                    }
+                }));
+                futures.add(executor.submit(() -> {
+                    for (int j = 0; j < 100; j++) {
+                        websiteClubStatsReader.invalidateUniversity(UNIVERSITY_ID);
+                    }
+                }));
+            }
+
+            for (Future<?> future : futures) {
+                assertThatCode(() -> future.get(5, TimeUnit.SECONDS)).doesNotThrowAnyException();
+            }
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }
