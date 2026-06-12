@@ -34,6 +34,7 @@ public class WebsiteService {
     private final WebsiteQueryRepository websiteQueryRepository;
     private final UniversitySearchMatcher universitySearchMatcher;
     private final UniversitySearchKeywordReader universitySearchKeywordReader;
+    private final WebsiteClubStatsReader websiteClubStatsReader;
 
     public WebsiteHomeResponse getHome(String query, UniversityRegion region) {
         List<WebsiteUniversitySummary> summaries = websiteQueryRepository.findUniversitySummaries(null, region)
@@ -71,15 +72,15 @@ public class WebsiteService {
         return WebsiteClubsResponse.of(
             university,
             clubs,
-            websiteQueryRepository.countClubsByUniversityId(universityId),
-            websiteQueryRepository.countClubCategories(universityId, condition.query())
+            websiteClubStatsReader.getUniversityClubCount(universityId),
+            websiteClubStatsReader.getCategoryCounts(universityId, condition.query())
         );
     }
 
     public WebsiteClubDetailResponse getClubDetail(Integer clubId) {
         WebClub club = websiteQueryRepository.findClub(clubId)
             .orElseThrow(() -> CustomException.of(NOT_FOUND_CLUB));
-        Long universityClubCount = websiteQueryRepository.countClubsByUniversityId(club.getUniversity().getId());
+        Long universityClubCount = websiteClubStatsReader.getUniversityClubCount(club.getUniversity().getId());
 
         return WebsiteClubDetailResponse.of(club, universityClubCount);
     }
