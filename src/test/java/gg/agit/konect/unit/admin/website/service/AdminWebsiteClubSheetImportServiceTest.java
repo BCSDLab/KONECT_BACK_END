@@ -110,6 +110,29 @@ class AdminWebsiteClubSheetImportServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    void previewClubsPreservesDescriptionUpToHundredCharacters() throws Exception {
+        String description = "가".repeat(100);
+        given(webUniversityRepository.getById(UNIVERSITY_ID)).willReturn(university());
+        given(googleSheetsService.spreadsheets()).willReturn(spreadsheets);
+        given(spreadsheets.values()).willReturn(values);
+        given(values.get("sheet-id", "'작성 시트'!A1:F1000")).willReturn(getRequest);
+        given(getRequest.setValueRenderOption("FORMATTED_VALUE")).willReturn(getRequest);
+        given(getRequest.execute()).willReturn(new ValueRange().setValues(List.of(
+            List.of("동아리명", "동아리 분과", "기타 분과", "동아리 주제", "대표 이모지", "한 줄 소개"),
+            List.of("BCSD", "학술분과", "", "개발", "💻", description)
+        )));
+
+        AdminWebsiteClubSheetImportPreviewResponse preview = service.previewClubs(
+            UNIVERSITY_ID,
+            "https://docs.google.com/spreadsheets/d/sheet-id/edit"
+        );
+
+        assertThat(preview.clubs()).singleElement()
+            .extracting(AdminWebsiteClubSheetImportPreviewResponse.PreviewClub::description)
+            .isEqualTo(description);
+    }
+
+    @Test
     void confirmImportSavesEnabledAndNonDuplicateClubsOnly() {
         List<AdminWebsiteClubSheetImportConfirmRequest.ConfirmClub> clubs = List.of(
             confirmClub(5, "BCSD", ClubCategory.ACADEMIC, true),

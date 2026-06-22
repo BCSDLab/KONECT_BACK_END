@@ -30,7 +30,7 @@ public record AdminWebsiteClubSheetImportConfirmRequest(
         String topic,
 
         @NotBlank
-        @Size(max = 30)
+        @Size(max = 100)
         String description,
 
         @NotNull
