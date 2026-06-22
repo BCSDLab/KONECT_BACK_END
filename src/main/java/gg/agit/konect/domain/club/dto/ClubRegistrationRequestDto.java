@@ -37,9 +37,9 @@ public record ClubRegistrationRequestDto(
     @Size(max = 10, message = "동아리 이모지는 최대 10자입니다.")
     String clubEmoji,
 
-    @Schema(description = "한 줄 소개 (최대 30자)", example = "코딩 동아리입니다.", requiredMode = REQUIRED)
+    @Schema(description = "한 줄 소개 (최대 100자)", example = "코딩 동아리입니다.", requiredMode = REQUIRED)
     @NotBlank(message = "한 줄 소개는 필수입니다.")
-    @Size(max = 30, message = "한 줄 소개는 최대 30자입니다.")
+    @Size(max = 100, message = "한 줄 소개는 최대 100자입니다.")
     String shortDescription,
 
     @Schema(description = "동아리 소개 (최대 2000자)", example = "상세한 동아리 소개 내용...", requiredMode = REQUIRED)
