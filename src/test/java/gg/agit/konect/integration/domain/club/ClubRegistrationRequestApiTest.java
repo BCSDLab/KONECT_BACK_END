@@ -127,6 +127,42 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("한 줄 소개는 100자까지 등록할 수 있다")
+    void registerClubWithHundredCharacterShortDescription() throws Exception {
+        ClubRegistrationRequestDto request = new ClubRegistrationRequestDto(
+            "한국기술교육대학교",
+            "BCSD Lab",
+            ClubCategory.ACADEMIC,
+            "코딩",
+            "💻",
+            "가".repeat(100),
+            "상세한 동아리 소개 내용입니다.",
+            List.of()
+        );
+
+        performPost("/konect/clubs/registration-requests", request)
+            .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("한 줄 소개가 100자를 초과하면 등록 요청을 거절한다")
+    void registerClubWithTooLongShortDescription() throws Exception {
+        ClubRegistrationRequestDto request = new ClubRegistrationRequestDto(
+            "한국기술교육대학교",
+            "BCSD Lab",
+            ClubCategory.ACADEMIC,
+            "코딩",
+            "💻",
+            "가".repeat(101),
+            "상세한 동아리 소개 내용입니다.",
+            List.of()
+        );
+
+        performPost("/konect/clubs/registration-requests", request)
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("비로그인 사용자도 기존 동아리 정보 수정 요청을 보낼 수 있다")
     void requestClubInformationUpdateWithoutLogin() throws Exception {
         // given
@@ -167,6 +203,44 @@ class ClubRegistrationRequestApiTest extends IntegrationTestSupport {
         );
 
         // when & then
+        performPost("/konect/clubs/" + club.getId() + "/information-update-requests", request)
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("한 줄 소개는 100자까지 정보 수정을 요청할 수 있다")
+    void requestClubInformationUpdateWithHundredCharacterShortDescription() throws Exception {
+        WebUniversity university = persist(WebUniversityFixture.create());
+        WebClub club = persist(WebClubFixture.create(university));
+        ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
+            "한국기술교육대학교",
+            "BCSD Lab",
+            ClubCategory.ACADEMIC,
+            "코딩",
+            "가".repeat(100),
+            "수정 상세 소개입니다.",
+            List.of()
+        );
+
+        performPost("/konect/clubs/" + club.getId() + "/information-update-requests", request)
+            .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("한 줄 소개가 100자를 초과하면 정보 수정 요청을 거절한다")
+    void requestClubInformationUpdateWithTooLongShortDescription() throws Exception {
+        WebUniversity university = persist(WebUniversityFixture.create());
+        WebClub club = persist(WebClubFixture.create(university));
+        ClubInformationUpdateRequestDto request = new ClubInformationUpdateRequestDto(
+            "한국기술교육대학교",
+            "BCSD Lab",
+            ClubCategory.ACADEMIC,
+            "코딩",
+            "가".repeat(101),
+            "수정 상세 소개입니다.",
+            List.of()
+        );
+
         performPost("/konect/clubs/" + club.getId() + "/information-update-requests", request)
             .andExpect(status().isBadRequest());
     }

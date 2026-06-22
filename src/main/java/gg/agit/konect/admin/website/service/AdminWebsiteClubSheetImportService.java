@@ -44,7 +44,7 @@ public class AdminWebsiteClubSheetImportService {
     private static final int DEFAULT_HEADER_INDEX = 3;
     private static final int NAME_MAX_LENGTH = 50;
     private static final int TOPIC_MAX_LENGTH = 20;
-    private static final int DESCRIPTION_MAX_LENGTH = 30;
+    private static final int DESCRIPTION_MAX_LENGTH = 100;
     private static final int CATEGORY_EMOJI_MAX_LENGTH = 255;
     private static final String EMPTY_INTRODUCE = "";
     private static final int NAME_COLUMN_INDEX = 0;

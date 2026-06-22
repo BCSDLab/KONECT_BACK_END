@@ -32,12 +32,12 @@ public record ClubInformationUpdateRequestDto(
     String clubTopic,
 
     @Schema(
-        description = "한 줄 소개 (최대 30자)",
+        description = "한 줄 소개 (최대 100자)",
         example = "코딩 동아리입니다.",
         requiredMode = REQUIRED
     )
     @NotBlank(message = "한 줄 소개는 필수입니다.")
-    @Size(max = 30, message = "한 줄 소개는 최대 30자입니다.")
+    @Size(max = 100, message = "한 줄 소개는 최대 100자입니다.")
     String shortDescription,
 
     @Schema(

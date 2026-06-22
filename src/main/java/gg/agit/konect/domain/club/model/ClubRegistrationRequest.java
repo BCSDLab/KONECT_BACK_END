@@ -56,7 +56,7 @@ public class ClubRegistrationRequest extends BaseEntity {
     private String clubEmoji;
 
     @NotNull
-    @Column(name = "short_description", length = 30, nullable = false)
+    @Column(name = "short_description", length = 100, nullable = false)
     private String shortDescription;
 
     @NotNull

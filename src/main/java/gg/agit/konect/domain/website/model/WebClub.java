@@ -46,7 +46,7 @@ public class WebClub extends BaseEntity {
     @Column(name = "topic", length = 20, nullable = false)
     private String topic;
 
-    @Column(name = "description", length = 30, nullable = false)
+    @Column(name = "description", length = 100, nullable = false)
     private String description;
 
     @Column(name = "introduce", columnDefinition = "TEXT", nullable = false)
